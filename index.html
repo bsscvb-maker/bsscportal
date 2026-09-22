@@ -149,6 +149,11 @@
     .ticket-ledger-table thead tr:nth-child(2) th { top: 0; }
     .ticket-ledger-table th:nth-child(n+8), .ticket-ledger-table td:nth-child(n+8) { background-color: #fff8f9; }
     .ticket-ledger-table thead tr:nth-child(2) th:nth-child(n+8) { background: #111113; }
+    .ticket-price-bar { display: flex; align-items: center; gap: 10px; width: fit-content; margin: 0 0 12px; padding: 9px 12px; border: 1px solid var(--line); border-left: 4px solid var(--gold); border-radius: 8px; background: #f7f7f8; }
+    .ticket-price-bar strong { color: var(--ink); }
+    .ticket-price-value { min-width: 82px; padding: 6px 9px; border-radius: 6px; background: white; font-weight: 900; text-align: right; }
+    .ticket-price-value[contenteditable="true"] { outline: 2px solid var(--gold); cursor: text; }
+    .ticket-price-value.pending-change { background: #fff0bd; box-shadow: inset 0 -3px 0 #d79b00; }
     .edit-help { margin: -5px 0 14px; padding: 10px 12px; border-left: 4px solid var(--gold); background: #fff1f3; color: #6b0d1c; border-radius: 7px; font-size: .86rem; font-weight: 750; }
     .tracking-table { width: max-content; min-width: 2550px; table-layout: fixed; }
     .tracking-table th, .tracking-table td { min-width: 115px; white-space: normal; overflow-wrap: anywhere; }
@@ -478,9 +483,9 @@
       const headers = rows[headerRowIndex].slice(0, maxColumns);
       const ticketGroupStart = isTicketLedger ? headers.findIndex(value => String(value || '').trim().toLowerCase() === 'tickets on hold') : -1;
       if (isTicketLedger && ticketGroupStart >= 0 && rows[headerRowIndex + 1]) {
-        for (let i = ticketGroupStart; i < maxColumns; i += 1) {
-          if (String(rows[headerRowIndex + 1][i] || '').trim()) headers[i] = rows[headerRowIndex + 1][i];
-        }
+        headers[ticketGroupStart] = 'Name';
+        headers[ticketGroupStart + 1] = 'Quantity';
+        headers[ticketGroupStart + 2] = 'Amount';
       }
       const indexedData = rows.map((row, index) => ({row, sourceIndex:index})).slice(headerRowIndex + 1).filter(item => item.row.some(value => String(value ?? '').trim()));
       const width = Math.min(maxColumns, Math.max(headers.length, ...indexedData.map(item => item.row.length)));
@@ -489,12 +494,24 @@
       const toolbar = editOptions ? `<div class="table-toolbar"><button class="edit-mode-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? 'Done editing' : 'Edit: OFF'}</button></div>` : '';
       const tableClass = targetId === 'bftDonationsTable' ? 'data-table tracking-table' : (isTicketLedger ? 'data-table ticket-ledger-table' : 'data-table');
       const groupedHeader = isTicketLedger && ticketGroupStart >= 0 ? `<tr class="ticket-group-row"><th colspan="${ticketGroupStart}"></th><th class="ticket-group-title" colspan="${width - ticketGroupStart}">Tickets on Hold</th></tr>` : '';
-      target.innerHTML = `${toolbar}${editMode ? '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>' : ''}<div class="table-wrap"><table class="${tableClass}"><thead>${groupedHeader}<tr>${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
+      let ticketPrice = isTicketLedger ? Number(String((rows[0] && rows[0][12]) || '').replace(/[$,]/g, '')) : 0;
+      if (isTicketLedger && (!Number.isFinite(ticketPrice) || ticketPrice <= 0) && ticketGroupStart >= 0) {
+        for (const row of rows.slice(2)) {
+          const quantity = Number(String(row[ticketGroupStart + 1] || '').replace(/[$,]/g, ''));
+          const amount = Number(String(row[ticketGroupStart + 2] || '').replace(/[$,]/g, ''));
+          if (quantity > 0 && Number.isFinite(amount)) { ticketPrice = amount / quantity; break; }
+        }
+      }
+      if (!Number.isFinite(ticketPrice)) ticketPrice = 0;
+      const ticketPriceBar = isTicketLedger ? `<div class="ticket-price-bar"><strong>Ticket Cost</strong><span class="ticket-price-value" data-ticket-price="true" data-value="${ticketPrice}" ${editMode ? 'contenteditable="true" spellcheck="false"' : ''}>${money(ticketPrice)}</span></div>` : '';
+      target.innerHTML = `${toolbar}${editMode ? '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>' : ''}${ticketPriceBar}<div class="table-wrap"><table class="${tableClass}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
         const labels = item.row.map(value => String(value).trim().toLowerCase());
         const isTotal = labels.some(value => value === 'total' || value.includes('subtotal') || value.includes('combined total') || value.includes('grand total'));
         return `<tr class="${isTotal ? 'total-row' : ''}">${finalHeaders.map((_, columnIndex) => {
-          const editable = editMode;
-          return `<td class="${editable ? 'editable-cell' : ''}" ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${item.sourceIndex + 1}" data-column="${columnIndex}" data-value="${esc(item.row[columnIndex] || '')}"` : ''}>${esc(item.row[columnIndex] || '')}</td>`;
+          const ticketHeaderCell = isTicketLedger && item.sourceIndex === headerRowIndex + 1 && columnIndex >= ticketGroupStart;
+          const editable = editMode && !ticketHeaderCell;
+          const shownValue = ticketHeaderCell ? '' : (item.row[columnIndex] || '');
+          return `<td class="${editable ? 'editable-cell' : ''}" ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${item.sourceIndex + 1}" data-column="${columnIndex}" data-value="${esc(shownValue)}"` : ''}>${esc(shownValue)}</td>`;
         }).join('')}</tr>`;
       }).join('')}</tbody></table></div>`;
       status.textContent = `${indexedData.length} row${indexedData.length === 1 ? '' : 's'} loaded from Google Sheets${editOptions ? (editMode ? ' — edit mode is on.' : ' — view mode.') : '.'}`;
@@ -511,7 +528,35 @@
           tablePendingEdits[targetId].set(key, {sheet:cell.dataset.sheet, row:Number(cell.dataset.row), column:Number(cell.dataset.column), value});
           cell.classList.add('pending-change');
         }
+        if (targetId === 'bftTicketsTable') recalculateTicketRow(targetId, cell);
       }));
+      const ticketPriceField = target.querySelector('[data-ticket-price="true"][contenteditable="true"]');
+      if (ticketPriceField) ticketPriceField.addEventListener('input', () => {
+        const numericPrice = Number(ticketPriceField.textContent.replace(/[$,]/g, '').trim());
+        if (!tablePendingEdits[targetId]) tablePendingEdits[targetId] = new Map();
+        tablePendingEdits[targetId].set('1:12', {sheet:'Ticket Control Ledger', row:1, column:12, value:Number.isFinite(numericPrice) ? numericPrice : 0});
+        ticketPriceField.classList.add('pending-change');
+        target.querySelectorAll('td[data-edit-cell="true"]').forEach(cell => recalculateTicketRow(targetId, cell));
+      });
+    }
+
+    function recalculateTicketRow(targetId, changedCell) {
+      const target = document.getElementById(targetId);
+      const table = target.querySelector('.ticket-ledger-table');
+      if (!table || !changedCell.closest('tr')) return;
+      const groupStart = Number(table.dataset.ticketGroupStart);
+      if (!Number.isFinite(groupStart) || Number(changedCell.dataset.column) !== groupStart + 1) return;
+      const priceField = target.querySelector('[data-ticket-price="true"]');
+      const price = Number(String(priceField ? priceField.textContent : '0').replace(/[$,]/g, '').trim());
+      const quantity = Number(changedCell.textContent.replace(/,/g, '').trim());
+      if (!Number.isFinite(price) || !Number.isFinite(quantity)) return;
+      const amountCell = changedCell.closest('tr').querySelector(`td[data-column="${groupStart + 2}"]`);
+      if (!amountCell) return;
+      const amount = price * quantity;
+      amountCell.textContent = money(amount);
+      amountCell.classList.add('pending-change');
+      if (!tablePendingEdits[targetId]) tablePendingEdits[targetId] = new Map();
+      tablePendingEdits[targetId].set(`${amountCell.dataset.row}:${amountCell.dataset.column}`, {sheet:amountCell.dataset.sheet, row:Number(amountCell.dataset.row), column:Number(amountCell.dataset.column), value:amount});
     }
 
     async function toggleTableEditing(targetId, button) {
@@ -567,7 +612,7 @@
         if (result.status === 'fulfilled') renderDataTable(targetId, statusId, result.value, headerIndex, columns);
         else document.getElementById(statusId).textContent = `${sheetName} could not be loaded from Google Sheets.`;
       };
-      if (ticketResult.status === 'fulfilled') renderDataTable('bftTicketsTable', 'bftTicketsStatus', ticketResult.value, 0, 13, {sheetName:'Ticket Control Ledger'});
+      if (ticketResult.status === 'fulfilled') renderDataTable('bftTicketsTable', 'bftTicketsStatus', ticketResult.value, 0, 12, {sheetName:'Ticket Control Ledger'});
       else document.getElementById('bftTicketsStatus').textContent = 'Ticket Control Ledger could not be loaded from Google Sheets.';
       if (donationResult.status === 'fulfilled') renderDataTable('bftDonationsTable', 'bftDonationsStatus', donationResult.value, 1, 22, {sheetName:'Tracking Tab'});
       else document.getElementById('bftDonationsStatus').textContent = 'Tracking Tab could not be loaded from Google Sheets.';
