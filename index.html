@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#102a43">
   <meta name="description" content="Private operations portal for BoneShakers Social Club.">
   <title>BSSC Management Portal</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23102a43'/%3E%3Cpath d='M17 41c0-8 6-14 14-14h2c8 0 14 6 14 14' fill='none' stroke='%23f2b84b' stroke-width='6' stroke-linecap='round'/%3E%3Ccircle cx='21' cy='43' r='8' fill='none' stroke='white' stroke-width='4'/%3E%3Ccircle cx='43' cy='43' r='8' fill='none' stroke='white' stroke-width='4'/%3E%3Cpath d='M26 20h12' stroke='%23f2b84b' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
   <style>
     :root {
@@ -112,6 +113,23 @@
     .workspace-row span { color: var(--muted); }
     .workspace-row strong { color: var(--navy); }
     .pilot-note { margin-top: 16px; border-left: 4px solid var(--gold); background: #fffaf0; border-radius: 8px; padding: 13px 14px; color: #5f4a24; font-size: .85rem; }
+    .auth-gate { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 22px; background: linear-gradient(145deg, #102a43, #163a5f); }
+    .auth-gate.hidden { display: none; }
+    .auth-card { width: min(480px, 100%); padding: 34px; text-align: center; background: white; border-radius: 18px; box-shadow: 0 22px 60px rgba(0,0,0,.28); }
+    .auth-card .brand-mark { margin: 0 auto 18px; width: 58px; height: 58px; background: var(--navy); }
+    .auth-card h1 { font-size: 1.8rem; }
+    .auth-card p { color: var(--muted); margin: 12px 0 24px; }
+    .google-btn, .signout-btn { border: 0; border-radius: 9px; cursor: pointer; font-weight: 800; }
+    .google-btn { padding: 12px 18px; color: white; background: var(--navy); }
+    .signout-btn { padding: 7px 10px; color: var(--navy); background: #edf2f6; }
+    .auth-error { min-height: 21px; margin-top: 14px; color: #b42318; font-size: .86rem; }
+    .data-status { margin: 0 0 14px; color: var(--muted); font-size: .86rem; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 11px; }
+    .data-table { width: 100%; border-collapse: collapse; min-width: 900px; font-size: .84rem; }
+    .data-table th { position: sticky; top: 0; padding: 10px; text-align: left; color: white; background: var(--navy); }
+    .data-table td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .data-table tr:last-child td { border-bottom: 0; }
+    .empty-state { padding: 24px; color: var(--muted); text-align: center; }
     @media (max-width: 1050px) {
       .module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .panel { grid-template-columns: 1fr; }
@@ -133,6 +151,15 @@
   </style>
 </head>
 <body>
+  <section class="auth-gate" id="authGate">
+    <div class="auth-card">
+      <div class="brand-mark">BS</div>
+      <h1>BSSC Management Portal</h1>
+      <p>Sign in with your authorized BoneShakers Google Workspace account.</p>
+      <button class="google-btn" id="googleSignIn">Sign in with Google</button>
+      <div class="auth-error" id="authError"></div>
+    </div>
+  </section>
   <div class="app">
     <aside class="sidebar" id="sidebar">
       <div class="brand"><div class="brand-mark">BS</div><div><strong>BoneShakers</strong><span>Management Portal</span></div></div>
@@ -153,7 +180,7 @@
     <main class="main">
       <header class="topbar">
         <div style="display:flex;align-items:center;gap:12px"><button class="menu-toggle" id="menuToggle" aria-label="Open navigation">☰</button><div class="page-title">BSSC Management Portal<small>One place for club operations</small></div></div>
-        <div class="user"><span>Administrator</span><div class="avatar">TH</div></div>
+        <div class="user"><span>Authorized user</span><button class="signout-btn" id="signOut">Sign out</button><div class="avatar">BS</div></div>
       </header>
 
       <div class="content">
@@ -190,8 +217,8 @@
               <div class="sponsor-summary"><div class="metric"><div class="metric-label">Active cash revenue</div><div class="metric-value">$1,100</div><div class="metric-note">Current workbook snapshot</div></div><div class="metric"><div class="metric-label">Active sponsors</div><div class="metric-value">2</div><div class="metric-note">Renewal eligible</div></div><div class="metric"><div class="metric-label">Renewal due</div><div class="metric-value">0</div><div class="metric-note">Current 30-day window</div></div><div class="metric"><div class="metric-label">Prospects</div><div class="metric-value">2</div><div class="metric-note">Currently recorded</div></div></div>
               <div class="sponsor-panels"><section class="workspace-card"><h2>Sponsor overview</h2><div class="workspace-list"><div class="workspace-row"><span>Expired sponsors</span><strong>6</strong></div><div class="workspace-row"><span>Revenue at risk in 90 days</span><strong>$0</strong></div><div class="workspace-row"><span>Active in-kind value recorded</span><strong>$0</strong></div><div class="workspace-row"><span>Retention rate</span><strong>25%</strong></div></div></section><section class="workspace-card"><h2>Workbook sections</h2><div class="workspace-list"><div class="workspace-row"><span>Dashboard</span><strong>Ready</strong></div><div class="workspace-row"><span>Current sponsors</span><strong>Mapped</strong></div><div class="workspace-row"><span>Prospective sponsors</span><strong>Mapped</strong></div><div class="workspace-row"><span>Definitions</span><strong>Mapped</strong></div></div></section></div>
             </section>
-            <section class="sponsor-panel" data-sponsor-panel="current"><div class="coming-soon"><h2>Current Sponsors</h2><p>This section is connected and ready for the secure sponsor records. The public preview does not display sponsor names, email addresses, or phone numbers.</p></div></section>
-            <section class="sponsor-panel" data-sponsor-panel="prospective"><div class="coming-soon"><h2>Prospective Sponsors</h2><p>This section is ready for prospect tracking, outreach status, follow-up dates, and sponsorship levels.</p></div></section>
+            <section class="sponsor-panel" data-sponsor-panel="current"><div class="coming-soon"><h2>Current Sponsors</h2><div class="data-status" id="currentStatus">Sign in to load sponsor records.</div><div id="currentTable"></div></div></section>
+            <section class="sponsor-panel" data-sponsor-panel="prospective"><div class="coming-soon"><h2>Prospective Sponsors</h2><div class="data-status" id="prospectiveStatus">Sign in to load prospective sponsor records.</div><div id="prospectiveTable"></div></div></section>
             <section class="sponsor-panel" data-sponsor-panel="history"><div class="coming-soon"><h2>Contact History</h2><p>This section will show calls, emails, meetings, notes, and the next follow-up action for each sponsor.</p></div></section>
             <section class="sponsor-panel" data-sponsor-panel="documents"><div class="coming-soon"><h2>Documents Requested</h2><p>This section will track W-9s, sponsorship letters, receipts, logos, agreements, and other requested documents.</p></div></section>
             <section class="sponsor-panel" data-sponsor-panel="renewals"><div class="coming-soon"><h2>Renewal Reporting</h2><p>This section will organize renewals due, contacted sponsors, commitments, expirations, and retained revenue.</p></div></section>
@@ -201,6 +228,88 @@
     </main>
   </div>
   <script>
+    const GOOGLE_CLIENT_ID = '881518334290-kimg628u5oriddlrqoq6vb619m8gn13s.apps.googleusercontent.com';
+    const SPREADSHEET_ID = '14ZEdT1sA04z6Hp-iVaX2uRNjJq-JBoxmY1mvfL9X-Bk';
+    const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+    let tokenClient;
+    let accessToken = '';
+
+    function initializeGoogleAuth() {
+      if (!window.google?.accounts?.oauth2) {
+        setTimeout(initializeGoogleAuth, 250);
+        return;
+      }
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: SHEETS_SCOPE,
+        callback: async response => {
+          if (response.error) {
+            document.getElementById('authError').textContent = 'Google sign-in did not complete. Please try again.';
+            return;
+          }
+          accessToken = response.access_token;
+          document.getElementById('authGate').classList.add('hidden');
+          await loadSponsorData();
+        }
+      });
+    }
+
+    document.getElementById('googleSignIn').addEventListener('click', () => {
+      document.getElementById('authError').textContent = '';
+      if (!tokenClient) return document.getElementById('authError').textContent = 'Google sign-in is still loading. Try again in a moment.';
+      tokenClient.requestAccessToken({prompt: 'consent'});
+    });
+
+    document.getElementById('signOut').addEventListener('click', () => {
+      if (accessToken) google.accounts.oauth2.revoke(accessToken, () => {});
+      accessToken = '';
+      document.getElementById('authGate').classList.remove('hidden');
+    });
+
+    async function getSheetValues(range) {
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}?majorDimension=ROWS`;
+      const response = await fetch(url, {headers: {Authorization: `Bearer ${accessToken}`}});
+      if (!response.ok) throw new Error(`Google Sheets returned ${response.status}`);
+      return (await response.json()).values || [];
+    }
+
+    function esc(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    }
+
+    function renderSponsorTable(targetId, statusId, rows) {
+      const target = document.getElementById(targetId);
+      const status = document.getElementById(statusId);
+      if (rows.length < 2) {
+        target.innerHTML = '<div class="empty-state">No records found.</div>';
+        status.textContent = 'Connected to Google Sheets.';
+        return;
+      }
+      const headers = rows[0];
+      const wanted = [1,3,2,4,5,6,7,10,16,19,20,24,25];
+      const data = rows.slice(1).filter(row => row.some(v => String(v).trim()));
+      target.innerHTML = `<div class="table-wrap"><table class="data-table"><thead><tr>${wanted.map(i => `<th>${esc(headers[i] || '')}</th>`).join('')}</tr></thead><tbody>${data.map(row => `<tr>${wanted.map(i => `<td>${esc(row[i] || '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+      status.textContent = `${data.length} record${data.length === 1 ? '' : 's'} loaded from Google Sheets.`;
+    }
+
+    async function loadSponsorData() {
+      document.getElementById('currentStatus').textContent = 'Loading current sponsors…';
+      document.getElementById('prospectiveStatus').textContent = 'Loading prospective sponsors…';
+      try {
+        const [current, prospective] = await Promise.all([
+          getSheetValues("'Sponsors - Current'!A1:Z200"),
+          getSheetValues("'Sponsors - Prospective'!A1:Z200")
+        ]);
+        renderSponsorTable('currentTable', 'currentStatus', current);
+        renderSponsorTable('prospectiveTable', 'prospectiveStatus', prospective);
+      } catch (error) {
+        const message = 'Could not load the spreadsheet. Confirm this Google account has access to it.';
+        document.getElementById('currentStatus').textContent = message;
+        document.getElementById('prospectiveStatus').textContent = message;
+      }
+    }
+
+    initializeGoogleAuth();
     const modules = {
       membership: {title:'Membership', description:'The central record for members, history, participation, and annual requirements.', tasks:['Member directory','Renewals and dues','Attendance','Waivers and vetting','Officers and honors','History and anniversaries']},
       finance: {title:'Finance', description:'Club finances, transactions, budgets, reconciliations, and clear reporting.', tasks:['Transaction entry','Financial dashboard','Fund balances','Operating budget','Event budgets','Reports and exports']},
