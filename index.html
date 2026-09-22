@@ -225,8 +225,9 @@
     .market-metric small { display: block; margin-top: 5px; color: var(--muted); }
     .market-metric.alert strong { color: var(--gold); }
     .market-metric.good strong { color: #157347; }
-    .market-subsummary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 0 0 16px; }
+    .market-subsummary { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: 12px; margin: 0 0 16px; }
     .market-summary-card { padding: 13px 14px; border: 1px solid var(--line); border-top: 4px solid var(--gold); border-radius: 9px; background: #fafafa; }
+    .market-summary-card.warning { border-color: #e3b900; border-top-color: #e3b900; background: #fff3b8; }
     .market-summary-card span { display:block; color:var(--muted); font-size:.76rem; font-weight:800; text-transform:uppercase; }
     .market-summary-card strong { display:block; margin-top:5px; font-size:1.18rem; }
     .sales-history-heading { margin-bottom: 14px; border: 1px solid #252528; overflow: hidden; }
@@ -987,7 +988,23 @@
     }
 
     function renderMarketSummary(targetId, cards) {
-      document.getElementById(targetId).innerHTML = `<div class="market-subsummary">${cards.map(([label,value]) => `<div class="market-summary-card"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong></div>`).join('')}</div>`;
+      document.getElementById(targetId).innerHTML = `<div class="market-subsummary">${cards.map(([label,value,cls = '']) => `<div class="market-summary-card ${esc(cls)}"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong></div>`).join('')}</div>`;
+    }
+
+    function renderManufacturerSummary(rows) {
+      const summary = rows[2] || [];
+      const vendorMinimum = String(summary[1] || '—');
+      const currentCost = String(summary[3] || '—');
+      const rawStatus = String(summary[5] || '');
+      const amountMatch = rawStatus.match(/\$[\d,]+(?:\.\d{2})?/);
+      const status = /ready/i.test(rawStatus) ? 'Ready to Submit' : 'On Hold';
+      const amountNeeded = /ready/i.test(rawStatus) ? '$0.00' : (amountMatch ? amountMatch[0] : '—');
+      renderMarketSummary('marketManufacturerSummary',[
+        ['Vendor Minimum',vendorMinimum],
+        ['Current Vendor Cost',currentCost,'warning'],
+        ['Order Status',status,'warning'],
+        ['Amount Needed',amountNeeded,'warning']
+      ]);
     }
 
     function renderSalesHistoryHeading(rows) {
@@ -1038,7 +1055,7 @@
       else document.getElementById('marketFulfillmentStatus').textContent = 'Fulfillment Tracker could not be loaded from Google Sheets.';
       if (manufacturerResult.status === 'fulfilled') {
         const rows = manufacturerResult.value;
-        renderMarketSummary('marketManufacturerSummary',[['Vendor Minimum',marketValue(rows,'Vendor Minimum')],['Current Vendor Cost',marketValue(rows,'Current Vendor Cost')],['Order Status',marketValue(rows,'Order Status')]]);
+        renderManufacturerSummary(rows);
         renderDataTable('marketManufacturerTable','marketManufacturerStatus',rows,4,6);
       } else document.getElementById('marketManufacturerStatus').textContent = 'Manufacturer Summary could not be loaded from Google Sheets.';
       if (financialsResult.status === 'fulfilled') {
