@@ -97,6 +97,15 @@
     .sponsor-panels { display: grid; grid-template-columns: 1.2fr .8fr; gap: 14px; }
     .workspace-card { border: 1px solid var(--line); border-radius: 13px; padding: 18px; background: white; }
     .workspace-card h2 { margin: 0 0 14px; color: var(--navy); font-size: 1rem; }
+    .sponsor-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+    .sponsor-tab { border: 1px solid var(--line); border-radius: 999px; background: white; color: var(--navy); padding: 9px 14px; font-weight: 800; cursor: pointer; }
+    .sponsor-tab:hover { border-color: var(--gold); }
+    .sponsor-tab.active { background: var(--navy); border-color: var(--navy); color: white; }
+    .sponsor-panel { display: none; }
+    .sponsor-panel.active { display: block; }
+    .coming-soon { border: 1px solid var(--line); border-radius: 13px; padding: 22px; background: white; }
+    .coming-soon h2 { margin: 0 0 8px; color: var(--navy); }
+    .coming-soon p { margin: 0; color: var(--muted); line-height: 1.6; }
     .workspace-list { display: grid; gap: 10px; }
     .workspace-row { display: flex; justify-content: space-between; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--line); }
     .workspace-row:last-child { border-bottom: 0; }
@@ -168,7 +177,26 @@
 
         <section class="detail-view" id="detail">
           <button class="back" id="back">← Back to portal home</button>
-          <div class="detail-shell"><div class="detail-head"><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div><div class="sponsor-workspace" id="sponsorWorkspace"><div class="sponsor-summary"><div class="metric"><div class="metric-label">Active cash revenue</div><div class="metric-value">$1,100</div><div class="metric-note">Current workbook snapshot</div></div><div class="metric"><div class="metric-label">Active sponsors</div><div class="metric-value">2</div><div class="metric-note">Renewal eligible</div></div><div class="metric"><div class="metric-label">Renewal due</div><div class="metric-value">0</div><div class="metric-note">Current 30-day window</div></div><div class="metric"><div class="metric-label">Prospects</div><div class="metric-value">2</div><div class="metric-note">Currently recorded</div></div></div><div class="sponsor-panels"><section class="workspace-card"><h2>Sponsor overview</h2><div class="workspace-list"><div class="workspace-row"><span>Expired sponsors</span><strong>6</strong></div><div class="workspace-row"><span>Revenue at risk in 90 days</span><strong>$0</strong></div><div class="workspace-row"><span>Active in-kind value recorded</span><strong>$0</strong></div><div class="workspace-row"><span>Retention rate</span><strong>25%</strong></div></div></section><section class="workspace-card"><h2>Workbook sections</h2><div class="workspace-list"><div class="workspace-row"><span>Dashboard</span><strong>Ready</strong></div><div class="workspace-row"><span>Current sponsors</span><strong>Mapped</strong></div><div class="workspace-row"><span>Prospective sponsors</span><strong>Mapped</strong></div><div class="workspace-row"><span>Definitions</span><strong>Mapped</strong></div></div></section></div><div class="pilot-note">This is a safe portal preview based on the workbook summary. Contact names, email addresses, and phone numbers are intentionally excluded until secure Google access is connected.</div></div></div></div>
+          <div class="detail-shell"><div class="detail-head"><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div><div class="sponsor-workspace" id="sponsorWorkspace">
+            <div class="sponsor-tabs" aria-label="Sponsorship sections">
+              <button class="sponsor-tab active" data-sponsor-tab="dashboard">Sponsor Dashboard</button>
+              <button class="sponsor-tab" data-sponsor-tab="current">Current Sponsors</button>
+              <button class="sponsor-tab" data-sponsor-tab="prospective">Prospective Sponsors</button>
+              <button class="sponsor-tab" data-sponsor-tab="history">Contact History</button>
+              <button class="sponsor-tab" data-sponsor-tab="documents">Documents Requested</button>
+              <button class="sponsor-tab" data-sponsor-tab="renewals">Renewal Reporting</button>
+            </div>
+            <section class="sponsor-panel active" data-sponsor-panel="dashboard">
+              <div class="sponsor-summary"><div class="metric"><div class="metric-label">Active cash revenue</div><div class="metric-value">$1,100</div><div class="metric-note">Current workbook snapshot</div></div><div class="metric"><div class="metric-label">Active sponsors</div><div class="metric-value">2</div><div class="metric-note">Renewal eligible</div></div><div class="metric"><div class="metric-label">Renewal due</div><div class="metric-value">0</div><div class="metric-note">Current 30-day window</div></div><div class="metric"><div class="metric-label">Prospects</div><div class="metric-value">2</div><div class="metric-note">Currently recorded</div></div></div>
+              <div class="sponsor-panels"><section class="workspace-card"><h2>Sponsor overview</h2><div class="workspace-list"><div class="workspace-row"><span>Expired sponsors</span><strong>6</strong></div><div class="workspace-row"><span>Revenue at risk in 90 days</span><strong>$0</strong></div><div class="workspace-row"><span>Active in-kind value recorded</span><strong>$0</strong></div><div class="workspace-row"><span>Retention rate</span><strong>25%</strong></div></div></section><section class="workspace-card"><h2>Workbook sections</h2><div class="workspace-list"><div class="workspace-row"><span>Dashboard</span><strong>Ready</strong></div><div class="workspace-row"><span>Current sponsors</span><strong>Mapped</strong></div><div class="workspace-row"><span>Prospective sponsors</span><strong>Mapped</strong></div><div class="workspace-row"><span>Definitions</span><strong>Mapped</strong></div></div></section></div>
+            </section>
+            <section class="sponsor-panel" data-sponsor-panel="current"><div class="coming-soon"><h2>Current Sponsors</h2><p>This section is connected and ready for the secure sponsor records. The public preview does not display sponsor names, email addresses, or phone numbers.</p></div></section>
+            <section class="sponsor-panel" data-sponsor-panel="prospective"><div class="coming-soon"><h2>Prospective Sponsors</h2><p>This section is ready for prospect tracking, outreach status, follow-up dates, and sponsorship levels.</p></div></section>
+            <section class="sponsor-panel" data-sponsor-panel="history"><div class="coming-soon"><h2>Contact History</h2><p>This section will show calls, emails, meetings, notes, and the next follow-up action for each sponsor.</p></div></section>
+            <section class="sponsor-panel" data-sponsor-panel="documents"><div class="coming-soon"><h2>Documents Requested</h2><p>This section will track W-9s, sponsorship letters, receipts, logos, agreements, and other requested documents.</p></div></section>
+            <section class="sponsor-panel" data-sponsor-panel="renewals"><div class="coming-soon"><h2>Renewal Reporting</h2><p>This section will organize renewals due, contacted sponsors, commitments, expirations, and retained revenue.</p></div></section>
+            <div class="pilot-note">This is a safe portal preview based on the workbook summary. Contact names, email addresses, and phone numbers are intentionally excluded until secure Google access is connected.</div>
+          </div></div></div>
         </section>
       </div>
     </main>
@@ -204,6 +232,11 @@
     function setActive(key) { document.querySelectorAll('[data-module]').forEach(b => b.classList.toggle('active', b.dataset.module === key)); }
     document.querySelectorAll('[data-module]').forEach(b => b.addEventListener('click', () => showModule(b.dataset.module)));
     document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => showModule(b.dataset.open)));
+    document.querySelectorAll('[data-sponsor-tab]').forEach(button => button.addEventListener('click', () => {
+      const selected = button.dataset.sponsorTab;
+      document.querySelectorAll('[data-sponsor-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
+      document.querySelectorAll('[data-sponsor-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.sponsorPanel === selected));
+    }));
     document.getElementById('back').addEventListener('click', () => showModule('home'));
     document.getElementById('menuToggle').addEventListener('click', () => sidebar.classList.toggle('open'));
   </script>
