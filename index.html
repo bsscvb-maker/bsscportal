@@ -203,6 +203,34 @@
     .bike-night-pick span { display: block; margin-top: 4px; }
     .scorecard-table tr.never-visited td { background: #fff1bd !important; font-weight: 800; }
     .scorecard-table tr.planned-row td { background: #e3f3e8 !important; }
+    .market-dashboard { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: white; }
+    .market-hero { padding: 18px 22px; color: white; background: #111113; border-bottom: 4px solid var(--gold); }
+    .market-hero h2 { margin: 0; font-size: 1.45rem; text-align: center; }
+    .market-hero p { margin: 5px 0 0; color: #d8d8dc; text-align: center; font-size: .84rem; }
+    .market-sections { display: grid; gap: 18px; padding: 20px; }
+    .market-section { border: 1px solid #252528; }
+    .market-section h3 { margin: 0; padding: 9px 12px; color: white; background: #111113; border-bottom: 3px solid var(--gold); font-size: 1rem; }
+    .market-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 1px; background: var(--line); }
+    .market-metric { min-height: 102px; padding: 14px; background: white; }
+    .market-metric span { display: block; color: var(--muted); font-size: .75rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+    .market-metric strong { display: block; margin-top: 7px; font-size: 1.35rem; color: #111113; }
+    .market-metric small { display: block; margin-top: 5px; color: var(--muted); }
+    .market-metric.alert strong { color: var(--gold); }
+    .market-metric.good strong { color: #157347; }
+    .market-subsummary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 0 0 16px; }
+    .market-summary-card { padding: 13px 14px; border: 1px solid var(--line); border-top: 4px solid var(--gold); border-radius: 9px; background: #fafafa; }
+    .market-summary-card span { display:block; color:var(--muted); font-size:.76rem; font-weight:800; text-transform:uppercase; }
+    .market-summary-card strong { display:block; margin-top:5px; font-size:1.18rem; }
+    .pricing-config { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:16px; margin-bottom:18px; }
+    .pricing-box { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+    .pricing-box h3 { margin:0; padding:9px 12px; color:white; background:#111113; border-bottom:3px solid var(--gold); font-size:.95rem; }
+    .pricing-row { display:flex; justify-content:space-between; gap:16px; padding:9px 12px; border-bottom:1px solid var(--line); }
+    .pricing-row:last-child { border-bottom:0; }
+    .pricing-row strong { white-space:nowrap; }
+    .marketplace-table tr.market-paid td { background:#e5f6e9 !important; }
+    .marketplace-table tr.market-pending td { background:#fff0f2 !important; }
+    .marketplace-table tr.market-ready td { box-shadow:inset 4px 0 #e7a600; }
+    @media (max-width: 900px) { .market-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .pricing-config,.market-subsummary { grid-template-columns:1fr; } }
     @media (max-width: 950px) { .bft-dashboard-grid { grid-template-columns: 1fr; } }
     .edit-help { margin: -5px 0 14px; padding: 10px 12px; border-left: 4px solid var(--gold); background: #fff1f3; color: #6b0d1c; border-radius: 7px; font-size: .86rem; font-weight: 750; }
     .tracking-table { width: max-content; min-width: 2550px; table-layout: fixed; }
@@ -277,7 +305,7 @@
             <article class="module" style="--accent:#16845b;--tint:#e5f6ef"><div class="module-top"><div class="module-icon">$</div><div class="status">Planned</div></div><h2>Finance</h2><p>Transactions, fund balances, operating budgets, event budgets, reconciliations, and reporting.</p><footer><span class="source">14 workbook sections mapped</span><button class="open-btn" data-open="finance">View layout</button></footer></article>
             <article class="module" style="--accent:#d98c16;--tint:#fff1d9"><div class="module-top"><div class="module-icon">B</div><div class="status live-status">Live</div></div><h2>Bikes for Tykes</h2><p>Donations, ticket control, event tracking, purchase budgets, and financial synchronization.</p><footer><span class="source">6 live workbook sections</span><button class="open-btn" data-open="bft">Open module</button></footer></article>
             <article class="module" style="--accent:#cf1235;--tint:#fff0f3"><div class="module-top"><div class="module-icon">N</div><div class="status live-status">Live</div></div><h2>Bike Nights</h2><p>Monthly visit planning, club scorecards, attendance history, and upcoming bike nights.</p><footer><span class="source">3 live workbook sections</span><button class="open-btn" data-open="bikenights">Open module</button></footer></article>
-            <article class="module" style="--accent:#8c5bb5;--tint:#f2eafb"><div class="module-top"><div class="module-icon">O</div><div class="status">Planned</div></div><h2>Marketplace</h2><p>Orders, fulfillment, pricing, fees, manufacturers, sales history, and merchandise reporting.</p><footer><span class="source">8 workbook sections mapped</span><button class="open-btn" data-open="marketplace">View layout</button></footer></article>
+            <article class="module" style="--accent:#8c5bb5;--tint:#f2eafb"><div class="module-top"><div class="module-icon">O</div><div class="status live-status">Live</div></div><h2>Marketplace</h2><p>Orders, fulfillment, pricing, fees, manufacturers, sales history, and merchandise reporting.</p><footer><span class="source">8 live workbook sections</span><button class="open-btn" data-open="marketplace">Open module</button></footer></article>
             <article class="module" style="--accent:#b64e50;--tint:#fbeaec"><div class="module-top"><div class="module-icon">S</div><div class="status">Pilot</div></div><h2>Sponsorships</h2><p>Current and prospective sponsors, follow-up status, documentation requests, and sponsor reporting.</p><footer><span class="source">4 workbook sections mapped</span><button class="open-btn" data-open="sponsors">Open module</button></footer></article>
             <article class="module" style="--accent:#52606d;--tint:#edf1f4"><div class="module-top"><div class="module-icon">A</div><div class="status">Foundation</div></div><h2>Administration</h2><p>User access, shared lists, permissions, backups, exports, and the system change history.</p><footer><span class="source">Built as modules are activated</span><button class="open-btn" data-open="admin">View layout</button></footer></article>
           </div>
@@ -336,6 +364,25 @@
             <section class="sponsor-panel active" data-bike-panel="dashboard"><div class="data-status" id="bikeDashboardStatus">Sign in to load the Bike Night dashboard.</div><div id="bikeDashboard"></div></section>
             <section class="sponsor-panel" data-bike-panel="scorecard"><div class="coming-soon"><h2>Club Scorecard</h2><div class="data-status" id="bikeScorecardStatus">Sign in to load the club scorecard.</div><div id="bikeScorecardTable"></div></div></section>
             <section class="sponsor-panel" data-bike-panel="raw"><div class="coming-soon"><h2>Raw Data - Bike Nights</h2><div class="data-status" id="bikeRawStatus">Sign in to load bike-night records.</div><div id="bikeRawTable"></div></div></section>
+          </div><div class="bft-workspace" id="marketplaceWorkspace">
+            <div class="sponsor-tabs" aria-label="Marketplace sections">
+              <button class="sponsor-tab active" data-market-tab="dashboard">Dashboard</button>
+              <button class="sponsor-tab" data-market-tab="fulfillment">Fulfillment Tracker</button>
+              <button class="sponsor-tab" data-market-tab="manufacturer">Manufacturer Summary</button>
+              <button class="sponsor-tab" data-market-tab="financials">Order Financials</button>
+              <button class="sponsor-tab" data-market-tab="orders">Orders</button>
+              <button class="sponsor-tab" data-market-tab="pricing">Pricing &amp; Fees</button>
+              <button class="sponsor-tab" data-market-tab="history">Sales History</button>
+              <button class="sponsor-tab" data-market-tab="reference">Merchandise Pricing Reference</button>
+            </div>
+            <section class="sponsor-panel active" data-market-panel="dashboard"><div class="data-status" id="marketDashboardStatus">Sign in to load Marketplace performance.</div><div id="marketDashboard"></div></section>
+            <section class="sponsor-panel" data-market-panel="fulfillment"><div class="coming-soon"><h2>Fulfillment Tracker</h2><div class="data-status" id="marketFulfillmentStatus">Sign in to load fulfillment records.</div><div id="marketFulfillmentTable"></div></div></section>
+            <section class="sponsor-panel" data-market-panel="manufacturer"><div class="coming-soon"><h2>Manufacturer Summary</h2><div class="data-status" id="marketManufacturerStatus">Sign in to load manufacturer totals.</div><div id="marketManufacturerSummary"></div><div id="marketManufacturerTable"></div></div></section>
+            <section class="sponsor-panel" data-market-panel="financials"><div class="coming-soon"><h2>Order Financials</h2><div class="data-status" id="marketFinancialsStatus">Sign in to load order financials.</div><div id="marketFinancialsSummary"></div><div id="marketFinancialsTable"></div></div></section>
+            <section class="sponsor-panel" data-market-panel="orders"><div class="coming-soon"><h2>Orders</h2><div class="data-status" id="marketOrdersStatus">Sign in to load orders.</div><div id="marketOrdersTable"></div></div></section>
+            <section class="sponsor-panel" data-market-panel="pricing"><div class="coming-soon"><h2>Pricing &amp; Fees</h2><div class="data-status" id="marketPricingStatus">Sign in to load pricing and fees.</div><div id="marketPricingConfig"></div><div id="marketPricingTable"></div></div></section>
+            <section class="sponsor-panel" data-market-panel="history"><div class="coming-soon"><h2>Sales History</h2><div class="data-status" id="marketHistoryStatus">Sign in to load sales history.</div><div id="marketHistorySummary"></div><div id="marketHistoryTable"></div></div></section>
+            <section class="sponsor-panel" data-market-panel="reference"><div class="coming-soon"><h2>Merchandise Pricing Reference</h2><div class="data-status" id="marketReferenceStatus">Sign in to load merchandise pricing.</div><div id="marketReferenceSummary"></div><div id="marketReferenceTable"></div></div></section>
           </div></div></div>
         </section>
       </div>
@@ -346,6 +393,7 @@
     const SPREADSHEET_ID = '14ZFdT1sA04z6Hp-iVaX2uRNjJq-JBoxmY1mvfL9X-Bk';
     const BFT_SPREADSHEET_ID = '1cFhb2-Um1rBKj81dFeNWLSfKxuNfc768AFLbcjXdudY';
     const BIKE_NIGHTS_SPREADSHEET_ID = '1rXMHIVq52X3kqj_ICz7g8oZoD_eXR_0qHP7bZ9jhU0k';
+    const MARKETPLACE_SPREADSHEET_ID = '1ByYajlmaWea7W1mUmKENDti2QEa04GsQCYsArakpqbQ';
     const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
     const SESSION_KEY = 'bssc-google-session-edit-v1';
     const IDLE_TIMEOUT_MS = 60 * 60 * 1000;
@@ -407,10 +455,10 @@
           accessToken = response.access_token;
           saveSession(response.expires_in);
           document.getElementById('authGate').classList.add('hidden');
-          await Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData()]);
+          await Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData(), loadMarketplaceData()]);
         }
       });
-      if (restoreSession()) Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData()]);
+      if (restoreSession()) Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData(), loadMarketplaceData()]);
     }
 
     document.getElementById('googleSignIn').addEventListener('click', () => {
@@ -686,7 +734,8 @@
       const editMode = Boolean(editOptions && tableEditModes[targetId]);
       const toolbar = editOptions ? `<div class="dashboard-action-bar"><button class="dashboard-edit-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? 'Done Editing' : 'Edit Data'}</button></div>` : '';
       const isBudgetTable = targetId === 'bftBudgetTable';
-      const tableClass = targetId === 'bftDonationsTable' ? 'data-table tracking-table' : (isTicketLedger ? 'data-table ticket-ledger-table' : (isBudgetTable ? 'data-table budget-table' : 'data-table'));
+      const isMarketplaceTable = targetId.startsWith('market');
+      const tableClass = targetId === 'bftDonationsTable' ? 'data-table tracking-table' : (isTicketLedger ? 'data-table ticket-ledger-table' : (isBudgetTable ? 'data-table budget-table' : (isMarketplaceTable ? 'data-table marketplace-table' : 'data-table')));
       const groupedHeader = isTicketLedger && ticketGroupStart >= 0 ? `<tr class="ticket-group-row"><th colspan="${ticketGroupStart}"></th><th class="ticket-group-title" colspan="${width - ticketGroupStart}">Tickets on Hold</th></tr>` : '';
       let ticketPrice = isTicketLedger ? Number(String((rows[0] && rows[0][12]) || '').replace(/[$,]/g, '')) : 0;
       if (isTicketLedger && (!Number.isFinite(ticketPrice) || ticketPrice <= 0) && ticketGroupStart >= 0) {
@@ -707,7 +756,10 @@
         const isGrandTotal = isBudgetTable && labels.some(value => value.includes('grand total with locks'));
         const isNeverVisited = targetId === 'bikeScorecardTable' && labels.includes('never visited');
         const isPlanned = targetId === 'bikeScorecardTable' && labels.includes('planned');
-        const rowClasses = [isTotal ? 'total-row' : '', isSubtotal ? 'subtotal-row' : '', isBudgetSection ? 'budget-section-row' : '', isBudgetSubhead ? 'budget-subhead-row' : '', isGrandTotal ? 'grand-total-row' : '', isNeverVisited ? 'never-visited' : '', isPlanned ? 'planned-row' : ''].filter(Boolean).join(' ');
+        const isMarketPaid = isMarketplaceTable && labels.some(value => value.includes('paid') && !value.includes('unpaid'));
+        const isMarketPending = isMarketplaceTable && labels.some(value => value.includes('pending') || value.includes('cash due'));
+        const isMarketReady = isMarketplaceTable && labels.some(value => value === 'ready' || value === 'yes');
+        const rowClasses = [isTotal ? 'total-row' : '', isSubtotal ? 'subtotal-row' : '', isBudgetSection ? 'budget-section-row' : '', isBudgetSubhead ? 'budget-subhead-row' : '', isGrandTotal ? 'grand-total-row' : '', isNeverVisited ? 'never-visited' : '', isPlanned ? 'planned-row' : '', isMarketPaid ? 'market-paid' : '', isMarketPending ? 'market-pending' : '', isMarketReady ? 'market-ready' : ''].filter(Boolean).join(' ');
         return `<tr class="${rowClasses}">${finalHeaders.map((_, columnIndex) => {
           const editable = editMode;
           let shownValue = item.row[columnIndex] || '';
@@ -778,7 +830,8 @@
         for (const edit of edits) await updateSheetCell(edit.spreadsheetId || BFT_SPREADSHEET_ID, edit.sheet, edit.row, edit.column, edit.value);
         tableEditModes[targetId] = false;
         tablePendingEdits[targetId] = new Map();
-        if (targetId.startsWith('bike')) await loadBikeNightData();
+        if (targetId.startsWith('market')) await loadMarketplaceData();
+        else if (targetId.startsWith('bike')) await loadBikeNightData();
         else await loadBftData();
       } catch (error) {
         button.disabled = false;
@@ -861,6 +914,94 @@
       else document.getElementById('bikeRawStatus').textContent = 'Raw Data - Bike Nights could not be loaded from Google Sheets.';
     }
 
+    function marketValue(rows, label) {
+      const wanted = String(label).trim().toLowerCase();
+      for (const row of rows) {
+        const index = row.findIndex(value => String(value || '').trim().toLowerCase() === wanted);
+        if (index >= 0) return String(row[index + 1] ?? '');
+      }
+      return '';
+    }
+
+    function renderMarketplaceDashboard(rows) {
+      const find = label => marketValue(rows, label);
+      const metric = (label, value, note = '', cls = '') => `<div class="market-metric ${cls}"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong>${note ? `<small>${esc(note)}</small>` : ''}</div>`;
+      const whoOwes = rows.flatMap(row => row.map((value, index) => ({value:String(value || ''), next:String(row[index + 1] || '')}))).filter(item => /dean jensen|tracy yoda/i.test(item.value));
+      document.getElementById('marketDashboard').innerHTML = `<div class="market-dashboard">
+        <div class="market-hero"><h2>BSSC / MARKETPLACE PERFORMANCE</h2><p>BOARD REPORT • Live marketplace activity • Revenue and profit reflect paid orders only</p></div>
+        <div class="market-sections">
+          <section class="market-section"><h3>01 — Sales &amp; Cash Flow</h3><div class="market-metrics">
+            ${metric('Total Orders', find('Total Orders'))}${metric('Total Collected', find('Total Collected'), '', 'good')}${metric('Realized Profit', find('Realized Profit'), '', 'good')}${metric('Cash to Collect', find('Cash to Collect'), whoOwes.map(item => `${item.value}: ${item.next}`).join(' • '), 'alert')}
+          </div></section>
+          <section class="market-section"><h3>02 — Vendor &amp; Fulfillment</h3><div class="market-metrics">
+            ${metric('Current Vendor Order', find('Current Vendor Order'))}${metric('Vendor Minimum', find('Vendor Minimum'))}${metric('Orders Ready', find('Orders Ready'))}${metric('Submission Status', find('Submission Status'), '', 'alert')}
+          </div></section>
+          <section class="market-section"><h3>03 — Merchandise &amp; Order Details</h3><div class="market-metrics">
+            ${metric('Merchandise Collected', find('Merchandise Collected'))}${metric('Vendor Cost', find('Vendor Cost'))}${metric('Total Pieces Sold', find('Total Pieces Sold'))}${metric('Cash Due at Meeting', find('Cash Due at Meeting'), '', 'alert')}
+          </div></section>
+        </div>
+      </div>`;
+    }
+
+    function renderMarketSummary(targetId, cards) {
+      document.getElementById(targetId).innerHTML = `<div class="market-subsummary">${cards.map(([label,value]) => `<div class="market-summary-card"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong></div>`).join('')}</div>`;
+    }
+
+    function renderPricingConfig(rows) {
+      const at = (r,c) => String((rows[r] && rows[r][c]) || '');
+      const rowsHtml = entries => entries.map(([label,value]) => `<div class="pricing-row"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong></div>`).join('');
+      document.getElementById('marketPricingConfig').innerHTML = `<div class="pricing-config">
+        <section class="pricing-box"><h3>Marketplace Fees</h3>${rowsHtml([['Sales Tax',at(4,1)],['Credit Card Surcharge',at(5,1)],['PayPal Rate',at(6,1)],['PayPal Fixed Fee',at(7,1)]])}</section>
+        <section class="pricing-box"><h3>Cost Tiers &amp; Markup</h3>${rowsHtml([[at(4,5),at(4,7)],[at(5,5),at(5,7)],[at(6,5),at(6,7)],[at(7,5),at(7,7)]])}</section>
+      </div>`;
+    }
+
+    async function loadMarketplaceData() {
+      const statusIds = ['marketDashboardStatus','marketFulfillmentStatus','marketManufacturerStatus','marketFinancialsStatus','marketOrdersStatus','marketPricingStatus','marketHistoryStatus','marketReferenceStatus'];
+      statusIds.forEach(id => document.getElementById(id).textContent = 'Loading from Google Sheets…');
+      const results = await Promise.allSettled([
+        getSheetValues("'Dashboard'!A1:V22", MARKETPLACE_SPREADSHEET_ID),
+        getSheetValues("'Fulfillment Tracker'!A1:L100", MARKETPLACE_SPREADSHEET_ID),
+        getSheetValues("'Manufacturer Summary'!A1:F100", MARKETPLACE_SPREADSHEET_ID),
+        getSheetValues("'Order Financials'!A1:M100", MARKETPLACE_SPREADSHEET_ID),
+        getSheetValues("'Orders'!A1:T200", MARKETPLACE_SPREADSHEET_ID),
+        getSheetValues("'Pricing & Fees'!A1:J100", MARKETPLACE_SPREADSHEET_ID),
+        getSheetValues("'Sales History'!A1:F100", MARKETPLACE_SPREADSHEET_ID),
+        getSheetValues("'Merchandise Pricing Reference'!A1:G100", MARKETPLACE_SPREADSHEET_ID)
+      ]);
+      const [dashboardResult, fulfillmentResult, manufacturerResult, financialsResult, ordersResult, pricingResult, historyResult, referenceResult] = results;
+      if (dashboardResult.status === 'fulfilled') { renderMarketplaceDashboard(dashboardResult.value); document.getElementById('marketDashboardStatus').textContent = 'Marketplace dashboard connected to Google Sheets.'; }
+      else document.getElementById('marketDashboardStatus').textContent = 'Dashboard could not be loaded from Google Sheets.';
+      if (fulfillmentResult.status === 'fulfilled') renderDataTable('marketFulfillmentTable','marketFulfillmentStatus',fulfillmentResult.value,3,12);
+      else document.getElementById('marketFulfillmentStatus').textContent = 'Fulfillment Tracker could not be loaded from Google Sheets.';
+      if (manufacturerResult.status === 'fulfilled') {
+        const rows = manufacturerResult.value;
+        renderMarketSummary('marketManufacturerSummary',[['Vendor Minimum',marketValue(rows,'Vendor Minimum')],['Current Vendor Cost',marketValue(rows,'Current Vendor Cost')],['Order Status',marketValue(rows,'Order Status')]]);
+        renderDataTable('marketManufacturerTable','marketManufacturerStatus',rows,4,6);
+      } else document.getElementById('marketManufacturerStatus').textContent = 'Manufacturer Summary could not be loaded from Google Sheets.';
+      if (financialsResult.status === 'fulfilled') {
+        const rows = financialsResult.value;
+        renderMarketSummary('marketFinancialsSummary',[['Total Collected',marketValue(rows,'TOTAL COLLECTED')],['Net Profit',marketValue(rows,'NET PROFIT')]]);
+        renderDataTable('marketFinancialsTable','marketFinancialsStatus',rows,4,13);
+      } else document.getElementById('marketFinancialsStatus').textContent = 'Order Financials could not be loaded from Google Sheets.';
+      if (ordersResult.status === 'fulfilled') renderDataTable('marketOrdersTable','marketOrdersStatus',ordersResult.value,0,20,{sheetName:'Orders',spreadsheetId:MARKETPLACE_SPREADSHEET_ID});
+      else document.getElementById('marketOrdersStatus').textContent = 'Orders could not be loaded from Google Sheets.';
+      if (pricingResult.status === 'fulfilled') {
+        renderPricingConfig(pricingResult.value);
+        renderDataTable('marketPricingTable','marketPricingStatus',pricingResult.value,9,10,{sheetName:'Pricing & Fees',spreadsheetId:MARKETPLACE_SPREADSHEET_ID});
+      } else document.getElementById('marketPricingStatus').textContent = 'Pricing & Fees could not be loaded from Google Sheets.';
+      if (historyResult.status === 'fulfilled') {
+        const rows = historyResult.value;
+        renderMarketSummary('marketHistorySummary',[['Item Lines Sold',marketValue(rows,'Item Lines Sold')],['Pieces Sold',marketValue(rows,'Pieces')],['Sales',marketValue(rows,'Sales')],['Active Orders',marketValue(rows,'Active Orders')],['Vendor Cost',marketValue(rows,'Vendor Cost')]]);
+        renderDataTable('marketHistoryTable','marketHistoryStatus',rows,5,6);
+      } else document.getElementById('marketHistoryStatus').textContent = 'Sales History could not be loaded from Google Sheets.';
+      if (referenceResult.status === 'fulfilled') {
+        const rows = referenceResult.value;
+        renderMarketSummary('marketReferenceSummary',rows.slice(2,7).filter(row => row.some(value => String(value || '').trim())).map(row => [row[0] || row[1],row[2] || row[3] || row[1]]));
+        renderDataTable('marketReferenceTable','marketReferenceStatus',rows,7,7);
+      } else document.getElementById('marketReferenceStatus').textContent = 'Merchandise Pricing Reference could not be loaded from Google Sheets.';
+    }
+
     initializeGoogleAuth();
     const modules = {
       membership: {title:'Membership', description:'The central record for members, history, participation, and annual requirements.', tasks:['Member directory','Renewals and dues','Attendance','Waivers and vetting','Officers and honors','History and anniversaries']},
@@ -882,26 +1023,37 @@
       const sponsorWorkspace = document.getElementById('sponsorWorkspace');
       const bftWorkspace = document.getElementById('bftWorkspace');
       const bikeNightsWorkspace = document.getElementById('bikeNightsWorkspace');
+      const marketplaceWorkspace = document.getElementById('marketplaceWorkspace');
       const taskGrid = document.getElementById('detailTasks');
       if (key === 'sponsors') {
         taskGrid.innerHTML = '';
         sponsorWorkspace.classList.add('active');
         bftWorkspace.classList.remove('active');
         bikeNightsWorkspace.classList.remove('active');
+        marketplaceWorkspace.classList.remove('active');
       } else if (key === 'bft') {
         taskGrid.innerHTML = '';
         sponsorWorkspace.classList.remove('active');
         bftWorkspace.classList.add('active');
         bikeNightsWorkspace.classList.remove('active');
+        marketplaceWorkspace.classList.remove('active');
       } else if (key === 'bikenights') {
         taskGrid.innerHTML = '';
         sponsorWorkspace.classList.remove('active');
         bftWorkspace.classList.remove('active');
         bikeNightsWorkspace.classList.add('active');
+        marketplaceWorkspace.classList.remove('active');
+      } else if (key === 'marketplace') {
+        taskGrid.innerHTML = '';
+        sponsorWorkspace.classList.remove('active');
+        bftWorkspace.classList.remove('active');
+        bikeNightsWorkspace.classList.remove('active');
+        marketplaceWorkspace.classList.add('active');
       } else {
         sponsorWorkspace.classList.remove('active');
         bftWorkspace.classList.remove('active');
         bikeNightsWorkspace.classList.remove('active');
+        marketplaceWorkspace.classList.remove('active');
         taskGrid.innerHTML = item.tasks.map((task, i) => `<div class="task"><strong>${task}</strong><span>${i === 0 ? 'First working screen will be added during this module\'s build phase.' : 'Scheduled for a later build phase.'}</span></div>`).join('');
       }
       dashboard.classList.add('hidden'); detail.classList.add('active'); setActive(key); window.scrollTo({top:0,behavior:'smooth'}); sidebar.classList.remove('open');
@@ -923,6 +1075,11 @@
       const selected = button.dataset.bikeTab;
       document.querySelectorAll('[data-bike-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
       document.querySelectorAll('[data-bike-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.bikePanel === selected));
+    }));
+    document.querySelectorAll('[data-market-tab]').forEach(button => button.addEventListener('click', () => {
+      const selected = button.dataset.marketTab;
+      document.querySelectorAll('[data-market-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
+      document.querySelectorAll('[data-market-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.marketPanel === selected));
     }));
     document.getElementById('back').addEventListener('click', () => showModule('home'));
     document.getElementById('menuToggle').addEventListener('click', () => sidebar.classList.toggle('open'));
