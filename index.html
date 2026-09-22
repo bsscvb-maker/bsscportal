@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102a43">
+  <meta name="description" content="Private operations portal for BoneShakers Social Club.">
+  <title>BSSC Management Portal</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23102a43'/%3E%3Cpath d='M17 41c0-8 6-14 14-14h2c8 0 14 6 14 14' fill='none' stroke='%23f2b84b' stroke-width='6' stroke-linecap='round'/%3E%3Ccircle cx='21' cy='43' r='8' fill='none' stroke='white' stroke-width='4'/%3E%3Ccircle cx='43' cy='43' r='8' fill='none' stroke='white' stroke-width='4'/%3E%3Cpath d='M26 20h12' stroke='%23f2b84b' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --navy: #102a43;
+      --navy-2: #163a5f;
+      --gold: #f2b84b;
+      --gold-soft: #fff3d8;
+      --ink: #17212b;
+      --muted: #657382;
+      --line: #dfe6ec;
+      --canvas: #f4f7f9;
+      --surface: #ffffff;
+      --green: #16845b;
+      --shadow: 0 10px 28px rgba(16, 42, 67, .09);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--canvas); font: 16px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    button { font: inherit; }
+    .app { min-height: 100vh; display: grid; grid-template-columns: 270px 1fr; }
+    .sidebar { position: sticky; top: 0; height: 100vh; background: var(--navy); color: white; padding: 24px 18px; display: flex; flex-direction: column; }
+    .brand { display: flex; align-items: center; gap: 12px; padding: 2px 8px 24px; border-bottom: 1px solid rgba(255,255,255,.14); }
+    .brand-mark { width: 42px; height: 42px; border: 2px solid var(--gold); border-radius: 50%; display: grid; place-items: center; font-weight: 900; color: var(--gold); letter-spacing: -.04em; }
+    .brand strong { display: block; font-size: 1.05rem; }
+    .brand span { display: block; color: #b9c9d8; font-size: .8rem; }
+    .nav-label { margin: 24px 10px 8px; color: #91a9bd; font-size: .75rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .nav { display: grid; gap: 5px; }
+    .nav button { width: 100%; border: 0; color: #dce8f1; background: transparent; padding: 12px; border-radius: 10px; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 11px; }
+    .nav button:hover, .nav button.active { color: white; background: rgba(255,255,255,.11); }
+    .nav button.active { box-shadow: inset 3px 0 var(--gold); }
+    .nav-icon { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 7px; background: rgba(255,255,255,.10); font-size: .82rem; font-weight: 900; }
+    .sidebar-footer { margin-top: auto; border-top: 1px solid rgba(255,255,255,.14); padding: 18px 8px 2px; color: #b9c9d8; font-size: .82rem; }
+    .main { min-width: 0; }
+    .topbar { height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 0 32px; background: rgba(255,255,255,.94); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 4; backdrop-filter: blur(8px); }
+    .page-title { font-size: 1.15rem; font-weight: 800; }
+    .page-title small { display: block; color: var(--muted); font-size: .77rem; font-weight: 600; margin-top: 2px; }
+    .user { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .9rem; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--navy); color: white; font-weight: 800; }
+    .menu-toggle { display: none; border: 1px solid var(--line); background: white; border-radius: 9px; width: 42px; height: 42px; cursor: pointer; }
+    .content { max-width: 1420px; margin: 0 auto; padding: 34px 32px 56px; }
+    .welcome { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
+    h1 { margin: 0; font-size: clamp(1.75rem, 3vw, 2.55rem); line-height: 1.1; color: var(--navy); letter-spacing: -.035em; }
+    .welcome p { margin: 9px 0 0; color: var(--muted); max-width: 720px; }
+    .phase { flex: 0 0 auto; border: 1px solid #d8e2ea; background: white; border-radius: 999px; padding: 8px 13px; font-size: .82rem; font-weight: 750; color: var(--navy); }
+    .phase i { width: 8px; height: 8px; display: inline-block; border-radius: 50%; background: var(--green); margin-right: 7px; }
+    .module-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+    .module { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 22px; min-height: 230px; box-shadow: var(--shadow); display: flex; flex-direction: column; position: relative; overflow: hidden; }
+    .module::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--accent, var(--gold)); }
+    .module-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+    .module-icon { width: 48px; height: 48px; display: grid; place-items: center; color: var(--navy); background: var(--tint, var(--gold-soft)); border-radius: 13px; font-size: 1.15rem; font-weight: 900; }
+    .status { font-size: .72rem; font-weight: 850; text-transform: uppercase; letter-spacing: .08em; color: #52606d; background: #eef2f5; border-radius: 999px; padding: 6px 9px; }
+    .module h2 { margin: 18px 0 7px; color: var(--navy); font-size: 1.22rem; }
+    .module p { color: var(--muted); margin: 0 0 18px; font-size: .92rem; }
+    .module footer { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .source { color: var(--muted); font-size: .78rem; }
+    .open-btn { border: 0; background: var(--navy); color: white; border-radius: 9px; padding: 9px 13px; font-weight: 750; cursor: pointer; }
+    .open-btn:hover { background: var(--navy-2); }
+    .panel { margin-top: 26px; display: grid; grid-template-columns: 1.4fr .8fr; gap: 18px; }
+    .card { background: white; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px; }
+    .card h2 { margin: 0 0 16px; color: var(--navy); font-size: 1.08rem; }
+    .steps { display: grid; gap: 12px; }
+    .step { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 12px; }
+    .step-num { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: var(--navy); background: var(--gold-soft); font-weight: 900; }
+    .step strong { display: block; font-size: .91rem; }
+    .step span { color: var(--muted); font-size: .8rem; }
+    .step-state { color: #6c7782; font-size: .75rem; font-weight: 750; }
+    .rule { margin: 15px 0; height: 1px; background: var(--line); }
+    .notice { border-left: 4px solid var(--gold); background: #fffaf0; padding: 13px 14px; border-radius: 8px; color: #5f4a24; font-size: .87rem; }
+    .detail-view { display: none; }
+    .detail-view.active { display: block; }
+    .dashboard-view.hidden { display: none; }
+    .back { border: 0; background: transparent; color: var(--navy); font-weight: 800; padding: 0; margin-bottom: 18px; cursor: pointer; }
+    .detail-shell { background: white; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .detail-head { padding: 26px; color: white; background: var(--navy); }
+    .detail-head h1 { color: white; font-size: 1.8rem; }
+    .detail-head p { margin: 8px 0 0; color: #c6d6e4; }
+    .detail-body { padding: 24px; }
+    .task-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .task { border: 1px solid var(--line); border-radius: 12px; padding: 17px; background: #fafcfd; }
+    .task strong { display: block; color: var(--navy); margin-bottom: 6px; }
+    .task span { color: var(--muted); font-size: .87rem; }
+    @media (max-width: 1050px) {
+      .module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .panel { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      .app { display: block; }
+      .sidebar { position: fixed; inset: 0 auto 0 0; z-index: 10; width: 280px; transform: translateX(-102%); transition: transform .2s ease; }
+      .sidebar.open { transform: translateX(0); }
+      .menu-toggle { display: grid; place-items: center; }
+      .topbar { height: 68px; padding: 0 18px; }
+      .page-title small, .user span { display: none; }
+      .content { padding: 24px 18px 42px; }
+      .welcome { display: block; }
+      .phase { display: inline-block; margin-top: 16px; }
+      .module-grid, .task-grid { grid-template-columns: 1fr; }
+      .module { min-height: 210px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-mark">BS</div><div><strong>BoneShakers</strong><span>Management Portal</span></div></div>
+      <div class="nav-label">Portal</div>
+      <nav class="nav" aria-label="Portal navigation">
+        <button class="active" data-module="home"><span class="nav-icon">H</span>Home</button>
+        <button data-module="membership"><span class="nav-icon">M</span>Membership</button>
+        <button data-module="finance"><span class="nav-icon">$</span>Finance</button>
+        <button data-module="bft"><span class="nav-icon">B</span>Bikes for Tykes</button>
+        <button data-module="marketplace"><span class="nav-icon">O</span>Marketplace</button>
+        <button data-module="sponsors"><span class="nav-icon">S</span>Sponsorships</button>
+      </nav>
+      <div class="nav-label">System</div>
+      <nav class="nav"><button data-module="admin"><span class="nav-icon">A</span>Administration</button></nav>
+      <div class="sidebar-footer">Private BSSC workspace<br>Phase 1: portal foundation</div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:12px"><button class="menu-toggle" id="menuToggle" aria-label="Open navigation">☰</button><div class="page-title">BSSC Management Portal<small>One place for club operations</small></div></div>
+        <div class="user"><span>Administrator</span><div class="avatar">TH</div></div>
+      </header>
+
+      <div class="content">
+        <section class="dashboard-view" id="dashboard">
+          <div class="welcome"><div><h1>Club operations, organized.</h1><p>Select an area below. We will move each workbook into the portal in stages while preserving the original files as backups.</p></div><div class="phase"><i></i>Portal foundation ready</div></div>
+
+          <div class="module-grid">
+            <article class="module" style="--accent:#3d7fb1;--tint:#e8f3fb"><div class="module-top"><div class="module-icon">M</div><div class="status">Planned</div></div><h2>Membership</h2><p>Member profiles, renewals, attendance, waivers, vetting, officers, lifers, anniversaries, and history.</p><footer><span class="source">37 workbook sections mapped</span><button class="open-btn" data-open="membership">View layout</button></footer></article>
+            <article class="module" style="--accent:#16845b;--tint:#e5f6ef"><div class="module-top"><div class="module-icon">$</div><div class="status">Planned</div></div><h2>Finance</h2><p>Transactions, fund balances, operating budgets, event budgets, reconciliations, and reporting.</p><footer><span class="source">14 workbook sections mapped</span><button class="open-btn" data-open="finance">View layout</button></footer></article>
+            <article class="module" style="--accent:#d98c16;--tint:#fff1d9"><div class="module-top"><div class="module-icon">B</div><div class="status">Planned</div></div><h2>Bikes for Tykes</h2><p>Donations, sponsors, ticket control, event tracking, purchase budgets, and financial synchronization.</p><footer><span class="source">6 workbook sections mapped</span><button class="open-btn" data-open="bft">View layout</button></footer></article>
+            <article class="module" style="--accent:#8c5bb5;--tint:#f2eafb"><div class="module-top"><div class="module-icon">O</div><div class="status">Planned</div></div><h2>Marketplace</h2><p>Orders, fulfillment, pricing, fees, manufacturers, sales history, and merchandise reporting.</p><footer><span class="source">8 workbook sections mapped</span><button class="open-btn" data-open="marketplace">View layout</button></footer></article>
+            <article class="module" style="--accent:#b64e50;--tint:#fbeaec"><div class="module-top"><div class="module-icon">S</div><div class="status">Planned</div></div><h2>Sponsorships</h2><p>Current and prospective sponsors, follow-up status, documentation requests, and sponsor reporting.</p><footer><span class="source">4 workbook sections mapped</span><button class="open-btn" data-open="sponsors">View layout</button></footer></article>
+            <article class="module" style="--accent:#52606d;--tint:#edf1f4"><div class="module-top"><div class="module-icon">A</div><div class="status">Foundation</div></div><h2>Administration</h2><p>User access, shared lists, permissions, backups, exports, and the system change history.</p><footer><span class="source">Built as modules are activated</span><button class="open-btn" data-open="admin">View layout</button></footer></article>
+          </div>
+
+          <div class="panel">
+            <section class="card"><h2>Recommended build order</h2><div class="steps"><div class="step"><div class="step-num">1</div><div><strong>Membership foundation</strong><span>Create the shared people and officer records used throughout the portal.</span></div><div class="step-state">NEXT</div></div><div class="step"><div class="step-num">2</div><div><strong>Finance transactions</strong><span>Move transaction entry and core summaries into the website.</span></div><div class="step-state">QUEUED</div></div><div class="step"><div class="step-num">3</div><div><strong>Connected operations</strong><span>Add Bikes for Tykes, Marketplace, and Sponsorship workflows.</span></div><div class="step-state">QUEUED</div></div></div></section>
+            <aside class="card"><h2>Data protection</h2><div class="notice">The original spreadsheets remain unchanged. Each module will be tested against its workbook before the portal becomes the primary system.</div><div class="rule"></div><div style="color:var(--muted);font-size:.87rem">Access controls, backups, and change history will be added before live financial or membership data is entered.</div></aside>
+          </div>
+        </section>
+
+        <section class="detail-view" id="detail">
+          <button class="back" id="back">← Back to portal home</button>
+          <div class="detail-shell"><div class="detail-head"><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div></div></div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    const modules = {
+      membership: {title:'Membership', description:'The central record for members, history, participation, and annual requirements.', tasks:['Member directory','Renewals and dues','Attendance','Waivers and vetting','Officers and honors','History and anniversaries']},
+      finance: {title:'Finance', description:'Club finances, transactions, budgets, reconciliations, and clear reporting.', tasks:['Transaction entry','Financial dashboard','Fund balances','Operating budget','Event budgets','Reports and exports']},
+      bft: {title:'Bikes for Tykes', description:'Donation, ticket, sponsor, purchasing, and event financial management.', tasks:['Donation tracking','Ticket control','Sponsor records','Purchase budget','Event dashboard','Finance synchronization']},
+      marketplace: {title:'Marketplace', description:'Order-to-fulfillment management with pricing, fees, and sales reporting.', tasks:['Order entry','Fulfillment queue','Pricing and fees','Manufacturer summary','Sales history','Finance synchronization']},
+      sponsors: {title:'Sponsorships', description:'Manage active sponsors, prospects, outreach, and documentation requests.', tasks:['Sponsor dashboard','Current sponsors','Prospective sponsors','Contact history','Documents requested','Renewal reporting']},
+      admin: {title:'Administration', description:'Control access, shared lists, backups, and system settings.', tasks:['Users and access','Roles and permissions','Shared dropdown lists','Backups','Data exports','Change history']}
+    };
+    const dashboard = document.getElementById('dashboard');
+    const detail = document.getElementById('detail');
+    const sidebar = document.getElementById('sidebar');
+    function showModule(key) {
+      if (key === 'home') { dashboard.classList.remove('hidden'); detail.classList.remove('active'); setActive('home'); return; }
+      const item = modules[key]; if (!item) return;
+      document.getElementById('detailTitle').textContent = item.title;
+      document.getElementById('detailDescription').textContent = item.description;
+      document.getElementById('detailTasks').innerHTML = item.tasks.map((task, i) => `<div class="task"><strong>${task}</strong><span>${i === 0 ? 'First working screen will be added during this module\'s build phase.' : 'Scheduled for a later build phase.'}</span></div>`).join('');
+      dashboard.classList.add('hidden'); detail.classList.add('active'); setActive(key); window.scrollTo({top:0,behavior:'smooth'}); sidebar.classList.remove('open');
+    }
+    function setActive(key) { document.querySelectorAll('[data-module]').forEach(b => b.classList.toggle('active', b.dataset.module === key)); }
+    document.querySelectorAll('[data-module]').forEach(b => b.addEventListener('click', () => showModule(b.dataset.module)));
+    document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => showModule(b.dataset.open)));
+    document.getElementById('back').addEventListener('click', () => showModule('home'));
+    document.getElementById('menuToggle').addEventListener('click', () => sidebar.classList.toggle('open'));
+  </script>
+</body>
+</html>
