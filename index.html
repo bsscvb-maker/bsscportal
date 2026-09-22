@@ -161,6 +161,7 @@
     .budget-table th:nth-child(3), .budget-table td:nth-child(3) { width: 25%; text-align: right; }
     .budget-table tr.budget-section-row td { color: white; background: #050506 !important; border-color: #303034; font-weight: 900; font-size: 1rem; }
     .budget-table tr.budget-subhead-row td { padding-top: 15px; padding-bottom: 7px; background: white !important; font-weight: 900; font-size: 1rem; border-bottom: 0; }
+    .budget-table tr.subtotal-row td { background: white !important; border-top: 1px solid var(--line); font-weight: 400; }
     .budget-table tr.total-row td { background: #dff2e5 !important; border-top: 2px solid #157347; font-weight: 900; }
     .budget-table tr.grand-total-row td { color: white; background: #050506 !important; border-top: 4px solid var(--gold); font-weight: 900; font-size: 1.03rem; }
     .edit-help { margin: -5px 0 14px; padding: 10px 12px; border-left: 4px solid var(--gold); background: #fff1f3; color: #6b0d1c; border-radius: 7px; font-size: .86rem; font-weight: 750; }
@@ -513,11 +514,12 @@
       const ticketPriceBar = isTicketLedger ? `<div class="ticket-price-bar"><strong>Ticket Cost</strong><span class="ticket-price-value" data-ticket-price="true" data-value="${ticketPrice}" ${editMode ? 'contenteditable="true" spellcheck="false"' : ''}>${money(ticketPrice)}</span></div>` : '';
       target.innerHTML = `${toolbar}${editMode ? '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>' : ''}${ticketPriceBar}<div class="table-wrap"><table class="${tableClass}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
         const labels = item.row.map(value => String(value).trim().toLowerCase());
-        const isTotal = labels.some(value => value === 'total' || value.includes('subtotal') || value.endsWith(' total') || value.includes('total with locks'));
+        const isSubtotal = labels.some(value => value.includes('subtotal'));
+        const isTotal = !isSubtotal && labels.some(value => value === 'total' || value.endsWith(' total') || value.includes('total with locks'));
         const isBudgetSection = isBudgetTable && labels[1] === 'quantity' && labels[2] === 'cost';
         const isBudgetSubhead = isBudgetTable && !isBudgetSection && ['courthouse horizons','ymca','combined'].includes(labels[0]);
         const isGrandTotal = isBudgetTable && labels.some(value => value.includes('grand total with locks'));
-        const rowClasses = [isTotal ? 'total-row' : '', isBudgetSection ? 'budget-section-row' : '', isBudgetSubhead ? 'budget-subhead-row' : '', isGrandTotal ? 'grand-total-row' : ''].filter(Boolean).join(' ');
+        const rowClasses = [isTotal ? 'total-row' : '', isSubtotal ? 'subtotal-row' : '', isBudgetSection ? 'budget-section-row' : '', isBudgetSubhead ? 'budget-subhead-row' : '', isGrandTotal ? 'grand-total-row' : ''].filter(Boolean).join(' ');
         return `<tr class="${rowClasses}">${finalHeaders.map((_, columnIndex) => {
           const editable = editMode;
           let shownValue = item.row[columnIndex] || '';
