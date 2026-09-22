@@ -164,6 +164,24 @@
     .budget-table tr.subtotal-row td { background: white !important; border-top: 1px solid var(--line); font-weight: 400; }
     .budget-table tr.total-row td { background: #dff2e5 !important; border-top: 2px solid #157347; font-weight: 900; }
     .budget-table tr.grand-total-row td { color: white; background: #050506 !important; border-top: 4px solid var(--gold); font-weight: 900; font-size: 1.03rem; }
+    .bft-dashboard { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: white; }
+    .bft-dashboard-title { margin: 0; padding: 16px 20px; color: white; background: #111113; border-bottom: 4px solid var(--gold); text-align: center; font-size: 1.45rem; }
+    .bft-dashboard-grid { display: grid; grid-template-columns: minmax(320px, .86fr) minmax(420px, 1.14fr); gap: 20px; padding: 20px; }
+    .bft-dashboard-column { display: grid; align-content: start; gap: 16px; }
+    .finance-box { border: 1px solid #2d2d30; background: white; }
+    .finance-box h3 { margin: 0; padding: 7px 10px; color: white; background: #111113; border-bottom: 3px solid var(--gold); font-size: 1rem; }
+    .finance-box-body { padding: 12px 10px; }
+    .finance-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: baseline; min-height: 25px; }
+    .finance-row span:first-child { min-width: 0; }
+    .finance-row strong { white-space: nowrap; text-align: right; }
+    .finance-row.emphasis { font-weight: 900; }
+    .finance-spacer { height: 10px; }
+    .goal-status { padding: 4px 10px; color: #a85f00; background: #fff7dc; font-weight: 900; text-transform: capitalize; }
+    .dashboard-progress { height: 16px; margin-top: 8px; border: 1px solid #b8b8bd; background: #ededf0; overflow: hidden; }
+    .dashboard-progress span { display: block; height: 100%; background: var(--gold); }
+    .dashboard-progress.ticket-progress span { background: #b10f2e; }
+    .progress-label { margin-top: 4px; text-align: center; color: var(--muted); font-size: .78rem; }
+    @media (max-width: 950px) { .bft-dashboard-grid { grid-template-columns: 1fr; } }
     .edit-help { margin: -5px 0 14px; padding: 10px 12px; border-left: 4px solid var(--gold); background: #fff1f3; color: #6b0d1c; border-radius: 7px; font-size: .86rem; font-weight: 750; }
     .tracking-table { width: max-content; min-width: 2550px; table-layout: fixed; }
     .tracking-table th, .tracking-table td { min-width: 115px; white-space: normal; overflow-wrap: anywhere; }
@@ -473,6 +491,83 @@
       return Number.isFinite(number) ? number.toLocaleString('en-US', {style:'currency', currency:'USD'}) : value || '—';
     }
 
+    function renderBftDashboard(rows) {
+      const get = label => findValue(rows, label);
+      const percent = value => {
+        const number = Number(String(value || '').replace('%', '').trim());
+        return Number.isFinite(number) ? Math.max(0, Math.min(100, number)) : 0;
+      };
+      const row = (label, value, emphasis = false) => `<div class="finance-row ${emphasis ? 'emphasis' : ''}"><span>${esc(label)}</span><strong>${esc(value || '')}</strong></div>`;
+      const progressTowardGoal = get('Progress Toward Goal:');
+      const ticketsSoldPercent = get('% of Tickets Sold:');
+      document.getElementById('bftMetrics').innerHTML = '';
+      document.getElementById('bftDashboardTable').innerHTML = `
+        <div class="bft-dashboard">
+          <h2 class="bft-dashboard-title">Bikes for Tykes Charity Concert — Financial Dashboard</h2>
+          <div class="bft-dashboard-grid">
+            <div class="bft-dashboard-column">
+              <section class="finance-box"><h3>Projected Payout</h3><div class="finance-box-body">
+                ${row('Projected Payout', get('Projected Payout'), true)}
+                <div class="finance-spacer"></div>
+                ${row('Check Number:', get('Check Number:'))}
+                ${row('Date Paid:', get('Date Paid:'))}
+              </div></section>
+              <section class="finance-box"><h3>Progress Toward Goal</h3><div class="finance-box-body">
+                ${row('Goal Amount:', get('Goal Amount:'))}
+                ${row('Total Raised So Far:', get('Total Raised So Far:'))}
+                ${row('Remaining to Goal:', get('Remaining to Goal:'))}
+                ${row('Progress Toward Goal:', progressTowardGoal, true)}
+                <div class="dashboard-progress"><span style="width:${percent(progressTowardGoal)}%"></span></div>
+                ${row('Goal Status:', get('Goal Status:'), true)}
+              </div></section>
+              <section class="finance-box"><h3>In-Kind Support</h3><div class="finance-box-body">
+                ${row('Total Estimated Value:', get('Total Estimated Value:'))}
+                <div class="finance-spacer"></div>
+                ${row('Total Number of Donated Items:', get('Total Number of Donated Items:'))}
+                <div class="finance-spacer"></div>
+                ${row('Receipts Issued (Yes):', get('Receipts Issued (Yes):'))}
+                ${row('Receipts Pending:', get('Receipts Pending:'))}
+              </div></section>
+              <section class="finance-box"><h3>Official Payout Record</h3><div class="finance-box-body">
+                ${row('Final Bikes for Tykes Payout Amount:', get('Final Bikes for Tykes Payout Amount:'), true)}
+                <div class="finance-spacer"></div>
+                ${row('Check Number:', get('Check Number:'))}
+                ${row('Date Paid:', get('Date Paid:'))}
+                ${row('Paid By (Officer Name):', get('Paid By (Officer Name):'))}
+                ${row('Payment Method:', get('Payment Method:'))}
+                ${row('Event Status:', get('Event Status:'), true)}
+              </div></section>
+            </div>
+            <div class="bft-dashboard-column">
+              <section class="finance-box"><h3>Funds Raised Overview</h3><div class="finance-box-body">
+                ${row('Ticket Sales (Gross):', get('Ticket Sales (Gross):'))}
+                ${row('Donations (Net of Processing Fees):', get('Donations (Net of Processing Fees):'))}
+                ${row('Total Raised (Ticket Sales + Donations):', get('Total Raised (Ticket Sales + Donations):'))}
+                ${row('Less Fees & Expenses:', get('Less Fees & Expenses:'))}
+                ${row('Available for Bikes for Tykes Today:', get('Available for Bikes for Tykes Today:'), true)}
+              </div></section>
+              <section class="finance-box"><h3>Ticket Sales Performance</h3><div class="finance-box-body">
+                ${row('Max Tickets Available:', get('Max Tickets Available:'))}
+                <div class="finance-spacer"></div>
+                ${row('Ticket Price:', get('Ticket Price:'))}
+                ${row('Maximum Ticket Revenue:', get('Maximum Ticket Revenue:'))}
+                <div class="finance-spacer"></div>
+                ${row('Tickets Sold:', get('Tickets Sold:'))}
+                ${row('Tickets Remaining:', get('Tickets Remaining:'))}
+                ${row('% of Tickets Sold:', ticketsSoldPercent, true)}
+                <div class="dashboard-progress ticket-progress"><span style="width:${percent(ticketsSoldPercent)}%"></span></div>
+                <div class="progress-label">Progress Bar</div>
+              </div></section>
+              <section class="finance-box"><h3>Expenses &amp; Fees</h3><div class="finance-box-body">
+                ${row('Merchandise / Event Costs:', get('Merchandise / Event Costs:'))}
+                <div class="finance-spacer"></div>
+                ${row('Event Expenses:', get('Event Expenses:'), true)}
+              </div></section>
+            </div>
+          </div>
+        </div>`;
+    }
+
     const tableEditModes = {};
     const tableRenderCache = {};
     const tablePendingEdits = {};
@@ -612,14 +707,7 @@
       const [dashboardResult, ticketResult, donationResult, financeResult, budgetResult, instructionResult] = results;
       if (dashboardResult.status === 'fulfilled') {
         const dashboardRows = dashboardResult.value;
-        const metrics = [
-          ['Projected payout', money(findValue(dashboardRows, 'Projected Payout'))],
-          ['Total raised', money(findValue(dashboardRows, 'Total Raised So Far:') || findValue(dashboardRows, 'Total Raised (Ticket Sales + Donations):'))],
-          ['Remaining to goal', money(findValue(dashboardRows, 'Remaining to Goal:'))],
-          ['Tickets sold', findValue(dashboardRows, 'Tickets Sold:') || '—']
-        ];
-        document.getElementById('bftMetrics').innerHTML = metrics.map(([label, value]) => `<div class="metric"><div class="metric-label">${esc(label)}</div><div class="metric-value">${esc(value)}</div><div class="metric-note">Live workbook value</div></div>`).join('');
-        document.getElementById('bftDashboardTable').innerHTML = '';
+        renderBftDashboard(dashboardRows);
         document.getElementById('bftDashboardStatus').textContent = 'Financial dashboard connected to Google Sheets.';
       } else {
         document.getElementById('bftDashboardStatus').textContent = 'DashBoard could not be loaded from Google Sheets.';
