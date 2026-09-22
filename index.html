@@ -131,6 +131,15 @@
     .data-table td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
     .data-table tr:last-child td { border-bottom: 0; }
     .data-table tr.total-row td { font-weight: 900; border-top: 2px solid var(--gold); background: #f7f7f8; }
+    .data-table td.editable-cell { cursor: pointer; background: #fffdfd; }
+    .data-table td.editable-cell:hover { outline: 2px solid var(--gold); outline-offset: -2px; background: #fff1f3; }
+    .cell-editor { min-width: 130px; }
+    .cell-editor input { width: 100%; min-width: 120px; padding: 7px 8px; border: 2px solid var(--gold); border-radius: 7px; font: inherit; }
+    .cell-actions { display: flex; gap: 6px; margin-top: 7px; }
+    .cell-actions button { border: 0; border-radius: 6px; padding: 5px 8px; cursor: pointer; font-weight: 800; }
+    .cell-save { color: white; background: var(--gold); }
+    .cell-cancel { color: var(--ink); background: #e7e7e9; }
+    .edit-help { margin: -5px 0 14px; color: var(--muted); font-size: .82rem; }
     .empty-state { padding: 24px; color: var(--muted); text-align: center; }
     @media (max-width: 1050px) {
       .module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -252,8 +261,8 @@
     const GOOGLE_CLIENT_ID = '881518334290-kimg628u5oriddlrqoq6vb619m8gn13s.apps.googleusercontent.com';
     const SPREADSHEET_ID = '14ZFdT1sA04z6Hp-iVaX2uRNjJq-JBoxmY1mvfL9X-Bk';
     const BFT_SPREADSHEET_ID = '1cFhb2-Um1rBKj81dFeNWLSfKxuNfc768AFLbcjXdudY';
-    const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets.readonly';
-    const SESSION_KEY = 'bssc-google-session';
+    const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
+    const SESSION_KEY = 'bssc-google-session-edit-v1';
     const IDLE_TIMEOUT_MS = 60 * 60 * 1000;
     let tokenClient;
     let accessToken = '';
@@ -352,6 +361,29 @@
       return (await response.json()).values || [];
     }
 
+    async function updateSheetCell(spreadsheetId, sheetName, rowNumber, columnIndex, value) {
+      const column = columnNumberToLetters(columnIndex + 1);
+      const range = `'${sheetName.replace(/'/g, "''")}'!${column}${rowNumber}`;
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json'},
+        body: JSON.stringify({range, majorDimension: 'ROWS', values: [[value]]})
+      });
+      if (!response.ok) throw new Error(`Google Sheets returned ${response.status}`);
+      return response.json();
+    }
+
+    function columnNumberToLetters(number) {
+      let result = '';
+      while (number > 0) {
+        number -= 1;
+        result = String.fromCharCode(65 + (number % 26)) + result;
+        number = Math.floor(number / 26);
+      }
+      return result;
+    }
+
     function esc(value) {
       return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
     }
@@ -409,21 +441,57 @@
       return Number.isFinite(number) ? number.toLocaleString('en-US', {style:'currency', currency:'USD'}) : value || '—';
     }
 
-    function renderDataTable(targetId, statusId, rows, headerRowIndex = 0, maxColumns = 16) {
+    function renderDataTable(targetId, statusId, rows, headerRowIndex = 0, maxColumns = 16, editOptions = null) {
       const target = document.getElementById(targetId);
       const status = document.getElementById(statusId);
-      const cleaned = compactRows(rows);
-      if (!cleaned.length || !cleaned[headerRowIndex]) {
+      if (!rows.length || !rows[headerRowIndex]) {
         target.innerHTML = '<div class="empty-state">No records found.</div>';
         status.textContent = 'Connected to Google Sheets.';
         return;
       }
-      const headers = cleaned[headerRowIndex].slice(0, maxColumns);
-      const width = Math.min(maxColumns, Math.max(headers.length, ...cleaned.slice(headerRowIndex + 1).map(row => row.length)));
+      const headers = rows[headerRowIndex].slice(0, maxColumns);
+      const indexedData = rows.map((row, index) => ({row, sourceIndex:index})).slice(headerRowIndex + 1).filter(item => item.row.some(value => String(value ?? '').trim()));
+      const width = Math.min(maxColumns, Math.max(headers.length, ...indexedData.map(item => item.row.length)));
       const finalHeaders = Array.from({length: width}, (_, i) => headers[i] || '');
-      const data = cleaned.slice(headerRowIndex + 1).filter(row => row.some(Boolean));
-      target.innerHTML = `<div class="table-wrap"><table class="data-table"><thead><tr>${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${data.map(row => `<tr class="${row.some(value => String(value).trim().toLowerCase() === 'total') ? 'total-row' : ''}">${finalHeaders.map((_, i) => `<td>${esc(row[i] || '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
-      status.textContent = `${data.length} row${data.length === 1 ? '' : 's'} loaded from Google Sheets.`;
+      target.innerHTML = `${editOptions ? '<div class="edit-help">Click a highlighted cell to edit it. Formula and total cells are protected.</div>' : ''}<div class="table-wrap"><table class="data-table"><thead><tr>${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
+        const labels = item.row.map(value => String(value).trim().toLowerCase());
+        const isTotal = labels.some(value => value === 'total' || value.includes('subtotal') || value.includes('combined total') || value.includes('grand total'));
+        return `<tr class="${isTotal ? 'total-row' : ''}">${finalHeaders.map((_, columnIndex) => {
+          const editable = editOptions && !isTotal && editOptions.editableColumns.includes(columnIndex);
+          return `<td class="${editable ? 'editable-cell' : ''}" ${editable ? `data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${item.sourceIndex + 1}" data-column="${columnIndex}" data-value="${esc(item.row[columnIndex] || '')}" title="Click to edit"` : ''}>${esc(item.row[columnIndex] || '')}</td>`;
+        }).join('')}</tr>`;
+      }).join('')}</tbody></table></div>`;
+      status.textContent = `${indexedData.length} row${indexedData.length === 1 ? '' : 's'} loaded from Google Sheets${editOptions ? ' — editing enabled.' : '.'}`;
+      target.querySelectorAll('[data-edit-cell="true"]').forEach(cell => cell.addEventListener('click', () => beginCellEdit(cell, editOptions)));
+    }
+
+    function beginCellEdit(cell, editOptions) {
+      if (cell.querySelector('input')) return;
+      const original = cell.dataset.value || '';
+      cell.innerHTML = `<div class="cell-editor"><input value="${esc(original)}" aria-label="Edit spreadsheet value"><div class="cell-actions"><button class="cell-save">Save</button><button class="cell-cancel">Cancel</button></div></div>`;
+      const input = cell.querySelector('input');
+      input.focus();
+      input.select();
+      cell.querySelector('.cell-cancel').addEventListener('click', event => {
+        event.stopPropagation();
+        cell.innerHTML = esc(original);
+      });
+      cell.querySelector('.cell-save').addEventListener('click', async event => {
+        event.stopPropagation();
+        const button = event.currentTarget;
+        button.disabled = true;
+        button.textContent = 'Saving…';
+        try {
+          await updateSheetCell(BFT_SPREADSHEET_ID, cell.dataset.sheet, Number(cell.dataset.row), Number(cell.dataset.column), input.value);
+          cell.dataset.value = input.value;
+          cell.innerHTML = esc(input.value);
+          await loadBftData();
+        } catch (error) {
+          button.disabled = false;
+          button.textContent = 'Save';
+          alert('The change could not be saved. Sign out and sign back in, then try again.');
+        }
+      });
     }
 
     async function loadBftData() {
@@ -456,10 +524,13 @@
         if (result.status === 'fulfilled') renderDataTable(targetId, statusId, result.value, headerIndex, columns);
         else document.getElementById(statusId).textContent = `${sheetName} could not be loaded from Google Sheets.`;
       };
-      renderResult(ticketResult, 'bftTicketsTable', 'bftTicketsStatus', 0, 12, 'Ticket Control Ledger');
-      renderResult(donationResult, 'bftDonationsTable', 'bftDonationsStatus', 1, 16, 'Tracking Tab');
+      if (ticketResult.status === 'fulfilled') renderDataTable('bftTicketsTable', 'bftTicketsStatus', ticketResult.value, 0, 12, {sheetName:'Ticket Control Ledger', editableColumns:[1,2,3,7,9,10,11]});
+      else document.getElementById('bftTicketsStatus').textContent = 'Ticket Control Ledger could not be loaded from Google Sheets.';
+      if (donationResult.status === 'fulfilled') renderDataTable('bftDonationsTable', 'bftDonationsStatus', donationResult.value, 1, 22, {sheetName:'Tracking Tab', editableColumns:[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]});
+      else document.getElementById('bftDonationsStatus').textContent = 'Tracking Tab could not be loaded from Google Sheets.';
       renderResult(financeResult, 'bftFinanceTable', 'bftFinanceStatus', 1, 10, 'Finance Sync');
-      renderResult(budgetResult, 'bftBudgetTable', 'bftBudgetStatus', 1, 3, 'Bikes for Tykes Purchase Budget');
+      if (budgetResult.status === 'fulfilled') renderDataTable('bftBudgetTable', 'bftBudgetStatus', budgetResult.value, 1, 4, {sheetName:'Bikes for Tykes Purchase Budget', editableColumns:[2,3]});
+      else document.getElementById('bftBudgetStatus').textContent = 'Bikes for Tykes Purchase Budget could not be loaded from Google Sheets.';
       renderResult(instructionResult, 'bftInstructionsTable', 'bftInstructionsStatus', 3, 2, 'Instructions & Legend');
     }
 
