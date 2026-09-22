@@ -262,7 +262,7 @@
               <button class="sponsor-tab" data-bft-tab="donations">Tracking Tab</button>
               <button class="sponsor-tab" data-bft-tab="instructions">Instructions &amp; Legend</button>
               <button class="sponsor-tab" data-bft-tab="finance">Finance Sync</button>
-              <button class="sponsor-tab" data-bft-tab="budget">Bikes for Tykes Purchase Budget</button>
+              <button class="sponsor-tab" data-bft-tab="budget">Purchase Budget</button>
             </div>
             <section class="sponsor-panel active" data-bft-panel="dashboard">
               <div class="data-status" id="bftDashboardStatus">Sign in to load the Bikes for Tykes dashboard.</div>
@@ -273,7 +273,7 @@
             <section class="sponsor-panel" data-bft-panel="donations"><div class="coming-soon"><h2>Tracking Tab</h2><div class="data-status" id="bftDonationsStatus">Sign in to load donation records.</div><div id="bftDonationsTable"></div></div></section>
             <section class="sponsor-panel" data-bft-panel="instructions"><div class="coming-soon"><h2>Instructions &amp; Legend</h2><div class="data-status" id="bftInstructionsStatus">Sign in to load workbook instructions.</div><div id="bftInstructionsTable"></div></div></section>
             <section class="sponsor-panel" data-bft-panel="finance"><div class="coming-soon"><h2>Finance Sync</h2><div class="data-status" id="bftFinanceStatus">Sign in to load synchronized transactions.</div><div id="bftFinanceTable"></div></div></section>
-            <section class="sponsor-panel" data-bft-panel="budget"><div class="coming-soon"><h2>Bikes for Tykes Purchase Budget</h2><div class="data-status" id="bftBudgetStatus">Sign in to load the purchase budget.</div><div id="bftBudgetTable"></div></div></section>
+            <section class="sponsor-panel" data-bft-panel="budget"><div class="coming-soon"><h2>Purchase Budget</h2><div class="data-status" id="bftBudgetStatus">Sign in to load the purchase budget.</div><div id="bftBudgetTable"></div></div></section>
           </div></div></div>
         </section>
       </div>
@@ -590,7 +590,7 @@
           getSheetValues("'Ticket Control Ledger'!A1:M100", BFT_SPREADSHEET_ID),
           getSheetValues("'Tracking Tab'!A1:V250", BFT_SPREADSHEET_ID),
           getSheetValues("'Finance Sync'!A1:J250", BFT_SPREADSHEET_ID),
-          getSheetValues("'Bikes for Tykes Purchase Budget'!A1:E60", BFT_SPREADSHEET_ID),
+          getSheetValues("'Purchase Budget'!A1:E46", BFT_SPREADSHEET_ID),
           getSheetValues("'Instructions & Legend'!A1:C100", BFT_SPREADSHEET_ID)
       ]);
       const [dashboardResult, ticketResult, donationResult, financeResult, budgetResult, instructionResult] = results;
@@ -617,8 +617,8 @@
       if (donationResult.status === 'fulfilled') renderDataTable('bftDonationsTable', 'bftDonationsStatus', donationResult.value, 2, 22, {sheetName:'Tracking Tab'});
       else document.getElementById('bftDonationsStatus').textContent = 'Tracking Tab could not be loaded from Google Sheets.';
       renderResult(financeResult, 'bftFinanceTable', 'bftFinanceStatus', 1, 10, 'Finance Sync');
-      if (budgetResult.status === 'fulfilled') renderDataTable('bftBudgetTable', 'bftBudgetStatus', budgetResult.value, 1, 5, {sheetName:'Bikes for Tykes Purchase Budget'});
-      else document.getElementById('bftBudgetStatus').textContent = 'Bikes for Tykes Purchase Budget could not be loaded from Google Sheets.';
+      if (budgetResult.status === 'fulfilled') renderDataTable('bftBudgetTable', 'bftBudgetStatus', budgetResult.value, 2, 3, {sheetName:'Purchase Budget'});
+      else document.getElementById('bftBudgetStatus').textContent = 'Purchase Budget could not be loaded from Google Sheets.';
       renderResult(instructionResult, 'bftInstructionsTable', 'bftInstructionsStatus', 3, 2, 'Instructions & Legend');
     }
 
