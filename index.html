@@ -174,6 +174,9 @@
     .finance-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: baseline; min-height: 25px; }
     .finance-row span:first-child { min-width: 0; }
     .finance-row strong { white-space: nowrap; text-align: right; }
+    .finance-row .dashboard-edit-cell[contenteditable="true"] { min-width: 110px; padding: 2px 6px; border-radius: 5px; background: #fff1f3; outline: 1px dashed var(--gold); cursor: text; }
+    .finance-row .dashboard-edit-cell[contenteditable="true"]:focus { background: white; outline: 2px solid var(--gold); }
+    .finance-row .dashboard-edit-cell.pending-change { background: #fff0bd; box-shadow: inset 0 -3px 0 #d79b00; }
     .finance-row.emphasis { font-weight: 900; }
     .finance-spacer { height: 10px; }
     .goal-status { padding: 4px 10px; color: #a85f00; background: #fff7dc; font-weight: 900; text-transform: capitalize; }
@@ -523,6 +526,7 @@
     }
 
     function renderBftDashboard(rows) {
+      bftDashboardRows = rows;
       const get = label => {
         const wanted = label.replace(/\s+/g, ' ').trim().toLowerCase();
         for (const sourceRow of rows) {
@@ -537,11 +541,20 @@
         const number = Number(String(value || '').replace('%', '').trim());
         return Number.isFinite(number) ? Math.max(0, Math.min(100, number)) : 0;
       };
-      const row = (label, value, emphasis = false) => `<div class="finance-row ${emphasis ? 'emphasis' : ''}"><span>${esc(label)}</span><strong>${esc(value || '')}</strong></div>`;
+      const cell = (rowNumber, columnIndex) => String((rows[rowNumber - 1] && rows[rowNumber - 1][columnIndex]) || '');
+      const row = (label, value, emphasis = false, editable = null) => {
+        const shown = value || '';
+        const valueHtml = editable && bftDashboardEditMode
+          ? `<strong class="dashboard-edit-cell" contenteditable="true" spellcheck="false" data-dashboard-edit="true" data-row="${editable.row}" data-column="${editable.column}" data-value="${esc(shown)}">${esc(shown)}</strong>`
+          : `<strong>${esc(shown)}</strong>`;
+        return `<div class="finance-row ${emphasis ? 'emphasis' : ''}"><span>${esc(label)}</span>${valueHtml}</div>`;
+      };
       const progressTowardGoal = get('Progress Toward Goal:');
       const ticketsSoldPercent = get('% of Tickets Sold:');
       document.getElementById('bftMetrics').innerHTML = '';
       document.getElementById('bftDashboardTable').innerHTML = `
+        <div class="table-toolbar"><button class="edit-mode-btn ${bftDashboardEditMode ? 'active' : ''}" id="bftDashboardEditToggle" aria-pressed="${bftDashboardEditMode}">${bftDashboardEditMode ? 'Done editing' : 'Edit: OFF'}</button></div>
+        ${bftDashboardEditMode ? '<div class="edit-help">Edit mode is on. Manual-entry fields can be changed here. Calculated fields update from the Ticket Control Ledger and Tracking Tab.</div>' : ''}
         <div class="bft-dashboard">
           <h2 class="bft-dashboard-title">Bikes for Tykes Charity Concert — Financial Dashboard</h2>
           <div class="bft-dashboard-grid">
@@ -549,11 +562,11 @@
               <section class="finance-box"><h3>Projected Payout</h3><div class="finance-box-body">
                 ${row('Projected Payout', get('Projected Payout'), true)}
                 <div class="finance-spacer"></div>
-                ${row('Check Number:', get('Check Number:'))}
-                ${row('Date Paid:', get('Date Paid:'))}
+                ${row('Check Number:', cell(5,2), false, {row:5,column:2})}
+                ${row('Date Paid:', cell(6,2), false, {row:6,column:2})}
               </div></section>
               <section class="finance-box"><h3>Progress Toward Goal</h3><div class="finance-box-body">
-                ${row('Goal Amount:', get('Goal Amount:'))}
+                ${row('Goal Amount:', get('Goal Amount:'), false, {row:10,column:2})}
                 ${row('Total Raised So Far:', get('Total Raised So Far:'))}
                 ${row('Remaining to Goal:', get('Remaining to Goal:'))}
                 ${row('Progress Toward Goal:', progressTowardGoal, true)}
@@ -571,11 +584,11 @@
               <section class="finance-box"><h3>Official Payout Record</h3><div class="finance-box-body">
                 ${row('Final Bikes for Tykes Payout Amount:', get('Final Bikes for Tykes Payout Amount:'), true)}
                 <div class="finance-spacer"></div>
-                ${row('Check Number:', get('Check Number:'))}
-                ${row('Date Paid:', get('Date Paid:'))}
-                ${row('Paid By (Officer Name):', get('Paid By (Officer Name):'))}
-                ${row('Payment Method:', get('Payment Method:'))}
-                ${row('Event Status:', get('Event Status:'), true)}
+                ${row('Check Number:', cell(27,2), false, {row:27,column:2})}
+                ${row('Date Paid:', cell(28,2), false, {row:28,column:2})}
+                ${row('Paid By (Officer Name):', get('Paid By (Officer Name):'), false, {row:29,column:2})}
+                ${row('Payment Method:', get('Payment Method:'), false, {row:30,column:2})}
+                ${row('Event Status:', get('Event Status:'), true, {row:31,column:2})}
               </div></section>
             </div>
             <div class="bft-dashboard-column">
@@ -587,9 +600,9 @@
                 ${row('Available for Bikes for Tykes Today:', get('Available for Bikes for Tykes Today:'), true)}
               </div></section>
               <section class="finance-box"><h3>Ticket Sales Performance</h3><div class="finance-box-body">
-                ${row('Max Tickets Available:', get('Max Tickets Available:'))}
+                ${row('Max Tickets Available:', get('Max Tickets Available:'), false, {row:13,column:5})}
                 <div class="finance-spacer"></div>
-                ${row('Ticket Price:', get('Ticket Price:'))}
+                ${row('Ticket Price:', get('Ticket Price:'), false, {row:14,column:5})}
                 ${row('Maximum Ticket Revenue:', get('Maximum Ticket Revenue:'))}
                 <div class="finance-spacer"></div>
                 ${row('Tickets Sold:', get('Tickets Sold:'))}
@@ -606,11 +619,48 @@
             </div>
           </div>
         </div>`;
+      document.getElementById('bftDashboardEditToggle').addEventListener('click', toggleBftDashboardEditing);
+      document.querySelectorAll('[data-dashboard-edit="true"]').forEach(field => field.addEventListener('input', () => {
+        const key = `${field.dataset.row}:${field.dataset.column}`;
+        const value = field.textContent.trim();
+        if (value === field.dataset.value) {
+          bftDashboardPendingEdits.delete(key);
+          field.classList.remove('pending-change');
+        } else {
+          bftDashboardPendingEdits.set(key, {row:Number(field.dataset.row), column:Number(field.dataset.column), value});
+          field.classList.add('pending-change');
+        }
+      }));
+    }
+
+    async function toggleBftDashboardEditing() {
+      if (!bftDashboardEditMode) {
+        bftDashboardEditMode = true;
+        bftDashboardPendingEdits.clear();
+        renderBftDashboard(bftDashboardRows);
+        return;
+      }
+      const button = document.getElementById('bftDashboardEditToggle');
+      button.disabled = true;
+      button.textContent = bftDashboardPendingEdits.size ? 'Saving…' : 'Closing…';
+      try {
+        for (const edit of bftDashboardPendingEdits.values()) await updateSheetCell(BFT_SPREADSHEET_ID, 'DashBoard', edit.row, edit.column, edit.value);
+        bftDashboardEditMode = false;
+        bftDashboardPendingEdits.clear();
+        await loadBftData();
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = 'Done editing';
+        alert('One or more Dashboard changes could not be saved. Your unsaved fields remain highlighted so you can try again.');
+      }
     }
 
     const tableEditModes = {};
     const tableRenderCache = {};
     const tablePendingEdits = {};
+    let bftDashboardEditMode = false;
+    let bftDashboardRows = [];
+    const bftDashboardPendingEdits = new Map();
 
     function renderDataTable(targetId, statusId, rows, headerRowIndex = 0, maxColumns = 16, editOptions = null) {
       const target = document.getElementById(targetId);
