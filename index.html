@@ -502,15 +502,18 @@
           if (quantity > 0 && Number.isFinite(amount)) { ticketPrice = amount / quantity; break; }
         }
       }
-      if (!Number.isFinite(ticketPrice)) ticketPrice = 0;
+      if (!Number.isFinite(ticketPrice) || ticketPrice <= 0) ticketPrice = 20;
       const ticketPriceBar = isTicketLedger ? `<div class="ticket-price-bar"><strong>Ticket Cost</strong><span class="ticket-price-value" data-ticket-price="true" data-value="${ticketPrice}" ${editMode ? 'contenteditable="true" spellcheck="false"' : ''}>${money(ticketPrice)}</span></div>` : '';
       target.innerHTML = `${toolbar}${editMode ? '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>' : ''}${ticketPriceBar}<div class="table-wrap"><table class="${tableClass}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
         const labels = item.row.map(value => String(value).trim().toLowerCase());
         const isTotal = labels.some(value => value === 'total' || value.includes('subtotal') || value.includes('combined total') || value.includes('grand total'));
         return `<tr class="${isTotal ? 'total-row' : ''}">${finalHeaders.map((_, columnIndex) => {
-          const ticketHeaderCell = isTicketLedger && item.sourceIndex === headerRowIndex + 1 && columnIndex >= ticketGroupStart;
-          const editable = editMode && !ticketHeaderCell;
-          const shownValue = ticketHeaderCell ? '' : (item.row[columnIndex] || '');
+          const editable = editMode;
+          let shownValue = item.row[columnIndex] || '';
+          if (isTicketLedger && columnIndex === ticketGroupStart + 2) {
+            const quantity = Number(String(item.row[ticketGroupStart + 1] || '').replace(/[$,]/g, ''));
+            if (Number.isFinite(quantity) && quantity > 0) shownValue = money(quantity * ticketPrice);
+          }
           return `<td class="${editable ? 'editable-cell' : ''}" ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${item.sourceIndex + 1}" data-column="${columnIndex}" data-value="${esc(shownValue)}"` : ''}>${esc(shownValue)}</td>`;
         }).join('')}</tr>`;
       }).join('')}</tbody></table></div>`;
