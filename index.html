@@ -88,8 +88,8 @@
     .task { border: 1px solid var(--line); border-radius: 12px; padding: 17px; background: #fafcfd; }
     .task strong { display: block; color: var(--navy); margin-bottom: 6px; }
     .task span { color: var(--muted); font-size: .87rem; }
-    .sponsor-workspace { display: none; }
-    .sponsor-workspace.active { display: block; }
+    .sponsor-workspace, .bft-workspace { display: none; }
+    .sponsor-workspace.active, .bft-workspace.active { display: block; }
     .sponsor-summary { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; margin-bottom: 18px; }
     .metric { border: 1px solid var(--line); border-radius: 13px; padding: 18px; background: #fafcfd; }
     .metric-label { color: var(--muted); font-size: .78rem; font-weight: 750; text-transform: uppercase; letter-spacing: .06em; }
@@ -190,7 +190,7 @@
           <div class="module-grid">
             <article class="module" style="--accent:#3d7fb1;--tint:#e8f3fb"><div class="module-top"><div class="module-icon">M</div><div class="status">Planned</div></div><h2>Membership</h2><p>Member profiles, renewals, attendance, waivers, vetting, officers, lifers, anniversaries, and history.</p><footer><span class="source">37 workbook sections mapped</span><button class="open-btn" data-open="membership">View layout</button></footer></article>
             <article class="module" style="--accent:#16845b;--tint:#e5f6ef"><div class="module-top"><div class="module-icon">$</div><div class="status">Planned</div></div><h2>Finance</h2><p>Transactions, fund balances, operating budgets, event budgets, reconciliations, and reporting.</p><footer><span class="source">14 workbook sections mapped</span><button class="open-btn" data-open="finance">View layout</button></footer></article>
-            <article class="module" style="--accent:#d98c16;--tint:#fff1d9"><div class="module-top"><div class="module-icon">B</div><div class="status">Planned</div></div><h2>Bikes for Tykes</h2><p>Donations, sponsors, ticket control, event tracking, purchase budgets, and financial synchronization.</p><footer><span class="source">6 workbook sections mapped</span><button class="open-btn" data-open="bft">View layout</button></footer></article>
+            <article class="module" style="--accent:#d98c16;--tint:#fff1d9"><div class="module-top"><div class="module-icon">B</div><div class="status">Live</div></div><h2>Bikes for Tykes</h2><p>Donations, ticket control, event tracking, purchase budgets, and financial synchronization.</p><footer><span class="source">6 live workbook sections</span><button class="open-btn" data-open="bft">Open module</button></footer></article>
             <article class="module" style="--accent:#8c5bb5;--tint:#f2eafb"><div class="module-top"><div class="module-icon">O</div><div class="status">Planned</div></div><h2>Marketplace</h2><p>Orders, fulfillment, pricing, fees, manufacturers, sales history, and merchandise reporting.</p><footer><span class="source">8 workbook sections mapped</span><button class="open-btn" data-open="marketplace">View layout</button></footer></article>
             <article class="module" style="--accent:#b64e50;--tint:#fbeaec"><div class="module-top"><div class="module-icon">S</div><div class="status">Pilot</div></div><h2>Sponsorships</h2><p>Current and prospective sponsors, follow-up status, documentation requests, and sponsor reporting.</p><footer><span class="source">4 workbook sections mapped</span><button class="open-btn" data-open="sponsors">Open module</button></footer></article>
             <article class="module" style="--accent:#52606d;--tint:#edf1f4"><div class="module-top"><div class="module-icon">A</div><div class="status">Foundation</div></div><h2>Administration</h2><p>User access, shared lists, permissions, backups, exports, and the system change history.</p><footer><span class="source">Built as modules are activated</span><button class="open-btn" data-open="admin">View layout</button></footer></article>
@@ -222,6 +222,25 @@
             <section class="sponsor-panel" data-sponsor-panel="history"><div class="coming-soon"><h2>Contact History</h2><p>This section will show calls, emails, meetings, notes, and the next follow-up action for each sponsor.</p></div></section>
             <section class="sponsor-panel" data-sponsor-panel="documents"><div class="coming-soon"><h2>Documents Requested</h2><p>This section will track W-9s, sponsorship letters, receipts, logos, agreements, and other requested documents.</p></div></section>
             <section class="sponsor-panel" data-sponsor-panel="renewals"><div class="coming-soon"><h2>Renewal Reporting</h2><p>This section will organize renewals due, contacted sponsors, commitments, expirations, and retained revenue.</p></div></section>
+          </div><div class="bft-workspace" id="bftWorkspace">
+            <div class="sponsor-tabs" aria-label="Bikes for Tykes sections">
+              <button class="sponsor-tab active" data-bft-tab="dashboard">Financial Dashboard</button>
+              <button class="sponsor-tab" data-bft-tab="tickets">Ticket Control</button>
+              <button class="sponsor-tab" data-bft-tab="donations">Donation Tracking</button>
+              <button class="sponsor-tab" data-bft-tab="finance">Finance Sync</button>
+              <button class="sponsor-tab" data-bft-tab="budget">Purchase Budget</button>
+              <button class="sponsor-tab" data-bft-tab="instructions">Instructions</button>
+            </div>
+            <section class="sponsor-panel active" data-bft-panel="dashboard">
+              <div class="data-status" id="bftDashboardStatus">Sign in to load the Bikes for Tykes dashboard.</div>
+              <div class="sponsor-summary" id="bftMetrics"></div>
+              <div id="bftDashboardTable"></div>
+            </section>
+            <section class="sponsor-panel" data-bft-panel="tickets"><div class="coming-soon"><h2>Ticket Control Ledger</h2><div class="data-status" id="bftTicketsStatus">Sign in to load ticket records.</div><div id="bftTicketsTable"></div></div></section>
+            <section class="sponsor-panel" data-bft-panel="donations"><div class="coming-soon"><h2>Donation Tracking</h2><div class="data-status" id="bftDonationsStatus">Sign in to load donation records.</div><div id="bftDonationsTable"></div></div></section>
+            <section class="sponsor-panel" data-bft-panel="finance"><div class="coming-soon"><h2>Finance Sync</h2><div class="data-status" id="bftFinanceStatus">Sign in to load synchronized transactions.</div><div id="bftFinanceTable"></div></div></section>
+            <section class="sponsor-panel" data-bft-panel="budget"><div class="coming-soon"><h2>Bikes for Tykes Purchase Budget</h2><div class="data-status" id="bftBudgetStatus">Sign in to load the purchase budget.</div><div id="bftBudgetTable"></div></div></section>
+            <section class="sponsor-panel" data-bft-panel="instructions"><div class="coming-soon"><h2>Instructions &amp; Legend</h2><div class="data-status" id="bftInstructionsStatus">Sign in to load workbook instructions.</div><div id="bftInstructionsTable"></div></div></section>
           </div></div></div>
         </section>
       </div>
@@ -230,6 +249,7 @@
   <script>
     const GOOGLE_CLIENT_ID = '881518334290-kimg628u5oriddlrqoq6vb619m8gn13s.apps.googleusercontent.com';
     const SPREADSHEET_ID = '14ZFdT1sA04z6Hp-iVaX2uRNjJq-JBoxmY1mvfL9X-Bk';
+    const BFT_SPREADSHEET_ID = '1cFhb2-Um1rBKj81dFeNWLSfKxuNfc768AFLbcjXdudY';
     const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets.readonly';
     let tokenClient;
     let accessToken = '';
@@ -249,7 +269,7 @@
           }
           accessToken = response.access_token;
           document.getElementById('authGate').classList.add('hidden');
-          await loadSponsorData();
+          await Promise.all([loadSponsorData(), loadBftData()]);
         }
       });
     }
@@ -266,8 +286,8 @@
       document.getElementById('authGate').classList.remove('hidden');
     });
 
-    async function getSheetValues(range) {
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}?majorDimension=ROWS`;
+    async function getSheetValues(range, spreadsheetId = SPREADSHEET_ID) {
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?majorDimension=ROWS`;
       const response = await fetch(url, {headers: {Authorization: `Bearer ${accessToken}`}});
       if (!response.ok) throw new Error(`Google Sheets returned ${response.status}`);
       return (await response.json()).values || [];
@@ -309,6 +329,76 @@
       }
     }
 
+    function compactRows(rows) {
+      return rows.map(row => row.map(value => String(value ?? '').trim()))
+        .filter(row => row.some(Boolean));
+    }
+
+    function findValue(rows, label) {
+      for (const row of rows) {
+        for (let i = 0; i < row.length; i += 1) {
+          if (String(row[i] || '').replace(/\s+/g, ' ').trim().toLowerCase() === label.toLowerCase()) {
+            return row.slice(i + 1).find(value => String(value || '').trim()) || '';
+          }
+        }
+      }
+      return '';
+    }
+
+    function money(value) {
+      const number = Number(String(value || '').replace(/[$,%]/g, '').replace(/,/g, ''));
+      return Number.isFinite(number) ? number.toLocaleString('en-US', {style:'currency', currency:'USD'}) : value || '—';
+    }
+
+    function renderDataTable(targetId, statusId, rows, headerRowIndex = 0, maxColumns = 16) {
+      const target = document.getElementById(targetId);
+      const status = document.getElementById(statusId);
+      const cleaned = compactRows(rows);
+      if (!cleaned.length || !cleaned[headerRowIndex]) {
+        target.innerHTML = '<div class="empty-state">No records found.</div>';
+        status.textContent = 'Connected to Google Sheets.';
+        return;
+      }
+      const headers = cleaned[headerRowIndex].slice(0, maxColumns);
+      const width = Math.min(maxColumns, Math.max(headers.length, ...cleaned.slice(headerRowIndex + 1).map(row => row.length)));
+      const finalHeaders = Array.from({length: width}, (_, i) => headers[i] || `Column ${i + 1}`);
+      const data = cleaned.slice(headerRowIndex + 1).filter(row => row.some(Boolean));
+      target.innerHTML = `<div class="table-wrap"><table class="data-table"><thead><tr>${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${data.map(row => `<tr>${finalHeaders.map((_, i) => `<td>${esc(row[i] || '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+      status.textContent = `${data.length} row${data.length === 1 ? '' : 's'} loaded from Google Sheets.`;
+    }
+
+    async function loadBftData() {
+      const statusIds = ['bftDashboardStatus','bftTicketsStatus','bftDonationsStatus','bftFinanceStatus','bftBudgetStatus','bftInstructionsStatus'];
+      statusIds.forEach(id => document.getElementById(id).textContent = 'Loading from Google Sheets…');
+      try {
+        const [dashboardRows, ticketRows, donationRows, financeRows, budgetRows, instructionRows] = await Promise.all([
+          getSheetValues("'DashBoard'!A1:G40", BFT_SPREADSHEET_ID),
+          getSheetValues("'Ticket Control Ledger'!A1:M100", BFT_SPREADSHEET_ID),
+          getSheetValues("'Tracking Tab'!A1:V250", BFT_SPREADSHEET_ID),
+          getSheetValues("'Finance Sync'!A1:J250", BFT_SPREADSHEET_ID),
+          getSheetValues("'Bikes for Tykes Purchase Budget'!A1:E60", BFT_SPREADSHEET_ID),
+          getSheetValues("'Instructions & Legend'!A1:C100", BFT_SPREADSHEET_ID)
+        ]);
+        const metrics = [
+          ['Projected payout', money(findValue(dashboardRows, 'Projected Payout'))],
+          ['Total raised', money(findValue(dashboardRows, 'Total Raised So Far:') || findValue(dashboardRows, 'Total Raised (Ticket Sales + Donations):'))],
+          ['Remaining to goal', money(findValue(dashboardRows, 'Remaining to Goal:'))],
+          ['Tickets sold', findValue(dashboardRows, 'Tickets Sold:') || '—']
+        ];
+        document.getElementById('bftMetrics').innerHTML = metrics.map(([label, value]) => `<div class="metric"><div class="metric-label">${esc(label)}</div><div class="metric-value">${esc(value)}</div><div class="metric-note">Live workbook value</div></div>`).join('');
+        document.getElementById('bftDashboardTable').innerHTML = '';
+        document.getElementById('bftDashboardStatus').textContent = 'Financial dashboard connected to Google Sheets.';
+        renderDataTable('bftTicketsTable', 'bftTicketsStatus', ticketRows, 0, 12);
+        renderDataTable('bftDonationsTable', 'bftDonationsStatus', donationRows, 1, 16);
+        renderDataTable('bftFinanceTable', 'bftFinanceStatus', financeRows, 1, 10);
+        renderDataTable('bftBudgetTable', 'bftBudgetStatus', budgetRows, 1, 3);
+        renderDataTable('bftInstructionsTable', 'bftInstructionsStatus', instructionRows, 3, 2);
+      } catch (error) {
+        const message = 'Could not load the Bikes for Tykes workbook. Confirm this Google account has access to it.';
+        statusIds.forEach(id => document.getElementById(id).textContent = message);
+      }
+    }
+
     initializeGoogleAuth();
     const modules = {
       membership: {title:'Membership', description:'The central record for members, history, participation, and annual requirements.', tasks:['Member directory','Renewals and dues','Attendance','Waivers and vetting','Officers and honors','History and anniversaries']},
@@ -327,12 +417,19 @@
       document.getElementById('detailTitle').textContent = item.title;
       document.getElementById('detailDescription').textContent = item.description;
       const sponsorWorkspace = document.getElementById('sponsorWorkspace');
+      const bftWorkspace = document.getElementById('bftWorkspace');
       const taskGrid = document.getElementById('detailTasks');
       if (key === 'sponsors') {
         taskGrid.innerHTML = '';
         sponsorWorkspace.classList.add('active');
+        bftWorkspace.classList.remove('active');
+      } else if (key === 'bft') {
+        taskGrid.innerHTML = '';
+        sponsorWorkspace.classList.remove('active');
+        bftWorkspace.classList.add('active');
       } else {
         sponsorWorkspace.classList.remove('active');
+        bftWorkspace.classList.remove('active');
         taskGrid.innerHTML = item.tasks.map((task, i) => `<div class="task"><strong>${task}</strong><span>${i === 0 ? 'First working screen will be added during this module\'s build phase.' : 'Scheduled for a later build phase.'}</span></div>`).join('');
       }
       dashboard.classList.add('hidden'); detail.classList.add('active'); setActive(key); window.scrollTo({top:0,behavior:'smooth'}); sidebar.classList.remove('open');
@@ -344,6 +441,11 @@
       const selected = button.dataset.sponsorTab;
       document.querySelectorAll('[data-sponsor-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
       document.querySelectorAll('[data-sponsor-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.sponsorPanel === selected));
+    }));
+    document.querySelectorAll('[data-bft-tab]').forEach(button => button.addEventListener('click', () => {
+      const selected = button.dataset.bftTab;
+      document.querySelectorAll('[data-bft-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
+      document.querySelectorAll('[data-bft-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.bftPanel === selected));
     }));
     document.getElementById('back').addEventListener('click', () => showModule('home'));
     document.getElementById('menuToggle').addEventListener('click', () => sidebar.classList.toggle('open'));
