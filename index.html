@@ -227,7 +227,11 @@
     .market-metric.good strong { color: #157347; }
     .market-subsummary { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: 12px; margin: 0 0 16px; }
     .market-summary-card { padding: 13px 14px; border: 1px solid var(--line); border-top: 4px solid var(--gold); border-radius: 9px; background: #fafafa; }
-    .market-summary-card.warning { border-color: #e3b900; border-top-color: #e3b900; background: #fff3b8; }
+    .market-summary-card.warning { border-color: #e1c04b; border-top-color: var(--gold); background: #fff3b8; }
+    .market-summary-card.danger { border-color: #9f0d24; border-top-color: #9f0d24; color: white; background: var(--gold); }
+    .market-summary-card.danger span, .market-summary-card.danger strong { color: white; }
+    .market-summary-card.success { border-color: #11823b; border-top-color: #11823b; color: white; background: #19b956; }
+    .market-summary-card.success span, .market-summary-card.success strong { color: #04170a; }
     .market-summary-card span { display:block; color:var(--muted); font-size:.76rem; font-weight:800; text-transform:uppercase; }
     .market-summary-card strong { display:block; margin-top:5px; font-size:1.18rem; }
     .sales-history-heading { margin-bottom: 14px; border: 1px solid #252528; overflow: hidden; }
@@ -997,13 +1001,14 @@
       const currentCost = String(summary[3] || '—');
       const rawStatus = String(summary[5] || '');
       const amountMatch = rawStatus.match(/\$[\d,]+(?:\.\d{2})?/);
-      const status = /ready/i.test(rawStatus) ? 'Ready to Submit' : 'On Hold';
-      const amountNeeded = /ready/i.test(rawStatus) ? '$0.00' : (amountMatch ? amountMatch[0] : '—');
+      const ready = /ready/i.test(rawStatus);
+      const status = ready ? 'Ready to Submit' : 'On Hold';
+      const amountNeeded = ready ? '$0.00' : (amountMatch ? amountMatch[0] : '—');
       renderMarketSummary('marketManufacturerSummary',[
         ['Vendor Minimum',vendorMinimum],
         ['Current Vendor Cost',currentCost,'warning'],
-        ['Order Status',status,'warning'],
-        ['Amount Needed',amountNeeded,'warning']
+        ['Order Status',status,ready ? 'success' : 'danger'],
+        ['Amount Needed',amountNeeded,ready ? 'success' : 'danger']
       ]);
     }
 
