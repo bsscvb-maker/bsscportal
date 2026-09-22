@@ -157,11 +157,8 @@
     .edit-help { margin: -5px 0 14px; padding: 10px 12px; border-left: 4px solid var(--gold); background: #fff1f3; color: #6b0d1c; border-radius: 7px; font-size: .86rem; font-weight: 750; }
     .tracking-table { width: max-content; min-width: 2550px; table-layout: fixed; }
     .tracking-table th, .tracking-table td { min-width: 115px; white-space: normal; overflow-wrap: anywhere; }
-    .tracking-table th:nth-child(1), .tracking-table td:nth-child(1) { position: sticky; left: 0; z-index: 3; min-width: 95px; width: 95px; }
-    .tracking-table th:nth-child(2), .tracking-table td:nth-child(2) { position: sticky; left: 117px; z-index: 3; min-width: 135px; width: 135px; box-shadow: 5px 0 8px rgba(0,0,0,.08); }
-    .tracking-table th:nth-child(1), .tracking-table th:nth-child(2) { z-index: 5; background: #111113; }
-    .tracking-table td:nth-child(1), .tracking-table td:nth-child(2) { background: white; }
-    .tracking-table tbody tr:nth-child(even) td:nth-child(1), .tracking-table tbody tr:nth-child(even) td:nth-child(2) { background: #fafafa; }
+    .tracking-table th:nth-child(1), .tracking-table td:nth-child(1) { min-width: 105px; width: 105px; }
+    .tracking-table th:nth-child(2), .tracking-table td:nth-child(2) { min-width: 145px; width: 145px; }
     .tracking-table th:nth-child(4), .tracking-table td:nth-child(4) { min-width: 190px; width: 190px; }
     .tracking-table th:nth-child(5), .tracking-table td:nth-child(5), .tracking-table th:nth-child(10), .tracking-table td:nth-child(10) { min-width: 210px; width: 210px; }
     .tracking-table th:nth-child(16), .tracking-table td:nth-child(16) { min-width: 165px; width: 165px; }
@@ -617,7 +614,7 @@
       };
       if (ticketResult.status === 'fulfilled') renderDataTable('bftTicketsTable', 'bftTicketsStatus', ticketResult.value, 0, 12, {sheetName:'Ticket Control Ledger'});
       else document.getElementById('bftTicketsStatus').textContent = 'Ticket Control Ledger could not be loaded from Google Sheets.';
-      if (donationResult.status === 'fulfilled') renderDataTable('bftDonationsTable', 'bftDonationsStatus', donationResult.value, 1, 22, {sheetName:'Tracking Tab'});
+      if (donationResult.status === 'fulfilled') renderDataTable('bftDonationsTable', 'bftDonationsStatus', donationResult.value, 2, 22, {sheetName:'Tracking Tab'});
       else document.getElementById('bftDonationsStatus').textContent = 'Tracking Tab could not be loaded from Google Sheets.';
       renderResult(financeResult, 'bftFinanceTable', 'bftFinanceStatus', 1, 10, 'Finance Sync');
       if (budgetResult.status === 'fulfilled') renderDataTable('bftBudgetTable', 'bftBudgetStatus', budgetResult.value, 1, 5, {sheetName:'Bikes for Tykes Purchase Budget'});
