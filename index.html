@@ -131,15 +131,17 @@
     .data-table td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
     .data-table tr:last-child td { border-bottom: 0; }
     .data-table tr.total-row td { font-weight: 900; border-top: 2px solid var(--gold); background: #f7f7f8; }
-    .data-table td.editable-cell { cursor: pointer; background: #fffdfd; }
-    .data-table td.editable-cell:hover { outline: 2px solid var(--gold); outline-offset: -2px; background: #fff1f3; }
+    .data-table td.editable-cell { cursor: pointer; background: #fff1f3; outline: 1px dashed var(--gold); outline-offset: -2px; }
+    .data-table td.editable-cell:hover { outline: 2px solid var(--gold); outline-offset: -2px; background: #ffe2e7; }
+    .cell-display { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .cell-edit-label { flex: 0 0 auto; color: #fff; background: var(--gold); border-radius: 999px; padding: 3px 7px; font-size: .68rem; font-weight: 900; white-space: nowrap; }
     .cell-editor { min-width: 130px; }
     .cell-editor input { width: 100%; min-width: 120px; padding: 7px 8px; border: 2px solid var(--gold); border-radius: 7px; font: inherit; }
     .cell-actions { display: flex; gap: 6px; margin-top: 7px; }
     .cell-actions button { border: 0; border-radius: 6px; padding: 5px 8px; cursor: pointer; font-weight: 800; }
     .cell-save { color: white; background: var(--gold); }
     .cell-cancel { color: var(--ink); background: #e7e7e9; }
-    .edit-help { margin: -5px 0 14px; color: var(--muted); font-size: .82rem; }
+    .edit-help { margin: -5px 0 14px; padding: 10px 12px; border-left: 4px solid var(--gold); background: #fff1f3; color: #6b0d1c; border-radius: 7px; font-size: .86rem; font-weight: 750; }
     .empty-state { padding: 24px; color: var(--muted); text-align: center; }
     @media (max-width: 1050px) {
       .module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -441,6 +443,10 @@
       return Number.isFinite(number) ? number.toLocaleString('en-US', {style:'currency', currency:'USD'}) : value || '—';
     }
 
+    function editableCellDisplay(value) {
+      return `<div class="cell-display"><span>${esc(value)}</span><span class="cell-edit-label">✎ Edit</span></div>`;
+    }
+
     function renderDataTable(targetId, statusId, rows, headerRowIndex = 0, maxColumns = 16, editOptions = null) {
       const target = document.getElementById(targetId);
       const status = document.getElementById(statusId);
@@ -453,12 +459,12 @@
       const indexedData = rows.map((row, index) => ({row, sourceIndex:index})).slice(headerRowIndex + 1).filter(item => item.row.some(value => String(value ?? '').trim()));
       const width = Math.min(maxColumns, Math.max(headers.length, ...indexedData.map(item => item.row.length)));
       const finalHeaders = Array.from({length: width}, (_, i) => headers[i] || '');
-      target.innerHTML = `${editOptions ? '<div class="edit-help">Click a highlighted cell to edit it. Formula and total cells are protected.</div>' : ''}<div class="table-wrap"><table class="data-table"><thead><tr>${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
+      target.innerHTML = `${editOptions ? '<div class="edit-help">Editable cells are shaded red and marked “✎ Edit.” Click one to change it. Formula and total cells are protected.</div>' : ''}<div class="table-wrap"><table class="data-table"><thead><tr>${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
         const labels = item.row.map(value => String(value).trim().toLowerCase());
         const isTotal = labels.some(value => value === 'total' || value.includes('subtotal') || value.includes('combined total') || value.includes('grand total'));
         return `<tr class="${isTotal ? 'total-row' : ''}">${finalHeaders.map((_, columnIndex) => {
           const editable = editOptions && !isTotal && editOptions.editableColumns.includes(columnIndex);
-          return `<td class="${editable ? 'editable-cell' : ''}" ${editable ? `data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${item.sourceIndex + 1}" data-column="${columnIndex}" data-value="${esc(item.row[columnIndex] || '')}" title="Click to edit"` : ''}>${esc(item.row[columnIndex] || '')}</td>`;
+          return `<td class="${editable ? 'editable-cell' : ''}" ${editable ? `data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${item.sourceIndex + 1}" data-column="${columnIndex}" data-value="${esc(item.row[columnIndex] || '')}" title="Click to edit"` : ''}>${editable ? editableCellDisplay(item.row[columnIndex] || '') : esc(item.row[columnIndex] || '')}</td>`;
         }).join('')}</tr>`;
       }).join('')}</tbody></table></div>`;
       status.textContent = `${indexedData.length} row${indexedData.length === 1 ? '' : 's'} loaded from Google Sheets${editOptions ? ' — editing enabled.' : '.'}`;
@@ -474,7 +480,7 @@
       input.select();
       cell.querySelector('.cell-cancel').addEventListener('click', event => {
         event.stopPropagation();
-        cell.innerHTML = esc(original);
+        cell.innerHTML = editableCellDisplay(original);
       });
       cell.querySelector('.cell-save').addEventListener('click', async event => {
         event.stopPropagation();
