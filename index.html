@@ -125,13 +125,6 @@
     .signout-btn { padding: 7px 10px; color: var(--navy); background: #edf2f6; }
     .auth-error { min-height: 21px; margin-top: 14px; color: #b42318; font-size: .86rem; }
     .data-status { margin: 0 0 14px; color: var(--muted); font-size: .86rem; }
-    .table-toolbar { position: sticky; top: 82px; z-index: 20; display: flex; justify-content: flex-end; height: 0; pointer-events: none; }
-    .table-toolbar .edit-mode-btn { pointer-events: auto; transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,.14); }
-    .edit-mode-btn { display: inline-flex; align-items: center; gap: 9px; border: 1px solid #c7c7cb; border-radius: 999px; padding: 7px 11px; color: var(--ink); background: white; font-weight: 900; cursor: pointer; }
-    .edit-mode-btn::before { content: ''; width: 17px; height: 17px; border: 2px solid #77777d; border-radius: 50%; background: white; box-shadow: inset 0 0 0 4px white; }
-    .edit-mode-btn.active { color: white; border-color: var(--gold); background: var(--gold); }
-    .edit-mode-btn.active::before { border-color: white; background: white; box-shadow: inset 0 0 0 4px var(--gold); }
-    .coming-soon:has(.table-toolbar) h2 { padding-right: 125px; }
     .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 11px; scrollbar-color: var(--gold) #e7e7e9; scrollbar-width: auto; }
     .data-table { width: 100%; border-collapse: collapse; min-width: 900px; font-size: .84rem; }
     .data-table th { position: sticky; top: 0; z-index: 2; padding: 12px 11px; text-align: left; line-height: 1.35; color: white; background: #111113; border-right: 1px solid #343438; border-bottom: 3px solid var(--gold); }
@@ -657,7 +650,7 @@
         await loadBftData();
       } catch (error) {
         button.disabled = false;
-        button.textContent = 'Done editing';
+        button.textContent = 'Done Editing';
         alert('One or more Dashboard changes could not be saved. Your unsaved fields remain highlighted so you can try again.');
       }
     }
@@ -690,7 +683,7 @@
       const width = Math.min(maxColumns, Math.max(headers.length, ...indexedData.map(item => item.row.length)));
       const finalHeaders = Array.from({length: width}, (_, i) => headers[i] || '');
       const editMode = Boolean(editOptions && tableEditModes[targetId]);
-      const toolbar = editOptions ? `<div class="table-toolbar"><button class="edit-mode-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? 'Done editing' : 'Edit: OFF'}</button></div>` : '';
+      const toolbar = editOptions ? `<div class="dashboard-action-bar"><button class="dashboard-edit-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? 'Done Editing' : 'Edit Data'}</button></div>` : '';
       const isBudgetTable = targetId === 'bftBudgetTable';
       const tableClass = targetId === 'bftDonationsTable' ? 'data-table tracking-table' : (isTicketLedger ? 'data-table ticket-ledger-table' : (isBudgetTable ? 'data-table budget-table' : 'data-table'));
       const groupedHeader = isTicketLedger && ticketGroupStart >= 0 ? `<tr class="ticket-group-row"><th colspan="${ticketGroupStart}"></th><th class="ticket-group-title" colspan="${width - ticketGroupStart}">Tickets on Hold</th></tr>` : '';
@@ -788,7 +781,7 @@
         else await loadBftData();
       } catch (error) {
         button.disabled = false;
-        button.textContent = 'Done editing';
+        button.textContent = 'Done Editing';
         alert('One or more changes could not be saved. Your unsaved cells remain highlighted so you can try again.');
       }
     }
