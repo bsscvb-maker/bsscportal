@@ -130,6 +130,7 @@
     .data-table th { position: sticky; top: 0; padding: 10px; text-align: left; color: white; background: #111113; border-bottom: 3px solid var(--gold); }
     .data-table td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
     .data-table tr:last-child td { border-bottom: 0; }
+    .data-table tr.total-row td { font-weight: 900; border-top: 2px solid var(--gold); background: #f7f7f8; }
     .empty-state { padding: 24px; color: var(--muted); text-align: center; }
     @media (max-width: 1050px) {
       .module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -419,9 +420,9 @@
       }
       const headers = cleaned[headerRowIndex].slice(0, maxColumns);
       const width = Math.min(maxColumns, Math.max(headers.length, ...cleaned.slice(headerRowIndex + 1).map(row => row.length)));
-      const finalHeaders = Array.from({length: width}, (_, i) => headers[i] || `Column ${i + 1}`);
+      const finalHeaders = Array.from({length: width}, (_, i) => headers[i] || '');
       const data = cleaned.slice(headerRowIndex + 1).filter(row => row.some(Boolean));
-      target.innerHTML = `<div class="table-wrap"><table class="data-table"><thead><tr>${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${data.map(row => `<tr>${finalHeaders.map((_, i) => `<td>${esc(row[i] || '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+      target.innerHTML = `<div class="table-wrap"><table class="data-table"><thead><tr>${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${data.map(row => `<tr class="${row.some(value => String(value).trim().toLowerCase() === 'total') ? 'total-row' : ''}">${finalHeaders.map((_, i) => `<td>${esc(row[i] || '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
       status.textContent = `${data.length} row${data.length === 1 ? '' : 's'} loaded from Google Sheets.`;
     }
 
