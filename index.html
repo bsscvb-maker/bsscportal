@@ -141,14 +141,9 @@
     .data-table tr.total-row td { font-weight: 900; border-top: 2px solid var(--gold); background: #f7f7f8; }
     .data-table td.editable-cell { cursor: pointer; background: #fff1f3; outline: 1px dashed var(--gold); outline-offset: -2px; }
     .data-table td.editable-cell:hover { outline: 2px solid var(--gold); outline-offset: -2px; background: #ffe2e7; }
-    .cell-display { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .cell-edit-label { flex: 0 0 auto; color: #fff; background: var(--gold); border-radius: 999px; padding: 3px 7px; font-size: .68rem; font-weight: 900; white-space: nowrap; }
-    .cell-editor { min-width: 130px; }
-    .cell-editor input { width: 100%; min-width: 120px; padding: 7px 8px; border: 2px solid var(--gold); border-radius: 7px; font: inherit; }
-    .cell-actions { display: flex; gap: 6px; margin-top: 7px; }
-    .cell-actions button { border: 0; border-radius: 6px; padding: 5px 8px; cursor: pointer; font-weight: 800; }
-    .cell-save { color: white; background: var(--gold); }
-    .cell-cancel { color: var(--ink); background: #e7e7e9; }
+    .data-table td[contenteditable="true"] { min-width: 90px; }
+    .data-table td[contenteditable="true"]:focus { outline: 3px solid var(--gold); outline-offset: -3px; background: white; }
+    .data-table td.pending-change { background: #fff0bd !important; box-shadow: inset 0 -3px 0 #d79b00; }
     .edit-help { margin: -5px 0 14px; padding: 10px 12px; border-left: 4px solid var(--gold); background: #fff1f3; color: #6b0d1c; border-radius: 7px; font-size: .86rem; font-weight: 750; }
     .tracking-table { width: max-content; min-width: 2550px; table-layout: fixed; }
     .tracking-table th, .tracking-table td { min-width: 115px; white-space: normal; overflow-wrap: anywhere; }
@@ -461,12 +456,9 @@
       return Number.isFinite(number) ? number.toLocaleString('en-US', {style:'currency', currency:'USD'}) : value || '—';
     }
 
-    function editableCellDisplay(value) {
-      return `<div class="cell-display"><span>${esc(value)}</span><span class="cell-edit-label">✎ Edit</span></div>`;
-    }
-
     const tableEditModes = {};
     const tableRenderCache = {};
+    const tablePendingEdits = {};
 
     function renderDataTable(targetId, statusId, rows, headerRowIndex = 0, maxColumns = 16, editOptions = null) {
       const target = document.getElementById(targetId);
@@ -482,53 +474,54 @@
       const width = Math.min(maxColumns, Math.max(headers.length, ...indexedData.map(item => item.row.length)));
       const finalHeaders = Array.from({length: width}, (_, i) => headers[i] || '');
       const editMode = Boolean(editOptions && tableEditModes[targetId]);
-      const toolbar = editOptions ? `<div class="table-toolbar"><button class="edit-mode-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? 'Edit: ON' : 'Edit: OFF'}</button></div>` : '';
+      const toolbar = editOptions ? `<div class="table-toolbar"><button class="edit-mode-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? 'Done editing' : 'Edit: OFF'}</button></div>` : '';
       const tableClass = targetId === 'bftDonationsTable' ? 'data-table tracking-table' : 'data-table';
-      target.innerHTML = `${toolbar}${editMode ? '<div class="edit-help">Editable fields are shaded red and marked “✎ Edit.” Formula and total fields remain protected.</div>' : ''}<div class="table-wrap"><table class="${tableClass}"><thead><tr>${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
+      target.innerHTML = `${toolbar}${editMode ? '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>' : ''}<div class="table-wrap"><table class="${tableClass}"><thead><tr>${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
         const labels = item.row.map(value => String(value).trim().toLowerCase());
         const isTotal = labels.some(value => value === 'total' || value.includes('subtotal') || value.includes('combined total') || value.includes('grand total'));
         return `<tr class="${isTotal ? 'total-row' : ''}">${finalHeaders.map((_, columnIndex) => {
-          const editable = editMode && !isTotal && editOptions.editableColumns.includes(columnIndex);
-          return `<td class="${editable ? 'editable-cell' : ''}" ${editable ? `data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${item.sourceIndex + 1}" data-column="${columnIndex}" data-value="${esc(item.row[columnIndex] || '')}" title="Click to edit"` : ''}>${editable ? editableCellDisplay(item.row[columnIndex] || '') : esc(item.row[columnIndex] || '')}</td>`;
+          const editable = editMode;
+          return `<td class="${editable ? 'editable-cell' : ''}" ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${item.sourceIndex + 1}" data-column="${columnIndex}" data-value="${esc(item.row[columnIndex] || '')}"` : ''}>${esc(item.row[columnIndex] || '')}</td>`;
         }).join('')}</tr>`;
       }).join('')}</tbody></table></div>`;
       status.textContent = `${indexedData.length} row${indexedData.length === 1 ? '' : 's'} loaded from Google Sheets${editOptions ? (editMode ? ' — edit mode is on.' : ' — view mode.') : '.'}`;
       const toggleButton = target.querySelector('[data-toggle-edit]');
-      if (toggleButton) toggleButton.addEventListener('click', () => {
-        tableEditModes[targetId] = !tableEditModes[targetId];
-        const args = tableRenderCache[targetId];
-        renderDataTable(args.targetId, args.statusId, args.rows, args.headerRowIndex, args.maxColumns, args.editOptions);
-      });
-      target.querySelectorAll('[data-edit-cell="true"]').forEach(cell => cell.addEventListener('click', () => beginCellEdit(cell, editOptions)));
+      if (toggleButton) toggleButton.addEventListener('click', () => toggleTableEditing(targetId, toggleButton));
+      target.querySelectorAll('[data-edit-cell="true"]').forEach(cell => cell.addEventListener('input', () => {
+        const value = cell.textContent.trim();
+        const key = `${cell.dataset.row}:${cell.dataset.column}`;
+        if (!tablePendingEdits[targetId]) tablePendingEdits[targetId] = new Map();
+        if (value === cell.dataset.value) {
+          tablePendingEdits[targetId].delete(key);
+          cell.classList.remove('pending-change');
+        } else {
+          tablePendingEdits[targetId].set(key, {sheet:cell.dataset.sheet, row:Number(cell.dataset.row), column:Number(cell.dataset.column), value});
+          cell.classList.add('pending-change');
+        }
+      }));
     }
 
-    function beginCellEdit(cell, editOptions) {
-      if (cell.querySelector('input')) return;
-      const original = cell.dataset.value || '';
-      cell.innerHTML = `<div class="cell-editor"><input value="${esc(original)}" aria-label="Edit spreadsheet value"><div class="cell-actions"><button class="cell-save">Save</button><button class="cell-cancel">Cancel</button></div></div>`;
-      const input = cell.querySelector('input');
-      input.focus();
-      input.select();
-      cell.querySelector('.cell-cancel').addEventListener('click', event => {
-        event.stopPropagation();
-        cell.innerHTML = editableCellDisplay(original);
-      });
-      cell.querySelector('.cell-save').addEventListener('click', async event => {
-        event.stopPropagation();
-        const button = event.currentTarget;
-        button.disabled = true;
-        button.textContent = 'Saving…';
-        try {
-          await updateSheetCell(BFT_SPREADSHEET_ID, cell.dataset.sheet, Number(cell.dataset.row), Number(cell.dataset.column), input.value);
-          cell.dataset.value = input.value;
-          cell.innerHTML = esc(input.value);
-          await loadBftData();
-        } catch (error) {
-          button.disabled = false;
-          button.textContent = 'Save';
-          alert('The change could not be saved. Sign out and sign back in, then try again.');
-        }
-      });
+    async function toggleTableEditing(targetId, button) {
+      if (!tableEditModes[targetId]) {
+        tableEditModes[targetId] = true;
+        tablePendingEdits[targetId] = new Map();
+        const args = tableRenderCache[targetId];
+        renderDataTable(args.targetId, args.statusId, args.rows, args.headerRowIndex, args.maxColumns, args.editOptions);
+        return;
+      }
+      const edits = [...(tablePendingEdits[targetId] || new Map()).values()];
+      button.disabled = true;
+      button.textContent = edits.length ? 'Saving…' : 'Closing…';
+      try {
+        for (const edit of edits) await updateSheetCell(BFT_SPREADSHEET_ID, edit.sheet, edit.row, edit.column, edit.value);
+        tableEditModes[targetId] = false;
+        tablePendingEdits[targetId] = new Map();
+        await loadBftData();
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = 'Done editing';
+        alert('One or more changes could not be saved. Your unsaved cells remain highlighted so you can try again.');
+      }
     }
 
     async function loadBftData() {
@@ -561,12 +554,12 @@
         if (result.status === 'fulfilled') renderDataTable(targetId, statusId, result.value, headerIndex, columns);
         else document.getElementById(statusId).textContent = `${sheetName} could not be loaded from Google Sheets.`;
       };
-      if (ticketResult.status === 'fulfilled') renderDataTable('bftTicketsTable', 'bftTicketsStatus', ticketResult.value, 0, 12, {sheetName:'Ticket Control Ledger', editableColumns:[1,2,3,7,9,10,11]});
+      if (ticketResult.status === 'fulfilled') renderDataTable('bftTicketsTable', 'bftTicketsStatus', ticketResult.value, 0, 13, {sheetName:'Ticket Control Ledger'});
       else document.getElementById('bftTicketsStatus').textContent = 'Ticket Control Ledger could not be loaded from Google Sheets.';
-      if (donationResult.status === 'fulfilled') renderDataTable('bftDonationsTable', 'bftDonationsStatus', donationResult.value, 1, 22, {sheetName:'Tracking Tab', editableColumns:[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]});
+      if (donationResult.status === 'fulfilled') renderDataTable('bftDonationsTable', 'bftDonationsStatus', donationResult.value, 1, 22, {sheetName:'Tracking Tab'});
       else document.getElementById('bftDonationsStatus').textContent = 'Tracking Tab could not be loaded from Google Sheets.';
       renderResult(financeResult, 'bftFinanceTable', 'bftFinanceStatus', 1, 10, 'Finance Sync');
-      if (budgetResult.status === 'fulfilled') renderDataTable('bftBudgetTable', 'bftBudgetStatus', budgetResult.value, 1, 4, {sheetName:'Bikes for Tykes Purchase Budget', editableColumns:[2,3]});
+      if (budgetResult.status === 'fulfilled') renderDataTable('bftBudgetTable', 'bftBudgetStatus', budgetResult.value, 1, 5, {sheetName:'Bikes for Tykes Purchase Budget'});
       else document.getElementById('bftBudgetStatus').textContent = 'Bikes for Tykes Purchase Budget could not be loaded from Google Sheets.';
       renderResult(instructionResult, 'bftInstructionsTable', 'bftInstructionsStatus', 3, 2, 'Instructions & Legend');
     }
