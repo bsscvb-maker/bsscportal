@@ -1023,7 +1023,15 @@
       if (historyResult.status === 'fulfilled') {
         const rows = historyResult.value;
         renderSalesHistoryHeading(rows);
-        renderDataTable('marketHistoryTable','marketHistoryStatus',rows,5,6);
+        const orderRows = ordersResult.status === 'fulfilled' ? ordersResult.value : [];
+        const customerByOrderId = new Map(orderRows.slice(1).map(row => [String(row[1] || '').trim(), String(row[4] || '').trim()]));
+        const historyRows = rows.map((row, index) => {
+          if (index < 5) return row;
+          if (index === 5) return ['Order Date','Order ID','Customer Name','Item Ordered','Qty','Payment Status'];
+          const orderId = String(row[1] || '').trim();
+          return [row[0] || '', orderId, customerByOrderId.get(orderId) || '', row[2] || '', row[3] || '', row[4] || ''];
+        });
+        renderDataTable('marketHistoryTable','marketHistoryStatus',historyRows,5,6);
       } else document.getElementById('marketHistoryStatus').textContent = 'Sales History could not be loaded from Google Sheets.';
       if (referenceResult.status === 'fulfilled') {
         const rows = referenceResult.value;
