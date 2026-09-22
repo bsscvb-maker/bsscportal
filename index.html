@@ -492,7 +492,16 @@
     }
 
     function renderBftDashboard(rows) {
-      const get = label => findValue(rows, label);
+      const get = label => {
+        const wanted = label.replace(/\s+/g, ' ').trim().toLowerCase();
+        for (const sourceRow of rows) {
+          for (let i = 0; i < sourceRow.length; i += 1) {
+            const current = String(sourceRow[i] || '').replace(/\s+/g, ' ').trim().toLowerCase();
+            if (current === wanted) return sourceRow[i + 1] || '';
+          }
+        }
+        return '';
+      };
       const percent = value => {
         const number = Number(String(value || '').replace('%', '').trim());
         return Number.isFinite(number) ? Math.max(0, Math.min(100, number)) : 0;
