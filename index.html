@@ -181,6 +181,24 @@
     .dashboard-progress span { display: block; height: 100%; background: var(--gold); }
     .dashboard-progress.ticket-progress span { background: #b10f2e; }
     .progress-label { margin-top: 4px; text-align: center; color: var(--muted); font-size: .78rem; }
+    .bike-night-dashboard { display: grid; gap: 18px; }
+    .bike-night-hero { padding: 20px; border-radius: 12px; color: white; background: #111113; border-bottom: 4px solid var(--gold); }
+    .bike-night-hero h2 { margin: 0 0 5px; font-size: 1.5rem; }
+    .bike-night-hero p { margin: 0; color: #e5e5e7; }
+    .bike-night-metrics { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+    .bike-night-metric { padding: 16px; border: 1px solid var(--line); border-top: 4px solid var(--gold); border-radius: 10px; background: white; }
+    .bike-night-metric span { display: block; color: var(--muted); font-size: .8rem; font-weight: 800; text-transform: uppercase; }
+    .bike-night-metric strong { display: block; margin-top: 5px; font-size: 1.55rem; }
+    .bike-night-panels { display: grid; grid-template-columns: minmax(0,1.35fr) minmax(280px,.65fr); gap: 18px; }
+    .bike-night-card { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: white; }
+    .bike-night-card h3 { margin: 0; padding: 10px 12px; color: white; background: #111113; border-bottom: 3px solid var(--gold); font-size: 1rem; }
+    .bike-night-card-body { padding: 12px; }
+    .bike-night-pick { padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .bike-night-pick:last-child { border-bottom: 0; }
+    .bike-night-pick strong { display: block; color: var(--gold); font-size: .77rem; text-transform: uppercase; }
+    .bike-night-pick span { display: block; margin-top: 4px; }
+    .scorecard-table tr.never-visited td { background: #fff1bd !important; font-weight: 800; }
+    .scorecard-table tr.planned-row td { background: #e3f3e8 !important; }
     @media (max-width: 950px) { .bft-dashboard-grid { grid-template-columns: 1fr; } }
     .edit-help { margin: -5px 0 14px; padding: 10px 12px; border-left: 4px solid var(--gold); background: #fff1f3; color: #6b0d1c; border-radius: 7px; font-size: .86rem; font-weight: 750; }
     .tracking-table { width: max-content; min-width: 2550px; table-layout: fixed; }
@@ -206,6 +224,7 @@
       .welcome { display: block; }
       .phase { display: inline-block; margin-top: 16px; }
       .module-grid, .task-grid { grid-template-columns: 1fr; }
+      .bike-night-metrics, .bike-night-panels { grid-template-columns: 1fr; }
       .sponsor-summary, .sponsor-panels { grid-template-columns: 1fr; }
       .module { min-height: 210px; }
     }
@@ -230,6 +249,7 @@
         <button data-module="membership"><span class="nav-icon">M</span>Membership</button>
         <button data-module="finance"><span class="nav-icon">$</span>Finance</button>
         <button data-module="bft"><span class="nav-icon">B</span>Bikes for Tykes</button>
+        <button data-module="bikenights"><span class="nav-icon">N</span>Bike Nights</button>
         <button data-module="marketplace"><span class="nav-icon">O</span>Marketplace</button>
         <button data-module="sponsors"><span class="nav-icon">S</span>Sponsorships</button>
       </nav>
@@ -252,6 +272,7 @@
             <article class="module" style="--accent:#3d7fb1;--tint:#e8f3fb"><div class="module-top"><div class="module-icon">M</div><div class="status">Planned</div></div><h2>Membership</h2><p>Member profiles, renewals, attendance, waivers, vetting, officers, lifers, anniversaries, and history.</p><footer><span class="source">37 workbook sections mapped</span><button class="open-btn" data-open="membership">View layout</button></footer></article>
             <article class="module" style="--accent:#16845b;--tint:#e5f6ef"><div class="module-top"><div class="module-icon">$</div><div class="status">Planned</div></div><h2>Finance</h2><p>Transactions, fund balances, operating budgets, event budgets, reconciliations, and reporting.</p><footer><span class="source">14 workbook sections mapped</span><button class="open-btn" data-open="finance">View layout</button></footer></article>
             <article class="module" style="--accent:#d98c16;--tint:#fff1d9"><div class="module-top"><div class="module-icon">B</div><div class="status">Live</div></div><h2>Bikes for Tykes</h2><p>Donations, ticket control, event tracking, purchase budgets, and financial synchronization.</p><footer><span class="source">6 live workbook sections</span><button class="open-btn" data-open="bft">Open module</button></footer></article>
+            <article class="module" style="--accent:#cf1235;--tint:#fff0f3"><div class="module-top"><div class="module-icon">N</div><div class="status">Live</div></div><h2>Bike Nights</h2><p>Monthly visit planning, club scorecards, attendance history, and upcoming bike nights.</p><footer><span class="source">3 live workbook sections</span><button class="open-btn" data-open="bikenights">Open module</button></footer></article>
             <article class="module" style="--accent:#8c5bb5;--tint:#f2eafb"><div class="module-top"><div class="module-icon">O</div><div class="status">Planned</div></div><h2>Marketplace</h2><p>Orders, fulfillment, pricing, fees, manufacturers, sales history, and merchandise reporting.</p><footer><span class="source">8 workbook sections mapped</span><button class="open-btn" data-open="marketplace">View layout</button></footer></article>
             <article class="module" style="--accent:#b64e50;--tint:#fbeaec"><div class="module-top"><div class="module-icon">S</div><div class="status">Pilot</div></div><h2>Sponsorships</h2><p>Current and prospective sponsors, follow-up status, documentation requests, and sponsor reporting.</p><footer><span class="source">4 workbook sections mapped</span><button class="open-btn" data-open="sponsors">Open module</button></footer></article>
             <article class="module" style="--accent:#52606d;--tint:#edf1f4"><div class="module-top"><div class="module-icon">A</div><div class="status">Foundation</div></div><h2>Administration</h2><p>User access, shared lists, permissions, backups, exports, and the system change history.</p><footer><span class="source">Built as modules are activated</span><button class="open-btn" data-open="admin">View layout</button></footer></article>
@@ -302,6 +323,15 @@
             <section class="sponsor-panel" data-bft-panel="instructions"><div class="coming-soon"><h2>Instructions &amp; Legend</h2><div class="data-status" id="bftInstructionsStatus">Sign in to load workbook instructions.</div><div id="bftInstructionsTable"></div></div></section>
             <section class="sponsor-panel" data-bft-panel="finance"><div class="coming-soon"><h2>Finance Sync</h2><div class="data-status" id="bftFinanceStatus">Sign in to load synchronized transactions.</div><div id="bftFinanceTable"></div></div></section>
             <section class="sponsor-panel" data-bft-panel="budget"><div class="coming-soon"><h2>Purchase Budget</h2><div class="data-status" id="bftBudgetStatus">Sign in to load the purchase budget.</div><div id="bftBudgetTable"></div></div></section>
+          </div><div class="bft-workspace" id="bikeNightsWorkspace">
+            <div class="sponsor-tabs" aria-label="Bike Night List sections">
+              <button class="sponsor-tab active" data-bike-tab="dashboard">Dashboard</button>
+              <button class="sponsor-tab" data-bike-tab="scorecard">Club Scorecard</button>
+              <button class="sponsor-tab" data-bike-tab="raw">Raw Data - Bike Nights</button>
+            </div>
+            <section class="sponsor-panel active" data-bike-panel="dashboard"><div class="data-status" id="bikeDashboardStatus">Sign in to load the Bike Night dashboard.</div><div id="bikeDashboard"></div></section>
+            <section class="sponsor-panel" data-bike-panel="scorecard"><div class="coming-soon"><h2>Club Scorecard</h2><div class="data-status" id="bikeScorecardStatus">Sign in to load the club scorecard.</div><div id="bikeScorecardTable"></div></div></section>
+            <section class="sponsor-panel" data-bike-panel="raw"><div class="coming-soon"><h2>Raw Data - Bike Nights</h2><div class="data-status" id="bikeRawStatus">Sign in to load bike-night records.</div><div id="bikeRawTable"></div></div></section>
           </div></div></div>
         </section>
       </div>
@@ -311,6 +341,7 @@
     const GOOGLE_CLIENT_ID = '881518334290-kimg628u5oriddlrqoq6vb619m8gn13s.apps.googleusercontent.com';
     const SPREADSHEET_ID = '14ZFdT1sA04z6Hp-iVaX2uRNjJq-JBoxmY1mvfL9X-Bk';
     const BFT_SPREADSHEET_ID = '1cFhb2-Um1rBKj81dFeNWLSfKxuNfc768AFLbcjXdudY';
+    const BIKE_NIGHTS_SPREADSHEET_ID = '1rXMHIVq52X3kqj_ICz7g8oZoD_eXR_0qHP7bZ9jhU0k';
     const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
     const SESSION_KEY = 'bssc-google-session-edit-v1';
     const IDLE_TIMEOUT_MS = 60 * 60 * 1000;
@@ -372,10 +403,10 @@
           accessToken = response.access_token;
           saveSession(response.expires_in);
           document.getElementById('authGate').classList.add('hidden');
-          await Promise.all([loadSponsorData(), loadBftData()]);
+          await Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData()]);
         }
       });
-      if (restoreSession()) Promise.all([loadSponsorData(), loadBftData()]);
+      if (restoreSession()) Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData()]);
     }
 
     document.getElementById('googleSignIn').addEventListener('click', () => {
@@ -623,7 +654,9 @@
         const isBudgetSection = isBudgetTable && labels[1] === 'quantity' && labels[2] === 'cost';
         const isBudgetSubhead = isBudgetTable && !isBudgetSection && ['courthouse horizons','ymca','combined'].includes(labels[0]);
         const isGrandTotal = isBudgetTable && labels.some(value => value.includes('grand total with locks'));
-        const rowClasses = [isTotal ? 'total-row' : '', isSubtotal ? 'subtotal-row' : '', isBudgetSection ? 'budget-section-row' : '', isBudgetSubhead ? 'budget-subhead-row' : '', isGrandTotal ? 'grand-total-row' : ''].filter(Boolean).join(' ');
+        const isNeverVisited = targetId === 'bikeScorecardTable' && labels.includes('never visited');
+        const isPlanned = targetId === 'bikeScorecardTable' && labels.includes('planned');
+        const rowClasses = [isTotal ? 'total-row' : '', isSubtotal ? 'subtotal-row' : '', isBudgetSection ? 'budget-section-row' : '', isBudgetSubhead ? 'budget-subhead-row' : '', isGrandTotal ? 'grand-total-row' : '', isNeverVisited ? 'never-visited' : '', isPlanned ? 'planned-row' : ''].filter(Boolean).join(' ');
         return `<tr class="${rowClasses}">${finalHeaders.map((_, columnIndex) => {
           const editable = editMode;
           let shownValue = item.row[columnIndex] || '';
@@ -645,7 +678,7 @@
           tablePendingEdits[targetId].delete(key);
           cell.classList.remove('pending-change');
         } else {
-          tablePendingEdits[targetId].set(key, {sheet:cell.dataset.sheet, row:Number(cell.dataset.row), column:Number(cell.dataset.column), value});
+          tablePendingEdits[targetId].set(key, {spreadsheetId:editOptions.spreadsheetId || BFT_SPREADSHEET_ID, sheet:cell.dataset.sheet, row:Number(cell.dataset.row), column:Number(cell.dataset.column), value});
           cell.classList.add('pending-change');
         }
         if (targetId === 'bftTicketsTable') recalculateTicketRow(targetId, cell);
@@ -691,10 +724,11 @@
       button.disabled = true;
       button.textContent = edits.length ? 'Saving…' : 'Closing…';
       try {
-        for (const edit of edits) await updateSheetCell(BFT_SPREADSHEET_ID, edit.sheet, edit.row, edit.column, edit.value);
+        for (const edit of edits) await updateSheetCell(edit.spreadsheetId || BFT_SPREADSHEET_ID, edit.sheet, edit.row, edit.column, edit.value);
         tableEditModes[targetId] = false;
         tablePendingEdits[targetId] = new Map();
-        await loadBftData();
+        if (targetId.startsWith('bike')) await loadBikeNightData();
+        else await loadBftData();
       } catch (error) {
         button.disabled = false;
         button.textContent = 'Done editing';
@@ -735,11 +769,53 @@
       renderResult(instructionResult, 'bftInstructionsTable', 'bftInstructionsStatus', 3, 2, 'Instructions & Legend');
     }
 
+    function renderBikeNightDashboard(rows) {
+      const at = (row, column) => String((rows[row] && rows[row][column]) || '');
+      const priorityRows = rows.slice(10).filter(row => row.slice(0, 6).some(value => String(value || '').trim()));
+      const priorityTable = priorityRows.length ? `<div class="table-wrap"><table class="data-table"><thead><tr>${['Date','Club','Time','Location','Visits','Plan Status'].map(value => `<th>${value}</th>`).join('')}</tr></thead><tbody>${priorityRows.map(row => `<tr>${Array.from({length:6}, (_, i) => `<td>${esc(row[i] || '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : '<div class="empty-state">No upcoming bike nights this month.</div>';
+      document.getElementById('bikeDashboard').innerHTML = `<div class="bike-night-dashboard">
+        <div class="bike-night-hero"><h2>${esc(at(0,0) || 'BSSC BIKE NIGHT DASHBOARD')}</h2><p>${esc(at(1,0))}</p></div>
+        <div class="bike-night-metrics">
+          <div class="bike-night-metric"><span>Club visits completed</span><strong>${esc(at(4,0))}</strong></div>
+          <div class="bike-night-metric"><span>Visits still needed</span><strong>${esc(at(4,2))}</strong></div>
+          <div class="bike-night-metric"><span>Planned this month</span><strong>${esc(at(4,4))}</strong></div>
+        </div>
+        <div class="bike-night-panels">
+          <section class="bike-night-card"><h3>Priority Clubs to Visit This Month</h3><div class="bike-night-card-body">${priorityTable}</div></section>
+          <section class="bike-night-card"><h3>This Month's Suggested Plan</h3><div class="bike-night-card-body">
+            <div class="bike-night-pick"><strong>Always Attend</strong><span>${esc(at(4,7))}</span></div>
+            <div class="bike-night-pick"><strong>Beach Side 81</strong><span>${esc(at(6,7))}</span></div>
+            <div class="bike-night-pick"><strong>Best New Club Choice</strong><span>${esc(at(9,7))}</span></div>
+            <div class="bike-night-pick"><strong>Next New Club Choice</strong><span>${esc(at(12,7))}</span></div>
+          </div></section>
+        </div>
+      </div>`;
+    }
+
+    async function loadBikeNightData() {
+      ['bikeDashboardStatus','bikeScorecardStatus','bikeRawStatus'].forEach(id => document.getElementById(id).textContent = 'Loading from Google Sheets…');
+      const results = await Promise.allSettled([
+        getSheetValues("'Dashboard'!A1:L54", BIKE_NIGHTS_SPREADSHEET_ID),
+        getSheetValues("'Club Scorecard'!A1:H220", BIKE_NIGHTS_SPREADSHEET_ID),
+        getSheetValues("'Raw Data - Bike Nights'!A1:H220", BIKE_NIGHTS_SPREADSHEET_ID)
+      ]);
+      const [dashboardResult, scorecardResult, rawResult] = results;
+      if (dashboardResult.status === 'fulfilled') {
+        renderBikeNightDashboard(dashboardResult.value);
+        document.getElementById('bikeDashboardStatus').textContent = 'Bike Night dashboard connected to Google Sheets.';
+      } else document.getElementById('bikeDashboardStatus').textContent = 'Dashboard could not be loaded from Google Sheets.';
+      if (scorecardResult.status === 'fulfilled') renderDataTable('bikeScorecardTable', 'bikeScorecardStatus', scorecardResult.value, 9, 8);
+      else document.getElementById('bikeScorecardStatus').textContent = 'Club Scorecard could not be loaded from Google Sheets.';
+      if (rawResult.status === 'fulfilled') renderDataTable('bikeRawTable', 'bikeRawStatus', rawResult.value, 0, 8, {sheetName:'Raw Data - Bike Nights', spreadsheetId:BIKE_NIGHTS_SPREADSHEET_ID});
+      else document.getElementById('bikeRawStatus').textContent = 'Raw Data - Bike Nights could not be loaded from Google Sheets.';
+    }
+
     initializeGoogleAuth();
     const modules = {
       membership: {title:'Membership', description:'The central record for members, history, participation, and annual requirements.', tasks:['Member directory','Renewals and dues','Attendance','Waivers and vetting','Officers and honors','History and anniversaries']},
       finance: {title:'Finance', description:'Club finances, transactions, budgets, reconciliations, and clear reporting.', tasks:['Transaction entry','Financial dashboard','Fund balances','Operating budget','Event budgets','Reports and exports']},
       bft: {title:'Bikes for Tykes', description:'Donation, ticket, sponsor, purchasing, and event financial management.', tasks:['Donation tracking','Ticket control','Sponsor records','Purchase budget','Event dashboard','Finance synchronization']},
+      bikenights: {title:'Bike Nights', description:'Plan monthly club visits, track attendance, and keep the 2026 bike-night schedule current.', tasks:['Dashboard','Club Scorecard','Raw Data - Bike Nights']},
       marketplace: {title:'Marketplace', description:'Order-to-fulfillment management with pricing, fees, and sales reporting.', tasks:['Order entry','Fulfillment queue','Pricing and fees','Manufacturer summary','Sales history','Finance synchronization']},
       sponsors: {title:'Sponsorships', description:'Manage active sponsors, prospects, outreach, and documentation requests.', tasks:['Sponsor dashboard','Current sponsors','Prospective sponsors','Contact history','Documents requested','Renewal reporting']},
       admin: {title:'Administration', description:'Control access, shared lists, backups, and system settings.', tasks:['Users and access','Roles and permissions','Shared dropdown lists','Backups','Data exports','Change history']}
@@ -754,18 +830,27 @@
       document.getElementById('detailDescription').textContent = item.description;
       const sponsorWorkspace = document.getElementById('sponsorWorkspace');
       const bftWorkspace = document.getElementById('bftWorkspace');
+      const bikeNightsWorkspace = document.getElementById('bikeNightsWorkspace');
       const taskGrid = document.getElementById('detailTasks');
       if (key === 'sponsors') {
         taskGrid.innerHTML = '';
         sponsorWorkspace.classList.add('active');
         bftWorkspace.classList.remove('active');
+        bikeNightsWorkspace.classList.remove('active');
       } else if (key === 'bft') {
         taskGrid.innerHTML = '';
         sponsorWorkspace.classList.remove('active');
         bftWorkspace.classList.add('active');
+        bikeNightsWorkspace.classList.remove('active');
+      } else if (key === 'bikenights') {
+        taskGrid.innerHTML = '';
+        sponsorWorkspace.classList.remove('active');
+        bftWorkspace.classList.remove('active');
+        bikeNightsWorkspace.classList.add('active');
       } else {
         sponsorWorkspace.classList.remove('active');
         bftWorkspace.classList.remove('active');
+        bikeNightsWorkspace.classList.remove('active');
         taskGrid.innerHTML = item.tasks.map((task, i) => `<div class="task"><strong>${task}</strong><span>${i === 0 ? 'First working screen will be added during this module\'s build phase.' : 'Scheduled for a later build phase.'}</span></div>`).join('');
       }
       dashboard.classList.add('hidden'); detail.classList.add('active'); setActive(key); window.scrollTo({top:0,behavior:'smooth'}); sidebar.classList.remove('open');
@@ -782,6 +867,11 @@
       const selected = button.dataset.bftTab;
       document.querySelectorAll('[data-bft-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
       document.querySelectorAll('[data-bft-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.bftPanel === selected));
+    }));
+    document.querySelectorAll('[data-bike-tab]').forEach(button => button.addEventListener('click', () => {
+      const selected = button.dataset.bikeTab;
+      document.querySelectorAll('[data-bike-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
+      document.querySelectorAll('[data-bike-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.bikePanel === selected));
     }));
     document.getElementById('back').addEventListener('click', () => showModule('home'));
     document.getElementById('menuToggle').addEventListener('click', () => sidebar.classList.toggle('open'));
