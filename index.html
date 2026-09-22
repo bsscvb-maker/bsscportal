@@ -144,6 +144,11 @@
     .data-table td[contenteditable="true"] { min-width: 90px; }
     .data-table td[contenteditable="true"]:focus { outline: 3px solid var(--gold); outline-offset: -3px; background: white; }
     .data-table td.pending-change { background: #fff0bd !important; box-shadow: inset 0 -3px 0 #d79b00; }
+    .ticket-group-row th { position: static; padding: 8px 11px; border: 0; background: white; color: var(--ink); }
+    .ticket-group-row .ticket-group-title { border-radius: 9px 9px 0 0; color: white; background: var(--gold); text-align: center; text-transform: uppercase; letter-spacing: .06em; font-size: .76rem; }
+    .ticket-ledger-table thead tr:nth-child(2) th { top: 0; }
+    .ticket-ledger-table th:nth-child(n+8), .ticket-ledger-table td:nth-child(n+8) { background-color: #fff8f9; }
+    .ticket-ledger-table thead tr:nth-child(2) th:nth-child(n+8) { background: #111113; }
     .edit-help { margin: -5px 0 14px; padding: 10px 12px; border-left: 4px solid var(--gold); background: #fff1f3; color: #6b0d1c; border-radius: 7px; font-size: .86rem; font-weight: 750; }
     .tracking-table { width: max-content; min-width: 2550px; table-layout: fixed; }
     .tracking-table th, .tracking-table td { min-width: 115px; white-space: normal; overflow-wrap: anywhere; }
@@ -469,14 +474,22 @@
         status.textContent = 'Connected to Google Sheets.';
         return;
       }
+      const isTicketLedger = targetId === 'bftTicketsTable';
       const headers = rows[headerRowIndex].slice(0, maxColumns);
+      const ticketGroupStart = isTicketLedger ? headers.findIndex(value => String(value || '').trim().toLowerCase() === 'tickets on hold') : -1;
+      if (isTicketLedger && ticketGroupStart >= 0 && rows[headerRowIndex + 1]) {
+        for (let i = ticketGroupStart; i < maxColumns; i += 1) {
+          if (String(rows[headerRowIndex + 1][i] || '').trim()) headers[i] = rows[headerRowIndex + 1][i];
+        }
+      }
       const indexedData = rows.map((row, index) => ({row, sourceIndex:index})).slice(headerRowIndex + 1).filter(item => item.row.some(value => String(value ?? '').trim()));
       const width = Math.min(maxColumns, Math.max(headers.length, ...indexedData.map(item => item.row.length)));
       const finalHeaders = Array.from({length: width}, (_, i) => headers[i] || '');
       const editMode = Boolean(editOptions && tableEditModes[targetId]);
       const toolbar = editOptions ? `<div class="table-toolbar"><button class="edit-mode-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? 'Done editing' : 'Edit: OFF'}</button></div>` : '';
-      const tableClass = targetId === 'bftDonationsTable' ? 'data-table tracking-table' : 'data-table';
-      target.innerHTML = `${toolbar}${editMode ? '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>' : ''}<div class="table-wrap"><table class="${tableClass}"><thead><tr>${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
+      const tableClass = targetId === 'bftDonationsTable' ? 'data-table tracking-table' : (isTicketLedger ? 'data-table ticket-ledger-table' : 'data-table');
+      const groupedHeader = isTicketLedger && ticketGroupStart >= 0 ? `<tr class="ticket-group-row"><th colspan="${ticketGroupStart}"></th><th class="ticket-group-title" colspan="${width - ticketGroupStart}">Tickets on Hold</th></tr>` : '';
+      target.innerHTML = `${toolbar}${editMode ? '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>' : ''}<div class="table-wrap"><table class="${tableClass}"><thead>${groupedHeader}<tr>${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
         const labels = item.row.map(value => String(value).trim().toLowerCase());
         const isTotal = labels.some(value => value === 'total' || value.includes('subtotal') || value.includes('combined total') || value.includes('grand total'));
         return `<tr class="${isTotal ? 'total-row' : ''}">${finalHeaders.map((_, columnIndex) => {
