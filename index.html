@@ -246,6 +246,13 @@
     .pricing-row { display:flex; justify-content:space-between; gap:16px; padding:9px 12px; border-bottom:1px solid var(--line); }
     .pricing-row:last-child { border-bottom:0; }
     .pricing-row strong { white-space:nowrap; }
+    .pricing-rules-table { width:100%; border-collapse:collapse; }
+    .pricing-rules-table th { padding:9px 10px; color:white; background:#111113; border-right:1px solid #343438; border-bottom:3px solid var(--gold); text-align:left; font-size:.76rem; text-transform:uppercase; }
+    .pricing-rules-table th:last-child { border-right:0; }
+    .pricing-rules-table td { padding:10px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); }
+    .pricing-rules-table td:last-child { border-right:0; }
+    .pricing-rules-table tr:last-child td { border-bottom:0; }
+    .pricing-rules-table td:nth-child(2) { font-weight:900; text-align:center; }
     .marketplace-table tr.market-paid td { background:#e5f6e9 !important; }
     .marketplace-table tr.market-pending td { background:#fff0f2 !important; }
     .marketplace-table tr.market-ready td { box-shadow:inset 4px 0 #e7a600; }
@@ -1007,7 +1014,7 @@
       const rowsHtml = entries => entries.map(([label,value]) => `<div class="pricing-row"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong></div>`).join('');
       document.getElementById('marketPricingConfig').innerHTML = `<div class="pricing-config">
         <section class="pricing-box"><h3>Marketplace Fees</h3>${rowsHtml([['Sales Tax',at(4,1)],['Credit Card Surcharge',at(5,1)],['PayPal Rate',at(6,1)],['PayPal Fixed Fee',at(7,1)]])}</section>
-        <section class="pricing-box"><h3>Cost Tiers &amp; Markup</h3>${rowsHtml([[at(4,5),at(4,7)],[at(5,5),at(5,7)],[at(6,5),at(6,7)],[at(7,5),at(7,7)]])}</section>
+        <section class="pricing-box"><h3>Cost Tiers &amp; Markup</h3><table class="pricing-rules-table"><thead><tr><th>${esc(at(3,5) || 'Cost Tier')}</th><th>${esc(at(3,6) || 'Standard Markup')}</th><th>${esc(at(3,7) || 'Pricing Rule')}</th></tr></thead><tbody>${[4,5,6,7].map(row => `<tr><td>${esc(at(row,5))}</td><td>${esc(at(row,6))}</td><td>${esc(at(row,7))}</td></tr>`).join('')}</tbody></table></section>
       </div>`;
     }
 
