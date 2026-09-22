@@ -221,6 +221,17 @@
     .market-summary-card { padding: 13px 14px; border: 1px solid var(--line); border-top: 4px solid var(--gold); border-radius: 9px; background: #fafafa; }
     .market-summary-card span { display:block; color:var(--muted); font-size:.76rem; font-weight:800; text-transform:uppercase; }
     .market-summary-card strong { display:block; margin-top:5px; font-size:1.18rem; }
+    .sales-history-heading { margin-bottom: 14px; border: 1px solid #252528; overflow: hidden; }
+    .sales-history-title { padding: 8px 14px; color: white; background: #111113; text-align: center; font-size: 1.25rem; font-weight: 900; }
+    .sales-history-subtitle { padding: 5px 14px 7px; color: white; background: #111113; text-align: center; font-size: .92rem; font-style: italic; }
+    .sales-history-band { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); }
+    .sales-history-band.primary { color: white; background: #c43b30; }
+    .sales-history-band.secondary { color: #111113; background: white; }
+    .sales-history-stat { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 8px 14px; border-right: 1px solid rgba(255,255,255,.22); }
+    .sales-history-band.secondary .sales-history-stat { border-right-color: var(--line); }
+    .sales-history-stat:last-child { border-right: 0; }
+    .sales-history-stat span { font-size: .76rem; font-weight: 900; text-transform: uppercase; }
+    .sales-history-stat strong { font-size: .95rem; }
     .pricing-config { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:16px; margin-bottom:18px; }
     .pricing-box { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
     .pricing-box h3 { margin:0; padding:9px 12px; color:white; background:#111113; border-bottom:3px solid var(--gold); font-size:.95rem; }
@@ -381,7 +392,7 @@
             <section class="sponsor-panel" data-market-panel="financials"><div class="coming-soon"><h2>Order Financials</h2><div class="data-status" id="marketFinancialsStatus">Sign in to load order financials.</div><div id="marketFinancialsSummary"></div><div id="marketFinancialsTable"></div></div></section>
             <section class="sponsor-panel" data-market-panel="orders"><div class="coming-soon"><h2>Orders</h2><div class="data-status" id="marketOrdersStatus">Sign in to load orders.</div><div id="marketOrdersTable"></div></div></section>
             <section class="sponsor-panel" data-market-panel="pricing"><div class="coming-soon"><h2>Pricing &amp; Fees</h2><div class="data-status" id="marketPricingStatus">Sign in to load pricing and fees.</div><div id="marketPricingConfig"></div><div id="marketPricingTable"></div></div></section>
-            <section class="sponsor-panel" data-market-panel="history"><div class="coming-soon"><h2>Sales History</h2><div class="data-status" id="marketHistoryStatus">Sign in to load sales history.</div><div id="marketHistorySummary"></div><div id="marketHistoryTable"></div></div></section>
+            <section class="sponsor-panel" data-market-panel="history"><div class="coming-soon"><div class="data-status" id="marketHistoryStatus">Sign in to load sales history.</div><div id="marketHistorySummary"></div><div id="marketHistoryTable"></div></div></section>
             <section class="sponsor-panel" data-market-panel="reference"><div class="coming-soon"><h2>Merchandise Pricing Reference</h2><div class="data-status" id="marketReferenceStatus">Sign in to load merchandise pricing.</div><div id="marketReferenceSummary"></div><div id="marketReferenceTable"></div></div></section>
           </div></div></div>
         </section>
@@ -947,6 +958,25 @@
       document.getElementById(targetId).innerHTML = `<div class="market-subsummary">${cards.map(([label,value]) => `<div class="market-summary-card"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong></div>`).join('')}</div>`;
     }
 
+    function renderSalesHistoryHeading(rows) {
+      const at = (row, column) => String((rows[row] && rows[row][column]) || '');
+      const stat = (label, value) => `<div class="sales-history-stat"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong></div>`;
+      document.getElementById('marketHistorySummary').innerHTML = `<div class="sales-history-heading">
+        <div class="sales-history-title">${esc(at(0,0) || at(0,1) || 'BSSC MARKETPLACE — SALES HISTORY')}</div>
+        <div class="sales-history-subtitle">${esc(at(1,0) || at(1,1) || 'Line-by-line record of each marketplace item sold. Quantity shows how many pieces were ordered for that item.')}</div>
+        <div class="sales-history-band primary">
+          ${stat(at(2,0) || 'Item Lines Sold', at(2,1))}
+          ${stat(at(2,2) || 'Total Pieces', at(2,3))}
+          ${stat(at(2,4) || 'Total Item Sales', at(2,5))}
+        </div>
+        <div class="sales-history-band secondary">
+          ${stat(at(3,0) || 'Paid / Cash-Pending Lines', at(3,1))}
+          ${stat(at(3,2) || 'Active Orders', at(3,3))}
+          ${stat(at(3,4) || 'Vendor Cost / All', at(3,5))}
+        </div>
+      </div>`;
+    }
+
     function renderPricingConfig(rows) {
       const at = (r,c) => String((rows[r] && rows[r][c]) || '');
       const rowsHtml = entries => entries.map(([label,value]) => `<div class="pricing-row"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong></div>`).join('');
@@ -992,7 +1022,7 @@
       } else document.getElementById('marketPricingStatus').textContent = 'Pricing & Fees could not be loaded from Google Sheets.';
       if (historyResult.status === 'fulfilled') {
         const rows = historyResult.value;
-        renderMarketSummary('marketHistorySummary',[['Item Lines Sold',marketValue(rows,'Item Lines Sold')],['Pieces Sold',marketValue(rows,'Pieces')],['Sales',marketValue(rows,'Sales')],['Active Orders',marketValue(rows,'Active Orders')],['Vendor Cost',marketValue(rows,'Vendor Cost')]]);
+        renderSalesHistoryHeading(rows);
         renderDataTable('marketHistoryTable','marketHistoryStatus',rows,5,6);
       } else document.getElementById('marketHistoryStatus').textContent = 'Sales History could not be loaded from Google Sheets.';
       if (referenceResult.status === 'fulfilled') {
