@@ -834,6 +834,9 @@
     const IDLE_TIMEOUT_MS = 60 * 60 * 1000;
     let tokenClient;
     let accessToken = '';
+    let portalHealthTimer = null;
+    let portalHealthCheckRunning = false;
+    let portalConnectionStates = [];
 
     function saveSession(expiresInSeconds) {
       localStorage.setItem(SESSION_KEY, JSON.stringify({
@@ -2588,7 +2591,8 @@
 
     async function loadAdminSystemStatus() {
       const target = document.getElementById('adminSystemStatus');
-      if (!target) return;
+      if (!target || portalHealthCheckRunning) return;
+      if (!portalHealthTimer) portalHealthTimer = window.setInterval(loadAdminSystemStatus,30000);
       const connections = [
         ['Membership','38 connected workbook sections',MEMBERSHIP_SPREADSHEET_ID,"'Dashboard 2026'!A1:A1"],
         ['Finance','14 connected workbook sections',FINANCE_SPREADSHEET_ID,"'Dashboard-2026'!A1:A1"],
@@ -2597,21 +2601,43 @@
         ['Marketplace','8 connected workbook sections',MARKETPLACE_SPREADSHEET_ID,"'Dashboard'!A1:A1"],
         ['Sponsorships','Connected sponsorship records',SPREADSHEET_ID,"'Sponsors - Current'!A1:A1"]
       ];
-      setPortalHealth('checking','Verifying connected systems…');
-      target.innerHTML = connections.map(([name,detail]) => `<div class="admin-row"><div><strong>${esc(name)}</strong><small>${esc(detail)} · Checking connection…</small></div><span class="admin-badge">Checking</span></div>`).join('');
+      const states = connections.map((_,index) => portalConnectionStates[index] === 'connected' ? 'connected' : 'checking');
+      const renderProgress = () => {
+        const connected = states.filter(state => state === 'connected').length;
+        const remaining = connections.length - connected;
+        if (connected === connections.length) setPortalHealth('operational',`${connected} of ${connections.length} systems connected · Live monitoring active`);
+        else if (connected === 0) setPortalHealth('critical',`0 of ${connections.length} systems connected · ${remaining} unavailable`);
+        else setPortalHealth('degraded',`${connected} of ${connections.length} systems connected · ${remaining} awaiting connection`);
+        target.innerHTML = connections.map(([name,detail],index) => {
+          const state = states[index];
+          const connectedState = state === 'connected';
+          const failedState = state === 'error';
+          const message = connectedState ? 'Google Sheets connection verified' : (failedState ? 'Connection unavailable · retrying automatically' : 'Connecting…');
+          const badgeClass = connectedState ? 'live' : (failedState ? 'error' : '');
+          const badge = connectedState ? 'Connected' : (failedState ? 'Unavailable' : 'Connecting');
+          return `<div class="admin-row"><div><strong>${esc(name)}</strong><small>${esc(detail)} · ${message}</small></div><span class="admin-badge ${badgeClass}">${badge}</span></div>`;
+        }).join('');
+      };
+      renderProgress();
       if (!accessToken) {
         setPortalHealth('critical','Google access is unavailable');
         return;
       }
-      const results = await Promise.allSettled(connections.map(([, ,id,range]) => getSheetValues(range,id)));
-      const failures = results.filter(result => result.status === 'rejected').length;
-      if (failures === 0) setPortalHealth('operational','All connected systems are responding');
-      else if (failures === 1) setPortalHealth('degraded','1 connected system needs attention');
-      else setPortalHealth('critical',`${failures} connected systems are unavailable`);
-      target.innerHTML = connections.map(([name,detail],index) => {
-        const connected = results[index].status === 'fulfilled';
-        return `<div class="admin-row"><div><strong>${esc(name)}</strong><small>${esc(detail)} · ${connected ? 'Google Sheets connection verified' : 'Connection needs attention'}</small></div><span class="admin-badge ${connected ? 'live' : 'error'}">${connected ? 'Connected' : 'Error'}</span></div>`;
-      }).join('');
+      portalHealthCheckRunning = true;
+      try {
+        await Promise.all(connections.map(async ([, ,id,range],index) => {
+          try {
+            await getSheetValues(range,id);
+            states[index] = 'connected';
+          } catch (error) {
+            states[index] = 'error';
+          }
+          portalConnectionStates = [...states];
+          renderProgress();
+        }));
+      } finally {
+        portalHealthCheckRunning = false;
+      }
     }
 
     initializeGoogleAuth();
