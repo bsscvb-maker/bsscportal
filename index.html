@@ -2066,6 +2066,11 @@
     async function loadFinanceControl() {
       document.getElementById('financeControlStatus').textContent = 'Loading control snapshot…';
       try {
+        await updateSheetRanges(FINANCE_SPREADSHEET_ID,[
+          {range:"'Control-2026'!E9",value:'=SUM(E7:E8)'},
+          {range:"'Control-2026'!E10",value:'=E6-E9'},
+          {range:"'Control-2026'!E11",value:'=IF(ABS(E10)<0.01,"BALANCED","OUT OF BALANCE")'}
+        ]);
         const rows = await getSheetValues("'Control-2026'!A1:H30",FINANCE_SPREADSHEET_ID);
         if (!rows.length) throw new Error('Control-2026 returned no rows');
         renderFinanceControl(rows);
