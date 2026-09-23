@@ -2027,18 +2027,21 @@
       const monthSection = (title,balance,totals) => section(title,[['Current Fund Balance',balance],['Current Month Income',money(totals.income)],['Current Month Expenses',money(totals.expenses)],['Net This Month',money(totals.income-totals.expenses)]],resultTone(totals.income-totals.expenses));
       const generalMonth = monthlyTotals('General Fund');
       const bftMonth = monthlyTotals('Bikes for Tykes');
+      const impactYtd = numeric(at(27,1));
+      const impactPriorYear = numeric(at(25,4));
+      const impactIncrease = impactYtd - impactPriorYear;
       const status = at(10,4);
       document.getElementById('financeControlTable').innerHTML = `<div class="control-title"><h2>${esc(at(0,0))}</h2><span>${esc(at(0,6))}: ${esc(at(0,7))}</span></div>
         <div class="control-action-bar"><button class="dashboard-edit-btn ${financeControlEditMode ? 'active' : ''}" id="financeControlEditToggle" aria-pressed="${financeControlEditMode}">${financeControlEditMode ? 'Done Editing' : 'Edit Bank Reconciliation'}</button></div>
         ${financeControlEditMode ? '<div class="control-edit-note">Only Available Balance, General Fund, and Bikes for Tykes are editable. Difference and Status are calculated automatically.</div>' : ''}<div class="control-grid">
         ${section(at(3,0),[[at(5,0),at(5,1)],[at(7,0),at(7,1)],[at(8,0),at(8,1)]],'tone-green')}
         ${section(at(3,3),[[at(5,3),at(5,4),false,6],[at(6,3),at(6,4),false,7],[at(7,3),at(7,4),false,8],[at(8,3),at(8,4)],[at(9,3),at(9,4)],[at(10,3),status,/out of balance/i.test(status)]],/out of balance/i.test(status) ? 'tone-red' : 'tone-green')}
-        ${monthSection('GENERAL FUND — CURRENT MONTH',at(7,1),generalMonth)}
+        ${monthSection('GENERAL FUND — CURRENT MONTH',at(5,1),generalMonth)}
         ${section(at(12,0),[[at(14,0),at(14,1)],[at(15,0),at(15,1)],[at(16,0),at(16,1)]],resultTone(at(16,1)))}
-        ${monthSection('BIKES FOR TYKES — CURRENT MONTH',at(8,1),bftMonth)}
+        ${monthSection('BIKES FOR TYKES — CURRENT MONTH',at(7,1),bftMonth)}
         ${section(at(19,0),[[at(20,0),at(20,1)],[at(21,0),at(21,1)],[at(22,0),at(22,1)]],resultTone(at(22,1)))}
-        ${section(at(22,3),[[at(22,3),at(22,4)],[at(24,3),at(24,4)],[at(25,3),at(25,4)],[at(26,3),at(26,4)]],'tone-blue')}
-        ${section(at(25,0),[[at(27,0),at(27,1)]],'tone-blue')}
+        ${section(at(22,3),[['Lifetime Giving Since 2005',at(22,4)],[at(26,3),at(26,4)]],'tone-blue')}
+        ${section(at(25,0),[['2026 Community Impact — YTD',at(27,1)],['2025 Community Impact — Full Year',at(25,4)],['Increase Over 2025 Full Year',money(impactIncrease)]],'tone-blue')}
       </div>`;
       document.getElementById('financeControlEditToggle').addEventListener('click',saveFinanceControlEdits);
       document.getElementById('financeControlStatus').textContent = 'Executive financial snapshot connected to Control-2026.';
