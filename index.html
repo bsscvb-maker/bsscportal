@@ -2540,11 +2540,11 @@
       const results = await Promise.allSettled([
         getSheetValues("'Dashboard'!A1:V22", MARKETPLACE_SPREADSHEET_ID),
         getSheetValues("'Fulfillment Tracker'!A1:L100", MARKETPLACE_SPREADSHEET_ID),
-        getSheetValues("'Manufacturer Summary'!A1:F100", MARKETPLACE_SPREADSHEET_ID),
-        getSheetValues("'Order Financials'!A1:M100", MARKETPLACE_SPREADSHEET_ID),
-        getSheetValues("'Orders'!A1:T200", MARKETPLACE_SPREADSHEET_ID),
+        getSheetValues("'Manufacturer Summary'!A1:F1000", MARKETPLACE_SPREADSHEET_ID),
+        getSheetValues("'Order Financials'!A1:M1000", MARKETPLACE_SPREADSHEET_ID),
+        getSheetValues("'Orders'!A1:T1000", MARKETPLACE_SPREADSHEET_ID),
         getSheetValues("'Pricing & Fees'!A1:J100", MARKETPLACE_SPREADSHEET_ID),
-        getSheetValues("'Sales History'!A1:F100", MARKETPLACE_SPREADSHEET_ID),
+        getSheetValues("'Sales History'!A1:F1000", MARKETPLACE_SPREADSHEET_ID),
         getSheetValues("'Merchandise Pricing Reference'!A1:G100", MARKETPLACE_SPREADSHEET_ID)
       ]);
       const [dashboardResult, fulfillmentResult, manufacturerResult, financialsResult, ordersResult, pricingResult, historyResult, referenceResult] = results;
