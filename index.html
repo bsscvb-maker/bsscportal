@@ -197,8 +197,8 @@
     .transaction-entry-form { display:grid; grid-template-columns:1fr; gap:11px; max-width:680px; }
     .transaction-field { display:grid; grid-template-columns:minmax(160px,220px) minmax(0,1fr); align-items:center; gap:14px; }
     .transaction-field label { color:#111113; font-weight:850; }
-    .transaction-field input { width:100%; min-height:42px; padding:9px 11px; border:1px solid #aeb4bb; border-radius:8px; background:#fff; font:inherit; }
-    .transaction-field input:focus { outline:2px solid var(--gold); border-color:var(--gold); }
+    .transaction-field input,.transaction-field select { width:100%; min-height:42px; padding:9px 11px; border:1px solid #aeb4bb; border-radius:8px; background:#fff; font:inherit; }
+    .transaction-field input:focus,.transaction-field select:focus { outline:2px solid var(--gold); border-color:var(--gold); }
     .transaction-entry-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:6px; }
     .transaction-entry-actions button { border:0; border-radius:8px; padding:10px 14px; font-weight:900; cursor:pointer; }
     .transaction-cancel { color:#202226; background:#e2e5e8; }
@@ -983,6 +983,7 @@
     const tableEditModes = {};
     const tableRenderCache = {};
     const tablePendingEdits = {};
+    let financeTransactionOptions = {};
     let bftDashboardEditMode = false;
     let bftDashboardRows = [];
     const bftDashboardPendingEdits = new Map();
@@ -1102,7 +1103,7 @@
       if (existing) { existing.remove(); return; }
       const today = new Date();
       const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0,10);
-      const calculated = header => /running\s*balance/i.test(header);
+      const calculated = header => /^(month|year|type|community impact)$/i.test(header) || /running\s*balance/i.test(header);
       const fields = headers.map((header,column) => ({header:String(header || '').trim(),column})).filter(field => field.header && !calculated(field.header));
       const panel = document.createElement('section');
       panel.className = 'transaction-entry';
@@ -1112,7 +1113,9 @@
             const isDate = /date/i.test(field.header);
             const isAmount = /amount|cost|revenue|expense|income/i.test(field.header);
             const value = isDate ? localDate : '';
-            return `<div class="transaction-field"><label for="transactionField${field.column}">${esc(field.header)}</label><input id="transactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} value="${esc(value)}" autocomplete="off"></div>`;
+            const options = financeTransactionOptions[field.header.toLowerCase()] || [];
+            const control = options.length ? `<select id="transactionField${field.column}" name="column${field.column}" required><option value="">Select ${esc(field.header)}…</option>${options.map(option => `<option value="${esc(option)}">${esc(option)}</option>`).join('')}</select>` : `<input id="transactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} value="${esc(value)}" autocomplete="off">`;
+            return `<div class="transaction-field"><label for="transactionField${field.column}">${esc(field.header)}</label>${control}</div>`;
           }).join('')}
           <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Add Transaction</button></div>
         </form>`;
@@ -1122,9 +1125,19 @@
       panel.querySelector('.transaction-cancel').addEventListener('click', () => panel.remove());
       panel.querySelector('form').addEventListener('submit', async event => {
         event.preventDefault();
-        const saveButton = panel.querySelector('.transaction-save');
-        const values = Array.from({length:headers.length}, () => '');
-        fields.forEach(field => { values[field.column] = panel.querySelector(`[name="column${field.column}"]`).value.trim(); });
+          const saveButton = panel.querySelector('.transaction-save');
+          const values = Array.from({length:headers.length}, () => '');
+          fields.forEach(field => { values[field.column] = panel.querySelector(`[name="column${field.column}"]`).value.trim(); });
+          const dateColumn = headers.findIndex(header => /^date$/i.test(String(header || '').trim()));
+          const monthColumn = headers.findIndex(header => /^month$/i.test(String(header || '').trim()));
+          const yearColumn = headers.findIndex(header => /^year$/i.test(String(header || '').trim()));
+          if (dateColumn >= 0 && values[dateColumn]) {
+            const enteredDate = new Date(`${values[dateColumn]}T00:00:00`);
+            if (!Number.isNaN(enteredDate.getTime())) {
+              if (monthColumn >= 0) values[monthColumn] = enteredDate.toLocaleString('en-US',{month:'long'});
+              if (yearColumn >= 0) values[yearColumn] = enteredDate.getFullYear();
+            }
+          }
         saveButton.disabled = true;
         saveButton.textContent = 'Adding…';
         try {
@@ -1441,6 +1454,20 @@
     let financeControlEditMode = false;
     let financeControlRows = [];
 
+    function buildFinanceTransactionOptions(listRows, transactionRows) {
+      const unique = values => [...new Set(values.map(value => String(value || '').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b));
+      financeTransactionOptions = {
+        description: unique(listRows.slice(1).map(row => row[0])),
+        category: unique(listRows.slice(1).map(row => row[1])),
+        subcategory: unique(listRows.slice(1).map(row => row[2])),
+        fund: unique([...listRows.slice(1).map(row => row[3]),'General Fund','Bikes For Tykes']),
+        activity: unique(listRows.slice(1).map(row => row[4])),
+        'payee/payer': unique(transactionRows.slice(1).map(row => row[8])),
+        'payment method': unique(listRows.slice(1).map(row => row[5])),
+        cleared: unique(listRows.slice(1).map(row => row[6]))
+      };
+    }
+
     function renderFinanceDashboard(rows) {
       const at = (r,c) => String((rows[r] && rows[r][c]) || '—').replace(/\s+/g,' ').trim();
       const labelAt = (r,c) => {
@@ -1616,7 +1643,9 @@
       try {
         const reads = [getSheetValues(config.range,FINANCE_SPREADSHEET_ID)];
         if (config.editable) reads.push(getSheetValues(config.range,FINANCE_SPREADSHEET_ID,'FORMULA'));
-        const [rows,formulas = []] = await Promise.all(reads);
+        if (key === 'transactions2026') reads.push(getSheetValues("'Transaction List'!A1:G1000",FINANCE_SPREADSHEET_ID));
+        const [rows,formulas = [],listRows = []] = await Promise.all(reads);
+        if (key === 'transactions2026') buildFinanceTransactionOptions(listRows,rows);
         const editOptions = config.editable ? {sheetName:config.sheet,spreadsheetId:FINANCE_SPREADSHEET_ID,formulaRows:formulas} : null;
         renderDataTable(config.target,config.status,rows,config.header,config.columns,editOptions);
         loadedFinanceTabs.add(key);
