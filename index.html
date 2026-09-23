@@ -248,6 +248,8 @@
     .auth-error { min-height: 21px; margin-top: 14px; color: #b42318; font-size: .86rem; }
     .data-status { margin: 0 0 14px; color: var(--muted); font-size: .86rem; }
     .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 11px; scrollbar-color: var(--gold) #e7e7e9; scrollbar-width: auto; }
+    #financeTransactions2026Table .table-wrap { max-height:68vh; overflow:auto; }
+    #financeTransactions2026Table .data-table thead th { position:sticky; top:0; z-index:5; box-shadow:0 2px 0 var(--gold); }
     .data-table { width: 100%; border-collapse: collapse; min-width: 900px; font-size: .84rem; }
     .data-table th { position: sticky; top: 0; z-index: 2; padding: 12px 11px; text-align: left; line-height: 1.35; color: white; background: #111113; border-right: 1px solid #343438; border-bottom: 3px solid var(--gold); }
     #financeTransactions2026Table .data-table th { text-align:center; }
@@ -1185,7 +1187,8 @@
         headers[ticketGroupStart + 1] = 'Quantity';
         headers[ticketGroupStart + 2] = 'Amount';
       }
-      const indexedData = rows.map((row, index) => ({row, sourceIndex:index})).slice(headerRowIndex + 1).filter(item => item.row.some(value => String(value ?? '').trim()));
+      let indexedData = rows.map((row, index) => ({row, sourceIndex:index})).slice(headerRowIndex + 1).filter(item => item.row.some(value => String(value ?? '').trim()));
+      if (editOptions && editOptions.reverseRows) indexedData = indexedData.reverse();
       const width = Math.min(maxColumns, Math.max(headers.length, ...indexedData.map(item => item.row.length)));
       const finalHeaders = Array.from({length: width}, (_, i) => headers[i] || '');
       const editMode = Boolean(editOptions && tableEditModes[targetId]);
@@ -1283,8 +1286,8 @@
       if (existing) { existing.remove(); return; }
       const today = new Date();
       const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0,10);
-      const calculated = header => /^(month|year|type|community impact)$/i.test(header) || /running\s*balance/i.test(header);
-      const transactionFieldOrder = ['date','fund','activity','category','subcategory','description','payee/payer','payment method','amount','cleared','note'];
+      const calculated = header => /^(month|year)$/i.test(header) || /running\s*balance/i.test(header);
+      const transactionFieldOrder = ['date','fund','activity','category','subcategory','description','payee/payer','amount','type','payment method','cleared','community impact','note'];
       const fields = headers.map((header,column) => ({header:String(header || '').trim(),column})).filter(field => field.header && !calculated(field.header)).sort((a,b) => {
         const aOrder = transactionFieldOrder.indexOf(a.header.toLowerCase());
         const bOrder = transactionFieldOrder.indexOf(b.header.toLowerCase());
@@ -1299,8 +1302,9 @@
             const isAmount = /amount|cost|revenue|expense|income/i.test(field.header);
             const value = isDate ? localDate : '';
             const options = financeTransactionOptions[field.header.toLowerCase()] || [];
-            const isSuggestedText = /^description$/i.test(field.header) && options.length;
-            const control = isSuggestedText ? `<input id="transactionField${field.column}" name="column${field.column}" type="text" list="transactionSuggestions${field.column}" value="" autocomplete="off" placeholder="Type a description or choose a previous one"><datalist id="transactionSuggestions${field.column}">${options.map(option => `<option value="${esc(option)}"></option>`).join('')}</datalist>` : options.length ? `<select id="transactionField${field.column}" name="column${field.column}" required><option value="">Select ${esc(field.header)}…</option>${options.map(option => `<option value="${esc(option)}">${esc(option)}</option>`).join('')}</select>` : `<input id="transactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} value="${esc(value)}" autocomplete="off">`;
+            const isSuggestedText = /^(description|payee\/payer)$/i.test(field.header) && options.length;
+            const suggestedPlaceholder = /^payee\/payer$/i.test(field.header) ? 'Type a new payee/payer or choose a previous one' : 'Type a description or choose a previous one';
+            const control = isSuggestedText ? `<input id="transactionField${field.column}" name="column${field.column}" type="text" list="transactionSuggestions${field.column}" value="" autocomplete="off" placeholder="${suggestedPlaceholder}"><datalist id="transactionSuggestions${field.column}">${options.map(option => `<option value="${esc(option)}"></option>`).join('')}</datalist>` : options.length ? `<select id="transactionField${field.column}" name="column${field.column}" required><option value="">Select ${esc(field.header)}…</option>${options.map(option => `<option value="${esc(option)}">${esc(option)}</option>`).join('')}</select>` : `<input id="transactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} value="${esc(value)}" autocomplete="off">`;
             return `<div class="transaction-field"><label for="transactionField${field.column}">${esc(field.header)}</label>${control}</div>`;
           }).join('')}
           <div class="transaction-consistency" id="transactionConsistency" role="status" aria-live="polite"></div>
@@ -1365,7 +1369,20 @@
         saveButton.disabled = true;
         saveButton.textContent = 'Adding…';
         try {
-          await appendSheetRow(FINANCE_SPREADSHEET_ID, 'Transactions-2026', values);
+          const appendResult = await appendSheetRow(FINANCE_SPREADSHEET_ID, 'Transactions-2026', values);
+          const updatedRange = String((appendResult.updates && appendResult.updates.updatedRange) || '');
+          const rowMatch = updatedRange.match(/!(?:[^!]*?)(\d+)(?::[^!]*?(\d+))?$/);
+          const appendedRow = rowMatch ? Number(rowMatch[2] || rowMatch[1]) : 0;
+          if (appendedRow > 1) {
+            const amountColumn = headers.findIndex(header => /^amount$/i.test(String(header || '').trim()));
+            const clearedColumn = headers.findIndex(header => /^cleared$/i.test(String(header || '').trim()));
+            const runningColumn = headers.findIndex(header => /^running\s*balance$/i.test(String(header || '').trim()));
+            const totalRunningColumn = headers.findIndex(header => /^total\s*running\s*balance$/i.test(String(header || '').trim()));
+            const amountLetter = amountColumn >= 0 ? columnNumberToLetters(amountColumn + 1) : 'J';
+            const clearedLetter = clearedColumn >= 0 ? columnNumberToLetters(clearedColumn + 1) : 'O';
+            if (runningColumn >= 0) await updateSheetCell(FINANCE_SPREADSHEET_ID,'Transactions-2026',appendedRow,runningColumn,`=IF($A${appendedRow}="","",SUMIF($${clearedLetter}$2:$${clearedLetter}${appendedRow},"Yes",$${amountLetter}$2:$${amountLetter}${appendedRow}))`);
+            if (totalRunningColumn >= 0) await updateSheetCell(FINANCE_SPREADSHEET_ID,'Transactions-2026',appendedRow,totalRunningColumn,`=IF($A${appendedRow}="","",SUM($${amountLetter}$2:$${amountLetter}${appendedRow}))`);
+          }
           panel.remove();
           await loadFinanceTab('transactions2026', true);
         } catch (error) {
@@ -1691,7 +1708,9 @@
         activity: unique(listRows.slice(1).map(row => row[4])),
         'payee/payer': unique(combinedDataRows.map(row => row[8])),
         'payment method': unique(listRows.slice(1).map(row => row[5])),
-        cleared: unique(listRows.slice(1).map(row => row[6]))
+        type: unique([...combinedDataRows.map(row => row[12]),'Income','Expense','Transfer In','Transfer Out','Adjustment']),
+        cleared: unique([...listRows.slice(1).map(row => row[6]),'Yes','No']),
+        'community impact': ['FALSE','TRUE']
       };
       const combinations = new Map();
       combinedDataRows.forEach(row => {
@@ -2265,7 +2284,7 @@
         }
         const [rows,formulas = [],listRows = [],historicalRows = []] = await Promise.all(reads);
         if (key === 'transactions2026') buildFinanceTransactionOptions(listRows,rows,historicalRows);
-        const editOptions = config.editable ? {sheetName:config.sheet,spreadsheetId:FINANCE_SPREADSHEET_ID,formulaRows:formulas} : null;
+        const editOptions = config.editable ? {sheetName:config.sheet,spreadsheetId:FINANCE_SPREADSHEET_ID,formulaRows:formulas,reverseRows:key === 'transactions2026'} : null;
         renderDataTable(config.target,config.status,rows,config.header,config.columns,editOptions);
         if (key === 'tally') enhanceFinanceTally(rows);
         loadedFinanceTabs.add(key);
