@@ -2237,7 +2237,7 @@
     if(!raw)return null;
     const parsed=new Date(raw);
     if(!Number.isNaN(parsed.getTime()))return parsed;
-    const match=raw.match(/^(\\d{1,2})[/-](\\d{1,2})[/-](\\d{2,4})/);
+    const match=raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
     if(!match)return null;
     const year=Number(match[3].length===2?'20'+match[3]:match[3]);
     return new Date(year,Number(match[1])-1,Number(match[2]));
@@ -2254,14 +2254,14 @@
   };
   const periodOrders=orders.filter(isInPeriod);
   const periodPaid=periodOrders.filter(r=>/^paid/i.test(String(r[12]||'')));
-  const paidIds=new Set(periodPaid.map(r=>String(r[1]).trim()));
+  const periodOrderIds=new Set(periodOrders.map(r=>String(r[1]).trim()));
   const collected=periodPaid.reduce((sum,r)=>sum+money(r[11]),0);
   const merchandise=periodPaid.reduce((sum,r)=>sum+money(r[9]),0);
   const financialOrders=financialRows.slice(5).filter(r=>r[0]&&r[1]);
   const financeById=new Map(financialOrders.map(r=>[String(r[0]).trim(),r]));
   const profit=periodPaid.reduce((sum,r)=>sum+money((financeById.get(String(r[1]).trim())||[])[10]),0);
   const margin=collected?Math.round(profit/collected*100):0;
-  const sales= salesRows.slice(6).filter(r=>paidIds.has(String(r[1]||'').trim()));
+  const sales=salesRows.slice(6).filter(r=>periodOrderIds.has(String(r[1]||'').trim()));
   const pieceCount=sales.reduce((sum,r)=>sum+(Number(String(r[3]||'').replace(/,/g,''))||0),0);
   const pendingFinance=financialOrders.filter(r=>/pending|cash due|unpaid/i.test(String(r[2]||''))||/unpaid/i.test(String(r[12]||''))).length;
   const reconciledFinance=financialOrders.filter(r=>/^ok$/i.test(String(r[12]||''))&&money(r[11])===0).length;
@@ -2271,8 +2271,8 @@
   for(const r of sales){
     const item=String(r[2]||'').trim(),qty=Number(String(r[3]||'').replace(/,/g,''))||0;
     if(!item||qty<=0)continue;
-    const variant=item.match(/\\(([^()]*)\\)\\s*$/);
-    const product=item.replace(/\\s*\\([^()]*\\)\\s*$/,'').trim();
+    const variant=item.match(/\(([^()]*)\)\s*$/);
+    const product=item.replace(/\s*\([^()]*\)\s*$/,'').trim();
     productCounts.set(product,(productCounts.get(product)||0)+qty);
     const details=variant?variant[1].split(',').map(value=>value.trim()):[];
     if(details.length>1){const color=details.slice(1).join(', ');colorCounts.set(color,(colorCounts.get(color)||0)+qty);}
