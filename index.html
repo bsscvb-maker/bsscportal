@@ -504,6 +504,13 @@
     .admin-badge.error { background:var(--gold); }
     .admin-link { display:inline-block; padding:7px 10px; border-radius:7px; color:#fff; background:var(--gold); font-size:.76rem; font-weight:900; text-decoration:none; }
     .admin-note { padding:12px; border-left:4px solid var(--gold); border-radius:7px; color:#5f101d; background:#fff0f2; font-size:.85rem; line-height:1.45; }
+    .uptimerobot-connect { margin-top:8px; padding:11px; border:1px solid var(--line); border-radius:8px; background:#f7f8f9; }
+    .uptimerobot-connect summary { font-weight:900; cursor:pointer; }
+    .uptimerobot-connect p { margin:8px 0; color:var(--muted); font-size:.82rem; line-height:1.45; }
+    .uptimerobot-connect input { width:100%; min-height:40px; padding:9px 10px; border:1px solid #aeb4bb; border-radius:6px; font:inherit; }
+    .uptimerobot-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    .uptimerobot-actions button { padding:8px 11px; border:0; border-radius:6px; color:#fff; background:var(--gold); font:inherit; font-size:.8rem; font-weight:900; cursor:pointer; }
+    .uptimerobot-actions button.secondary { color:#26282b; background:#e5e7ea; }
     .formula-cell { background:#f1f3f5 !important; color:#555; }
     .finance-dashboard-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:18px; }
     .finance-dashboard-card { padding:16px; border:1px solid var(--line); border-top:5px solid #111113; border-radius:10px; background:#fff; }
@@ -830,6 +837,18 @@
                 <div class="admin-row"><div><strong>Original Data</strong><small>Google Sheets remain the system of record and backup</small></div><span class="admin-badge live">Protected</span></div>
                 <div class="admin-row"><div><strong>Editing</strong><small>Portal edits save directly to connected Google Sheets</small></div><span class="admin-badge live">Enabled</span></div>
                 <div class="admin-row"><div><strong>Search</strong><small>Available above portal data tables</small></div><span class="admin-badge live">Enabled</span></div>
+              </div></section>
+              <section class="admin-card"><h2>Portal Updates &amp; Website Monitoring</h2><div class="admin-card-body" id="adminPortalMonitoring">
+                <div class="admin-row"><div><strong>Latest Portal Publish</strong><small>Checking GitHub Pages deployment…</small></div><span class="admin-badge">Checking</span></div>
+                <div class="admin-row" id="uptimeRobotStatusRow"><div><strong>UptimeRobot Monitor</strong><small id="uptimeRobotStatusDetail">Not connected yet · Add a monitor-specific read-only key below.</small></div><span class="admin-badge" id="uptimeRobotStatusBadge">Setup needed</span></div>
+                <details class="uptimerobot-connect" id="uptimeRobotConnect">
+                  <summary>Connect UptimeRobot</summary>
+                  <p>Create a <strong>monitor-specific API key</strong> in UptimeRobot for the website monitor you want to display. Do not use your Main or Account API key. The key is saved only in this browser and can be cleared here.</p>
+                  <label for="uptimeRobotKey"><strong>Monitor-specific API key</strong></label>
+                  <input id="uptimeRobotKey" type="password" autocomplete="off" spellcheck="false" placeholder="Paste the monitor-specific read-only key">
+                  <div class="uptimerobot-actions"><button id="uptimeRobotSave" type="button">Save &amp; Test</button><button class="secondary" id="uptimeRobotClear" type="button">Clear Saved Key</button><a class="admin-link" target="_blank" rel="noopener" href="https://dashboard.uptimerobot.com/integrations">Open API Settings</a></div>
+                </details>
+                <div class="admin-row"><div><strong>Portal source and update history</strong><small>Review recent code changes and publishing activity</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://github.com/bsscvb-maker/bsscportal">View GitHub</a></div>
               </div></section>
             </div>
           </div></div></div>
@@ -2764,6 +2783,8 @@
       const target = document.getElementById('adminSystemStatus');
       if (!target || portalHealthCheckRunning) return;
       if (!portalHealthTimer) portalHealthTimer = window.setInterval(loadAdminSystemStatus,30000);
+      loadPortalPublishStatus();
+      loadUptimeRobotStatus();
       const connections = [
         ['Membership','38 connected workbook sections',MEMBERSHIP_SPREADSHEET_ID,"'Dashboard 2026'!A1:A1"],
         ['Finance','14 connected workbook sections',FINANCE_SPREADSHEET_ID,"'Dashboard-2026'!A1:A1"],
@@ -2810,6 +2831,104 @@
         portalHealthCheckRunning = false;
       }
     }
+
+    async function loadPortalPublishStatus() {
+      const target = document.getElementById('adminPortalMonitoring');
+      if (!target || target.dataset.publishLoaded === 'true') return;
+      target.dataset.publishLoaded = 'loading';
+      const row = target.querySelector('.admin-row');
+      if (!row) return;
+      try {
+        const response = await fetch('https://api.github.com/repos/bsscvb-maker/bsscportal/actions/runs?per_page=1', {
+          headers: {Accept:'application/vnd.github+json'},
+          cache:'no-store'
+        });
+        if (!response.ok) throw new Error(`GitHub returned ${response.status}`);
+        const payload = await response.json();
+        const build = payload.workflow_runs?.[0];
+        if (!build) throw new Error('No GitHub Pages deployment was found');
+        const isHealthy = build.status === 'completed' && build.conclusion === 'success';
+        const label = isHealthy ? 'Published' : (build.status === 'completed' ? 'Publish failed' : 'Publishing');
+        const stamp = build.updated_at || build.created_at;
+        const when = stamp ? new Date(stamp).toLocaleString() : 'Time unavailable';
+        row.innerHTML = `<div><strong>Latest Portal Publish</strong><small>${esc(label)} · ${esc(when)} · Run #${Number(build.run_number) || '—'}</small></div><a class="admin-link" target="_blank" rel="noopener" href="${esc(build.html_url || 'https://github.com/bsscvb-maker/bsscportal/actions')}">${esc(label)}</a>`;
+        target.dataset.publishLoaded = 'true';
+      } catch (error) {
+        row.innerHTML = '<div><strong>Latest Portal Publish</strong><small>Could not read GitHub Pages deployment status right now.</small></div><span class="admin-badge error">Unavailable</span>';
+        target.dataset.publishLoaded = 'false';
+      }
+    }
+
+    const UPTIMEROBOT_KEY_STORAGE = 'bssc_uptimerobot_monitor_key_v1';
+    let uptimeRobotCheckRunning = false;
+    let uptimeRobotTimer = null;
+    let uptimeRobotLastCheckAt = 0;
+
+    async function loadUptimeRobotStatus(force = false) {
+      const key = localStorage.getItem(UPTIMEROBOT_KEY_STORAGE);
+      const detail = document.getElementById('uptimeRobotStatusDetail');
+      const badge = document.getElementById('uptimeRobotStatusBadge');
+      const keyInput = document.getElementById('uptimeRobotKey');
+      if (!detail || !badge || uptimeRobotCheckRunning) return;
+      if (keyInput && !keyInput.value && key) keyInput.value = key;
+      if (!key) {
+        detail.textContent = 'Not connected yet · Add a monitor-specific read-only key below.';
+        badge.className = 'admin-badge';
+        badge.textContent = 'Setup needed';
+        if (uptimeRobotTimer) { clearInterval(uptimeRobotTimer); uptimeRobotTimer = null; }
+        return;
+      }
+      if (!force && Date.now() - uptimeRobotLastCheckAt < 300000) return;
+      uptimeRobotCheckRunning = true;
+      uptimeRobotLastCheckAt = Date.now();
+      detail.textContent = 'Checking UptimeRobot monitor…';
+      badge.className = 'admin-badge';
+      badge.textContent = 'Checking';
+      try {
+        const params = new URLSearchParams({api_key:key,format:'json',custom_uptime_ratios:'1-7-30',response_times:'1',response_times_limit:'1'});
+        const response = await fetch(`https://api.uptimerobot.com/v2/getMonitors?${params.toString()}`, {cache:'no-store'});
+        if (!response.ok) throw new Error(`UptimeRobot returned ${response.status}`);
+        const payload = await response.json();
+        if (payload.stat !== 'ok') throw new Error(payload.error?.message || 'The key was rejected. Check that it is monitor-specific and read-only.');
+        const monitor = payload.monitors?.[0];
+        if (!monitor) throw new Error('No monitor was returned for this key.');
+        const states = {0:['Paused',''],1:['Waiting for first check',''],2:['Up','live'],8:['Checking possible outage','error'],9:['Down','error']};
+        const [state, badgeClass] = states[Number(monitor.status)] || ['Unknown','error'];
+        const ratios = String(monitor.custom_uptime_ratios || '').split('-');
+        const lastCheck = new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+        const responseTime = Number(monitor.average_response_time);
+        const extras = [ratios[1] ? `30-day uptime ${Number(ratios[1]).toFixed(3)}%` : '', responseTime > 0 ? `${Math.round(responseTime)} ms average response` : ''].filter(Boolean).join(' · ');
+        detail.textContent = `${monitor.friendly_name || 'Website monitor'} · ${extras || 'Status received'} · Checked ${lastCheck}`;
+        badge.className = `admin-badge ${badgeClass}`;
+        badge.textContent = state;
+        if (!uptimeRobotTimer) uptimeRobotTimer = window.setInterval(loadUptimeRobotStatus,300000);
+      } catch (error) {
+        detail.textContent = `${error.message || 'Could not check monitor'} · Key stays in this browser only.`;
+        badge.className = 'admin-badge error';
+        badge.textContent = 'Check needed';
+      } finally {
+        uptimeRobotCheckRunning = false;
+      }
+    }
+
+    document.getElementById('uptimeRobotSave').addEventListener('click', async () => {
+      const input = document.getElementById('uptimeRobotKey');
+      const key = input.value.trim();
+      const detail = document.getElementById('uptimeRobotStatusDetail');
+      if (!key) {
+        detail.textContent = 'Paste the monitor-specific read-only key from UptimeRobot first.';
+        return;
+      }
+      localStorage.setItem(UPTIMEROBOT_KEY_STORAGE, key);
+      await loadUptimeRobotStatus(true);
+    });
+
+    document.getElementById('uptimeRobotClear').addEventListener('click', () => {
+      localStorage.removeItem(UPTIMEROBOT_KEY_STORAGE);
+      document.getElementById('uptimeRobotKey').value = '';
+      uptimeRobotLastCheckAt = 0;
+      loadUptimeRobotStatus(true);
+    });
 
     initializeGoogleAuth();
     const modules = {
