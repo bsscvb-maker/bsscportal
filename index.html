@@ -350,15 +350,18 @@
     .finance-dashboard-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:18px; }
     .finance-dashboard-card { padding:16px; border:1px solid var(--line); border-top:5px solid #111113; border-radius:10px; background:#fff; }
     .finance-dashboard-card.good { border-top-color:#16845b; }
-    .finance-dashboard-card span { display:block; color:var(--muted); font-size:.74rem; font-weight:900; text-transform:uppercase; }
-    .finance-dashboard-card strong { display:block; margin-top:6px; color:#111113; font-size:1.55rem; }
+    .finance-dashboard-card span { display:block; color:#34363a; font-size:.82rem; font-weight:900; line-height:1.45; letter-spacing:.07em; word-spacing:.3em; text-align:center; text-transform:uppercase; }
+    .finance-dashboard-card strong { display:block; margin-top:8px; color:#111113; font-size:1.55rem; line-height:1.2; text-align:center; }
     .finance-dashboard-hero { padding:20px; border-radius:14px; background:#111113; border-bottom:5px solid var(--gold); }
     .finance-dashboard-hero h2 { margin:0 0 5px; color:#fff; font-size:1.45rem; }
     .finance-dashboard-hero p { margin:0 0 18px; color:#cfd1d4; }
     .finance-dashboard-hero .finance-dashboard-grid { margin:0; }
     .finance-dashboard-hero .finance-dashboard-card { min-height:122px; display:flex; flex-direction:column; justify-content:center; border:0; border-top:5px solid var(--gold); }
     .finance-dashboard-hero .finance-dashboard-card strong { font-size:1.85rem; }
-    .finance-dashboard-card.alert { border-top-color:#d20f32; background:#fff1f3; }
+    .finance-dashboard-card.good { border-top-color:#00a651; background:#d9f2e2; }
+    .finance-dashboard-card.good strong { color:#006b35; }
+    .finance-dashboard-card.alert { border-top-color:#d20f32; background:#ffd9df; }
+    .finance-dashboard-card.alert strong { color:#a0001d; }
     .control-title { margin-bottom:14px; padding:17px 20px; color:#fff; background:#1f4e79; border-bottom:4px solid #9dc3e6; border-radius:11px; }
     .control-title h2 { margin:0; color:#fff; font-size:1.35rem; }
     .control-title span { display:block; margin-top:5px; color:#d7d8da; }
@@ -571,7 +574,7 @@
             <section class="sponsor-panel" data-market-panel="reference"><div class="coming-soon"><h2>Merchandise Pricing Reference</h2><div class="data-status" id="marketReferenceStatus">Sign in to load merchandise pricing.</div><div id="marketReferenceSummary"></div><div id="marketReferenceTable"></div></div></section>
           </div><div class="bft-workspace" id="financeWorkspace">
             <div class="sponsor-tabs" aria-label="Finance sections">
-              <button class="sponsor-tab active" data-finance-tab="dashboard">Dashboard-2026</button>
+              <button class="sponsor-tab active" data-finance-tab="dashboard">Dashboard</button>
               <button class="sponsor-tab" data-finance-tab="control">Control-2026</button>
               <button class="sponsor-tab" data-finance-tab="activity">Activity Summary</button>
               <button class="sponsor-tab" data-finance-tab="operating">Operating Budget</button>
@@ -1438,14 +1441,20 @@
 
     function renderFinanceDashboard(rows) {
       const at = (r,c) => String((rows[r] && rows[r][c]) || '—').replace(/\s+/g,' ').trim();
+      const labelAt = (r,c) => String((rows[r] && rows[r][c]) || '—').trim().split(/\s{2,}/).map(word => word.replace(/\s+/g,'')).join(' ');
+      const metricClass = (label,value) => {
+        if (/reconciliation/i.test(label)) return /out of balance/i.test(value) ? 'alert' : (/balanced/i.test(value) ? 'good' : '');
+        const numeric = Number(String(value).replace(/[$,%▲▼,()]/g,'').trim()) * (String(value).includes('(') ? -1 : 1);
+        return Number.isFinite(numeric) ? (numeric < 0 ? 'alert' : (numeric > 0 ? 'good' : '')) : '';
+      };
       const card = (label,value,cls='') => `<div class="finance-dashboard-card ${cls}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
       const reconciliation = at(16,9);
       document.getElementById('financeDashboard').innerHTML = `<section class="finance-dashboard-hero">
         <h2>${esc(at(1,1))}</h2><p>Nine executive measures from the live 2026 finance workbook.</p>
         <div class="finance-dashboard-grid">
-          ${card(at(4,1),at(6,1),'good')}${card(at(4,5),at(6,5),'good')}${card(at(4,9),at(6,9),'good')}
-          ${card(at(9,1),at(11,1),'good')}${card(at(9,5),at(11,5),'good')}${card(at(9,9),at(11,9),'good')}
-          ${card(at(14,1),at(16,1),'good')}${card(at(14,5),at(16,5),'good')}${card(at(14,9),reconciliation,/out of balance/i.test(reconciliation) ? 'alert' : 'good')}
+          ${card(labelAt(4,1),at(6,1),metricClass(labelAt(4,1),at(6,1)))}${card(labelAt(4,5),at(6,5),metricClass(labelAt(4,5),at(6,5)))}${card(labelAt(4,9),at(6,9),metricClass(labelAt(4,9),at(6,9)))}
+          ${card(labelAt(9,1),at(11,1),metricClass(labelAt(9,1),at(11,1)))}${card(labelAt(9,5),at(11,5),metricClass(labelAt(9,5),at(11,5)))}${card(labelAt(9,9),at(11,9),metricClass(labelAt(9,9),at(11,9)))}
+          ${card(labelAt(14,1),at(16,1),metricClass(labelAt(14,1),at(16,1)))}${card(labelAt(14,5),at(16,5),metricClass(labelAt(14,5),at(16,5)))}${card(labelAt(14,9),reconciliation,metricClass(labelAt(14,9),reconciliation))}
         </div></section>`;
       document.getElementById('financeDashboardStatus').textContent = 'Executive dashboard connected to BSSC Finance System 2026.';
     }
@@ -1508,7 +1517,8 @@
     async function loadFinanceControl() {
       document.getElementById('financeControlStatus').textContent = 'Loading control snapshot…';
       try {
-        const rows = await getSheetValues("'Control-2026'!A1:H80",FINANCE_SPREADSHEET_ID);
+        const rows = await getSheetValues("'Control-2026'!A1:H30",FINANCE_SPREADSHEET_ID);
+        if (!rows.length) throw new Error('Control-2026 returned no rows');
         renderFinanceControl(rows);
         loadedFinanceTabs.add('control');
       } catch (error) { document.getElementById('financeControlStatus').textContent = 'Control-2026 could not load from Google Sheets.'; }
