@@ -52,8 +52,6 @@
     h1 { margin: 0; font-size: clamp(1.75rem, 3vw, 2.55rem); line-height: 1.1; color: var(--navy); letter-spacing: -.035em; }
     .welcome h1 { color: white; }
     .welcome p { margin:9px 0 0; color:#d4d6da; max-width:900px; font-size:1rem; line-height:1.5; }
-    .welcome-status { flex:0 0 auto; display:flex; align-items:center; gap:9px; padding:10px 14px; border:1px solid #315a3e; border-radius:999px; color:#c8f5d5; background:#102418; font-size:.82rem; font-weight:900; text-transform:uppercase; letter-spacing:.05em; }
-    .welcome-status::before { content:""; width:10px; height:10px; border-radius:50%; background:#21e867; box-shadow:0 0 12px rgba(33,232,103,.8); }
     .phase { flex: 0 0 auto; border: 1px solid #d8e2ea; background: white; border-radius: 999px; padding: 8px 13px; font-size: .82rem; font-weight: 750; color: var(--navy); }
     .phase i { width: 8px; height: 8px; display: inline-block; border-radius: 50%; background: var(--green); margin-right: 7px; }
     .module-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; }
@@ -206,6 +204,7 @@
     .portal-health.operational { background:#087a3b; border-color:#22df75; box-shadow:0 0 20px rgba(25,216,102,.22); }
     .portal-health.degraded { background:#9b6800; border-color:#ffc93d; box-shadow:0 0 20px rgba(255,193,31,.2); }
     .portal-health.critical { background:#a30e25; border-color:#ef3451; box-shadow:0 0 20px rgba(224,18,49,.22); }
+    .home-portal-health { flex-basis:320px; }
     .detail-body { padding: 24px; }
     .task-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
     .task { border: 1px solid var(--line); border-radius: 12px; padding: 17px; background: #fafcfd; }
@@ -644,7 +643,7 @@
 
       <div class="content">
         <section class="dashboard-view" id="dashboard">
-          <div class="welcome"><div><h1>BoneShakers Social Club Management Center</h1><p>One secure workspace for membership, finances, events, merchandise, sponsorships, and community programs.</p></div><div class="welcome-status">All Systems Live</div></div>
+          <div class="welcome"><div><h1>BoneShakers Social Club Management Center</h1><p>One secure workspace for membership, finances, events, merchandise, sponsorships, and community programs.</p></div><div class="portal-health visible checking home-portal-health" data-portal-health="true" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong data-portal-health-status="true">Checking</strong><small data-portal-health-detail="true">Verifying connected systems…</small></div></div></div>
 
           <div class="module-grid">
             <article class="module" style="--accent:#3d7fb1;--tint:#e8f3fb"><div class="module-top"><div class="module-identity"><div class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><h2>Membership</h2></div><div class="status live-status">Live</div></div><p>Member profiles, renewals, attendance, waivers, vetting, officers, lifers, anniversaries, and history.</p><footer><span class="source">38 connected workbook sections</span><button class="open-btn" data-open="membership">Open module</button></footer></article>
@@ -665,7 +664,7 @@
 
         <section class="detail-view" id="detail">
           <button class="back" id="back" type="button"><span class="back-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></span><span>Portal Home</span></button>
-          <div class="detail-shell"><div class="detail-head"><div><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><button class="finance-admin-header" id="membershipAdminToggle" type="button">Admin</button><button class="finance-admin-header" id="financeAdminToggle" type="button">Admin</button><div class="portal-health checking" id="portalHealth" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong id="portalHealthStatus">Checking</strong><small id="portalHealthDetail">Verifying connected systems…</small></div></div></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div><div class="membership-workspace" id="membershipWorkspace">
+          <div class="detail-shell"><div class="detail-head"><div><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><button class="finance-admin-header" id="membershipAdminToggle" type="button">Admin</button><button class="finance-admin-header" id="financeAdminToggle" type="button">Admin</button><div class="portal-health checking" id="portalHealth" data-portal-health="true" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong data-portal-health-status="true">Checking</strong><small data-portal-health-detail="true">Verifying connected systems…</small></div></div></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div><div class="membership-workspace" id="membershipWorkspace">
             <div class="membership-tabs" aria-label="Membership sections">
               <button class="membership-tab" data-membership-sheet="Dashboard 2027">Dashboard 2027</button>
               <button class="membership-tab" data-membership-sheet="2027">2027 Roster</button>
@@ -891,10 +890,10 @@
           accessToken = response.access_token;
           saveSession(response.expires_in);
           document.getElementById('authGate').classList.add('hidden');
-          await Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData(), loadMarketplaceData()]);
+          await Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData(), loadMarketplaceData(), loadAdminSystemStatus()]);
         }
       });
-      if (restoreSession()) Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData(), loadMarketplaceData()]);
+      if (restoreSession()) Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData(), loadMarketplaceData(), loadAdminSystemStatus()]);
     }
 
     document.getElementById('googleSignIn').addEventListener('click', () => {
@@ -2492,15 +2491,15 @@
     }
 
     function setPortalHealth(state, detail) {
-      const panel = document.getElementById('portalHealth');
-      const status = document.getElementById('portalHealthStatus');
-      const description = document.getElementById('portalHealthDetail');
-      if (!panel || !status || !description) return;
       const labels = {checking:'Checking', operational:'Operational', degraded:'Degraded', critical:'Critical'};
-      panel.classList.remove('checking','operational','degraded','critical');
-      panel.classList.add(state);
-      status.textContent = labels[state] || 'Checking';
-      description.textContent = detail;
+      document.querySelectorAll('[data-portal-health="true"]').forEach(panel => {
+        const status = panel.querySelector('[data-portal-health-status="true"]');
+        const description = panel.querySelector('[data-portal-health-detail="true"]');
+        panel.classList.remove('checking','operational','degraded','critical');
+        panel.classList.add(state);
+        if (status) status.textContent = labels[state] || 'Checking';
+        if (description) description.textContent = detail;
+      });
     }
 
     async function loadAdminSystemStatus() {
@@ -2551,7 +2550,7 @@
       if (financeAdminButton) financeAdminButton.classList.toggle('visible', key === 'finance');
       const membershipAdminButton = document.getElementById('membershipAdminToggle');
       if (membershipAdminButton) membershipAdminButton.classList.toggle('visible', key === 'membership');
-      if (key === 'home') { dashboard.classList.remove('hidden'); detail.classList.remove('active'); setActive('home'); return; }
+      if (key === 'home') { dashboard.classList.remove('hidden'); detail.classList.remove('active'); setActive('home'); loadAdminSystemStatus(); return; }
       const item = modules[key]; if (!item) return;
       document.getElementById('detailTitle').textContent = item.title;
       document.getElementById('detailDescription').textContent = item.description;
