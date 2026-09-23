@@ -55,6 +55,13 @@
     .phase { flex: 0 0 auto; border: 1px solid #d8e2ea; background: white; border-radius: 999px; padding: 8px 13px; font-size: .82rem; font-weight: 750; color: var(--navy); }
     .phase i { width: 8px; height: 8px; display: inline-block; border-radius: 50%; background: var(--green); margin-right: 7px; }
     .module-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; }
+    @media (min-width:1201px) {
+      .module-grid { grid-template-columns:repeat(8,minmax(0,1fr)); }
+      .module-grid .module { grid-column:span 2; }
+      .module-grid .module:nth-child(5) { grid-column:2 / span 2; }
+      .module-grid .module:nth-child(6) { grid-column:4 / span 2; }
+      .module-grid .module:nth-child(7) { grid-column:6 / span 2; }
+    }
     .module { --accent: var(--gold) !important; --tint: var(--gold-soft) !important; border: 1px solid #2b2b2e; background: var(--surface); border-radius: 13px; padding: 17px 18px; min-height: 184px; box-shadow: var(--shadow); display: flex; flex-direction: column; position: relative; overflow: hidden; }
     .module::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--accent, var(--gold)); }
     .module-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -164,6 +171,11 @@
     .membership-attendance-snapshot span { display:block; color:#626a73; font-size:.75rem; font-weight:850; text-transform:uppercase; }
     .membership-attendance-snapshot strong { display:block; margin-top:6px; font-size:1.15rem; }
     .membership-summary-link { display:inline-flex; margin-top:12px; border:0; border-radius:8px; padding:10px 14px; color:#fff; background:#cf1235; font-weight:900; cursor:pointer; }
+    .membership-upcoming-events { display:grid; gap:8px; }
+    .membership-upcoming-event { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:14px; padding:11px 12px; border:1px solid #dfe2e6; border-left:4px solid #cf1235; border-radius:8px; background:#f8f9fa; }
+    .membership-upcoming-event strong { color:#15171a; }
+    .membership-upcoming-event time { color:#555e68; white-space:nowrap; }
+    .membership-days-away { min-width:82px; padding:5px 8px; border-radius:999px; color:#174f2c; background:#d9ead3; text-align:center; font-size:.78rem; font-weight:900; white-space:nowrap; }
     @media (max-width:1100px) { .membership-sheet-layout { grid-template-columns:1fr; } .membership-executive-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
     @media (max-width:700px) { .membership-sheet-left,.membership-executive-grid { grid-template-columns:1fr; } .membership-sheet-block.wide { grid-column:auto; } .membership-executive-kpis,.membership-attendance-snapshot { grid-template-columns:repeat(2,minmax(0,1fr)); } }
     .portal-health { display:none; flex:0 0 300px; min-height:82px; align-items:center; gap:14px; padding:14px 18px; border:2px solid transparent; border-radius:14px; color:#fff; box-shadow:0 8px 24px rgba(0,0,0,.28); }
@@ -606,10 +618,6 @@
             <article class="module" style="--accent:#52606d;--tint:#edf1f4"><div class="module-top"><div class="module-identity"><div class="module-icon">A</div><h2>Portal Control Center</h2></div><div class="status live-status">Live</div></div><p>System health, spreadsheet connections, Google access, source workbooks, and portal information.</p><footer><span class="source">Live operational controls</span><button class="open-btn" data-open="admin">Open controls</button></footer></article>
           </div>
 
-          <div class="panel">
-            <section class="card"><h2>Recommended build order</h2><div class="steps"><div class="step"><div class="step-num">1</div><div><strong>Sponsorship pilot</strong><span>Connect the four sponsorship workbook sections and test the website workflow.</span></div><div class="step-state">WORKING</div></div><div class="step"><div class="step-num">2</div><div><strong>Finance transactions</strong><span>Move transaction entry and core summaries into the website.</span></div><div class="step-state">QUEUED</div></div><div class="step"><div class="step-num">3</div><div><strong>Membership foundation</strong><span>Create the shared people and officer records used throughout the portal.</span></div><div class="step-state">QUEUED</div></div></div></section>
-            <aside class="card"><h2>Data protection</h2><div class="notice">The original spreadsheets remain unchanged. Each module will be tested against its workbook before the portal becomes the primary system.</div><div class="rule"></div><div style="color:var(--muted);font-size:.87rem">Access controls, backups, and change history will be added before live financial or membership data is entered.</div></aside>
-          </div>
         </section>
 
         <section class="detail-view" id="detail">
@@ -2059,6 +2067,13 @@
       nextEvent.push([cell(30,2),cell(30,4)]);
       const overview = rows.slice(33,37).map(row => [row[1],row[3]]);
       const attendanceRows = rows.slice(5).filter(row => String(row[7] || '').trim()).map(row => ({event:row[7],date:row[8],count:row[9],participation:row[10],notes:row[11]}));
+      const today = new Date(); today.setHours(0,0,0,0);
+      const upcomingEvents = attendanceRows.map(item => {
+        const parts = String(item.date || '').split('/').map(Number);
+        const eventDate = parts.length === 3 ? new Date(parts[2],parts[0] - 1,parts[1]) : null;
+        return {...item,eventDate,daysAway:eventDate ? Math.ceil((eventDate - today) / 86400000) : -1};
+      }).filter(item => item.eventDate && item.daysAway >= 0).sort((a,b) => a.eventDate - b.eventDate).slice(0,3);
+      const upcomingHtml = upcomingEvents.length ? `<div class="membership-upcoming-events">${upcomingEvents.map(item => `<div class="membership-upcoming-event"><strong>${esc(item.event)}</strong><time>${esc(item.date)}</time><span class="membership-days-away">${item.daysAway === 0 ? 'Today' : `${item.daysAway} day${item.daysAway === 1 ? '' : 's'} away`}</span></div>`).join('')}</div>` : '<div class="empty-state">No upcoming events are currently scheduled.</div>';
       let nextMarked = false;
       const attendanceHtml = attendanceRows.map(item => {
         const percent = Number(String(item.participation || '').replace('%',''));
@@ -2072,7 +2087,7 @@
       const complianceNames = missingWaivers.length ? `<div class="membership-action-callout"><strong>Waivers missing:</strong> ${missingWaivers.map(esc).join(', ')}</div>` : '';
       const rosterWithoutOldGrowth = roster.slice(1).filter(item => !String(item[0] || '').toLowerCase().includes('new member growth'));
       const growthSection = year === '2026' ? `<section class="membership-highlight"><h3>2026 Membership Growth</h3><div class="membership-attendance-snapshot"><div><span>New Members &amp; Prospects</span><strong>${newForYear}</strong></div><div><span>Starting Membership</span><strong>${startingRoster}</strong></div><div><span>New-Member Share</span><strong>${(newMemberShare * 100).toFixed(1)}%</strong></div><div><span>Projected Growth</span><strong>${(projectedGrowth * 100).toFixed(1)}%</strong></div></div><div class="membership-action-callout"><strong>Assumption:</strong> all current prospects will be patched. New-member share is ${newForYear} ÷ ${projectedRoster.length}; projected growth is ${newForYear} ÷ ${startingRoster}.</div></section>` : '';
-      target.innerHTML = `<div class="membership-executive"><header class="membership-hero"><div><h2>${esc(cell(1,2) || `BSSC ${year} Dashboard`)}</h2><p>Membership, compliance, leadership, and participation at a glance</p></div><strong>${esc(cell(1,12))}</strong></header><div class="membership-executive-kpis"><div class="membership-executive-kpi"><span>${esc(cell(16,2))}</span><strong>${esc(cell(16,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(18,2))}</span><strong>${esc(cell(18,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(19,2))}</span><strong>${esc(cell(19,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(20,2))}</span><strong>${esc(cell(20,3))}</strong></div></div><div class="membership-executive-grid"><section class="membership-highlight"><h3>${esc(cell(4,2) || `Officers (${year})`)}</h3><div class="membership-highlight-grid">${compactRows(officers)}</div></section><section class="membership-highlight"><h3>Compliance &amp; Action Needed</h3><div class="membership-highlight-grid">${compactRows([...compliance,...action])}</div>${complianceNames}</section><section class="membership-highlight"><h3>${esc(cell(15,2) || 'Roster KPIs')}</h3><div class="membership-highlight-grid">${compactRows(rosterWithoutOldGrowth)}</div></section><section class="membership-highlight"><h3>${esc(cell(15,5) || 'Age & Tenure')}</h3><div class="membership-highlight-grid">${compactRows(age)}</div></section>${growthSection}<section class="membership-highlight"><h3>${esc(cell(27,2) || 'Next Upcoming Event')}</h3>${compactRows(nextEvent)}</section><section class="membership-highlight"><h3>Attendance Snapshot</h3><div class="membership-attendance-snapshot">${overview.map(item => `<div><span>${esc(item[0])}</span><strong>${esc(item[1] || '—')}</strong></div>`).join('')}</div>${year === '2026' ? '<button class="membership-summary-link" type="button" data-open-attendance-summary>View Full Attendance Summary</button>' : ''}</section></div></div>`;
+      target.innerHTML = `<div class="membership-executive"><header class="membership-hero"><div><h2>${esc(cell(1,2) || `BSSC ${year} Dashboard`)}</h2><p>Membership, compliance, leadership, and participation at a glance</p></div><strong>${esc(cell(1,12))}</strong></header><div class="membership-executive-kpis"><div class="membership-executive-kpi"><span>${esc(cell(16,2))}</span><strong>${esc(cell(16,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(18,2))}</span><strong>${esc(cell(18,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(19,2))}</span><strong>${esc(cell(19,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(20,2))}</span><strong>${esc(cell(20,3))}</strong></div></div><div class="membership-executive-grid"><section class="membership-highlight"><h3>${esc(cell(4,2) || `Officers (${year})`)}</h3><div class="membership-highlight-grid">${compactRows(officers)}</div></section><section class="membership-highlight"><h3>Compliance &amp; Action Needed</h3><div class="membership-highlight-grid">${compactRows([...compliance,...action])}</div>${complianceNames}</section><section class="membership-highlight"><h3>${esc(cell(15,2) || 'Roster KPIs')}</h3><div class="membership-highlight-grid">${compactRows(rosterWithoutOldGrowth)}</div></section><section class="membership-highlight"><h3>${esc(cell(15,5) || 'Age & Tenure')}</h3><div class="membership-highlight-grid">${compactRows(age)}</div></section>${growthSection}<section class="membership-highlight"><h3>Next Three Upcoming Events</h3>${upcomingHtml}</section><section class="membership-highlight"><h3>Attendance Snapshot</h3><div class="membership-attendance-snapshot">${overview.map(item => `<div><span>${esc(item[0])}</span><strong>${esc(item[1] || '—')}</strong></div>`).join('')}</div>${year === '2026' ? '<button class="membership-summary-link" type="button" data-open-attendance-summary>View Full Attendance Summary</button>' : ''}</section></div></div>`;
       const summaryButton = target.querySelector('[data-open-attendance-summary]');
       if (summaryButton) summaryButton.addEventListener('click',() => openMembershipSection('2026 Attendance Summary'));
       status.textContent = `Dashboard ${year} loaded live from Google Sheets. Formula results are read-only here.`;
