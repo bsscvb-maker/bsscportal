@@ -511,6 +511,15 @@
     .uptimerobot-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
     .uptimerobot-actions button { padding:8px 11px; border:0; border-radius:6px; color:#fff; background:var(--gold); font:inherit; font-size:.8rem; font-weight:900; cursor:pointer; }
     .uptimerobot-actions button.secondary { color:#26282b; background:#e5e7ea; }
+    .uptime-down-backdrop { display:none; position:fixed; inset:0; z-index:10000; align-items:center; justify-content:center; padding:18px; background:rgba(8,10,13,.76); }
+    .uptime-down-backdrop.visible { display:flex; }
+    .uptime-down-dialog { width:min(100%,520px); padding:24px; border:2px solid #cf1235; border-radius:14px; color:#fff; background:#17181c; box-shadow:0 24px 80px rgba(0,0,0,.48); }
+    .uptime-down-dialog h2 { margin:0 0 10px; font-size:1.45rem; }
+    .uptime-down-dialog p { margin:8px 0; color:#e0e2e5; line-height:1.5; }
+    .uptime-down-pill { display:inline-block; margin-bottom:12px; padding:5px 10px; border-radius:999px; color:#fff; background:#cf1235; font-size:.72rem; font-weight:900; letter-spacing:.06em; }
+    .uptime-down-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:18px; }
+    .uptime-down-actions button,.uptime-down-actions a { padding:10px 14px; border:0; border-radius:7px; color:#fff; background:#cf1235; font:inherit; font-weight:900; text-decoration:none; cursor:pointer; }
+    .uptime-down-actions a { background:#35383f; }
     .formula-cell { background:#f1f3f5 !important; color:#555; }
     .finance-dashboard-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:18px; }
     .finance-dashboard-card { padding:16px; border:1px solid var(--line); border-top:5px solid #111113; border-radius:10px; background:#fff; }
@@ -640,6 +649,15 @@
       <div class="auth-error" id="authError"></div>
     </div>
   </section>
+  <div class="uptime-down-backdrop" id="uptimeDownAlert" aria-hidden="true">
+    <section class="uptime-down-dialog" role="alertdialog" aria-modal="true" aria-labelledby="uptimeDownTitle" aria-describedby="uptimeDownMessage" tabindex="-1">
+      <span class="uptime-down-pill">UPTIMEROBOT ALERT</span>
+      <h2 id="uptimeDownTitle">Website may be down</h2>
+      <p id="uptimeDownMessage">UptimeRobot has reported an issue with the monitored website.</p>
+      <p>This alert will clear when UptimeRobot reports the monitor is back up.</p>
+      <div class="uptime-down-actions"><button id="dismissUptimeDownAlert" type="button">Dismiss</button><a href="https://dashboard.uptimerobot.com/monitors" target="_blank" rel="noopener">Open UptimeRobot</a></div>
+    </section>
+  </div>
   <div class="app">
     <aside class="sidebar" id="sidebar">
       <div class="brand"><div class="brand-mark">BS</div><div><strong>BoneShakers</strong><span>Management Portal</span></div></div>
@@ -2863,6 +2881,41 @@
     let uptimeRobotCheckRunning = false;
     let uptimeRobotTimer = null;
     let uptimeRobotLastCheckAt = 0;
+    let uptimeRobotDownAlertActive = false;
+    let uptimeRobotDownAlertDismissed = false;
+
+    function updateUptimeRobotDownAlert(monitor) {
+      const alertBox = document.getElementById('uptimeDownAlert');
+      const message = document.getElementById('uptimeDownMessage');
+      if (!alertBox || !message) return;
+      const status = Number(monitor.status);
+      if (status === 8 || status === 9) {
+        if (!uptimeRobotDownAlertActive) {
+          uptimeRobotDownAlertActive = true;
+          uptimeRobotDownAlertDismissed = false;
+        }
+        const name = monitor.friendly_name || 'Your monitored website';
+        message.textContent = status === 9
+          ? `UptimeRobot reports that ${name} is DOWN.`
+          : `UptimeRobot says ${name} may be down and is checking the outage.`;
+        if (!uptimeRobotDownAlertDismissed) {
+          alertBox.classList.add('visible');
+          alertBox.setAttribute('aria-hidden','false');
+        }
+      } else if (status === 2) {
+        uptimeRobotDownAlertActive = false;
+        uptimeRobotDownAlertDismissed = false;
+        alertBox.classList.remove('visible');
+        alertBox.setAttribute('aria-hidden','true');
+      }
+    }
+
+    document.getElementById('dismissUptimeDownAlert').addEventListener('click', () => {
+      uptimeRobotDownAlertDismissed = true;
+      const alertBox = document.getElementById('uptimeDownAlert');
+      alertBox.classList.remove('visible');
+      alertBox.setAttribute('aria-hidden','true');
+    });
 
     async function loadUptimeRobotStatus(force = false) {
       const key = localStorage.getItem(UPTIMEROBOT_KEY_STORAGE);
@@ -2897,6 +2950,7 @@
         if (payload.stat !== 'ok') throw new Error(payload.error?.message || 'The key was rejected. Check that it is monitor-specific and read-only.');
         const monitor = payload.monitors?.[0];
         if (!monitor) throw new Error('No monitor was returned for this key.');
+        updateUptimeRobotDownAlert(monitor);
         const states = {0:['Paused',''],1:['Waiting for first check',''],2:['Up','live'],8:['Checking possible outage','error'],9:['Down','error']};
         const [state, badgeClass] = states[Number(monitor.status)] || ['Unknown','error'];
         const ratios = String(monitor.custom_uptime_ratios || '').split('-');
