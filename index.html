@@ -1003,6 +1003,7 @@
     const tablePendingEdits = {};
     let financeTransactionOptions = {};
     let financePayeeHistory = new Map();
+    let financeReconciliationCount = null;
     let bftDashboardEditMode = false;
     let bftDashboardRows = [];
     const bftDashboardPendingEdits = new Map();
@@ -1715,6 +1716,7 @@
       const target = document.getElementById('financeReconciliationTable');
       const status = document.getElementById('financeReconciliationStatus');
       const uncleared = rows.slice(1).map((row,index) => ({row,sourceRow:index + 2})).filter(item => String(item.row[14] || '').trim().toLowerCase() === 'no');
+      updateFinanceReconciliationCount(uncleared.length);
       if (!uncleared.length) {
         target.innerHTML = '<div class="reconciliation-empty">✓ Everything is cleared. There are no outstanding transactions to reconcile.</div>';
         status.textContent = '0 uncleared transactions.';
@@ -1863,6 +1865,7 @@
         adminWorkspace.classList.remove('active');
         financeWorkspace.classList.add('active');
         loadFinanceTab('dashboard',true);
+        refreshFinanceReconciliationCount();
       } else if (key === 'sponsors') {
         taskGrid.innerHTML = '';
         sponsorWorkspace.classList.add('active');
@@ -1967,6 +1970,7 @@
       completeOrder.forEach(key => { const tab = tabs.find(item => item.dataset.financeTab === key); if (tab) tabBar.appendChild(tab); });
       const names = getFinanceTabNames();
       tabs.forEach(tab => { tab.textContent = String(names[tab.dataset.financeTab] || defaultFinanceTabNames[tab.dataset.financeTab]); });
+      if (financeReconciliationCount !== null) updateFinanceReconciliationCount(financeReconciliationCount);
       tabs.forEach(tab => tab.classList.toggle('finance-user-hidden', hidden.has(tab.dataset.financeTab)));
       const activeHidden = tabs.find(tab => tab.classList.contains('active') && hidden.has(tab.dataset.financeTab));
       if (activeHidden) {
@@ -2020,6 +2024,27 @@
         applyFinanceTabPreferences();
         panel.remove();
       });
+    }
+
+    function updateFinanceReconciliationCount(count) {
+      const tab = document.querySelector('[data-finance-tab="reconciliation"]');
+      if (!tab) return;
+      financeReconciliationCount = Number(count) || 0;
+      const savedName = getFinanceTabNames().reconciliation;
+      const baseName = String(savedName || defaultFinanceTabNames.reconciliation || 'Reconciliation').replace(/\s+\(\d+\)$/,'');
+      const unclearedCount = financeReconciliationCount;
+      tab.textContent = `${baseName} (${unclearedCount})`;
+      tab.setAttribute('aria-label',`${baseName}, ${unclearedCount} uncleared transactions`);
+    }
+
+    async function refreshFinanceReconciliationCount() {
+      try {
+        const rows = await getSheetValues("'Transactions-2026'!O2:O1870",FINANCE_SPREADSHEET_ID);
+        const count = rows.filter(row => String(row[0] || '').trim().toLowerCase() === 'no').length;
+        updateFinanceReconciliationCount(count);
+      } catch (error) {
+        // Keep the normal title if the workbook is temporarily unavailable.
+      }
     }
     document.getElementById('financeAdminToggle').addEventListener('click', openFinanceTabManager);
     applyFinanceTabPreferences();
