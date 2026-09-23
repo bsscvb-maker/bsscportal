@@ -675,6 +675,11 @@
       .operations-overview-status { max-width:135px; }
     }
 
+  
+    button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:3px solid #cf1235; outline-offset:2px; }
+    button:disabled { cursor:not-allowed; opacity:.62; }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition-duration:.01ms!important; animation-duration:.01ms!important; animation-iteration-count:1!important; } }
+
   </style>
 </head>
 <body>
@@ -1070,7 +1075,9 @@
       }
       target.innerHTML = events.slice(0,5).map(event => {
         const at = new Date(event.at);
-        const quantity = /row/i.test(event.action || '') ? `${Number(event.count)||1} row(s)` : `${Number(event.count)||1} cell(s)`;
+        const amount = Number(event.count)||1;
+        const unit = /row/i.test(event.action || '') ? (amount === 1 ? 'row' : 'rows') : (amount === 1 ? 'cell' : 'cells');
+        const quantity = `${amount} ${unit}`;
         const time = Number.isNaN(at.getTime()) ? '' : at.toLocaleString('en-US',{timeZone:'America/New_York',month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'});
         return `<div class="audit-item"><div><strong>${esc(event.action || 'Workbook update')}</strong><small>${esc(event.location || 'Connected workbook')} · ${quantity}</small></div><time class="audit-time">${esc(time)}</time></div>`;
       }).join('');
@@ -1169,7 +1176,7 @@
         method:'PUT',
         headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
         body:JSON.stringify({range,majorDimension:'ROWS',values:[[value]]})
-      },'Updated a workbook cell',sheetName,1);
+      },'Updated a workbook cell',range,1);
     }
 
     async function appendSheetRow(spreadsheetId, sheetName, values) {
