@@ -434,6 +434,8 @@
     .market-send-vendor-order { border:0; border-radius:8px; padding:10px 15px; color:#fff; background:#c8102e; font-weight:900; cursor:pointer; }
     .market-send-vendor-order:hover:not(:disabled) { background:#a70d26; }
     .market-send-vendor-order:disabled { color:#737373; background:#e2e2e2; cursor:not-allowed; }
+    .market-send-vendor-order.is-processing { color:#111113; background:#f2c500; cursor:progress; }
+    .market-send-vendor-order.is-complete { color:#fff; background:#14823b; cursor:default; }
     .market-vendor-action-note { color:var(--muted); font-size:.8rem; }
     .market-sections { display: grid; gap: 18px; padding: 20px; }
     .market-section { border: 1px solid #252528; }
@@ -850,6 +852,8 @@
     const IDLE_TIMEOUT_MS = 60 * 60 * 1000;
     let tokenClient;
     let accessToken = '';
+    let marketplaceVendorOrderPopup = null;
+    let marketplaceVendorOrderRequestId = '';
     let portalHealthTimer = null;
     let portalHealthCheckRunning = false;
     let portalConnectionStates = [];
@@ -1830,10 +1834,20 @@
         return;
       }
 
+      const resultWindowName = 'bsscVendorOrder_' + Date.now();
+      const resultWindow = window.open('about:blank', resultWindowName);
+      if (!resultWindow) {
+        alert('Allow pop-ups for the portal so it can show the send result.');
+        return;
+      }
+
       const minimumMet = button && button.dataset.minimumMet === 'true';
       const fields = [['action', 'sendVendorOrder'], ['accessToken', accessToken]];
       if (minimumMet) {
-        if (!window.confirm('Send the current vendor order email now?')) return;
+        if (!window.confirm('Send the current vendor order email now?')) {
+          resultWindow.close();
+          return;
+        }
       } else {
         const formatMoney = value => Number(value || 0).toLocaleString('en-US', {
           style: 'currency',
@@ -1842,16 +1856,21 @@
         const currentOrder = Number(button.dataset.currentOrder || 0);
         const vendorMinimum = Number(button.dataset.vendorMinimum || 0);
         if (!window.confirm(
-          `Current order: ${formatMoney(currentOrder)}. Vendor minimum: ${formatMoney(vendorMinimum)}.\n\nSend below minimum with a manual override?`
-        )) return;
+          `Current order: ${formatMoney(currentOrder)}. Vendor minimum: ${formatMoney(vendorMinimum)}.\\n\\nSend below minimum with a manual override?`
+        )) {
+          resultWindow.close();
+          return;
+        }
 
         const overrideReason = window.prompt('Enter the reason for sending below the vendor minimum:');
         if (overrideReason === null || !overrideReason.trim()) {
+          resultWindow.close();
           alert('A reason is required. The vendor order was not sent.');
           return;
         }
         const overridePassword = window.prompt('Enter the Marketplace override password:');
         if (overridePassword === null || !overridePassword.trim()) {
+          resultWindow.close();
           alert('The override password is required. The vendor order was not sent.');
           return;
         }
@@ -1859,10 +1878,13 @@
         fields.push(['overridePassword', overridePassword.trim()]);
       }
 
+      const requestId = 'vendor-order-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+      fields.push(['requestId', requestId]);
+
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = MARKETPLACE_AUTOMATION_URL;
-      form.target = '_blank';
+      form.target = resultWindowName;
       form.style.display = 'none';
       fields.forEach(([name, value]) => {
         const input = document.createElement('input');
@@ -1872,16 +1894,49 @@
         form.appendChild(input);
       });
       document.body.appendChild(form);
+
+      marketplaceVendorOrderPopup = resultWindow;
+      marketplaceVendorOrderRequestId = requestId;
+      if (button) {
+        button.disabled = true;
+        button.classList.remove('is-complete');
+        button.classList.add('is-processing');
+        button.textContent = 'Sending...';
+      }
+      const note = document.querySelector('.market-vendor-action-note');
+      if (note) note.textContent = 'Sending vendor order...';
       form.submit();
       form.remove();
-      if (button) button.disabled = true;
-      const note = document.querySelector('.market-vendor-action-note');
-      if (note) note.textContent = 'Request submitted. Check the new tab for the send result.';
     }
 
     document.addEventListener('click', event => {
       if (event.target.closest('#marketplaceSendVendorOrder')) submitMarketplaceVendorOrder();
     });
+    window.addEventListener('message', event => {
+      const result = event.data || {};
+      if (event.source !== marketplaceVendorOrderPopup) return;
+      if (result.type !== 'bssc-marketplace-vendor-order-result') return;
+      if (!marketplaceVendorOrderRequestId || result.requestId !== marketplaceVendorOrderRequestId) return;
+
+      const button = document.getElementById('marketplaceSendVendorOrder');
+      const note = document.querySelector('.market-vendor-action-note');
+      if (button) {
+        button.classList.remove('is-processing');
+        if (result.success) {
+          button.classList.add('is-complete');
+          button.textContent = 'Vendor Order Sent';
+          button.disabled = true;
+        } else {
+          button.classList.remove('is-complete');
+          button.textContent = 'Send Vendor Order';
+          button.disabled = false;
+        }
+      }
+      if (note) note.textContent = result.message || (result.success ? 'Vendor order sent.' : 'Vendor order was not sent.');
+      marketplaceVendorOrderPopup = null;
+      marketplaceVendorOrderRequestId = '';
+    });
+
 
     function renderSalesHistoryHeading(rows) {
       const at = (row, column) => String((rows[row] && rows[row][column]) || '');
