@@ -187,6 +187,27 @@
     .finance-row .dashboard-edit-cell.pending-change { background: #fff0bd; box-shadow: inset 0 -3px 0 #d79b00; }
     .dashboard-action-bar { display: flex; justify-content: flex-end; margin: -2px 0 14px; }
     .table-tools { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: -2px 0 14px; }
+    .table-tool-actions { display:flex; align-items:center; gap:9px; }
+    .new-transaction-btn { flex:0 0 auto; border:0; border-radius:9px; padding:11px 15px; color:#fff; background:#111113; font-weight:900; cursor:pointer; }
+    .new-transaction-btn:hover { background:#303034; }
+    .transaction-entry { margin:4px 0 16px; padding:18px; border:2px solid #111113; border-top:5px solid var(--gold); border-radius:12px; background:#f8f9fa; }
+    .transaction-entry-head { display:flex; align-items:center; justify-content:space-between; gap:15px; margin-bottom:15px; }
+    .transaction-entry-head h3 { margin:0; color:#111113; font-size:1.15rem; }
+    .transaction-entry-close { border:0; background:transparent; color:#6b6f75; font-weight:900; cursor:pointer; }
+    .transaction-entry-form { display:grid; grid-template-columns:1fr; gap:11px; max-width:680px; }
+    .transaction-field { display:grid; grid-template-columns:minmax(160px,220px) minmax(0,1fr); align-items:center; gap:14px; }
+    .transaction-field label { color:#111113; font-weight:850; }
+    .transaction-field input { width:100%; min-height:42px; padding:9px 11px; border:1px solid #aeb4bb; border-radius:8px; background:#fff; font:inherit; }
+    .transaction-field input:focus { outline:2px solid var(--gold); border-color:var(--gold); }
+    .transaction-entry-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:6px; }
+    .transaction-entry-actions button { border:0; border-radius:8px; padding:10px 14px; font-weight:900; cursor:pointer; }
+    .transaction-cancel { color:#202226; background:#e2e5e8; }
+    .transaction-save { color:#fff; background:var(--gold); }
+    .variance-good { color:#075c2d !important; background:#dff6e8 !important; font-weight:900; }
+    .variance-over { color:#8c0c20 !important; background:#ffe1e6 !important; font-weight:900; }
+    .finance-hidden-tab { display:none; }
+    #financeWorkspace.show-hidden-tabs .finance-hidden-tab { display:inline-flex; }
+    .hidden-tabs-toggle { border-style:dashed !important; color:#555b63 !important; background:#f1f3f5 !important; }
     .table-search-wrap { position: relative; flex: 1 1 440px; max-width: 560px; }
     .table-search-wrap::before { content: '⌕'; position: absolute; left: 13px; top: 50%; transform: translateY(-52%); color: var(--muted); font-size: 1.25rem; pointer-events: none; }
     .table-search { width: 100%; min-height: 44px; padding: 10px 14px 10px 40px; border: 2px solid #bfc0c4; border-radius: 8px; color: var(--ink); background: white; font: inherit; }
@@ -361,6 +382,9 @@
       .table-tools { align-items: stretch; flex-direction: column; }
       .table-search-wrap { flex-basis: auto; max-width: none; }
       .table-tools .dashboard-edit-btn { width: 100%; }
+      .table-tool-actions { width:100%; }
+      .table-tool-actions button { flex:1 1 auto; }
+      .transaction-field { grid-template-columns:1fr; gap:5px; }
     }
   </style>
 </head>
@@ -489,7 +513,7 @@
             <div class="sponsor-tabs" aria-label="Finance sections">
               <button class="sponsor-tab active" data-finance-tab="dashboard">Dashboard-2026</button>
               <button class="sponsor-tab" data-finance-tab="control">Control-2026</button>
-              <button class="sponsor-tab" data-finance-tab="operating">Operating Budget</button>
+              <button class="sponsor-tab finance-hidden-tab" data-finance-tab="operating">Operating Budget</button>
               <button class="sponsor-tab" data-finance-tab="bft">Bikes for Tykes (BFT)</button>
               <button class="sponsor-tab" data-finance-tab="lineitem">Line-Item Budget</button>
               <button class="sponsor-tab" data-finance-tab="baseline">Operating Budget – Baseline</button>
@@ -501,6 +525,7 @@
               <button class="sponsor-tab" data-finance-tab="events">Events &amp; Fundraising</button>
               <button class="sponsor-tab" data-finance-tab="charities">Charities</button>
               <button class="sponsor-tab" data-finance-tab="eventbudgets">Event Budgets</button>
+              <button class="sponsor-tab hidden-tabs-toggle" id="financeHiddenTabsToggle" type="button">Hidden Tabs (1)</button>
             </div>
             <div class="finance-note">Finance is connected to the current BSSC Finance System 2026 workbook. Calculated cells are protected. Tally 2026 remains a read-only transfer log while its separate automation is being preserved.</div>
             <section class="sponsor-panel active" data-finance-panel="dashboard"><div class="data-status" id="financeDashboardStatus">Loading financial dashboard…</div><div id="financeDashboard"></div></section>
@@ -672,6 +697,18 @@
         method: 'PUT',
         headers: {Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json'},
         body: JSON.stringify({range, majorDimension: 'ROWS', values: [[value]]})
+      });
+      if (!response.ok) throw new Error(`Google Sheets returned ${response.status}`);
+      return response.json();
+    }
+
+    async function appendSheetRow(spreadsheetId, sheetName, values) {
+      const range = `'${sheetName.replace(/'/g, "''")}'!A:Q`;
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+      const response = await fetch(url, {
+        method:'POST',
+        headers:{Authorization:`Bearer ${accessToken}`, 'Content-Type':'application/json'},
+        body:JSON.stringify({range, majorDimension:'ROWS', values:[values]})
       });
       if (!response.ok) throw new Error(`Google Sheets returned ${response.status}`);
       return response.json();
@@ -905,7 +942,8 @@
       const finalHeaders = Array.from({length: width}, (_, i) => headers[i] || '');
       const editMode = Boolean(editOptions && tableEditModes[targetId]);
       const editButton = editOptions ? `<button class="dashboard-edit-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? 'Done Editing' : 'Edit Data'}</button>` : '';
-      const toolbar = `<div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search this list</span><input class="table-search" type="search" data-table-search="${targetId}" placeholder="Search by name, order number, price, item, status, or date…" autocomplete="off"></label>${editButton}</div><div class="table-search-count" data-search-count="${targetId}"></div>`;
+      const newTransactionButton = targetId === 'financeTransactions2026Table' ? `<button class="new-transaction-btn" data-new-transaction="true">＋ New Transaction</button>` : '';
+      const toolbar = `<div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search this list</span><input class="table-search" type="search" data-table-search="${targetId}" placeholder="Search by name, order number, price, item, status, or date…" autocomplete="off"></label><div class="table-tool-actions">${newTransactionButton}${editButton}</div></div><div class="table-search-count" data-search-count="${targetId}"></div>`;
       const isBudgetTable = targetId === 'bftBudgetTable';
       const isMarketplaceTable = targetId.startsWith('market');
       const tableClass = targetId === 'bftDonationsTable' ? 'data-table tracking-table' : (isTicketLedger ? 'data-table ticket-ledger-table' : (isBudgetTable ? 'data-table budget-table' : (isMarketplaceTable ? 'data-table marketplace-table' : 'data-table')));
@@ -941,12 +979,18 @@
             const quantity = Number(String(item.row[ticketGroupStart + 1] || '').replace(/[$,]/g, ''));
             if (Number.isFinite(quantity) && quantity > 0) shownValue = money(quantity * ticketPrice);
           }
-          return `<td class="${editable ? 'editable-cell' : (editMode && formulaValue.startsWith('=') ? 'formula-cell' : '')}" ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${item.sourceIndex + 1}" data-column="${columnIndex}" data-value="${esc(shownValue)}"` : ''}>${esc(shownValue)}</td>`;
+          const headerName = String(finalHeaders[columnIndex] || '').trim().toLowerCase();
+          const numericValue = Number(String(shownValue).replace(/[$,%(),]/g, '').replace(/\s/g, '')) * (String(shownValue).includes('(') ? -1 : 1);
+          const varianceClass = targetId === 'financeBaselineTable' && headerName.includes('variance') && Number.isFinite(numericValue) ? (numericValue < 0 ? 'variance-over' : 'variance-good') : '';
+          const baseClass = editable ? 'editable-cell' : (editMode && formulaValue.startsWith('=') ? 'formula-cell' : '');
+          return `<td class="${[baseClass,varianceClass].filter(Boolean).join(' ')}" ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${item.sourceIndex + 1}" data-column="${columnIndex}" data-value="${esc(shownValue)}"` : ''}>${esc(shownValue)}</td>`;
         }).join('')}</tr>`;
       }).join('')}</tbody></table></div>`;
       status.textContent = `${indexedData.length} row${indexedData.length === 1 ? '' : 's'} loaded from Google Sheets${editOptions ? (editMode ? ' — edit mode is on.' : ' — view mode.') : '.'}`;
       const toggleButton = target.querySelector('[data-toggle-edit]');
       if (toggleButton) toggleButton.addEventListener('click', () => toggleTableEditing(targetId, toggleButton));
+      const newTransaction = target.querySelector('[data-new-transaction="true"]');
+      if (newTransaction) newTransaction.addEventListener('click', () => openNewTransactionForm(targetId, finalHeaders));
       const searchInput = target.querySelector('[data-table-search]');
       const searchCount = target.querySelector('[data-search-count]');
       if (searchInput) searchInput.addEventListener('input', () => {
@@ -981,6 +1025,52 @@
         ticketPriceField.classList.add('pending-change');
         target.querySelectorAll('td[data-edit-cell="true"]').forEach(cell => recalculateTicketRow(targetId, cell));
       });
+    }
+
+    function openNewTransactionForm(targetId, headers) {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      const existing = target.querySelector('.transaction-entry');
+      if (existing) { existing.remove(); return; }
+      const today = new Date();
+      const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0,10);
+      const calculated = header => /running\s*balance/i.test(header);
+      const fields = headers.map((header,column) => ({header:String(header || '').trim(),column})).filter(field => field.header && !calculated(field.header));
+      const panel = document.createElement('section');
+      panel.className = 'transaction-entry';
+      panel.innerHTML = `<div class="transaction-entry-head"><h3>Add New Transaction</h3><button class="transaction-entry-close" type="button" aria-label="Close new transaction form">✕ Close</button></div>
+        <form class="transaction-entry-form" id="newTransactionForm">
+          ${fields.map(field => {
+            const isDate = /date/i.test(field.header);
+            const isAmount = /amount|cost|revenue|expense|income/i.test(field.header);
+            const value = isDate ? localDate : '';
+            return `<div class="transaction-field"><label for="transactionField${field.column}">${esc(field.header)}</label><input id="transactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} value="${esc(value)}" autocomplete="off"></div>`;
+          }).join('')}
+          <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Add Transaction</button></div>
+        </form>`;
+      const tools = target.querySelector('.table-tools');
+      tools.insertAdjacentElement('afterend', panel);
+      panel.querySelector('.transaction-entry-close').addEventListener('click', () => panel.remove());
+      panel.querySelector('.transaction-cancel').addEventListener('click', () => panel.remove());
+      panel.querySelector('form').addEventListener('submit', async event => {
+        event.preventDefault();
+        const saveButton = panel.querySelector('.transaction-save');
+        const values = Array.from({length:headers.length}, () => '');
+        fields.forEach(field => { values[field.column] = panel.querySelector(`[name="column${field.column}"]`).value.trim(); });
+        saveButton.disabled = true;
+        saveButton.textContent = 'Adding…';
+        try {
+          await appendSheetRow(FINANCE_SPREADSHEET_ID, 'Transactions-2026', values);
+          panel.remove();
+          await loadFinanceTab('transactions2026', true);
+        } catch (error) {
+          saveButton.disabled = false;
+          saveButton.textContent = 'Add Transaction';
+          alert('The transaction could not be added. Your entries are still here so you can try again.');
+        }
+      });
+      const firstEditable = panel.querySelector('input:not([type="date"])') || panel.querySelector('input');
+      if (firstEditable) firstEditable.focus();
     }
 
     function recalculateTicketRow(targetId, changedCell) {
@@ -1479,6 +1569,12 @@
       document.querySelectorAll('[data-finance-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.financePanel === selected));
       loadFinanceTab(selected);
     }));
+    document.getElementById('financeHiddenTabsToggle').addEventListener('click', () => {
+      const workspace = document.getElementById('financeWorkspace');
+      const showing = workspace.classList.toggle('show-hidden-tabs');
+      document.getElementById('financeHiddenTabsToggle').textContent = showing ? 'Hide Hidden Tabs' : 'Hidden Tabs (1)';
+      if (!showing && document.querySelector('[data-finance-tab="operating"].active')) document.querySelector('[data-finance-tab="dashboard"]').click();
+    });
     document.getElementById('back').addEventListener('click', () => showModule('home'));
     document.getElementById('menuToggle').addEventListener('click', () => sidebar.classList.toggle('open'));
   </script>
