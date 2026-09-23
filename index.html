@@ -142,8 +142,30 @@
     .membership-attendance .attendance-low { background:#f4cccc; color:#a8001d; font-weight:900; }
     .membership-attendance .attendance-upcoming { background:#edf0f2; color:#6b737c; }
     .membership-attendance .attendance-next td { background:#d9e7f5; font-weight:900; }
-    @media (max-width:1100px) { .membership-sheet-layout { grid-template-columns:1fr; } }
-    @media (max-width:700px) { .membership-sheet-left { grid-template-columns:1fr; } .membership-sheet-block.wide { grid-column:auto; } }
+    .membership-executive { display:grid; gap:16px; }
+    .membership-hero { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:22px 24px; color:#fff; background:linear-gradient(115deg,#09090b,#24252a); border-bottom:5px solid #cf1235; border-radius:12px; }
+    .membership-hero h2 { margin:0; color:#fff; font-size:1.6rem; }
+    .membership-hero p { margin:6px 0 0; color:#d2d5d9; }
+    .membership-hero strong { flex:0 0 auto; padding:8px 12px; border:1px solid #555a62; border-radius:999px; background:#15161a; }
+    .membership-executive-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .membership-executive-kpi { padding:17px; border:1px solid #d7dbe0; border-top:5px solid #cf1235; border-radius:10px; background:#fff; text-align:center; }
+    .membership-executive-kpi span { display:block; color:#626a73; font-size:.76rem; font-weight:900; letter-spacing:.04em; text-transform:uppercase; }
+    .membership-executive-kpi strong { display:block; margin-top:8px; color:#111; font-size:1.7rem; }
+    .membership-executive-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .membership-highlight { padding:16px; border:1px solid #d4d8dd; border-radius:10px; background:#fff; }
+    .membership-highlight h3 { margin:-16px -16px 12px; padding:10px 13px; color:#fff; background:#111113; border-bottom:3px solid #cf1235; border-radius:9px 9px 0 0; font-size:.96rem; }
+    .membership-highlight-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 18px; }
+    .membership-highlight-row { display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px solid #e4e6e9; }
+    .membership-highlight-row span { color:#4e5660; }
+    .membership-highlight-row strong { text-align:right; }
+    .membership-action-callout { margin-top:10px; padding:10px 12px; border-left:4px solid #cf1235; border-radius:6px; background:#fff0f3; color:#8e0921; }
+    .membership-attendance-snapshot { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+    .membership-attendance-snapshot div { padding:13px; border-radius:9px; background:#f2f4f6; text-align:center; }
+    .membership-attendance-snapshot span { display:block; color:#626a73; font-size:.75rem; font-weight:850; text-transform:uppercase; }
+    .membership-attendance-snapshot strong { display:block; margin-top:6px; font-size:1.15rem; }
+    .membership-summary-link { display:inline-flex; margin-top:12px; border:0; border-radius:8px; padding:10px 14px; color:#fff; background:#cf1235; font-weight:900; cursor:pointer; }
+    @media (max-width:1100px) { .membership-sheet-layout { grid-template-columns:1fr; } .membership-executive-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:700px) { .membership-sheet-left,.membership-executive-grid { grid-template-columns:1fr; } .membership-sheet-block.wide { grid-column:auto; } .membership-executive-kpis,.membership-attendance-snapshot { grid-template-columns:repeat(2,minmax(0,1fr)); } }
     .portal-health { display:none; flex:0 0 300px; min-height:82px; align-items:center; gap:14px; padding:14px 18px; border:2px solid transparent; border-radius:14px; color:#fff; box-shadow:0 8px 24px rgba(0,0,0,.28); }
     .portal-health.visible { display:flex; }
     .portal-health-dot { flex:0 0 18px; width:18px; height:18px; border:4px solid rgba(255,255,255,.72); border-radius:50%; box-shadow:0 0 0 5px rgba(255,255,255,.12); }
@@ -1985,6 +2007,7 @@
       '2027-Attendance':{range:"'2027-Attendance'!A1:BP1013",columns:68,editable:true,group:'Current'},
       '2027':{range:"'2027'!A1:AK856",columns:37,editable:true,group:'Current'},
       'Dashboard 2026':{range:"'Dashboard 2026'!A1:Z80",columns:26,dashboard:true,group:'Current'},
+      '2026 Attendance Summary':{range:"'Dashboard 2026'!A1:P80",columns:16,attendanceSummary:true,group:'Current'},
       '2026-Attendance':{range:"'2026-Attendance'!A1:BR1017",columns:70,editable:true,group:'Current'},
       '2026':{range:"'2026'!A1:AH855",columns:34,editable:true,group:'Current'},
       '2025-A':{range:"'2025-A'!A1:Z1000",columns:26,group:'System & Automation'},
@@ -2039,8 +2062,29 @@
         return `<tr class="${next ? 'attendance-next' : ''}"><td>${esc(item.event)}</td><td>${esc(item.date)}</td><td>${esc(item.count)}</td><td class="${performance}">${esc(item.participation)}</td><td>${esc(item.notes)}</td></tr>`;
       }).join('');
       const missingList = missingWaivers.length ? `<ol class="membership-missing-list">${missingWaivers.map(name => `<li>${esc(name)}</li>`).join('')}</ol>` : '';
-      target.innerHTML = `<div class="membership-sheet-dashboard"><header class="membership-sheet-banner"><h2>${esc(cell(1,2) || `BSSC ${year} Dashboard`)}</h2><strong>${esc(cell(1,12))}</strong></header><div class="membership-sheet-source">${esc(cell(2,2))}</div><div class="membership-sheet-layout"><div class="membership-sheet-left"><div class="membership-sheet-column">${block(cell(4,2) || `Officers (${year})`,officers)}${block(cell(15,2) || 'Roster KPIs',roster)}${block(cell(27,2) || 'Next Upcoming Event',nextEvent)}${block(cell(32,2) || 'Attendance Overview',overview)}</div><div class="membership-sheet-column">${block(cell(4,5) || 'Compliance KPIs',compliance)}${block(cell(10,5) || 'Action Needed',action,false,missingList)}${block(cell(15,5) || 'Age & Tenure',age)}</div></div><div class="table-wrap"><table class="membership-attendance"><caption>${esc(cell(4,8) || `${year} Core Attendance Summary (Yes Count)`)}</caption><thead><tr><th>Event</th><th>Date</th><th>Count</th><th>Participation %</th><th>Notes</th></tr></thead><tbody>${attendanceHtml}</tbody></table></div></div></div>`;
+      const compactRows = items => items.map(item => `<div class="membership-highlight-row"><span>${esc(item[0])}</span><strong>${esc(item[1] || '—')}</strong></div>`).join('');
+      const complianceNames = missingWaivers.length ? `<div class="membership-action-callout"><strong>Waivers missing:</strong> ${missingWaivers.map(esc).join(', ')}</div>` : '';
+      target.innerHTML = `<div class="membership-executive"><header class="membership-hero"><div><h2>${esc(cell(1,2) || `BSSC ${year} Dashboard`)}</h2><p>Membership, compliance, leadership, and participation at a glance</p></div><strong>${esc(cell(1,12))}</strong></header><div class="membership-executive-kpis"><div class="membership-executive-kpi"><span>${esc(cell(16,2))}</span><strong>${esc(cell(16,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(18,2))}</span><strong>${esc(cell(18,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(19,2))}</span><strong>${esc(cell(19,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(20,2))}</span><strong>${esc(cell(20,3))}</strong></div></div><div class="membership-executive-grid"><section class="membership-highlight"><h3>${esc(cell(4,2) || `Officers (${year})`)}</h3><div class="membership-highlight-grid">${compactRows(officers)}</div></section><section class="membership-highlight"><h3>Compliance &amp; Action Needed</h3><div class="membership-highlight-grid">${compactRows([...compliance,...action])}</div>${complianceNames}</section><section class="membership-highlight"><h3>${esc(cell(15,2) || 'Roster KPIs')}</h3><div class="membership-highlight-grid">${compactRows(roster.slice(1))}</div></section><section class="membership-highlight"><h3>${esc(cell(15,5) || 'Age & Tenure')}</h3><div class="membership-highlight-grid">${compactRows(age)}</div></section><section class="membership-highlight"><h3>${esc(cell(27,2) || 'Next Upcoming Event')}</h3>${compactRows(nextEvent)}</section><section class="membership-highlight"><h3>Attendance Snapshot</h3><div class="membership-attendance-snapshot">${overview.map(item => `<div><span>${esc(item[0])}</span><strong>${esc(item[1] || '—')}</strong></div>`).join('')}</div>${year === '2026' ? '<button class="membership-summary-link" type="button" data-open-attendance-summary>View Full Attendance Summary</button>' : ''}</section></div></div>`;
+      const summaryButton = target.querySelector('[data-open-attendance-summary]');
+      if (summaryButton) summaryButton.addEventListener('click',() => openMembershipSection('2026 Attendance Summary'));
       status.textContent = `Dashboard ${year} loaded live from Google Sheets. Formula results are read-only here.`;
+    }
+
+    function renderMembershipAttendanceSummary(rows) {
+      const target = document.getElementById('membershipContent');
+      const status = document.getElementById('membershipStatus');
+      const cell = (row,column) => String((rows[row - 1] && rows[row - 1][column - 1]) ?? '').trim();
+      let nextMarked = false;
+      const attendanceRows = rows.slice(5).filter(row => String(row[7] || '').trim());
+      const body = attendanceRows.map(row => {
+        const percent = Number(String(row[10] || '').replace('%',''));
+        const upcoming = !row[9] && !row[10];
+        const next = upcoming && !nextMarked; if (next) nextMarked = true;
+        const performance = upcoming ? 'attendance-upcoming' : percent >= 50 ? 'attendance-good' : percent >= 30 ? 'attendance-fair' : 'attendance-low';
+        return `<tr class="${next ? 'attendance-next' : ''}"><td>${esc(row[7])}</td><td>${esc(row[8])}</td><td>${esc(row[9])}</td><td class="${performance}">${esc(row[10])}</td><td>${esc(row[11])}</td></tr>`;
+      }).join('');
+      target.innerHTML = `<div class="membership-sheet-dashboard"><header class="membership-sheet-banner"><h2>2026 Core Attendance Summary</h2><strong>${esc(cell(1,12))}</strong></header><div class="membership-sheet-source">Full event-by-event participation detail from Dashboard 2026</div><div class="table-wrap"><table class="membership-attendance"><thead><tr><th>Event</th><th>Date</th><th>Count</th><th>Participation %</th><th>Notes</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
+      status.textContent = `${attendanceRows.length} attendance events loaded live from Google Sheets.`;
     }
 
     async function loadMembershipSheet(sheetName, force = false) {
@@ -2057,6 +2101,7 @@
         if (config.dashboard) reads.push(getSheetValues(`'${sheetName.replace('Dashboard ','')}'!A1:${sheetName.includes('2026') ? 'AH' : 'AK'}900`,MEMBERSHIP_SPREADSHEET_ID));
         const [rows,formulasOrRoster = [],dashboardRoster = []] = await Promise.all(reads);
         if (config.dashboard) renderMembershipDashboard(rows,sheetName.replace('Dashboard ',''),formulasOrRoster);
+        else if (config.attendanceSummary) renderMembershipAttendanceSummary(rows);
         else {
           const editOptions = config.editable ? {sheetName,spreadsheetId:MEMBERSHIP_SPREADSHEET_ID,formulaRows:formulasOrRoster} : null;
           renderDataTable('membershipContent','membershipStatus',rows,0,config.columns,editOptions);
@@ -2073,8 +2118,8 @@
     const MEMBERSHIP_HIDDEN_KEY = 'bssc_membership_hidden_sections';
     const MEMBERSHIP_PINNED_KEY = 'bssc_membership_pinned_sections';
     const MEMBERSHIP_NAMES_KEY = 'bssc_membership_section_names';
-    const defaultMembershipPinned = ['Dashboard 2027','2027','2027-Attendance','Dashboard 2026','2026','2026-Attendance','Officer List','Lifer'];
-    const defaultMembershipNames = {'Dashboard 2027':'Dashboard 2027','2027':'2027 Roster','2027-Attendance':'2027 Attendance','Dashboard 2026':'Dashboard 2026','2026':'2026 Roster','2026-Attendance':'2026 Attendance','Officer List':'Officer List','Lifer':'Lifers'};
+    const defaultMembershipPinned = ['Dashboard 2027','2027','2027-Attendance','Dashboard 2026','2026 Attendance Summary','2026','2026-Attendance','Officer List','Lifer'];
+    const defaultMembershipNames = {'Dashboard 2027':'Dashboard 2027','2027':'2027 Roster','2027-Attendance':'2027 Attendance','Dashboard 2026':'Dashboard 2026','2026 Attendance Summary':'Attendance Summary','2026':'2026 Roster','2026-Attendance':'2026 Attendance','Officer List':'Officer List','Lifer':'Lifers'};
     function membershipSetting(key,fallback) { try { const value = JSON.parse(localStorage.getItem(key) || 'null'); return value ?? fallback; } catch (error) { return fallback; } }
     function membershipDisplayName(name) { return String(membershipSetting(MEMBERSHIP_NAMES_KEY,{})[name] || defaultMembershipNames[name] || name); }
     function openMembershipSection(name) {
@@ -2090,7 +2135,15 @@
       if (!bar || !picker) return;
       const allNames = Object.keys(membershipSheetConfig);
       const hidden = new Set(membershipSetting(MEMBERSHIP_HIDDEN_KEY,[]).filter(name => allNames.includes(name)));
-      const savedPinned = membershipSetting(MEMBERSHIP_PINNED_KEY,defaultMembershipPinned);
+      let savedPinned = membershipSetting(MEMBERSHIP_PINNED_KEY,defaultMembershipPinned);
+      if (!localStorage.getItem('bssc_membership_attendance_summary_added_v1')) {
+        if (!savedPinned.includes('2026 Attendance Summary')) {
+          const dashboardIndex = savedPinned.indexOf('Dashboard 2026');
+          savedPinned.splice(dashboardIndex >= 0 ? dashboardIndex + 1 : savedPinned.length,0,'2026 Attendance Summary');
+          localStorage.setItem(MEMBERSHIP_PINNED_KEY,JSON.stringify(savedPinned));
+        }
+        localStorage.setItem('bssc_membership_attendance_summary_added_v1','true');
+      }
       const pinned = savedPinned.filter(name => allNames.includes(name) && !hidden.has(name));
       bar.querySelectorAll('[data-membership-sheet]').forEach(button => button.remove());
       pinned.forEach(name => {
