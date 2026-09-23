@@ -321,6 +321,19 @@
     .transaction-consistency.visible { display:block; }
     .transaction-consistency.good { border-left-color:#0b9b50; color:#075c2d; background:#e2f7eb; }
     .transaction-consistency button { margin-top:8px; border:0; border-radius:6px; padding:7px 10px; color:#fff; background:#111113; font-weight:850; cursor:pointer; }
+    .paypal-bundle { display:none; margin:4px 0 2px; padding:15px; border:2px solid #1377c9; border-radius:10px; background:#edf7ff; }
+    .paypal-bundle.visible { display:block; }
+    .paypal-bundle h4 { margin:0 0 5px; color:#0b4f89; font-size:1rem; }
+    .paypal-bundle > p { margin:0 0 13px; color:#35566f; font-size:.88rem; line-height:1.45; }
+    .paypal-bundle-grid { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+    .paypal-bundle-field { display:grid; gap:5px; }
+    .paypal-bundle-field label { color:#111113; font-weight:850; font-size:.88rem; }
+    .paypal-bundle-field input { width:100%; min-height:42px; padding:9px 11px; border:1px solid #8ca8bd; border-radius:8px; background:#fff; font:inherit; }
+    .paypal-bundle-field input:focus { outline:2px solid #1377c9; border-color:#1377c9; }
+    .paypal-bundle-preview { grid-column:1/-1; display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:2px; }
+    .paypal-bundle-preview div { padding:10px; border:1px solid #b9d6eb; border-radius:8px; background:#fff; text-align:center; }
+    .paypal-bundle-preview span { display:block; color:#5d6d78; font-size:.73rem; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
+    .paypal-bundle-preview strong { display:block; margin-top:3px; color:#111113; font-size:1rem; }
     .transaction-entry-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:6px; }
     .transaction-entry-actions button { border:0; border-radius:8px; padding:10px 14px; font-weight:900; cursor:pointer; }
     .transaction-cancel { color:#202226; background:#e2e5e8; }
@@ -589,6 +602,7 @@
       .table-tool-actions { width:100%; }
       .table-tool-actions button { flex:1 1 auto; }
       .transaction-field { grid-template-columns:1fr; gap:5px; }
+      .paypal-bundle-grid,.paypal-bundle-preview { grid-template-columns:1fr; }
       .finance-tab-manager-grid { grid-template-columns:1fr; }
       .membership-tab-manager .finance-tab-admin-row { grid-template-columns:1fr; }
     }
@@ -1300,7 +1314,7 @@
       const today = new Date();
       const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0,10);
       const calculated = header => /^(month|year)$/i.test(header) || /running\s*balance/i.test(header);
-      const transactionFieldOrder = ['date','fund','activity','category','subcategory','description','payee/payer','amount','type','payment method','cleared','community impact','note'];
+      const transactionFieldOrder = ['date','payee/payer','fund','activity','category','subcategory','description','amount','type','payment method','cleared','community impact','note'];
       const fields = headers.map((header,column) => ({header:String(header || '').trim(),column})).filter(field => field.header && !calculated(field.header)).sort((a,b) => {
         const aOrder = transactionFieldOrder.indexOf(a.header.toLowerCase());
         const bOrder = transactionFieldOrder.indexOf(b.header.toLowerCase());
@@ -1320,6 +1334,15 @@
             const control = isSuggestedText ? `<input id="transactionField${field.column}" name="column${field.column}" type="text" list="transactionSuggestions${field.column}" value="" autocomplete="off" placeholder="${suggestedPlaceholder}"><datalist id="transactionSuggestions${field.column}">${options.map(option => `<option value="${esc(option)}"></option>`).join('')}</datalist>` : options.length ? `<select id="transactionField${field.column}" name="column${field.column}" required><option value="">Select ${esc(field.header)}…</option>${options.map(option => `<option value="${esc(option)}">${esc(option)}</option>`).join('')}</select>` : `<input id="transactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} value="${esc(value)}" autocomplete="off">`;
             return `<div class="transaction-field"><label for="transactionField${field.column}">${esc(field.header)}</label>${control}</div>`;
           }).join('')}
+          <section class="paypal-bundle" id="paypalBundle" aria-live="polite">
+            <h4>PayPal three-entry workflow</h4>
+            <p>Enter the customer and PayPal fee once. The portal will add the gross sale, processing fee, and bank transfer together.</p>
+            <div class="paypal-bundle-grid">
+              <div class="paypal-bundle-field"><label for="paypalCustomerName">Customer / payer name</label><input id="paypalCustomerName" type="text" placeholder="Example: Debby Farland" autocomplete="off"></div>
+              <div class="paypal-bundle-field"><label for="paypalFeeAmount">PayPal processing fee</label><input id="paypalFeeAmount" type="number" min="0" step="0.01" placeholder="0.00"></div>
+              <div class="paypal-bundle-preview"><div><span>Gross sale</span><strong id="paypalGrossPreview">$0.00</strong></div><div><span>Processing fee</span><strong id="paypalFeePreview">-$0.00</strong></div><div><span>Bank transfer</span><strong id="paypalNetPreview">$0.00</strong></div></div>
+            </div>
+          </section>
           <div class="transaction-consistency" id="transactionConsistency" role="status" aria-live="polite"></div>
           <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Add Transaction</button></div>
         </form>`;
@@ -1330,7 +1353,12 @@
       const fieldByName = Object.fromEntries(fields.map(field => [field.header.toLowerCase(),field]));
       const guidedFields = ['fund','activity','category','subcategory'];
       const payeeField = fieldByName['payee/payer'];
+      const paymentMethodField = fieldByName['payment method'];
+      const amountField = fieldByName['amount'];
       const historyNotice = panel.querySelector('#transactionConsistency');
+      const paypalBundle = panel.querySelector('#paypalBundle');
+      const paypalCustomer = panel.querySelector('#paypalCustomerName');
+      const paypalFee = panel.querySelector('#paypalFeeAmount');
       const currentValue = name => {
         const field = fieldByName[name];
         const control = field ? panel.querySelector(`[name="column${field.column}"]`) : null;
@@ -1340,6 +1368,18 @@
         const field = fieldByName[name];
         const control = field ? panel.querySelector(`[name="column${field.column}"]`) : null;
         if (control && [...control.options || []].some(option => option.value === value)) control.value = value;
+      };
+      const isPayPalWorkflow = () => /paypal/i.test(currentValue('payee/payer')) || /paypal/i.test(currentValue('payment method'));
+      const updatePayPalBundle = () => {
+        const active = isPayPalWorkflow();
+        paypalBundle.classList.toggle('visible',active);
+        if (!active) return;
+        setValue('payment method','PayPal');
+        const gross = Math.abs(Number(currentValue('amount')) || 0);
+        const fee = Math.abs(Number(paypalFee.value) || 0);
+        panel.querySelector('#paypalGrossPreview').textContent = money(gross);
+        panel.querySelector('#paypalFeePreview').textContent = `-${money(fee)}`;
+        panel.querySelector('#paypalNetPreview').textContent = money(Math.max(0,gross - fee));
       };
       const getPayeeGuidance = () => financePayeeHistory.get(currentValue('payee/payer').toLowerCase()) || null;
       const showPayeeGuidance = (fillBlanks = false) => {
@@ -1360,7 +1400,14 @@
         }
         return {guidance,differences};
       };
-      if (payeeField) panel.querySelector(`[name="column${payeeField.column}"]`).addEventListener('change', () => showPayeeGuidance(true));
+      if (payeeField) {
+        const control = panel.querySelector(`[name="column${payeeField.column}"]`);
+        control.addEventListener('change', () => { showPayeeGuidance(true); updatePayPalBundle(); });
+        control.addEventListener('input',updatePayPalBundle);
+      }
+      if (paymentMethodField) panel.querySelector(`[name="column${paymentMethodField.column}"]`).addEventListener('change',updatePayPalBundle);
+      if (amountField) panel.querySelector(`[name="column${amountField.column}"]`).addEventListener('input',updatePayPalBundle);
+      paypalFee.addEventListener('input',updatePayPalBundle);
       guidedFields.forEach(name => { const field = fieldByName[name]; if (field) panel.querySelector(`[name="column${field.column}"]`).addEventListener('change', () => showPayeeGuidance(false)); });
       panel.querySelector('form').addEventListener('submit', async event => {
         event.preventDefault();
@@ -1379,22 +1426,70 @@
               if (yearColumn >= 0) values[yearColumn] = enteredDate.getFullYear();
             }
           }
+        const paypalMode = isPayPalWorkflow();
+        const amountColumn = headers.findIndex(header => /^amount$/i.test(String(header || '').trim()));
+        const descriptionColumn = headers.findIndex(header => /^description$/i.test(String(header || '').trim()));
+        const categoryColumn = headers.findIndex(header => /^category$/i.test(String(header || '').trim()));
+        const subcategoryColumn = headers.findIndex(header => /^subcategory$/i.test(String(header || '').trim()));
+        const fundColumn = headers.findIndex(header => /^fund$/i.test(String(header || '').trim()));
+        const activityColumn = headers.findIndex(header => /^activity$/i.test(String(header || '').trim()));
+        const payeeColumn = headers.findIndex(header => /^payee\/payer$/i.test(String(header || '').trim()));
+        const typeColumn = headers.findIndex(header => /^type$/i.test(String(header || '').trim()));
+        const paymentColumn = headers.findIndex(header => /^payment method$/i.test(String(header || '').trim()));
+        const clearedColumn = headers.findIndex(header => /^cleared$/i.test(String(header || '').trim()));
+        const impactColumn = headers.findIndex(header => /^community impact$/i.test(String(header || '').trim()));
+        if (paypalMode) {
+          const gross = Math.abs(Number(values[amountColumn]) || 0);
+          const fee = Math.abs(Number(paypalFee.value) || 0);
+          const customer = paypalCustomer.value.trim();
+          if (!customer) { alert('Enter the customer or payer name for the three PayPal entries.'); paypalCustomer.focus(); return; }
+          if (!(gross > 0)) { alert('Enter the gross PayPal sale amount.'); panel.querySelector(`[name="column${amountColumn}"]`).focus(); return; }
+          if (!(fee >= 0) || fee >= gross) { alert('Enter a valid PayPal fee that is less than the gross sale.'); paypalFee.focus(); return; }
+          const saleLabel = String(values[descriptionColumn] || 'PayPal Sale').replace(/\s*[–—-]\s*[^–—]+$/,'').trim() || 'PayPal Sale';
+          values[descriptionColumn] = `${saleLabel} – ${customer}`;
+          values[payeeColumn] = 'PayPal';
+          values[amountColumn] = gross;
+          values[paymentColumn] = 'PayPal';
+          if (clearedColumn >= 0 && !values[clearedColumn]) values[clearedColumn] = 'Yes';
+          const feeRow = [...values];
+          feeRow[descriptionColumn] = `PayPal Processing Fee – ${customer}`;
+          feeRow[categoryColumn] = 'Bank Fees';
+          feeRow[subcategoryColumn] = 'Processing Fee';
+          feeRow[activityColumn] = 'Online';
+          feeRow[amountColumn] = -fee;
+          feeRow[typeColumn] = 'Expense';
+          if (impactColumn >= 0) feeRow[impactColumn] = 'FALSE';
+          const transferRow = [...values];
+          transferRow[descriptionColumn] = `PayPal to Bank Transfer – ${customer}`;
+          transferRow[categoryColumn] = 'Transfer';
+          transferRow[subcategoryColumn] = 'Internal Transfer';
+          transferRow[activityColumn] = 'Online';
+          transferRow[amountColumn] = Number((gross - fee).toFixed(2));
+          transferRow[typeColumn] = 'Transfer In';
+          if (impactColumn >= 0) transferRow[impactColumn] = 'FALSE';
+          values._paypalRows = [values,feeRow,transferRow];
+        }
         saveButton.disabled = true;
-        saveButton.textContent = 'Adding…';
+        saveButton.textContent = paypalMode ? 'Adding 3 Entries…' : 'Adding…';
         try {
-          const appendResult = await appendSheetRow(FINANCE_SPREADSHEET_ID, 'Transactions-2026', values);
+          const rowsToAppend = values._paypalRows || [values];
+          delete values._paypalRows;
+          const appendResult = rowsToAppend.length > 1 ? await appendSheetRows(FINANCE_SPREADSHEET_ID, 'Transactions-2026', rowsToAppend) : await appendSheetRow(FINANCE_SPREADSHEET_ID, 'Transactions-2026', values);
           const updatedRange = String((appendResult.updates && appendResult.updates.updatedRange) || '');
-          const rowMatch = updatedRange.match(/!(?:[^!]*?)(\d+)(?::[^!]*?(\d+))?$/);
-          const appendedRow = rowMatch ? Number(rowMatch[2] || rowMatch[1]) : 0;
-          if (appendedRow > 1) {
-            const amountColumn = headers.findIndex(header => /^amount$/i.test(String(header || '').trim()));
-            const clearedColumn = headers.findIndex(header => /^cleared$/i.test(String(header || '').trim()));
+          const rowMatch = updatedRange.match(/![A-Z]+(\d+):[A-Z]+(\d+)$/i);
+          const firstAppendedRow = rowMatch ? Number(rowMatch[1]) : 0;
+          const lastAppendedRow = rowMatch ? Number(rowMatch[2]) : firstAppendedRow;
+          if (firstAppendedRow > 1) {
             const runningColumn = headers.findIndex(header => /^running\s*balance$/i.test(String(header || '').trim()));
             const totalRunningColumn = headers.findIndex(header => /^total\s*running\s*balance$/i.test(String(header || '').trim()));
             const amountLetter = amountColumn >= 0 ? columnNumberToLetters(amountColumn + 1) : 'J';
             const clearedLetter = clearedColumn >= 0 ? columnNumberToLetters(clearedColumn + 1) : 'O';
-            if (runningColumn >= 0) await updateSheetCell(FINANCE_SPREADSHEET_ID,'Transactions-2026',appendedRow,runningColumn,`=IF($A${appendedRow}="","",SUMIF($${clearedLetter}$2:$${clearedLetter}${appendedRow},"Yes",$${amountLetter}$2:$${amountLetter}${appendedRow}))`);
-            if (totalRunningColumn >= 0) await updateSheetCell(FINANCE_SPREADSHEET_ID,'Transactions-2026',appendedRow,totalRunningColumn,`=IF($A${appendedRow}="","",SUM($${amountLetter}$2:$${amountLetter}${appendedRow}))`);
+            const formulaUpdates = [];
+            for (let appendedRow = firstAppendedRow; appendedRow <= lastAppendedRow; appendedRow += 1) {
+              if (runningColumn >= 0) formulaUpdates.push({range:`'Transactions-2026'!${columnNumberToLetters(runningColumn + 1)}${appendedRow}`,value:`=IF($A${appendedRow}="","",SUMIF($${clearedLetter}$2:$${clearedLetter}${appendedRow},"Yes",$${amountLetter}$2:$${amountLetter}${appendedRow}))`});
+              if (totalRunningColumn >= 0) formulaUpdates.push({range:`'Transactions-2026'!${columnNumberToLetters(totalRunningColumn + 1)}${appendedRow}`,value:`=IF($A${appendedRow}="","",SUM($${amountLetter}$2:$${amountLetter}${appendedRow}))`});
+            }
+            await updateSheetRanges(FINANCE_SPREADSHEET_ID,formulaUpdates);
           }
           panel.remove();
           await loadFinanceTab('transactions2026', true);
@@ -1442,7 +1537,7 @@
       const existing = target.querySelector('.transaction-edit-entry');
       if (existing) existing.remove();
       const calculated = header => /^(month|year)$/i.test(header) || /running\s*balance/i.test(header);
-      const order = ['date','fund','activity','category','subcategory','description','payee/payer','amount','type','payment method','cleared','community impact','note'];
+      const order = ['date','payee/payer','fund','activity','category','subcategory','description','amount','type','payment method','cleared','community impact','note'];
       const fields = headers.map((header,column) => ({header:String(header || '').trim(),column})).filter(field => field.header && !calculated(field.header)).sort((a,b) => {
         const aOrder = order.indexOf(a.header.toLowerCase());
         const bOrder = order.indexOf(b.header.toLowerCase());
