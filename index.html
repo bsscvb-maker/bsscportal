@@ -2170,7 +2170,7 @@
       return '';
     }
 
-    function renderMarketplaceDashboard(rows, ordersRows = [], salesRows = []) {
+    function renderMarketplaceDashboard(rows, ordersRows = [], salesRows = [], financialRows = []) {
   const at=(r,c)=>String((rows[r]&&rows[r][c])||'');
   const money=v=>Number(String(v||'').replace(/[^0-9.-]/g,''))||0;
   const cash=v=>`$${v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
@@ -2185,7 +2185,11 @@
   const withVendor=orders.filter(r=>yes(r[13])&&!yes(r[14])&&!yes(r[15]));
   const pickup=orders.filter(r=>yes(r[14])&&!yes(r[15]));
   const handed=orders.filter(r=>yes(r[15]));
-  const owedLines=due.map(r=>`${r[4]} — ${cash(money(r[11]))}`);
+  const financialOrders=financialRows.slice(5).filter(r=>r[0]&&r[1]);
+  const pendingFinance=financialOrders.filter(r=>/pending|cash due|unpaid/i.test(String(r[2]||''))||/unpaid/i.test(String(r[12]||''))).length;
+  const reconciledFinance=financialOrders.filter(r=>/^ok$/i.test(String(r[12]||''))&&money(r[11])===0).length;
+  const financeReview=financialOrders.filter(r=>(!/^ok$/i.test(String(r[12]||''))&&!/unpaid/i.test(String(r[12]||'')))||(/^ok$/i.test(String(r[12]||''))&&money(r[11])!==0)).length;
+  const owedLines=due.map(r=>String(r[4])+' — '+cash(money(r[11])));
   const items=new Map();
   for(const r of salesRows.slice(6)){const name=String(r[2]||'').trim(),qty=Number(String(r[3]||'').replace(/,/g,''))||0;if(name&&qty>0)items.set(name,(items.get(name)||0)+qty);}
   const top=[...items.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,5);
@@ -2219,9 +2223,9 @@
       <section class="market-dashboard-section"><h3>Order Pipeline</h3><div class="market-pipeline-grid">${stagesHtml}</div></section>
       <div class="market-insights-grid">
         <section class="market-action-card"><h3>Top-Selling Merchandise</h3><div class="market-action-body"><p class="market-insight-note">Most ordered items, ranked by pieces sold.</p>${topHtml}</div></section>
-        <section class="market-action-card"><h3>Marketplace at a Glance</h3><div class="market-action-body">
-          <div class="market-glance-row"><span>Paid orders</span><strong>${paid.length}</strong></div><div class="market-glance-row"><span>Customers with cash due</span><strong>${due.length}</strong></div><div class="market-glance-row"><span>Orders not yet submitted</span><strong>${unsent.length}</strong></div><div class="market-glance-row"><span>Orders with manufacturer</span><strong>${withVendor.length}</strong></div><div class="market-glance-row"><span>Ready for pickup</span><strong>${pickup.length}</strong></div>
-          <p class="market-insight-note">Use the Fulfillment Tracker to open an order and update its payment or handout status.</p>
+        <section class="market-action-card"><h3>Financial Controls</h3><div class="market-action-body">
+          <div class="market-glance-row"><span>Orders reconciled</span><strong>${reconciledFinance}</strong></div><div class="market-glance-row"><span>Payments still due</span><strong>${pendingFinance}</strong></div><div class="market-glance-row"><span>Needs review</span><strong>${financeReview}</strong></div>
+          <p class="market-insight-note">Reconciliation compares sale, tax, fees, vendor cost, and profit for each order.</p>
         </div></section>
       </div>
     </div>
@@ -2418,7 +2422,7 @@
         getSheetValues("'Merchandise Pricing Reference'!A1:G100", MARKETPLACE_SPREADSHEET_ID)
       ]);
       const [dashboardResult, fulfillmentResult, manufacturerResult, financialsResult, ordersResult, pricingResult, historyResult, referenceResult] = results;
-      if (dashboardResult.status === 'fulfilled') { renderMarketplaceDashboard(dashboardResult.value, ordersResult.status === 'fulfilled' ? ordersResult.value : [], historyResult.status === 'fulfilled' ? historyResult.value : []); document.getElementById('marketDashboardStatus').textContent = 'Marketplace dashboard connected to Google Sheets.'; }
+      if (dashboardResult.status === 'fulfilled') { renderMarketplaceDashboard(dashboardResult.value, ordersResult.status === 'fulfilled' ? ordersResult.value : [], historyResult.status === 'fulfilled' ? historyResult.value : [], financialsResult.status === 'fulfilled' ? financialsResult.value : []); document.getElementById('marketDashboardStatus').textContent = 'Marketplace dashboard connected to Google Sheets.'; }
       else document.getElementById('marketDashboardStatus').textContent = 'Dashboard could not be loaded from Google Sheets.';
       if (fulfillmentResult.status === 'fulfilled') renderDataTable('marketFulfillmentTable','marketFulfillmentStatus',fulfillmentResult.value,3,12);
       else document.getElementById('marketFulfillmentStatus').textContent = 'Fulfillment Tracker could not be loaded from Google Sheets.';
