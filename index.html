@@ -734,13 +734,16 @@
     .nav button:disabled:hover { background:transparent; }
     @keyframes module-status-pulse { 50% { box-shadow:0 0 0 2px rgba(33,232,103,.1),0 0 6px rgba(33,232,103,.35); } }
 
-    /* Keep all nine Marketplace dashboard fact cards in two rows on desktop. */
+    /* Keep all ten Marketplace dashboard fact cards in two rows on desktop. */
     .market-kpi-grid { grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
     .market-kpi { min-height:100px; padding:12px; }
     .market-kpi strong { font-size:1.35rem; }
     @media(max-width:1200px) { .market-kpi-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
     @media(max-width:760px) { .market-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
     @media(max-width:480px) { .market-kpi-grid { grid-template-columns:1fr; } }
+    .market-kpi.top-product { min-height:128px; }
+    .market-kpi.top-product strong { font-size:1.12rem; line-height:1.25; white-space:normal; overflow-wrap:break-word; }
+    .market-kpi.top-product small { margin-top:8px; line-height:1.3; }
 </style>
 </head>
 <body>
@@ -2324,7 +2327,7 @@
         ${kpi('Pieces Sold',String(pieceCount),'Merchandise pieces ordered in selected period')}
         ${kpi('Average Paid Order',periodPaid.length?cash(collected/periodPaid.length):'$0.00',`${periodPaid.length} paid orders`)}
         ${kpi('Top-Selling Color',colorCounts.size?[...colorCounts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0][0]:'—',colorCounts.size?'Most popular color in selected period':'No color-specific sales in this period')}
-        ${kpi('Top-Selling Merchandise',topProductEntry?topProductEntry[0]:'—',topProductEntry?`${topProductEntry[1]} pieces sold in selected period`:'No merchandise sales in this period')}
+        ${kpi('Top-Selling Merchandise',topProductEntry?topProductEntry[0]:'—',topProductEntry?`${topProductEntry[1]} pieces sold in selected period`:'No merchandise sales in this period','top-product')}
       </div>
       <div class="market-dashboard-lower">
         <section class="market-action-card"><h3>Vendor Order Readiness</h3><div class="market-action-body">
