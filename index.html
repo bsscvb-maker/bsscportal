@@ -1339,7 +1339,7 @@
             <div class="paypal-bundle-grid">
               <div class="paypal-bundle-field"><label for="paypalCustomerName">Customer / payer name</label><input id="paypalCustomerName" type="text" placeholder="Example: Debby Farland" autocomplete="off"></div>
               <div class="paypal-bundle-field"><label for="paypalFeeAmount">PayPal processing fee</label><input id="paypalFeeAmount" type="number" min="0" step="0.01" placeholder="0.00"></div>
-              <div class="paypal-bundle-preview"><div><span>Gross sale</span><strong id="paypalGrossPreview">$0.00</strong></div><div><span>Processing fee</span><strong id="paypalFeePreview">-$0.00</strong></div><div><span>Bank transfer · tracking only</span><strong id="paypalNetPreview">$0.00</strong></div></div>
+              <div class="paypal-bundle-preview"><div><span>Gross sale</span><strong id="paypalGrossPreview">$0.00</strong></div><div><span>Processing fee</span><strong id="paypalFeePreview">-$0.00</strong></div><div><span>Bank transfer</span><strong id="paypalNetPreview">$0.00</strong></div></div>
             </div>
           </section>
           <div class="transaction-consistency" id="transactionConsistency" role="status" aria-live="polite"></div>
@@ -1464,13 +1464,13 @@
           transferRow[subcategoryColumn] = 'Internal Transfer';
           transferRow[activityColumn] = 'Online';
           const netTransfer = Number((gross - fee).toFixed(2));
-          transferRow[amountColumn] = 0;
+          transferRow[amountColumn] = netTransfer;
           transferRow[typeColumn] = 'Transfer In';
           if (impactColumn >= 0) transferRow[impactColumn] = 'FALSE';
           const noteColumn = headers.findIndex(header => /^note$/i.test(String(header || '').trim()));
           if (noteColumn >= 0) {
             const existingNote = String(values[noteColumn] || '').trim();
-            transferRow[noteColumn] = `PayPal bank transfer: ${money(netTransfer)} (tracking only; excluded from cash totals)${existingNote ? ` · ${existingNote}` : ''}`;
+            transferRow[noteColumn] = `PayPal bank transfer: ${money(netTransfer)}${existingNote ? ` · ${existingNote}` : ''}`;
           }
           values._paypalRows = [values,feeRow,transferRow];
         }
@@ -1900,12 +1900,12 @@
     const loadedFinanceTabs = new Set();
     let financeControlEditMode = false;
     let financeControlRows = [];
-    let financePayPalRepairPromise = null;
+    let financePayPalRestorePromise = null;
 
-    async function repairPayPalTransferRows(rows) {
+    async function restorePayPalTransferRows(rows) {
       if (!rows || rows.length < 2) return 0;
-      if (financePayPalRepairPromise) return financePayPalRepairPromise;
-      financePayPalRepairPromise = (async () => {
+      if (financePayPalRestorePromise) return financePayPalRestorePromise;
+      financePayPalRestorePromise = (async () => {
         const headers = rows[0].map(value => String(value || '').trim().toLowerCase());
         const descriptionColumn = headers.indexOf('description');
         const payeeColumn = headers.indexOf('payee/payer');
@@ -1914,28 +1914,31 @@
         const noteColumn = headers.indexOf('note');
         if ([descriptionColumn,payeeColumn,amountColumn,typeColumn].some(index => index < 0)) return 0;
         const updates = [];
-        let repaired = 0;
+        let restored = 0;
         rows.slice(1).forEach((row,index) => {
           const description = String(row[descriptionColumn] || '').trim();
           const payee = String(row[payeeColumn] || '').trim();
           const type = String(row[typeColumn] || '').trim();
           const rawAmount = String(row[amountColumn] || '').trim();
           const amount = Number(rawAmount.replace(/[$,()]/g,'')) * (rawAmount.includes('(') ? -1 : 1);
-          if (!/paypal\s+to\s+bank\s+transfer/i.test(description) || !/paypal/i.test(payee) || !/^transfer\s*in$/i.test(type) || !Number.isFinite(amount) || amount === 0) return;
+          const existingNote = noteColumn >= 0 ? String(row[noteColumn] || '').trim() : '';
+          const savedAmount = existingNote.match(/PayPal bank transfer:\s*\$?([\d,]+(?:\.\d{1,2})?)/i);
+          if (!/paypal\s+to\s+bank\s+transfer/i.test(description) || !/paypal/i.test(payee) || !/^transfer\s*in$/i.test(type) || !Number.isFinite(amount) || amount !== 0 || !savedAmount) return;
           const sheetRow = index + 2;
-          updates.push({range:`'Transactions-2026'!${columnNumberToLetters(amountColumn + 1)}${sheetRow}`,value:0});
+          const transferAmount = Number(savedAmount[1].replace(/,/g,''));
+          if (!Number.isFinite(transferAmount) || transferAmount <= 0) return;
+          updates.push({range:`'Transactions-2026'!${columnNumberToLetters(amountColumn + 1)}${sheetRow}`,value:transferAmount});
           if (noteColumn >= 0) {
-            const existingNote = String(row[noteColumn] || '').trim();
-            const auditNote = `PayPal bank transfer: ${money(Math.abs(amount))} (tracking only; excluded from cash totals)`;
-            updates.push({range:`'Transactions-2026'!${columnNumberToLetters(noteColumn + 1)}${sheetRow}`,value:existingNote && !/tracking only; excluded from cash totals/i.test(existingNote) ? `${auditNote} · ${existingNote}` : auditNote});
+            const restoredNote = existingNote.replace(/\s*\(tracking only; excluded from cash totals\)/i,'');
+            updates.push({range:`'Transactions-2026'!${columnNumberToLetters(noteColumn + 1)}${sheetRow}`,value:restoredNote});
           }
-          repaired += 1;
+          restored += 1;
         });
         if (updates.length) await updateSheetRanges(FINANCE_SPREADSHEET_ID,updates);
-        return repaired;
+        return restored;
       })();
-      try { return await financePayPalRepairPromise; }
-      finally { financePayPalRepairPromise = null; }
+      try { return await financePayPalRestorePromise; }
+      finally { financePayPalRestorePromise = null; }
     }
 
     function buildFinanceTransactionOptions(listRows, transactionRows, historicalRows = []) {
@@ -2050,8 +2053,8 @@
           getSheetValues("'Dashboard-2026'!A1:AF80",FINANCE_SPREADSHEET_ID),
           getSheetValues("'Transactions-2026'!A1:Q1870",FINANCE_SPREADSHEET_ID)
         ]);
-        const repaired = await repairPayPalTransferRows(transactions);
-        if (repaired) {
+        const restored = await restorePayPalTransferRows(transactions);
+        if (restored) {
           rows = await getSheetValues("'Dashboard-2026'!A1:AF80",FINANCE_SPREADSHEET_ID);
           loadedFinanceTabs.delete('control');
         }
@@ -2534,8 +2537,8 @@
         }
         const [rows,formulas = [],listRows = [],historicalRows = []] = await Promise.all(reads);
         if (key === 'transactions2026') {
-          const repaired = await repairPayPalTransferRows(rows);
-          if (repaired) { loadedFinanceTabs.delete('dashboard'); await loadFinanceTab(key,true); return; }
+          const restored = await restorePayPalTransferRows(rows);
+          if (restored) { loadedFinanceTabs.delete('dashboard'); await loadFinanceTab(key,true); return; }
         }
         if (key === 'transactions2026') buildFinanceTransactionOptions(listRows,rows,historicalRows);
         const editOptions = config.editable ? {sheetName:config.sheet,spreadsheetId:FINANCE_SPREADSHEET_ID,formulaRows:formulas,reverseRows:key === 'transactions2026'} : null;
