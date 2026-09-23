@@ -84,9 +84,20 @@
     .dashboard-view.hidden { display: none; }
     .back { border: 0; background: transparent; color: white; font-weight: 800; padding: 0; margin-bottom: 18px; cursor: pointer; }
     .detail-shell { background: white; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
-    .detail-head { padding: 26px; color: white; background: linear-gradient(110deg, #050506, #1d1d20); border-bottom: 5px solid var(--gold); }
+    .detail-head { display:flex; align-items:center; justify-content:space-between; gap:28px; padding: 26px; color: white; background: linear-gradient(110deg, #050506, #1d1d20); border-bottom: 5px solid var(--gold); }
     .detail-head h1 { color: white; font-size: 1.8rem; }
     .detail-head p { margin: 8px 0 0; color: #d4d4d7; }
+    .portal-health { display:none; flex:0 0 300px; min-height:82px; align-items:center; gap:14px; padding:14px 18px; border:2px solid transparent; border-radius:14px; color:#fff; box-shadow:0 8px 24px rgba(0,0,0,.28); }
+    .portal-health.visible { display:flex; }
+    .portal-health-dot { flex:0 0 18px; width:18px; height:18px; border:4px solid rgba(255,255,255,.72); border-radius:50%; box-shadow:0 0 0 5px rgba(255,255,255,.12); }
+    .portal-health-copy { min-width:0; }
+    .portal-health-label { display:block; margin-bottom:2px; font-size:.72rem; font-weight:900; letter-spacing:.08em; text-transform:uppercase; opacity:.9; }
+    .portal-health strong { display:block; font-size:1.22rem; line-height:1.15; }
+    .portal-health small { display:block; margin-top:4px; color:inherit; font-size:.73rem; line-height:1.25; opacity:.88; }
+    .portal-health.checking { background:#3f444b; border-color:#737a83; }
+    .portal-health.operational { background:#087a3b; border-color:#22df75; box-shadow:0 0 20px rgba(25,216,102,.22); }
+    .portal-health.degraded { background:#9b6800; border-color:#ffc93d; box-shadow:0 0 20px rgba(255,193,31,.2); }
+    .portal-health.critical { background:#a30e25; border-color:#ef3451; box-shadow:0 0 20px rgba(224,18,49,.22); }
     .detail-body { padding: 24px; }
     .task-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
     .task { border: 1px solid var(--line); border-radius: 12px; padding: 17px; background: #fafcfd; }
@@ -334,6 +345,8 @@
       .topbar { height: 68px; padding: 0 18px; }
       .page-title small, .user span { display: none; }
       .content { padding: 24px 18px 42px; }
+      .detail-head { align-items:stretch; flex-direction:column; }
+      .portal-health { flex-basis:auto; width:100%; }
       .welcome { display: block; }
       .phase { display: inline-block; margin-top: 16px; }
       .module-grid, .task-grid { grid-template-columns: 1fr; }
@@ -406,7 +419,7 @@
 
         <section class="detail-view" id="detail">
           <button class="back" id="back">← Back to portal home</button>
-          <div class="detail-shell"><div class="detail-head"><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div><div class="sponsor-workspace" id="sponsorWorkspace">
+          <div class="detail-shell"><div class="detail-head"><div><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><div class="portal-health checking" id="portalHealth" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong id="portalHealthStatus">Checking</strong><small id="portalHealthDetail">Verifying connected systems…</small></div></div></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div><div class="sponsor-workspace" id="sponsorWorkspace">
             <div class="sponsor-tabs" aria-label="Sponsorship sections">
               <button class="sponsor-tab active" data-sponsor-tab="dashboard">Sponsor Dashboard</button>
               <button class="sponsor-tab" data-sponsor-tab="current">Current Sponsors</button>
@@ -1312,6 +1325,18 @@
       } catch (error) { document.getElementById(config.status).textContent = `${config.sheet} could not load from Google Sheets.`; }
     }
 
+    function setPortalHealth(state, detail) {
+      const panel = document.getElementById('portalHealth');
+      const status = document.getElementById('portalHealthStatus');
+      const description = document.getElementById('portalHealthDetail');
+      if (!panel || !status || !description) return;
+      const labels = {checking:'Checking', operational:'Operational', degraded:'Degraded', critical:'Critical'};
+      panel.classList.remove('checking','operational','degraded','critical');
+      panel.classList.add(state);
+      status.textContent = labels[state] || 'Checking';
+      description.textContent = detail;
+    }
+
     async function loadAdminSystemStatus() {
       const target = document.getElementById('adminSystemStatus');
       if (!target) return;
@@ -1322,9 +1347,17 @@
         ['Marketplace','8 connected workbook sections',MARKETPLACE_SPREADSHEET_ID,"'Dashboard'!A1:A1"],
         ['Sponsorships','Connected sponsorship records',SPREADSHEET_ID,"'Sponsors - Current'!A1:A1"]
       ];
+      setPortalHealth('checking','Verifying connected systems…');
       target.innerHTML = connections.map(([name,detail]) => `<div class="admin-row"><div><strong>${esc(name)}</strong><small>${esc(detail)} · Checking connection…</small></div><span class="admin-badge">Checking</span></div>`).join('');
-      if (!accessToken) return;
+      if (!accessToken) {
+        setPortalHealth('critical','Google access is unavailable');
+        return;
+      }
       const results = await Promise.allSettled(connections.map(([, ,id,range]) => getSheetValues(range,id)));
+      const failures = results.filter(result => result.status === 'rejected').length;
+      if (failures === 0) setPortalHealth('operational','All connected systems are responding');
+      else if (failures === 1) setPortalHealth('degraded','1 connected system needs attention');
+      else setPortalHealth('critical',`${failures} connected systems are unavailable`);
       target.innerHTML = connections.map(([name,detail],index) => {
         const connected = results[index].status === 'fulfilled';
         return `<div class="admin-row"><div><strong>${esc(name)}</strong><small>${esc(detail)} · ${connected ? 'Google Sheets connection verified' : 'Connection needs attention'}</small></div><span class="admin-badge ${connected ? 'live' : 'error'}">${connected ? 'Connected' : 'Error'}</span></div>`;
@@ -1345,6 +1378,8 @@
     const detail = document.getElementById('detail');
     const sidebar = document.getElementById('sidebar');
     function showModule(key) {
+      const healthPanel = document.getElementById('portalHealth');
+      if (healthPanel) healthPanel.classList.toggle('visible', key === 'admin');
       if (key === 'home') { dashboard.classList.remove('hidden'); detail.classList.remove('active'); setActive('home'); return; }
       const item = modules[key]; if (!item) return;
       document.getElementById('detailTitle').textContent = item.title;
