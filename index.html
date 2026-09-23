@@ -215,6 +215,11 @@
     .market-hero { padding: 18px 22px; color: white; background: #111113; border-bottom: 4px solid var(--gold); }
     .market-hero h2 { margin: 0; font-size: 1.45rem; text-align: center; }
     .market-hero p { margin: 5px 0 0; color: #d8d8dc; text-align: center; font-size: .84rem; }
+    .market-cash-collection { display: grid; grid-template-columns: minmax(180px,.35fr) minmax(0,1fr); gap: 1px; background: var(--gold); border-bottom: 4px solid var(--gold); }
+    .market-cash-total, .market-cash-owed { padding: 14px 18px; background: #fff3b8; }
+    .market-cash-total span, .market-cash-owed span { display:block; color:#111113; font-size:.76rem; font-weight:900; text-transform:uppercase; letter-spacing:.04em; }
+    .market-cash-total strong { display:block; margin-top:4px; color:var(--gold); font-size:1.6rem; }
+    .market-cash-owed strong { display:block; margin-top:5px; color:#111113; white-space:pre-line; }
     .market-sections { display: grid; gap: 18px; padding: 20px; }
     .market-section { border: 1px solid #252528; }
     .market-section h3 { margin: 0; padding: 9px 12px; color: white; background: #111113; border-bottom: 3px solid var(--gold); font-size: 1rem; }
@@ -973,20 +978,21 @@
     }
 
     function renderMarketplaceDashboard(rows) {
-      const find = label => marketValue(rows, label);
       const metric = (label, value, note = '', cls = '') => `<div class="market-metric ${cls}"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong>${note ? `<small>${esc(note)}</small>` : ''}</div>`;
-      const whoOwes = rows.flatMap(row => row.map((value, index) => ({value:String(value || ''), next:String(row[index + 1] || '')}))).filter(item => /dean jensen|tracy yoda/i.test(item.value));
+      const at = (row, column) => String((rows[row] && rows[row][column]) || '');
+      const whoOwes = at(6,21) || 'All paid';
       document.getElementById('marketDashboard').innerHTML = `<div class="market-dashboard">
-        <div class="market-hero"><h2>BSSC / MARKETPLACE PERFORMANCE</h2><p>BOARD REPORT • Live marketplace activity • Revenue and profit reflect paid orders only</p></div>
+        <div class="market-hero"><h2>${esc(at(0,1) || 'BSSC / MARKETPLACE PERFORMANCE')}</h2><p>${esc(at(2,1) || 'BOARD REPORT • Live marketplace activity • Revenue and profit reflect paid orders only')}</p></div>
+        <div class="market-cash-collection"><div class="market-cash-total"><span>Cash to Collect</span><strong>${esc(at(6,16) || '$0.00')}</strong></div><div class="market-cash-owed"><span>Cash Collection — Who Owes</span><strong>${esc(whoOwes)}</strong></div></div>
         <div class="market-sections">
           <section class="market-section"><h3>01 — Sales &amp; Cash Flow</h3><div class="market-metrics">
-            ${metric('Total Orders', find('Total Orders'))}${metric('Total Collected', find('Total Collected'), '', 'good')}${metric('Realized Profit', find('Realized Profit'), '', 'good')}${metric('Cash to Collect', find('Cash to Collect'), whoOwes.map(item => `${item.value}: ${item.next}`).join(' • '), 'alert')}
+            ${metric('Total Orders', at(6,1))}${metric('Total Collected', at(6,6), '', 'good')}${metric('Realized Profit', at(6,11), '', 'good')}
           </div></section>
           <section class="market-section"><h3>02 — Vendor &amp; Fulfillment</h3><div class="market-metrics">
-            ${metric('Current Vendor Order', find('Current Vendor Order'))}${metric('Vendor Minimum', find('Vendor Minimum'))}${metric('Orders Ready', find('Orders Ready'))}${metric('Submission Status', find('Submission Status'), '', 'alert')}
+            ${metric('Current Vendor Order', at(12,1))}${metric('Vendor Minimum', at(12,6))}${metric('Orders Ready', at(12,11))}${metric('Submission Status', at(12,16), '', 'alert')}
           </div></section>
           <section class="market-section"><h3>03 — Merchandise &amp; Order Details</h3><div class="market-metrics">
-            ${metric('Merchandise Collected', find('Merchandise Collected'))}${metric('Vendor Cost', find('Vendor Cost'))}${metric('Total Pieces Sold', find('Total Pieces Sold'))}${metric('Cash Due at Meeting', find('Cash Due at Meeting'), '', 'alert')}
+            ${metric('Merchandise Collected', at(18,1))}${metric('Vendor Cost', at(18,6))}${metric('Total Pieces Sold', at(18,11))}${metric('Cash Due at Meeting', at(18,16), '', 'alert')}
           </div></section>
         </div>
       </div>`;
