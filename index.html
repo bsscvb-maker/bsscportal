@@ -652,17 +652,19 @@
     async function loadSponsorData() {
       document.getElementById('currentStatus').textContent = 'Loading current sponsors…';
       document.getElementById('prospectiveStatus').textContent = 'Loading prospective sponsors…';
-      try {
-        const [current, prospective] = await Promise.all([
-          getSheetValues("'Sponsors - Current'!A1:Z200"),
-          getSheetValues("'Sponsors - Prospective'!A1:Z200")
-        ]);
-        renderSponsorTable('currentTable', 'currentStatus', current);
-        renderSponsorTable('prospectiveTable', 'prospectiveStatus', prospective);
-      } catch (error) {
-        const message = 'Could not load the spreadsheet. Confirm this Google account has access to it.';
-        document.getElementById('currentStatus').textContent = message;
-        document.getElementById('prospectiveStatus').textContent = message;
+      const [current, prospective] = await Promise.allSettled([
+        getSheetValues("'Sponsors - Current'!A1:Z200"),
+        getSheetValues("'Sponsors - Prospective'!A1:Z200")
+      ]);
+      if (current.status === 'fulfilled') renderSponsorTable('currentTable', 'currentStatus', current.value);
+      else {
+        document.getElementById('currentTable').innerHTML = '';
+        document.getElementById('currentStatus').textContent = 'Current Sponsors could not load. Reopen this tab to retry.';
+      }
+      if (prospective.status === 'fulfilled') renderSponsorTable('prospectiveTable', 'prospectiveStatus', prospective.value);
+      else {
+        document.getElementById('prospectiveTable').innerHTML = '';
+        document.getElementById('prospectiveStatus').textContent = 'Prospective Sponsors could not load. Reopen this tab to retry.';
       }
     }
 
@@ -1250,6 +1252,7 @@
         bikeNightsWorkspace.classList.remove('active');
         marketplaceWorkspace.classList.remove('active');
         adminWorkspace.classList.remove('active');
+        loadSponsorData();
       } else if (key === 'bft') {
         taskGrid.innerHTML = '';
         sponsorWorkspace.classList.remove('active');
@@ -1296,6 +1299,7 @@
       const selected = button.dataset.sponsorTab;
       document.querySelectorAll('[data-sponsor-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
       document.querySelectorAll('[data-sponsor-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.sponsorPanel === selected));
+      if (selected === 'current' || selected === 'prospective') loadSponsorData();
     }));
     document.querySelectorAll('[data-bft-tab]').forEach(button => button.addEventListener('click', () => {
       const selected = button.dataset.bftTab;
