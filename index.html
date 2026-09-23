@@ -430,6 +430,11 @@
     .market-owed-list { margin-top:7px; color:#111113; font-size:1rem; font-weight:800; line-height:1.55; white-space:pre-line; }
     .market-status-pill { display:inline-block; margin-top:12px; padding:6px 10px; border-radius:999px; color:white; background:var(--gold); font-size:.75rem; font-weight:900; text-transform:uppercase; }
     .market-status-pill.ready { background:#14823b; }
+    .market-vendor-action { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:14px; }
+    .market-send-vendor-order { border:0; border-radius:8px; padding:10px 15px; color:#fff; background:#c8102e; font-weight:900; cursor:pointer; }
+    .market-send-vendor-order:hover:not(:disabled) { background:#a70d26; }
+    .market-send-vendor-order:disabled { color:#737373; background:#e2e2e2; cursor:not-allowed; }
+    .market-vendor-action-note { color:var(--muted); font-size:.8rem; }
     .market-sections { display: grid; gap: 18px; padding: 20px; }
     .market-section { border: 1px solid #252528; }
     .market-section h3 { margin: 0; padding: 9px 12px; color: white; background: #111113; border-bottom: 3px solid var(--gold); font-size: 1rem; }
@@ -836,11 +841,12 @@
     const BFT_SPREADSHEET_ID = '1cFhb2-Um1rBKj81dFeNWLSfKxuNfc768AFLbcjXdudY';
     const BIKE_NIGHTS_SPREADSHEET_ID = '1rXMHIVq52X3kqj_ICz7g8oZoD_eXR_0qHP7bZ9jhU0k';
     const MARKETPLACE_SPREADSHEET_ID = '1ByYajlmaWea7W1mUmKENDti2QEa04GsQCYsArakpqbQ';
+    const MARKETPLACE_AUTOMATION_URL = 'https://script.google.com/macros/s/AKfycbzpVOI24pSEat3YtEdW3DXwCAPwN88sYDy48fED2xcsE75bD4CpxImhfVMxo7Kp3FA7/exec';
     const FINANCE_SPREADSHEET_ID = '1a6DfwnnNmy0ykQi7S8DKAt1RhauTh7ISwxSXm59b5NU';
     const CASH_TALLY_SPREADSHEET_ID = '16bMnwTt8H6Z2ZCc3uMk7THRXZOrY4efi1gY53nqFCHw';
     const MEMBERSHIP_SPREADSHEET_ID = '1G1GhywDG-FYEo00fY_FeWheScve333LIdBqZpqLbZZM';
-    const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
-    const SESSION_KEY = 'bssc-google-session-edit-v1';
+    const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email';
+    const SESSION_KEY = 'bssc-google-session-edit-v2';
     const IDLE_TIMEOUT_MS = 60 * 60 * 1000;
     let tokenClient;
     let accessToken = '';
@@ -1778,6 +1784,10 @@
               <div class="market-progress"><span style="width:${vendorProgress}%"></span></div>
               <p class="market-progress-note">${vendorProgress}% of the vendor minimum reached</p>
               <span class="market-status-pill ${ready ? 'ready' : ''}">${ready ? 'Ready to Submit' : 'On Hold'}</span>
+              <div class="market-vendor-action">
+                <button class="market-send-vendor-order" id="marketplaceSendVendorOrder" type="button" ${ready && MARKETPLACE_AUTOMATION_URL ? '' : 'disabled'}>Send Vendor Order</button>
+                <span class="market-vendor-action-note">${!ready ? 'The vendor minimum must be met before sending.' : !MARKETPLACE_AUTOMATION_URL ? 'Automation connection needs to be completed.' : 'Sends the current vendor order email.'}</span>
+              </div>
             </div></section>
             <section class="market-action-card"><h3>Cash Collection</h3><div class="market-action-body">
               <span class="market-collection-label">Outstanding</span><div class="market-kpi cash" style="margin-top:7px;min-height:auto"><strong>${esc(at(6,16) || '$0.00')}</strong></div>
@@ -1808,6 +1818,42 @@
         ['Amount Needed',amountNeeded,ready ? 'success' : 'danger']
       ]);
     }
+
+    function submitMarketplaceVendorOrder() {
+      const button = document.getElementById('marketplaceSendVendorOrder');
+      if (!MARKETPLACE_AUTOMATION_URL) {
+        alert('The Marketplace Automation connection is not set up yet.');
+        return;
+      }
+      if (!accessToken) {
+        alert('Please sign in to the portal before sending the vendor order.');
+        return;
+      }
+      if (!window.confirm('Send the current vendor order email now?')) return;
+
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = MARKETPLACE_AUTOMATION_URL;
+      form.target = '_blank';
+      form.style.display = 'none';
+      [['action', 'sendVendorOrder'], ['accessToken', accessToken]].forEach(([name, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+      form.remove();
+      if (button) button.disabled = true;
+      const note = document.querySelector('.market-vendor-action-note');
+      if (note) note.textContent = 'Request submitted. Check the new tab for the send result.';
+    }
+
+    document.addEventListener('click', event => {
+      if (event.target.closest('#marketplaceSendVendorOrder')) submitMarketplaceVendorOrder();
+    });
 
     function renderSalesHistoryHeading(rows) {
       const at = (row, column) => String((rows[row] && rows[row][column]) || '');
