@@ -700,7 +700,7 @@
     .market-pipeline-card span { font-size:.69rem; font-weight:900; text-transform:uppercase; letter-spacing:.035em; }
     .market-pipeline-card strong { display:block; margin:5px 0 3px; color:#111113; font-size:1.5rem; }
     .market-pipeline-card small { font-size:.72rem; line-height:1.35; }
-    .market-insights-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-top:16px; }
+    .market-insights-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:16px; }
     .market-insight-note { margin:0 0 9px; color:var(--muted); font-size:.8rem; }
     .market-insight-row { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(60px,1fr) 28px; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid #e4e6e9; }
     .market-insight-row:last-child { border-bottom:0; }
@@ -712,7 +712,7 @@
     .market-glance-row { display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid #e4e6e9; }
     .market-glance-row:last-of-type { border-bottom:0; }
     .market-glance-row strong { white-space:nowrap; }
-    @media (max-width:1000px) { .market-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .market-pipeline-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media (max-width:1000px) { .market-insights-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .market-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .market-pipeline-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
     @media (max-width:650px) { .market-insights-grid,.market-dashboard-lower { grid-template-columns:1fr; } .market-kpi-grid { grid-template-columns:1fr 1fr; } .market-pipeline-grid { grid-template-columns:1fr 1fr; } .market-vendor-row { grid-template-columns:1fr; } .market-insight-row { grid-template-columns:minmax(0,1.2fr) minmax(42px,.7fr) 24px; gap:7px; } }
 
   </style>
@@ -2190,11 +2190,26 @@
   const reconciledFinance=financialOrders.filter(r=>/^ok$/i.test(String(r[12]||''))&&money(r[11])===0).length;
   const financeReview=financialOrders.filter(r=>(!/^ok$/i.test(String(r[12]||''))&&!/unpaid/i.test(String(r[12]||'')))||(/^ok$/i.test(String(r[12]||''))&&money(r[11])!==0)).length;
   const owedLines=due.map(r=>String(r[4])+' — '+cash(money(r[11])));
-  const items=new Map();
-  for(const r of salesRows.slice(6)){const name=String(r[2]||'').trim(),qty=Number(String(r[3]||'').replace(/,/g,''))||0;if(name&&qty>0)items.set(name,(items.get(name)||0)+qty);}
-  const top=[...items.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,5);
-  const topMax=Math.max(1,...top.map(x=>x[1]));
-  const topHtml=top.length?top.map(([name,qty])=>`<div class="market-insight-row"><span>${esc(name)}</span><div class="market-bar-track"><i style="width:${Math.max(6,Math.round(qty/topMax*100))}%"></i></div><strong>${qty}</strong></div>`).join(''):'<div class="market-insight-empty">No merchandise sales are listed yet.</div>';
+  const productCounts=new Map(), colorCounts=new Map();
+  for(const r of salesRows.slice(6)){
+    const item=String(r[2]||'').trim(),qty=Number(String(r[3]||'').replace(/,/g,''))||0;
+    if(!item||qty<=0)continue;
+    const variant=item.match(/\(([^()]*)\)\s*$/);
+    const product=item.replace(/\s*\([^()]*\)\s*$/,'').trim();
+    productCounts.set(product,(productCounts.get(product)||0)+qty);
+    const details=variant?variant[1].split(',').map(value=>value.trim()):[];
+    if(details.length>1){const color=details.slice(1).join(', ');colorCounts.set(color,(colorCounts.get(color)||0)+qty);}
+  }
+  const colorPalette={red:'#c8102e',black:'#252525',white:'#9aa4af',gray:'#69717a',grey:'#69717a',blue:'#3276b1',green:'#32834b',navy:'#153454',pink:'#dd6581',purple:'#7348a3',yellow:'#d4a400'};
+  const makeInsightList=(counts,useColor=false)=>{
+    const entries=[...counts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,5);
+    const max=Math.max(1,...entries.map(entry=>entry[1]));
+    return entries.length?entries.map(([name,qty])=>{
+      const accent=useColor?(colorPalette[name.toLowerCase()]||'#256b9a'):'';
+      return `<div class="market-insight-row"><span>${esc(name)}</span><div class="market-bar-track"><i style="width:${Math.max(6,Math.round(qty/max*100))}%;${accent?`background:${accent};`:''}"></i></div><strong>${qty}</strong></div>`;
+    }).join(''):'<div class="market-insight-empty">No matching sales are listed yet.</div>';
+  };
+  const productHtml=makeInsightList(productCounts),colorHtml=makeInsightList(colorCounts,true);
   const stages=[['Awaiting Payment',due.length,'Cash due at meeting','payment'],['Not Yet Submitted',unsent.length,'Orders not sent to manufacturer','unsent'],['With Manufacturer',withVendor.length,'Submitted, not ready for pickup','vendor'],['Ready for Pickup',pickup.length,'Ready, not handed out','pickup'],['Handed Out',handed.length,'Completed customer orders','complete']];
   const stagesHtml=stages.map(([name,count,note,tone])=>`<article class="market-pipeline-card ${tone}"><span>${esc(name)}</span><strong>${count}</strong><small>${esc(note)}</small></article>`).join('');
   const kpi=(label,value,note,cls='')=>`<div class="market-kpi ${cls}"><span>${esc(label)}</span><strong>${esc(value||'—')}</strong><small>${esc(note)}</small></div>`;
@@ -2222,7 +2237,8 @@
       </div>
       <section class="market-dashboard-section"><h3>Order Pipeline</h3><div class="market-pipeline-grid">${stagesHtml}</div></section>
       <div class="market-insights-grid">
-        <section class="market-action-card"><h3>Top-Selling Merchandise</h3><div class="market-action-body"><p class="market-insight-note">Most ordered items, ranked by pieces sold.</p>${topHtml}</div></section>
+        <section class="market-action-card"><h3>Top-Selling Merchandise</h3><div class="market-action-body"><p class="market-insight-note">Pieces sold by product type, with all sizes and colors combined.</p>${productHtml}</div></section>
+        <section class="market-action-card"><h3>Top-Selling Colors</h3><div class="market-action-body"><p class="market-insight-note">Pieces sold across products; size variations are combined.</p>${colorHtml}</div></section>
         <section class="market-action-card"><h3>Financial Controls</h3><div class="market-action-body">
           <div class="market-glance-row"><span>Orders reconciled</span><strong>${reconciledFinance}</strong></div><div class="market-glance-row"><span>Payments still due</span><strong>${pendingFinance}</strong></div><div class="market-glance-row"><span>Needs review</span><strong>${financeReview}</strong></div>
           <p class="market-insight-note">Reconciliation compares sale, tax, fees, vendor cost, and profit for each order.</p>
