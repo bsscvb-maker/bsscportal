@@ -637,6 +637,44 @@
       .finance-tab-manager-grid { grid-template-columns:1fr; }
       .membership-tab-manager .finance-tab-admin-row { grid-template-columns:1fr; }
     }
+  
+    .operations-overview { margin:0 0 28px; padding:22px; border:1px solid #303136; border-radius:15px; background:linear-gradient(145deg,#191a1e,#101012); box-shadow:0 12px 30px rgba(0,0,0,.2); color:#fff; }
+    .operations-overview-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:14px; }
+    .operations-overview-head h2 { margin:0; color:#fff; font-size:1.18rem; }
+    .operations-overview-head p { margin:4px 0 0; color:#c4c6cb; font-size:.88rem; }
+    .operations-overview-meta { display:flex; align-items:center; gap:12px; }
+    .operations-overview-status { color:#c4c6cb; font-size:.78rem; text-align:right; }
+    .operations-refresh { min-height:38px; padding:8px 12px; border:1px solid #55565c; border-radius:8px; color:#fff; background:#25262a; font-weight:800; cursor:pointer; }
+    .operations-refresh:hover { background:#34353b; border-color:#cf1235; }
+    .operations-refresh:focus-visible,.audit-clear:focus-visible { outline:3px solid #fff; outline-offset:2px; }
+    .operations-kpis { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:11px; }
+    .operations-kpi { min-width:0; padding:15px 16px; border:1px solid #37383e; border-top:4px solid #cf1235; border-radius:10px; background:#fff; color:#111113; }
+    .operations-kpi span { display:block; color:#626a73; font-size:.72rem; font-weight:900; letter-spacing:.045em; text-transform:uppercase; }
+    .operations-kpi strong { display:block; margin-top:7px; overflow-wrap:anywhere; font-size:1.2rem; line-height:1.25; }
+    .operations-kpi small { display:block; margin-top:5px; color:#68707a; font-size:.75rem; line-height:1.35; }
+    .operations-lower { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+    .operations-note { min-width:0; padding:13px 15px; border:1px solid #37383e; border-radius:10px; background:#151619; }
+    .operations-note h3 { margin:0 0 8px; color:#fff; font-size:.9rem; }
+    .operations-note p { margin:0; color:#c4c6cb; font-size:.8rem; line-height:1.45; }
+    .audit-list { display:grid; gap:6px; }
+    .audit-item { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:start; padding:7px 0; border-top:1px solid #33343a; }
+    .audit-item strong { display:block; color:#f3f3f4; font-size:.78rem; }
+    .audit-item small { display:block; margin-top:2px; color:#b3b5bb; font-size:.7rem; }
+    .audit-time { color:#b3b5bb; font-size:.68rem; white-space:nowrap; }
+    .audit-empty { color:#b3b5bb; font-size:.78rem; }
+    .audit-clear { margin-top:8px; padding:6px 9px; border:1px solid #57585f; border-radius:7px; color:#eee; background:#24252a; font-size:.73rem; font-weight:750; cursor:pointer; }
+    @media (max-width:1000px) { .operations-kpis { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media (max-width:700px) {
+      .operations-overview { padding:17px; }
+      .operations-overview-head { align-items:flex-start; }
+      .operations-overview-meta { flex-direction:column-reverse; align-items:flex-end; gap:6px; }
+      .operations-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+      .operations-kpi { padding:12px; }
+      .operations-kpi strong { font-size:1.05rem; }
+      .operations-lower { grid-template-columns:1fr; }
+      .operations-overview-status { max-width:135px; }
+    }
+
   </style>
 </head>
 <body>
@@ -687,6 +725,23 @@
         <section class="dashboard-view" id="dashboard">
           <div class="welcome"><div><h1>BoneShakers Social Club Management Center</h1><p>One secure workspace for membership, finances, events, merchandise, sponsorships, and community programs.</p></div><div class="portal-health visible checking home-portal-health" data-portal-health="true" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong data-portal-health-status="true">Checking</strong><small data-portal-health-detail="true">Verifying connected systems…</small></div></div></div>
 
+          <section class="operations-overview" aria-labelledby="operationsOverviewTitle">
+            <header class="operations-overview-head">
+              <div><h2 id="operationsOverviewTitle">Club Command Center</h2><p>Key numbers from the connected membership, finance, Bikes for Tykes, and marketplace workbooks.</p></div>
+              <div class="operations-overview-meta"><span class="operations-overview-status" id="operationsOverviewStatus" role="status" aria-live="polite">Waiting for Google sign-in…</span><button class="operations-refresh" id="operationsOverviewRefresh" type="button">Refresh</button></div>
+            </header>
+            <div class="operations-kpis" id="operationsOverviewCards">
+              <article class="operations-kpi"><span>Membership</span><strong>—</strong><small>Sign in to load the latest count.</small></article>
+              <article class="operations-kpi"><span>Cash on Hand</span><strong>—</strong><small>Live Finance workbook</small></article>
+              <article class="operations-kpi"><span>Lifetime Community Impact</span><strong>—</strong><small>Live Finance workbook</small></article>
+              <article class="operations-kpi"><span>Bikes for Tykes</span><strong>—</strong><small>Fundraising progress</small></article>
+              <article class="operations-kpi"><span>Marketplace Cash to Collect</span><strong>—</strong><small>Live Marketplace workbook</small></article>
+            </div>
+            <div class="operations-lower">
+              <section class="operations-note"><h3>Data freshness</h3><p id="operationsOverviewFreshness">The command center refreshes after sign-in and when you select Refresh.</p></section>
+              <section class="operations-note" aria-labelledby="portalActivityTitle"><h3 id="portalActivityTitle">Recent Portal Activity</h3><div class="audit-list" id="portalAuditList" aria-live="polite"></div><p style="margin-top:7px">This history is saved in this browser only. It records workbook edits without saving the cell contents.</p><button class="audit-clear" id="portalAuditClear" type="button">Clear this browser’s history</button></section>
+            </div>
+          </section>
           <div class="module-grid">
             <article class="module" style="--accent:#3d7fb1;--tint:#e8f3fb"><div class="module-top"><div class="module-identity"><div class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><h2>Membership</h2></div><div class="status live-status">Live</div></div><p>Member profiles, renewals, attendance, waivers, vetting, officers, lifers, anniversaries, and history.</p><footer><span class="source">38 connected workbook sections</span><button class="open-btn" data-open="membership">Open module</button></footer></article>
             <article class="module" style="--accent:#16845b;--tint:#e5f6ef"><div class="module-top"><div class="module-identity"><div class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 8a5 5 0 0 1 10 0"/><path d="M6 8h12l3 11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2L6 8Z"/><path d="M12 11v7M14.5 13h-3.75a1.25 1.25 0 0 0 0 2.5h2.5a1.25 1.25 0 0 1 0 2.5H9.5"/></svg></div><h2>Finance</h2></div><div class="status live-status">Live</div></div><p>Transactions, fund balances, operating budgets, event budgets, reconciliations, and reporting.</p><footer><span class="source">14 connected workbook sections</span><button class="open-btn" data-open="finance">Open module</button></footer></article>
@@ -951,10 +1006,10 @@
           accessToken = response.access_token;
           saveSession(response.expires_in);
           document.getElementById('authGate').classList.add('hidden');
-          await Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData(), loadMarketplaceData(), loadAdminSystemStatus()]);
+          await Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData(), loadMarketplaceData(), loadAdminSystemStatus(), loadOperationsOverview(true)]);
         }
       });
-      if (restoreSession()) Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData(), loadMarketplaceData(), loadAdminSystemStatus()]);
+      if (restoreSession()) Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData(), loadMarketplaceData(), loadAdminSystemStatus(), loadOperationsOverview(true)]);
     }
 
     document.getElementById('googleSignIn').addEventListener('click', () => {
@@ -990,54 +1045,166 @@
       return (await response.json()).values || [];
     }
 
+    const PORTAL_AUDIT_STORAGE_KEY = 'bssc_portal_activity_v1';
+    const pendingPortalWrites = new Map();
+    let operationsOverviewLoading = false;
+    let operationsOverviewLoadedAt = 0;
+
+    function recordPortalAudit(action, location, itemCount = 1) {
+      try {
+        const events = JSON.parse(localStorage.getItem(PORTAL_AUDIT_STORAGE_KEY) || '[]');
+        events.unshift({action,location,count:Number(itemCount)||1,at:new Date().toISOString()});
+        localStorage.setItem(PORTAL_AUDIT_STORAGE_KEY,JSON.stringify(events.slice(0,50)));
+      } catch (error) {}
+      renderPortalAudit();
+    }
+
+    function renderPortalAudit() {
+      const target = document.getElementById('portalAuditList');
+      if (!target) return;
+      let events = [];
+      try { events = JSON.parse(localStorage.getItem(PORTAL_AUDIT_STORAGE_KEY) || '[]'); } catch (error) {}
+      if (!Array.isArray(events) || !events.length) {
+        target.innerHTML = '<div class="audit-empty">No workbook edits recorded in this browser yet.</div>';
+        return;
+      }
+      target.innerHTML = events.slice(0,5).map(event => {
+        const at = new Date(event.at);
+        const quantity = /row/i.test(event.action || '') ? `${Number(event.count)||1} row(s)` : `${Number(event.count)||1} cell(s)`;
+        const time = Number.isNaN(at.getTime()) ? '' : at.toLocaleString('en-US',{timeZone:'America/New_York',month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'});
+        return `<div class="audit-item"><div><strong>${esc(event.action || 'Workbook update')}</strong><small>${esc(event.location || 'Connected workbook')} · ${quantity}</small></div><time class="audit-time">${esc(time)}</time></div>`;
+      }).join('');
+    }
+
+    function clearPortalAudit() {
+      if (!window.confirm('Clear the activity history saved in this browser? This does not change any Google Sheets data.')) return;
+      localStorage.removeItem(PORTAL_AUDIT_STORAGE_KEY);
+      renderPortalAudit();
+    }
+
+    async function writePortalSheetRequest(url, options, action, location, itemCount = 1) {
+      const signature = `${options.method || 'GET'}|${url}|${options.body || ''}`;
+      if (pendingPortalWrites.has(signature)) return pendingPortalWrites.get(signature);
+      const request = (async () => {
+        const response = await fetch(url,options);
+        if (!response.ok) throw new Error(`Google Sheets returned ${response.status}`);
+        const result = await response.json();
+        recordPortalAudit(action,location,itemCount);
+        return result;
+      })();
+      pendingPortalWrites.set(signature,request);
+      try { return await request; }
+      finally { pendingPortalWrites.delete(signature); }
+    }
+
+    function findCommandValue(rows, wantedLabel) {
+      const wanted = String(wantedLabel).replace(/\s+/g,' ').trim().toLowerCase().replace(/:$/,'');
+      for (const row of rows || []) {
+        for (let index=0; index<row.length; index+=1) {
+          const label = String(row[index] || '').replace(/\s+/g,' ').trim().toLowerCase().replace(/:$/,'');
+          if (label !== wanted) continue;
+          for (let next=index+1;next<row.length;next+=1) if (String(row[next] || '').trim()) return String(row[next]).trim();
+        }
+      }
+      return '';
+    }
+
+    function renderOperationsOverview(results) {
+      const target = document.getElementById('operationsOverviewCards');
+      const status = document.getElementById('operationsOverviewStatus');
+      const freshness = document.getElementById('operationsOverviewFreshness');
+      if (!target) return;
+      const [finance,membership,bft,marketplace] = results;
+      const card = (label,value,note) => `<article class="operations-kpi"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong><small>${esc(note)}</small></article>`;
+      const rowsOrEmpty = item => item.status === 'fulfilled' ? item.value : [];
+      const financeRows = rowsOrEmpty(finance);
+      const membershipRows = rowsOrEmpty(membership);
+      const bftRows = rowsOrEmpty(bft);
+      const marketRows = rowsOrEmpty(marketplace);
+      const membershipLabel = String(membershipRows[15]?.[1] || 'Membership snapshot').trim();
+      const membershipValue = String(membershipRows[15]?.[2] || '').trim();
+      const bftRaised = findCommandValue(bftRows,'Total Raised So Far');
+      const bftGoal = findCommandValue(bftRows,'Goal Amount');
+      const bftProgress = findCommandValue(bftRows,'Progress Toward Goal');
+      const marketplaceDue = String(marketRows[6]?.[16] || '').trim();
+      const cards = [
+        card(membershipLabel,membershipValue || 'Dashboard available','Membership · Dashboard 2026'),
+        card('Cash on Hand',String(financeRows[6]?.[1] || ''),'Finance · Dashboard-2026'),
+        card('Lifetime Community Impact',String(financeRows[6]?.[5] || ''),'Finance · Dashboard-2026'),
+        card('Bikes for Tykes Raised',bftRaised,bftGoal ? `${bftProgress || 'Progress not shown'} of ${bftGoal} goal` : 'Bikes for Tykes · Dashboard'),
+        card('Marketplace Cash to Collect',marketplaceDue || '$0.00','Marketplace · Dashboard')
+      ];
+      target.innerHTML = cards.join('');
+      const successful = results.filter(result => result.status === 'fulfilled').length;
+      const total = results.length;
+      if (status) status.textContent = successful === total ? 'All four workbooks refreshed' : `${successful} of ${total} workbooks refreshed`;
+      if (freshness) freshness.textContent = `Last refreshed ${new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',timeZoneName:'short'})}. Values are read directly from the connected Google Sheets.`;
+      operationsOverviewLoadedAt = Date.now();
+    }
+
+    async function loadOperationsOverview(force = false) {
+      const status = document.getElementById('operationsOverviewStatus');
+      if (!status || !accessToken || operationsOverviewLoading) return;
+      if (!force && Date.now() - operationsOverviewLoadedAt < 300000) return;
+      operationsOverviewLoading = true;
+      status.textContent = 'Refreshing connected workbooks…';
+      try {
+        const results = await Promise.allSettled([
+          getSheetValues("'Dashboard-2026'!A1:AF80",FINANCE_SPREADSHEET_ID),
+          getSheetValues("'Dashboard 2026'!A1:Z80",MEMBERSHIP_SPREADSHEET_ID),
+          getSheetValues("'DashBoard'!A1:G40",BFT_SPREADSHEET_ID),
+          getSheetValues("'Dashboard'!A1:V22",MARKETPLACE_SPREADSHEET_ID)
+        ]);
+        renderOperationsOverview(results);
+      } catch (error) {
+        status.textContent = 'Could not refresh workbook summaries. Try again.';
+      } finally { operationsOverviewLoading = false; }
+    }
+
     async function updateSheetCell(spreadsheetId, sheetName, rowNumber, columnIndex, value) {
       const column = columnNumberToLetters(columnIndex + 1);
       const range = `'${sheetName.replace(/'/g, "''")}'!${column}${rowNumber}`;
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: {Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json'},
-        body: JSON.stringify({range, majorDimension: 'ROWS', values: [[value]]})
-      });
-      if (!response.ok) throw new Error(`Google Sheets returned ${response.status}`);
-      return response.json();
+      return writePortalSheetRequest(url,{
+        method:'PUT',
+        headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
+        body:JSON.stringify({range,majorDimension:'ROWS',values:[[value]]})
+      },'Updated a workbook cell',sheetName,1);
     }
 
     async function appendSheetRow(spreadsheetId, sheetName, values) {
       const range = `'${sheetName.replace(/'/g, "''")}'!A:Q`;
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-      const response = await fetch(url, {
+      return writePortalSheetRequest(url,{
         method:'POST',
-        headers:{Authorization:`Bearer ${accessToken}`, 'Content-Type':'application/json'},
-        body:JSON.stringify({range, majorDimension:'ROWS', values:[values]})
-      });
-      if (!response.ok) throw new Error(`Google Sheets returned ${response.status}`);
-      return response.json();
+        headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
+        body:JSON.stringify({range,majorDimension:'ROWS',values:[values]})
+      },'Added a workbook row',sheetName,1);
     }
 
     async function appendSheetRows(spreadsheetId, sheetName, values) {
       if (!values.length) return null;
       const range = `'${sheetName.replace(/'/g, "''")}'!A:Q`;
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-      const response = await fetch(url, {
+      return writePortalSheetRequest(url,{
         method:'POST',
-        headers:{Authorization:`Bearer ${accessToken}`, 'Content-Type':'application/json'},
-        body:JSON.stringify({range, majorDimension:'ROWS', values})
-      });
-      if (!response.ok) throw new Error(`Google Sheets returned ${response.status}`);
-      return response.json();
+        headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
+        body:JSON.stringify({range,majorDimension:'ROWS',values})
+      },'Added workbook rows',sheetName,values.length);
     }
 
     async function updateSheetRanges(spreadsheetId, updates) {
       if (!updates.length) return null;
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`;
-      const response = await fetch(url, {
+      const sheets = [...new Set(updates.map(update => {
+        const match = String(update.range || '').match(/^'([^']+)'!/);
+        return match ? match[1] : 'Connected workbook';
+      }))];
+      return writePortalSheetRequest(url,{
         method:'POST',
-        headers:{Authorization:`Bearer ${accessToken}`, 'Content-Type':'application/json'},
+        headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
         body:JSON.stringify({valueInputOption:'USER_ENTERED',data:updates.map(update => ({range:update.range,majorDimension:'ROWS',values:[[update.value]]}))})
-      });
-      if (!response.ok) throw new Error(`Google Sheets returned ${response.status}`);
-      return response.json();
+      },'Updated workbook cells',sheets.join(', '),updates.length);
     }
 
     function columnNumberToLetters(number) {
@@ -2989,6 +3156,10 @@
       loadUptimeRobotStatus(true);
     });
 
+    document.getElementById('operationsOverviewRefresh').addEventListener('click',() => loadOperationsOverview(true));
+    document.getElementById('portalAuditClear').addEventListener('click',clearPortalAudit);
+    renderPortalAudit();
+
     initializeGoogleAuth();
     const modules = {
       membership: {title:'Membership', description:'The central record for members, history, participation, and annual requirements.', tasks:['Member directory','Renewals and dues','Attendance','Waivers and vetting','Officers and honors','History and anniversaries']},
@@ -3009,7 +3180,7 @@
       if (financeAdminButton) financeAdminButton.classList.toggle('visible', key === 'finance');
       const membershipAdminButton = document.getElementById('membershipAdminToggle');
       if (membershipAdminButton) membershipAdminButton.classList.toggle('visible', key === 'membership');
-      if (key === 'home') { dashboard.classList.remove('hidden'); detail.classList.remove('active'); setActive('home'); loadAdminSystemStatus(); return; }
+      if (key === 'home') { dashboard.classList.remove('hidden'); detail.classList.remove('active'); setActive('home'); loadAdminSystemStatus(); loadOperationsOverview(); return; }
       const item = modules[key]; if (!item) return;
       document.getElementById('detailTitle').textContent = item.title;
       document.getElementById('detailDescription').textContent = item.description;
