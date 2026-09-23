@@ -359,7 +359,7 @@
     .finance-dashboard-hero .finance-dashboard-card { min-height:122px; display:flex; flex-direction:column; justify-content:center; border:0; border-top:5px solid var(--gold); }
     .finance-dashboard-hero .finance-dashboard-card strong { font-size:1.85rem; }
     .finance-dashboard-card.alert { border-top-color:#d20f32; background:#fff1f3; }
-    .control-title { margin-bottom:14px; padding:17px 20px; color:#fff; background:#111113; border-bottom:4px solid var(--gold); border-radius:11px; }
+    .control-title { margin-bottom:14px; padding:17px 20px; color:#fff; background:#1f4e79; border-bottom:4px solid #9dc3e6; border-radius:11px; }
     .control-title h2 { margin:0; color:#fff; font-size:1.35rem; }
     .control-title span { display:block; margin-top:5px; color:#d7d8da; }
     .control-action-bar { display:flex; justify-content:flex-end; margin:0 0 14px; }
@@ -368,12 +368,20 @@
     .control-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
     .control-card { border:1px solid #2e3033; border-radius:10px; overflow:hidden; background:#fff; }
     .control-card h3 { margin:0; padding:10px 12px; color:#fff; background:#111113; border-bottom:3px solid var(--gold); font-size:.95rem; text-transform:uppercase; letter-spacing:.03em; }
+    .control-card.tone-green { border-color:#78b98e; background:#eef8f1; }
+    .control-card.tone-green h3 { color:#111113; background:#b7e1cd; border-bottom-color:#00b050; }
+    .control-card.tone-blue { border-color:#7ea8cf; background:#f0f6fc; }
+    .control-card.tone-blue h3 { color:#111113; background:#9dc3e6; border-bottom-color:#1f4e79; }
+    .control-card.tone-red { border-color:#e28b98; background:#fff1f3; }
+    .control-card.tone-red h3 { color:#111113; background:#ffc7ce; border-bottom-color:#c00000; }
+    .control-card.tone-green .control-row,.control-card.tone-blue .control-row,.control-card.tone-red .control-row { border-bottom-color:rgba(17,17,19,.16); }
     .control-card.wide { grid-column:1/-1; }
     .control-rows { padding:10px 12px; }
     .control-row { display:flex; justify-content:space-between; gap:16px; padding:8px 0; border-bottom:1px solid #e1e3e6; }
     .control-row:last-child { border-bottom:0; }
     .control-row strong { text-align:right; white-space:nowrap; }
-    .control-row.status-bad strong { color:#b70f2a; }
+    .control-row.status-bad strong { color:#c00000; }
+    .control-row.metric-positive strong { color:#00783a; }
     .activity-summary-panel { max-width:760px; }
     .activity-controls { display:grid; grid-template-columns:160px minmax(0,1fr); gap:10px 14px; align-items:center; margin-bottom:16px; }
     .activity-controls label { font-weight:900; }
@@ -1445,20 +1453,21 @@
     function renderFinanceControl(rows) {
       financeControlRows = rows;
       const at = (r,c) => String((rows[r] && rows[r][c]) || '—').replace(/\s+/g,' ').trim();
+      const numeric = value => Number(String(value).replace(/[$,%(),▲▼]/g,'').trim()) * (String(value).includes('(') ? -1 : 1);
+      const resultTone = value => numeric(value) < 0 ? 'tone-red' : 'tone-green';
       const editableValue = (value,row) => financeControlEditMode ? `<input class="control-edit-input" data-control-row="${row}" value="${esc(value === '—' ? '' : value)}" aria-label="Edit bank reconciliation amount">` : `<strong>${esc(value)}</strong>`;
       const section = (title,pairs,cls='') => `<section class="control-card ${cls}"><h3>${esc(title)}</h3><div class="control-rows">${pairs.map(([label,value,bad,row]) => `<div class="control-row ${bad ? 'status-bad' : ''}"><span>${esc(label)}</span>${row ? editableValue(value,row) : `<strong>${esc(value)}</strong>`}</div>`).join('')}</div></section>`;
       const status = at(10,4);
       document.getElementById('financeControlTable').innerHTML = `<div class="control-title"><h2>${esc(at(0,0))}</h2><span>${esc(at(0,6))}: ${esc(at(0,7))}</span></div>
         <div class="control-action-bar"><button class="dashboard-edit-btn ${financeControlEditMode ? 'active' : ''}" id="financeControlEditToggle" aria-pressed="${financeControlEditMode}">${financeControlEditMode ? 'Done Editing' : 'Edit Bank Reconciliation'}</button></div>
         ${financeControlEditMode ? '<div class="control-edit-note">Only Available Balance, General Fund, and Bikes for Tykes are editable. Difference and Status are calculated automatically.</div>' : ''}<div class="control-grid">
-        ${section(at(3,0),[[at(5,0),at(5,1)],[at(7,0),at(7,1)],[at(8,0),at(8,1)]])}
-        ${section(at(3,3),[[at(5,3),at(5,4),false,6],[at(6,3),at(6,4),false,7],[at(7,3),at(7,4),false,8],[at(8,3),at(8,4)],[at(9,3),at(9,4)],[at(10,3),status,/out of balance/i.test(status)]])}
-        ${section(at(3,6),[[at(4,6),at(4,7)],[at(5,6),at(5,7)],[at(6,6),at(6,7)],[at(7,6),at(7,7)],[at(8,6),at(8,7)]])}
-        ${section(at(12,0),[[at(14,0),at(14,1)],[at(15,0),at(15,1)],[at(16,0),at(16,1)]])}
-        ${section(at(12,3),[[at(14,3),at(14,4)],[at(15,3),at(15,4)],[at(16,3),at(16,4)],[at(18,3),at(18,4)],[at(19,3),at(19,4)]])}
-        ${section(at(19,0),[[at(20,0),at(20,1)],[at(21,0),at(21,1)],[at(22,0),at(22,1)]])}
-        ${section(at(22,3),[[at(22,3),at(22,4)],[at(24,3),at(24,4)],[at(25,3),at(25,4)],[at(26,3),at(26,4)]])}
-        ${section(at(25,0),[[at(27,0),at(27,1)]],'wide')}
+        ${section(at(3,0),[[at(5,0),at(5,1)],[at(7,0),at(7,1)],[at(8,0),at(8,1)]],'tone-green')}
+        ${section(at(3,3),[[at(5,3),at(5,4),false,6],[at(6,3),at(6,4),false,7],[at(7,3),at(7,4),false,8],[at(8,3),at(8,4)],[at(9,3),at(9,4)],[at(10,3),status,/out of balance/i.test(status)]],/out of balance/i.test(status) ? 'tone-red' : 'tone-green')}
+        ${section(at(12,0),[[at(14,0),at(14,1)],[at(15,0),at(15,1)],[at(16,0),at(16,1)]],resultTone(at(16,1)))}
+        ${section(at(12,3),[[at(14,3),at(14,4)],[at(15,3),at(15,4)],[at(16,3),at(16,4)],[at(18,3),at(18,4)]],resultTone(at(16,4)))}
+        ${section(at(19,0),[[at(20,0),at(20,1)],[at(21,0),at(21,1)],[at(22,0),at(22,1)]],resultTone(at(22,1)))}
+        ${section(at(22,3),[[at(22,3),at(22,4)],[at(24,3),at(24,4)],[at(25,3),at(25,4)],[at(26,3),at(26,4)]],'tone-blue')}
+        ${section(at(25,0),[[at(27,0),at(27,1)]],'wide tone-blue')}
       </div>`;
       document.getElementById('financeControlEditToggle').addEventListener('click',saveFinanceControlEdits);
       document.getElementById('financeControlStatus').textContent = 'Executive financial snapshot connected to Control-2026.';
