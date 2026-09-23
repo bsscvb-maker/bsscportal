@@ -1110,7 +1110,12 @@
       const today = new Date();
       const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0,10);
       const calculated = header => /^(month|year|type|community impact)$/i.test(header) || /running\s*balance/i.test(header);
-      const fields = headers.map((header,column) => ({header:String(header || '').trim(),column})).filter(field => field.header && !calculated(field.header));
+      const transactionFieldOrder = ['date','fund','activity','category','subcategory','description','payee/payer','payment method','amount','cleared','note'];
+      const fields = headers.map((header,column) => ({header:String(header || '').trim(),column})).filter(field => field.header && !calculated(field.header)).sort((a,b) => {
+        const aOrder = transactionFieldOrder.indexOf(a.header.toLowerCase());
+        const bOrder = transactionFieldOrder.indexOf(b.header.toLowerCase());
+        return (aOrder < 0 ? 999 : aOrder) - (bOrder < 0 ? 999 : bOrder);
+      });
       const panel = document.createElement('section');
       panel.className = 'transaction-entry';
       panel.innerHTML = `<div class="transaction-entry-head"><h3>Add New Transaction</h3><button class="transaction-entry-close" type="button" aria-label="Close new transaction form">✕ Close</button></div>
