@@ -39,6 +39,7 @@
     .nav button:hover, .nav button.active { color: white; background: rgba(255,255,255,.11); }
     .nav button.active { box-shadow: inset 3px 0 var(--gold); }
     .nav-icon { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 7px; background: rgba(255,255,255,.10); font-size: .82rem; font-weight: 900; }
+    .nav-icon svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
     .sidebar-footer { margin-top: auto; border-top: 1px solid rgba(255,255,255,.14); padding: 18px 8px 2px; color: #b9c9d8; font-size: .82rem; }
     .main { min-width: 0; }
     .topbar { height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 0 32px; background: rgba(255,255,255,.97); border-bottom: 4px solid var(--gold); position: sticky; top: 0; z-index: 4; backdrop-filter: blur(8px); }
@@ -505,6 +506,14 @@
     .finance-dashboard-hero { padding:20px; border-radius:14px; background:#111113; border-bottom:5px solid var(--gold); }
     .finance-dashboard-hero h2 { margin:0 0 5px; color:#fff; font-size:1.45rem; }
     .finance-dashboard-hero p { margin:0 0 18px; color:#cfd1d4; }
+    .finance-dashboard-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; margin-bottom:20px; }
+    .finance-dashboard-heading p { margin:0; }
+    .finance-dashboard-asof { flex:0 0 auto; padding:8px 12px; border:1px solid #555a62; border-radius:999px; color:#fff; font-size:.78rem; font-weight:900; }
+    .live-eastern-time { display:inline-flex; align-items:center; gap:8px; font-variant-numeric:tabular-nums; }
+    .live-clock-dot { width:9px; height:9px; border-radius:50%; background:#19df66; box-shadow:0 0 0 4px rgba(25,223,102,.15),0 0 12px rgba(25,223,102,.7); animation:liveClockPulse 1.8s ease-in-out infinite; }
+    @keyframes liveClockPulse { 50% { opacity:.55; transform:scale(.82); } }
+    .finance-dashboard-section + .finance-dashboard-section { margin-top:22px; padding-top:20px; border-top:1px solid #3a3d42; }
+    .finance-dashboard-section h3 { margin:0 0 10px; color:#fff; font-size:1rem; letter-spacing:.06em; text-transform:uppercase; }
     .finance-dashboard-hero .finance-dashboard-grid { margin:0; }
     .finance-dashboard-hero .finance-dashboard-card { min-height:122px; display:flex; flex-direction:column; justify-content:center; border:0; border-top:5px solid var(--gold); }
     .finance-dashboard-hero .finance-dashboard-card strong { font-size:1.85rem; }
@@ -620,18 +629,19 @@
   <div class="app">
     <aside class="sidebar" id="sidebar">
       <div class="brand"><div class="brand-mark">BS</div><div><strong>BoneShakers</strong><span>Management Portal</span></div></div>
-      <div class="nav-label">Portal</div>
-      <nav class="nav" aria-label="Portal navigation">
-        <button class="active" data-module="home"><span class="nav-icon">H</span>Home</button>
-        <button data-module="membership"><span class="nav-icon">M</span>Membership</button>
-        <button data-module="finance"><span class="nav-icon">$</span>Finance</button>
-        <button data-module="bft"><span class="nav-icon">B</span>Bikes for Tykes</button>
-        <button data-module="bikenights"><span class="nav-icon">N</span>Bike Nights</button>
-        <button data-module="marketplace"><span class="nav-icon">O</span>Marketplace</button>
-        <button data-module="sponsors"><span class="nav-icon">S</span>Sponsorships</button>
+      <div class="nav-label">Main</div>
+      <nav class="nav" aria-label="Main navigation"><button class="active" data-module="home"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10M9 20v-6h6v6"/></svg></span>Home</button></nav>
+      <div class="nav-label">Modules</div>
+      <nav class="nav" aria-label="Portal modules">
+        <button data-module="membership"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Membership</button>
+        <button data-module="finance"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 8a5 5 0 0 1 10 0"/><path d="M6 8h12l3 11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2L6 8Z"/><path d="M12 11v7M14.5 13h-3.75a1.25 1.25 0 0 0 0 2.5h2.5a1.25 1.25 0 0 1 0 2.5H9.5"/></svg></span>Finance</button>
+        <button data-module="bft"><span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6h3M6 17.5l4-8h4l4.5 8M10 9l4 8.5M8 13h8"/></svg></span>Bikes for Tykes</button>
+        <button data-module="bikenights"><span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg></span>Bike Nights</button>
+        <button data-module="marketplace"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 9l2-5h14l2 5"/><path d="M5 13v8h14v-8"/><path d="M9 21v-6h6v6"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/></svg></span>Marketplace</button>
+        <button data-module="sponsors"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="m8 12 2.5 2.5a2.12 2.12 0 0 0 3 0L19 9"/><path d="m15 5 4-2 4 4-3 3M9 5 5 3 1 7l4 4"/><path d="m5 10 6.5 6.5a2.12 2.12 0 0 0 3 0l5.5-6.5"/></svg></span>Sponsorships</button>
       </nav>
       <div class="nav-label">System</div>
-      <nav class="nav"><button data-module="admin"><span class="nav-icon">A</span>Portal Control</button></nav>
+      <nav class="nav"><button data-module="admin"><span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6l-.04.08V22h-4v-1.92A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1l-.08-.04H2v-4h1.92A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6l.04-.08V2h4v1.92A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.12.38.34.72.6 1l.08.04H22v4h-1.92A1.7 1.7 0 0 0 19.4 15Z"/></svg></span>Administration</button></nav>
       <div class="sidebar-footer">© 2026 BoneShakers Social Club<br>Private Management Workspace</div>
     </aside>
 
@@ -652,7 +662,7 @@
             <article class="module" style="--accent:#cf1235;--tint:#fff0f3"><div class="module-top"><div class="module-identity"><div class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg></div><h2>Bike Nights</h2></div><div class="status live-status">Live</div></div><p>Monthly visit planning, club scorecards, attendance history, and upcoming bike nights.</p><footer><span class="source">3 live workbook sections</span><button class="open-btn" data-open="bikenights">Open module</button></footer></article>
             <article class="module" style="--accent:#8c5bb5;--tint:#f2eafb"><div class="module-top"><div class="module-identity"><div class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 9l2-5h14l2 5"/><path d="M5 13v8h14v-8"/><path d="M9 21v-6h6v6"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/></svg></div><h2>Marketplace</h2></div><div class="status live-status">Live</div></div><p>Orders, fulfillment, pricing, fees, manufacturers, sales history, and merchandise reporting.</p><footer><span class="source">8 live workbook sections</span><button class="open-btn" data-open="marketplace">Open module</button></footer></article>
             <article class="module" style="--accent:#b64e50;--tint:#fbeaec"><div class="module-top"><div class="module-identity"><div class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m8 12 2.5 2.5a2.12 2.12 0 0 0 3 0L19 9"/><path d="m15 5 4-2 4 4-3 3M9 5 5 3 1 7l4 4"/><path d="m5 10 6.5 6.5a2.12 2.12 0 0 0 3 0l5.5-6.5"/><path d="m7 14-2 2 3 3 2-2M11 18l-1 1 2 2 2-2"/></svg></div><h2>Sponsorships</h2></div><div class="status live-status">Live</div></div><p>Current and prospective sponsors, follow-up status, documentation requests, and sponsor reporting.</p><footer><span class="source">4 live workbook sections</span><button class="open-btn" data-open="sponsors">Open module</button></footer></article>
-            <article class="module" style="--accent:#52606d;--tint:#edf1f4"><div class="module-top"><div class="module-identity"><div class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6l-.04.08V22h-4v-1.92A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1l-.08-.04H2v-4h1.92A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6l.04-.08V2h4v1.92A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.12.38.34.72.6 1l.08.04H22v4h-1.92A1.7 1.7 0 0 0 19.4 15Z"/></svg></div><h2>Portal Control Center</h2></div><div class="status live-status">Live</div></div><p>System health, spreadsheet connections, Google access, source workbooks, and portal information.</p><footer><span class="source">Live operational controls</span><button class="open-btn" data-open="admin">Open controls</button></footer></article>
+            <article class="module" style="--accent:#52606d;--tint:#edf1f4"><div class="module-top"><div class="module-identity"><div class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6l-.04.08V22h-4v-1.92A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1l-.08-.04H2v-4h1.92A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6l.04-.08V2h4v1.92A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.12.38.34.72.6 1l.08.04H22v4h-1.92A1.7 1.7 0 0 0 19.4 15Z"/></svg></div><h2>Administration</h2></div><div class="status live-status">Live</div></div><p>System health, spreadsheet connections, Google access, source workbooks, and portal configuration.</p><footer><span class="source">Live administrative controls</span><button class="open-btn" data-open="admin">Open administration</button></footer></article>
           </div>
 
           <div class="home-brand-display" aria-hidden="true">
@@ -837,6 +847,7 @@
     let portalHealthTimer = null;
     let portalHealthCheckRunning = false;
     let portalConnectionStates = [];
+    let easternClockTimer = null;
 
     function saveSession(expiresInSeconds) {
       localStorage.setItem(SESSION_KEY, JSON.stringify({
@@ -1995,12 +2006,24 @@
       const card = (label,value,cls='') => `<div class="finance-dashboard-card ${cls}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
       const reconciliation = at(16,9);
       document.getElementById('financeDashboard').innerHTML = `<section class="finance-dashboard-hero">
-        <h2>${esc(at(1,1))}</h2><p>Nine executive measures from the live 2026 finance workbook.</p>
-        <div class="finance-dashboard-grid">
-          ${card(labelAt(4,1),at(6,1),metricClass(labelAt(4,1),at(6,1)))}${card(labelAt(4,5),at(6,5),metricClass(labelAt(4,5),at(6,5)))}${card(labelAt(4,9),at(6,9),metricClass(labelAt(4,9),at(6,9)))}
-          ${card(labelAt(9,1),at(11,1),metricClass(labelAt(9,1),at(11,1)))}${card(labelAt(9,5),at(11,5),metricClass(labelAt(9,5),at(11,5)))}${card(labelAt(9,9),at(11,9),metricClass(labelAt(9,9),at(11,9)))}
-          ${card(labelAt(14,1),at(16,1),metricClass(labelAt(14,1),at(16,1)))}${card(labelAt(14,5),at(16,5),metricClass(labelAt(14,5),at(16,5)))}${card(labelAt(14,9),reconciliation,metricClass(labelAt(14,9),reconciliation))}
-        </div></section>`;
+        <div class="finance-dashboard-heading"><div><h2>${esc(at(1,1))}</h2><p>Board-level view of liquidity, financial performance, community impact, and financial control.</p></div><span class="finance-dashboard-asof live-eastern-time" data-live-eastern-clock="true"></span></div>
+        <section class="finance-dashboard-section"><h3>Cash Position</h3><div class="finance-dashboard-grid">
+          ${card('Total Cash on Hand',at(6,1),metricClass('Total Cash on Hand',at(6,1)))}
+          ${card('General Fund Current Balance',at(11,1),metricClass('General Fund Current Balance',at(11,1)))}
+          ${card('Bikes for Tykes Current Balance',at(11,5),metricClass('Bikes for Tykes Current Balance',at(11,5)))}
+        </div></section>
+        <section class="finance-dashboard-section"><h3>Financial Performance</h3><div class="finance-dashboard-grid">
+          ${card('Net This Month',at(16,1),metricClass('Net This Month',at(16,1)))}
+          ${card('General Fund Year to Date Net',at(6,9),metricClass('General Fund Year to Date Net',at(6,9)))}
+          ${card('Bikes for Tykes Year to Date Net',at(11,9),metricClass('Bikes for Tykes Year to Date Net',at(11,9)))}
+        </div></section>
+        <section class="finance-dashboard-section"><h3>Community Impact &amp; Financial Control</h3><div class="finance-dashboard-grid">
+          ${card('Charitable Spend Year to Date',at(16,5),'blue')}
+          ${card('Lifetime Community Impact',at(6,5),'blue')}
+          ${card('Bank Reconciliation Status',reconciliation,metricClass('Bank Reconciliation Status',reconciliation))}
+        </div></section>
+      </section>`;
+      startEasternClock();
       document.getElementById('financeDashboardStatus').textContent = 'Executive dashboard connected to BSSC Finance System 2026.';
     }
 
@@ -2031,7 +2054,7 @@
       const impactPriorYear = numeric(at(25,4));
       const impactIncrease = impactYtd - impactPriorYear;
       const status = at(10,4);
-      document.getElementById('financeControlTable').innerHTML = `<div class="control-title"><h2>${esc(at(0,0))}</h2><span>${esc(at(0,6))}: ${esc(at(0,7))}</span></div>
+      document.getElementById('financeControlTable').innerHTML = `<div class="control-title"><h2>${esc(at(0,0))}</h2><span class="live-eastern-time" data-live-eastern-clock="true"></span></div>
         <div class="control-action-bar"><button class="dashboard-edit-btn ${financeControlEditMode ? 'active' : ''}" id="financeControlEditToggle" aria-pressed="${financeControlEditMode}">${financeControlEditMode ? 'Done Editing' : 'Edit Bank Reconciliation'}</button></div>
         ${financeControlEditMode ? '<div class="control-edit-note">Only Available Balance, General Fund, and Bikes for Tykes are editable. Difference and Status are calculated automatically.</div>' : ''}<div class="control-grid">
         ${section(at(3,0),[[at(5,0),at(5,1)],[at(7,0),at(7,1)],[at(8,0),at(8,1)]],'tone-green')}
@@ -2044,6 +2067,7 @@
         ${section(at(25,0),[['2026 Community Impact — YTD',at(27,1)],['2025 Community Impact — Full Year',at(25,4)],['Increase Over 2025 Full Year',money(impactIncrease)]],'tone-blue')}
       </div>`;
       document.getElementById('financeControlEditToggle').addEventListener('click',saveFinanceControlEdits);
+      startEasternClock();
       document.getElementById('financeControlStatus').textContent = 'Executive financial snapshot connected to Control-2026.';
     }
 
@@ -2592,6 +2616,21 @@
       });
     }
 
+    function startEasternClock() {
+      const update = () => {
+        const easternTime = new Intl.DateTimeFormat('en-US',{
+          weekday:'short',month:'long',day:'numeric',year:'numeric',
+          hour:'numeric',minute:'2-digit',second:'2-digit',hour12:true,
+          timeZone:'America/New_York',timeZoneName:'short'
+        }).format(new Date());
+        document.querySelectorAll('[data-live-eastern-clock="true"]').forEach(clock => {
+          clock.innerHTML = `<span class="live-clock-dot" aria-hidden="true"></span><span>LIVE · ${esc(easternTime)}</span>`;
+        });
+      };
+      update();
+      if (!easternClockTimer) easternClockTimer = window.setInterval(update,1000);
+    }
+
     async function loadAdminSystemStatus() {
       const target = document.getElementById('adminSystemStatus');
       if (!target || portalHealthCheckRunning) return;
@@ -2651,7 +2690,7 @@
       bikenights: {title:'Bike Nights', description:'Plan monthly club visits, track attendance, and keep the 2026 bike-night schedule current.', tasks:['Dashboard','Club Scorecard','Raw Data - Bike Nights']},
       marketplace: {title:'Marketplace', description:'Order-to-fulfillment management with pricing, fees, and sales reporting.', tasks:['Order entry','Fulfillment queue','Pricing and fees','Manufacturer summary','Sales history','Finance synchronization']},
       sponsors: {title:'Sponsorships', description:'Manage active sponsors, prospects, outreach, and documentation requests.', tasks:['Sponsor dashboard','Current sponsors','Prospective sponsors','Contact history','Documents requested','Renewal reporting']},
-      admin: {title:'Portal Control Center', description:'Monitor system health, spreadsheet connections, access protection, and portal configuration.', tasks:[]}
+      admin: {title:'Administration', description:'Monitor system health, spreadsheet connections, access protection, and portal configuration.', tasks:[]}
     };
     const dashboard = document.getElementById('dashboard');
     const detail = document.getElementById('detail');
