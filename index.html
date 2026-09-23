@@ -250,6 +250,11 @@
     .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 11px; scrollbar-color: var(--gold) #e7e7e9; scrollbar-width: auto; }
     #financeTransactions2026Table .table-wrap { max-height:68vh; overflow:auto; }
     #financeTransactions2026Table .data-table thead th { position:sticky; top:0; z-index:5; box-shadow:0 2px 0 var(--gold); }
+    #financeTransactions2026Table .transaction-row-number { position:sticky; left:0; z-index:3; min-width:58px; width:58px; color:#555b63; background:#eef0f2 !important; border-right:2px solid #c9cdd2; text-align:center; font-weight:900; }
+    #financeTransactions2026Table thead .transaction-row-number { z-index:7; color:#fff; background:#303238 !important; }
+    #financeTransactions2026Table tr.transaction-selectable { cursor:pointer; }
+    #financeTransactions2026Table tr.transaction-selectable:hover td { background:#fff0f3; }
+    #financeTransactions2026Table tr.transaction-selected td { background:#fff0bd !important; }
     .data-table { width: 100%; border-collapse: collapse; min-width: 900px; font-size: .84rem; }
     .data-table th { position: sticky; top: 0; z-index: 2; padding: 12px 11px; text-align: left; line-height: 1.35; color: white; background: #111113; border-right: 1px solid #343438; border-bottom: 3px solid var(--gold); }
     #financeTransactions2026Table .data-table th { text-align:center; }
@@ -1180,6 +1185,7 @@
         return;
       }
       const isTicketLedger = targetId === 'bftTicketsTable';
+      const isTransaction2026 = targetId === 'financeTransactions2026Table';
       const headers = rows[headerRowIndex].slice(0, maxColumns);
       const ticketGroupStart = isTicketLedger ? headers.findIndex(value => String(value || '').trim().toLowerCase() === 'tickets on hold') : -1;
       if (isTicketLedger && ticketGroupStart >= 0 && rows[headerRowIndex + 1]) {
@@ -1192,7 +1198,7 @@
       const width = Math.min(maxColumns, Math.max(headers.length, ...indexedData.map(item => item.row.length)));
       const finalHeaders = Array.from({length: width}, (_, i) => headers[i] || '');
       const editMode = Boolean(editOptions && tableEditModes[targetId]);
-      const editButton = editOptions ? `<button class="dashboard-edit-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? 'Done Editing' : 'Edit Data'}</button>` : '';
+      const editButton = editOptions ? `<button class="dashboard-edit-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? (isTransaction2026 ? 'Close Editor' : 'Done Editing') : 'Edit Data'}</button>` : '';
       const newTransactionButton = targetId === 'financeTransactions2026Table' ? `<button class="new-transaction-btn" data-new-transaction="true">＋ New Transaction</button>` : '';
       const toolbar = `<div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search this list</span><input class="table-search" type="search" data-table-search="${targetId}" placeholder="Search by name, order number, price, item, status, or date…" autocomplete="off"></label><div class="table-tool-actions">${newTransactionButton}${editButton}</div></div><div class="table-search-count" data-search-count="${targetId}"></div>`;
       const isBudgetTable = targetId === 'bftBudgetTable';
@@ -1209,7 +1215,8 @@
       }
       if (!Number.isFinite(ticketPrice) || ticketPrice <= 0) ticketPrice = 20;
       const ticketPriceBar = isTicketLedger ? `<div class="ticket-price-bar"><strong>Ticket Cost</strong><span class="ticket-price-value" data-ticket-price="true" data-value="${ticketPrice}" ${editMode ? 'contenteditable="true" spellcheck="false"' : ''}>${money(ticketPrice)}</span></div>` : '';
-      target.innerHTML = `${toolbar}${editMode ? '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>' : ''}${ticketPriceBar}<div class="table-wrap"><table class="${tableClass}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
+      const editHelp = editMode ? (isTransaction2026 ? '<div class="edit-help">The newest transaction is open above. Click any numbered row below to edit a different transaction.</div>' : '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>') : '';
+      target.innerHTML = `${toolbar}${editHelp}${ticketPriceBar}<div class="table-wrap"><table class="${tableClass}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${isTransaction2026 ? '<th class="transaction-row-number">Row</th>' : ''}${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
         const labels = item.row.map(value => String(value).trim().toLowerCase());
         const isSubtotal = labels.some(value => value.includes('subtotal'));
         const isTotal = !isSubtotal && labels.some(value => value === 'total' || value.endsWith(' total') || value.includes('total with locks'));
@@ -1221,10 +1228,11 @@
         const isMarketPaid = isMarketplaceTable && labels.some(value => value.includes('paid') && !value.includes('unpaid'));
         const isMarketPending = isMarketplaceTable && labels.some(value => value.includes('pending') || value.includes('cash due'));
         const isMarketReady = isMarketplaceTable && labels.some(value => value === 'ready' || value === 'yes');
-        const rowClasses = [isTotal ? 'total-row' : '', isSubtotal ? 'subtotal-row' : '', isBudgetSection ? 'budget-section-row' : '', isBudgetSubhead ? 'budget-subhead-row' : '', isGrandTotal ? 'grand-total-row' : '', isNeverVisited ? 'never-visited' : '', isPlanned ? 'planned-row' : '', isMarketPaid ? 'market-paid' : '', isMarketPending ? 'market-pending' : '', isMarketReady ? 'market-ready' : ''].filter(Boolean).join(' ');
-        return `<tr class="${rowClasses}">${finalHeaders.map((_, columnIndex) => {
+        const sourceRowNumber = item.sourceIndex + 1 + Number((editOptions && editOptions.rowOffset) || 0);
+        const rowClasses = [isTotal ? 'total-row' : '', isSubtotal ? 'subtotal-row' : '', isBudgetSection ? 'budget-section-row' : '', isBudgetSubhead ? 'budget-subhead-row' : '', isGrandTotal ? 'grand-total-row' : '', isNeverVisited ? 'never-visited' : '', isPlanned ? 'planned-row' : '', isMarketPaid ? 'market-paid' : '', isMarketPending ? 'market-pending' : '', isMarketReady ? 'market-ready' : '', isTransaction2026 && editMode ? 'transaction-selectable' : ''].filter(Boolean).join(' ');
+        return `<tr class="${rowClasses}" ${isTransaction2026 ? `data-transaction-row="${sourceRowNumber}" data-source-index="${item.sourceIndex}"` : ''}>${isTransaction2026 ? `<td class="transaction-row-number">${sourceRowNumber}</td>` : ''}${finalHeaders.map((_, columnIndex) => {
           const formulaValue = editOptions && editOptions.formulaRows && editOptions.formulaRows[item.sourceIndex] ? String(editOptions.formulaRows[item.sourceIndex][columnIndex] || '') : '';
-          const editable = editMode && !formulaValue.startsWith('=');
+          const editable = editMode && !isTransaction2026 && !formulaValue.startsWith('=');
           let shownValue = item.row[columnIndex] || '';
           if (isTicketLedger && columnIndex === ticketGroupStart + 2) {
             const quantity = Number(String(item.row[ticketGroupStart + 1] || '').replace(/[$,]/g, ''));
@@ -1234,15 +1242,18 @@
           const numericValue = Number(String(shownValue).replace(/[$,%(),]/g, '').replace(/\s/g, '')) * (String(shownValue).includes('(') ? -1 : 1);
           const varianceClass = targetId === 'financeBaselineTable' && headerName.includes('variance') && Number.isFinite(numericValue) ? (numericValue < 0 ? 'variance-over' : 'variance-good') : '';
           const baseClass = editable ? 'editable-cell' : (editMode && formulaValue.startsWith('=') ? 'formula-cell' : '');
-          const sourceRowNumber = item.sourceIndex + 1 + Number((editOptions && editOptions.rowOffset) || 0);
           return `<td class="${[baseClass,varianceClass].filter(Boolean).join(' ')}" ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${sourceRowNumber}" data-column="${columnIndex}" data-value="${esc(shownValue)}"` : ''}>${esc(shownValue)}</td>`;
         }).join('')}</tr>`;
       }).join('')}</tbody></table></div>`;
       status.textContent = `${indexedData.length} row${indexedData.length === 1 ? '' : 's'} loaded from Google Sheets${editOptions ? (editMode ? ' — edit mode is on.' : ' — view mode.') : '.'}`;
       const toggleButton = target.querySelector('[data-toggle-edit]');
-      if (toggleButton) toggleButton.addEventListener('click', () => toggleTableEditing(targetId, toggleButton));
+      if (toggleButton) toggleButton.addEventListener('click', () => isTransaction2026 ? toggleTransactionVerticalEditing(targetId) : toggleTableEditing(targetId, toggleButton));
       const newTransaction = target.querySelector('[data-new-transaction="true"]');
       if (newTransaction) newTransaction.addEventListener('click', () => openNewTransactionForm(targetId, finalHeaders));
+      if (isTransaction2026 && editMode) target.querySelectorAll('[data-transaction-row]').forEach(row => row.addEventListener('click', () => {
+        const item = indexedData.find(candidate => candidate.sourceIndex === Number(row.dataset.sourceIndex));
+        if (item) openTransactionEditForm(targetId,finalHeaders,item.row,Number(row.dataset.transactionRow),row);
+      }));
       const searchInput = target.querySelector('[data-table-search]');
       const searchCount = target.querySelector('[data-search-count]');
       if (searchInput) searchInput.addEventListener('input', () => {
@@ -1282,7 +1293,9 @@
     function openNewTransactionForm(targetId, headers) {
       const target = document.getElementById(targetId);
       if (!target) return;
-      const existing = target.querySelector('.transaction-entry');
+      const editPanel = target.querySelector('.transaction-edit-entry');
+      if (editPanel) editPanel.remove();
+      const existing = target.querySelector('.transaction-entry:not(.transaction-edit-entry)');
       if (existing) { existing.remove(); return; }
       const today = new Date();
       const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0,10);
@@ -1393,6 +1406,98 @@
       });
       const firstEditable = panel.querySelector('input:not([type="date"])') || panel.querySelector('input');
       if (firstEditable) firstEditable.focus();
+    }
+
+    function transactionDateForInput(value) {
+      const text = String(value || '').trim();
+      if (!text) return '';
+      if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+      const parsed = new Date(text);
+      if (Number.isNaN(parsed.getTime())) return text;
+      const local = new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0,10);
+    }
+
+    function toggleTransactionVerticalEditing(targetId) {
+      const args = tableRenderCache[targetId];
+      if (!args) return;
+      if (tableEditModes[targetId]) {
+        tableEditModes[targetId] = false;
+        renderDataTable(args.targetId,args.statusId,args.rows,args.headerRowIndex,args.maxColumns,args.editOptions);
+        return;
+      }
+      tableEditModes[targetId] = true;
+      renderDataTable(args.targetId,args.statusId,args.rows,args.headerRowIndex,args.maxColumns,args.editOptions);
+      const firstRow = document.getElementById(targetId).querySelector('[data-transaction-row]');
+      if (firstRow) firstRow.click();
+    }
+
+    function openTransactionEditForm(targetId,headers,rowValues,rowNumber,selectedRow) {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      const newPanel = target.querySelector('.transaction-entry:not(.transaction-edit-entry)');
+      if (newPanel) newPanel.remove();
+      target.querySelectorAll('.transaction-selected').forEach(row => row.classList.remove('transaction-selected'));
+      if (selectedRow) selectedRow.classList.add('transaction-selected');
+      const existing = target.querySelector('.transaction-edit-entry');
+      if (existing) existing.remove();
+      const calculated = header => /^(month|year)$/i.test(header) || /running\s*balance/i.test(header);
+      const order = ['date','fund','activity','category','subcategory','description','payee/payer','amount','type','payment method','cleared','community impact','note'];
+      const fields = headers.map((header,column) => ({header:String(header || '').trim(),column})).filter(field => field.header && !calculated(field.header)).sort((a,b) => {
+        const aOrder = order.indexOf(a.header.toLowerCase());
+        const bOrder = order.indexOf(b.header.toLowerCase());
+        return (aOrder < 0 ? 999 : aOrder) - (bOrder < 0 ? 999 : bOrder);
+      });
+      const panel = document.createElement('section');
+      panel.className = 'transaction-entry transaction-edit-entry';
+      panel.innerHTML = `<div class="transaction-entry-head"><div><h3>Edit Transaction — Row ${rowNumber}</h3><small>Calculated balance fields remain protected.</small></div><button class="transaction-entry-close" type="button" aria-label="Close transaction editor">✕ Close</button></div>
+        <form class="transaction-entry-form">
+          ${fields.map(field => {
+            const isDate = /^date$/i.test(field.header);
+            const isAmount = /^amount$/i.test(field.header);
+            const original = String(rowValues[field.column] ?? '');
+            const value = isDate ? transactionDateForInput(original) : original;
+            const options = financeTransactionOptions[field.header.toLowerCase()] || [];
+            const isSuggestedText = /^(description|payee\/payer)$/i.test(field.header);
+            const placeholder = /^payee\/payer$/i.test(field.header) ? 'Type a new payee/payer or choose a previous one' : 'Type a description or choose a previous one';
+            let control;
+            if (isSuggestedText) control = `<input id="editTransactionField${field.column}" name="column${field.column}" type="text" ${options.length ? `list="editTransactionSuggestions${field.column}"` : ''} value="${esc(value)}" data-original="${esc(value)}" autocomplete="off" placeholder="${placeholder}">${options.length ? `<datalist id="editTransactionSuggestions${field.column}">${options.map(option => `<option value="${esc(option)}"></option>`).join('')}</datalist>` : ''}`;
+            else if (options.length) {
+              const selectable = options.includes(value) || !value ? options : [value,...options];
+              control = `<select id="editTransactionField${field.column}" name="column${field.column}" data-original="${esc(value)}"><option value="">Select ${esc(field.header)}…</option>${selectable.map(option => `<option value="${esc(option)}" ${option === value ? 'selected' : ''}>${esc(option)}</option>`).join('')}</select>`;
+            } else control = `<input id="editTransactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} value="${esc(value)}" data-original="${esc(value)}" autocomplete="off">`;
+            return `<div class="transaction-field"><label for="editTransactionField${field.column}">${esc(field.header)}</label>${control}</div>`;
+          }).join('')}
+          <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Save Changes</button></div>
+        </form>`;
+      const tools = target.querySelector('.table-tools');
+      tools.insertAdjacentElement('afterend',panel);
+      const close = () => { panel.remove(); if (selectedRow) selectedRow.classList.remove('transaction-selected'); };
+      panel.querySelector('.transaction-entry-close').addEventListener('click',close);
+      panel.querySelector('.transaction-cancel').addEventListener('click',close);
+      panel.querySelector('form').addEventListener('submit',async event => {
+        event.preventDefault();
+        const updates = fields.map(field => {
+          const control = panel.querySelector(`[name="column${field.column}"]`);
+          const value = control.value.trim();
+          if (value === control.dataset.original) return null;
+          return {range:`'Transactions-2026'!${columnNumberToLetters(field.column + 1)}${rowNumber}`,value};
+        }).filter(Boolean);
+        if (!updates.length) { close(); return; }
+        const saveButton = panel.querySelector('.transaction-save');
+        saveButton.disabled = true;
+        saveButton.textContent = 'Saving…';
+        try {
+          await updateSheetRanges(FINANCE_SPREADSHEET_ID,updates);
+          tableEditModes[targetId] = false;
+          await loadFinanceTab('transactions2026',true);
+        } catch (error) {
+          saveButton.disabled = false;
+          saveButton.textContent = 'Save Changes';
+          alert('This transaction could not be updated. Your changes are still in the form so you can try again.');
+        }
+      });
+      panel.scrollIntoView({behavior:'smooth',block:'start'});
     }
 
     function recalculateTicketRow(targetId, changedCell) {
