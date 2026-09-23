@@ -221,6 +221,9 @@
     .finance-tab-manager-note { margin:0 0 13px; padding:10px 12px; border-left:4px solid #1f4e79; border-radius:7px; background:#eaf3fb; color:#173b5c; }
     .finance-tab-manager-actions { display:flex; justify-content:flex-end; gap:9px; margin-top:13px; }
     .finance-tab-manager-actions button { border:0; border-radius:8px; padding:9px 13px; font-weight:900; cursor:pointer; }
+    .reconciliation-check { display:inline-flex; align-items:center; gap:7px; font-weight:900; white-space:nowrap; cursor:pointer; }
+    .reconciliation-check input { width:20px; height:20px; accent-color:#00a651; }
+    .reconciliation-empty { padding:28px; border:2px solid #8bc7a1; border-radius:11px; color:#075c2d; background:#e3f7ea; text-align:center; font-size:1.05rem; font-weight:900; }
     .show-all-tabs { color:#202226; background:#e1e4e7; }
     .done-managing-tabs { color:#fff; background:var(--gold); }
     .table-search-wrap { position: relative; flex: 1 1 440px; max-width: 560px; }
@@ -590,6 +593,7 @@
               <button class="sponsor-tab" data-finance-tab="lineitem">Line-Item Budget</button>
               <button class="sponsor-tab" data-finance-tab="baseline">Operating Budget – Baseline</button>
               <button class="sponsor-tab" data-finance-tab="transactions2026">Transactions-2026</button>
+              <button class="sponsor-tab" data-finance-tab="reconciliation">Reconciliation</button>
               <button class="sponsor-tab" data-finance-tab="transactions2025">Transactions-2025</button>
               <button class="sponsor-tab" data-finance-tab="tally">Tally 2026</button>
               <button class="sponsor-tab" data-finance-tab="transactionlist">Transaction List</button>
@@ -608,6 +612,7 @@
             <section class="sponsor-panel" data-finance-panel="lineitem"><div class="coming-soon"><h2>Line-Item Budget</h2><div class="data-status" id="financeLineItemStatus">Open this tab to load the line-item budget.</div><div id="financeLineItemTable"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="baseline"><div class="coming-soon"><h2>Operating Budget – Baseline</h2><div class="data-status" id="financeBaselineStatus">Open this tab to load the baseline.</div><div id="financeBaselineTable"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="transactions2026"><div class="coming-soon"><h2>Transactions-2026</h2><div class="data-status" id="financeTransactions2026Status">Open this tab to load current transactions.</div><div id="financeTransactions2026Table"></div></div></section>
+            <section class="sponsor-panel" data-finance-panel="reconciliation"><div class="coming-soon"><h2>Reconciliation</h2><div class="data-status" id="financeReconciliationStatus">Open this tab to review uncleared transactions.</div><div id="financeReconciliationTable"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="transactions2025"><div class="coming-soon"><h2>Transactions-2025</h2><div class="data-status" id="financeTransactions2025Status">Open this tab to load historical transactions.</div><div id="financeTransactions2025Table"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="tally"><div class="coming-soon"><h2>Tally 2026</h2><div class="data-status" id="financeTallyStatus">Open this tab to load the tally transfer log.</div><div id="financeTallyTable"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="transactionlist"><div class="coming-soon"><h2>Transaction List</h2><div class="data-status" id="financeTransactionListStatus">Open this tab to load transaction lists.</div><div id="financeTransactionListTable"></div></div></section>
@@ -1642,12 +1647,61 @@
       } catch (error) { document.getElementById('financeBftStatus').textContent = 'Bikes for Tykes finance could not load from Google Sheets.'; }
     }
 
+    function renderFinanceReconciliation(rows) {
+      const target = document.getElementById('financeReconciliationTable');
+      const status = document.getElementById('financeReconciliationStatus');
+      const uncleared = rows.slice(1).map((row,index) => ({row,sourceRow:index + 2})).filter(item => String(item.row[14] || '').trim().toLowerCase() === 'no');
+      if (!uncleared.length) {
+        target.innerHTML = '<div class="reconciliation-empty">✓ Everything is cleared. There are no outstanding transactions to reconcile.</div>';
+        status.textContent = '0 uncleared transactions.';
+        return;
+      }
+      const columns = [[0,'Date'],[3,'Description'],[6,'Fund'],[7,'Activity'],[8,'Payee/Payer'],[9,'Amount'],[13,'Payment Method']];
+      target.innerHTML = `<div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search uncleared transactions</span><input class="table-search" type="search" id="reconciliationSearch" placeholder="Search uncleared transactions…" autocomplete="off"></label></div><div class="table-search-count" id="reconciliationSearchCount"></div><div class="table-wrap"><table class="data-table"><thead><tr>${columns.map(([,label]) => `<th>${esc(label)}</th>`).join('')}<th>Clear</th></tr></thead><tbody>${uncleared.map(item => `<tr>${columns.map(([column]) => `<td>${esc(item.row[column] || '')}</td>`).join('')}<td><label class="reconciliation-check"><input type="checkbox" data-clear-row="${item.sourceRow}"> Mark cleared</label></td></tr>`).join('')}</tbody></table></div>`;
+      status.textContent = `${uncleared.length} uncleared transaction${uncleared.length === 1 ? '' : 's'} require review.`;
+      const search = document.getElementById('reconciliationSearch');
+      search.addEventListener('input', () => {
+        const query = search.value.trim().toLowerCase();
+        let visible = 0;
+        target.querySelectorAll('tbody tr').forEach(row => { const match = !query || row.textContent.toLowerCase().includes(query); row.hidden = !match; if (match) visible += 1; });
+        document.getElementById('reconciliationSearchCount').textContent = query ? `${visible} matching transaction${visible === 1 ? '' : 's'} shown` : '';
+      });
+      target.querySelectorAll('[data-clear-row]').forEach(checkbox => checkbox.addEventListener('change',async () => {
+        if (!checkbox.checked) return;
+        checkbox.disabled = true;
+        const label = checkbox.closest('label');
+        label.lastChild.textContent = ' Saving…';
+        try {
+          await updateSheetCell(FINANCE_SPREADSHEET_ID,'Transactions-2026',Number(checkbox.dataset.clearRow),14,'Yes');
+          loadedFinanceTabs.delete('transactions2026');
+          loadedFinanceTabs.delete('control');
+          loadedFinanceTabs.delete('dashboard');
+          await loadFinanceReconciliation();
+        } catch (error) {
+          checkbox.checked = false;
+          checkbox.disabled = false;
+          label.lastChild.textContent = ' Mark cleared';
+          status.textContent = 'That transaction could not be updated. Please try again.';
+        }
+      }));
+    }
+
+    async function loadFinanceReconciliation() {
+      document.getElementById('financeReconciliationStatus').textContent = 'Loading uncleared transactions…';
+      try {
+        const rows = await getSheetValues("'Transactions-2026'!A1:Q1870",FINANCE_SPREADSHEET_ID);
+        renderFinanceReconciliation(rows);
+        loadedFinanceTabs.add('reconciliation');
+      } catch (error) { document.getElementById('financeReconciliationStatus').textContent = 'Uncleared transactions could not load from Google Sheets.'; }
+    }
+
     async function loadFinanceTab(key, force = false) {
       if (!key) return;
       if (key === 'dashboard') { if (force || !loadedFinanceTabs.has(key)) await loadFinanceDashboard(); return; }
       if (key === 'control') { if (force || !loadedFinanceTabs.has(key)) await loadFinanceControl(); return; }
       if (key === 'activity') { if (force || !loadedFinanceTabs.has(key)) await loadFinanceActivity(); return; }
       if (key === 'bft') { if (force || !loadedFinanceTabs.has(key)) await loadFinanceBft(); return; }
+      if (key === 'reconciliation') { if (force || !loadedFinanceTabs.has(key)) await loadFinanceReconciliation(); return; }
       if (!force && loadedFinanceTabs.has(key)) return;
       const config = financeTabConfig[key];
       if (!config) return;
