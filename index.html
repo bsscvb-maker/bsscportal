@@ -289,6 +289,14 @@
     .reconciliation-empty { padding:28px; border:2px solid #8bc7a1; border-radius:11px; color:#075c2d; background:#e3f7ea; text-align:center; font-size:1.05rem; font-weight:900; }
     .show-all-tabs { color:#202226; background:#e1e4e7; }
     .done-managing-tabs { color:#fff; background:var(--gold); }
+    .membership-tab-manager { max-height:68vh; overflow:auto; padding-top:0; }
+    .membership-tab-manager .finance-tab-manager-head { position:sticky; top:0; z-index:4; margin:0 -16px 12px; padding:13px 16px; background:#f8f9fa; border-bottom:1px solid #ccd1d6; }
+    .membership-tab-manager .finance-tab-manager-head-actions { display:flex; align-items:center; gap:12px; }
+    .membership-tab-manager .membership-save-top { border:0; border-radius:8px; padding:10px 15px; color:#fff; background:#cf1235; box-shadow:0 5px 14px rgba(207,18,53,.24); font-weight:900; cursor:pointer; }
+    .membership-tab-manager .finance-tab-manager-grid { grid-template-columns:1fr; }
+    .membership-tab-manager .finance-tab-admin-row { grid-template-columns:150px 150px minmax(260px,1fr) auto; gap:14px; }
+    .membership-admin-check { display:flex; align-items:center; gap:8px; color:#20242a; font-weight:800; white-space:nowrap; }
+    .membership-tab-manager .finance-tab-name { width:100%; min-width:0; }
     .table-search-wrap { position: relative; flex: 1 1 440px; max-width: 560px; }
     .table-search-wrap::before { content: '⌕'; position: absolute; left: 13px; top: 50%; transform: translateY(-52%); color: var(--muted); font-size: 1.25rem; pointer-events: none; }
     .table-search { width: 100%; min-height: 44px; padding: 10px 14px 10px 40px; border: 2px solid #bfc0c4; border-radius: 8px; color: var(--ink); background: white; font: inherit; }
@@ -524,6 +532,7 @@
       .table-tool-actions button { flex:1 1 auto; }
       .transaction-field { grid-template-columns:1fr; gap:5px; }
       .finance-tab-manager-grid { grid-template-columns:1fr; }
+      .membership-tab-manager .finance-tab-admin-row { grid-template-columns:1fr; }
     }
   </style>
 </head>
@@ -2082,7 +2091,7 @@
       const allNames = Object.keys(membershipSheetConfig);
       const hidden = new Set(membershipSetting(MEMBERSHIP_HIDDEN_KEY,[]).filter(name => allNames.includes(name)));
       const savedPinned = membershipSetting(MEMBERSHIP_PINNED_KEY,defaultMembershipPinned);
-      const pinned = [...savedPinned.filter(name => allNames.includes(name) && !hidden.has(name)),...defaultMembershipPinned.filter(name => !savedPinned.includes(name) && !hidden.has(name))];
+      const pinned = savedPinned.filter(name => allNames.includes(name) && !hidden.has(name));
       bar.querySelectorAll('[data-membership-sheet]').forEach(button => button.remove());
       pinned.forEach(name => {
         const button = document.createElement('button');
@@ -2110,21 +2119,21 @@
     function openMembershipTabManager() {
       const workspace = document.getElementById('membershipWorkspace');
       const existing = workspace.querySelector('.finance-tab-manager');
-      if (existing) { existing.remove(); return; }
+      if (existing) { existing.querySelector('.membership-save-top').click(); return; }
       const allNames = Object.keys(membershipSheetConfig);
       const hidden = new Set(membershipSetting(MEMBERSHIP_HIDDEN_KEY,[]));
       const savedPinned = membershipSetting(MEMBERSHIP_PINNED_KEY,defaultMembershipPinned);
       const order = [...savedPinned.filter(name => allNames.includes(name)),...allNames.filter(name => !savedPinned.includes(name))];
       const names = membershipSetting(MEMBERSHIP_NAMES_KEY,{});
-      const panel = document.createElement('section'); panel.className = 'finance-tab-manager';
-      panel.innerHTML = `<div class="finance-tab-manager-head"><h3>Membership Tab Administration</h3><span>${hidden.size} hidden</span></div><p class="finance-tab-manager-note">Choose which sections are visible, which appear as top tabs, their order, and their portal names. These settings do not rename, move, or delete Google Sheet tabs.</p><div class="finance-tab-manager-grid">${order.map(name => `<div class="finance-tab-admin-row" data-admin-tab="${esc(name)}"><input class="membership-visible" type="checkbox" aria-label="Show ${esc(name)}" ${hidden.has(name) ? '' : 'checked'}><input class="membership-pinned" type="checkbox" aria-label="Pin ${esc(name)} as a top tab" ${savedPinned.includes(name) ? 'checked' : ''}><input class="finance-tab-name" value="${esc(names[name] || defaultMembershipNames[name] || name)}" aria-label="Portal name for ${esc(name)}"><div class="finance-tab-order"><button type="button" data-move="up" aria-label="Move section up">↑</button><button type="button" data-move="down" aria-label="Move section down">↓</button></div></div>`).join('')}</div><div class="finance-tab-manager-actions"><button class="show-all-tabs" type="button">Show All Sections</button><button class="done-managing-tabs" type="button">Save &amp; Close</button></div>`;
+      const panel = document.createElement('section'); panel.className = 'finance-tab-manager membership-tab-manager';
+      panel.innerHTML = `<div class="finance-tab-manager-head"><h3>Membership Tab Administration</h3><div class="finance-tab-manager-head-actions"><span>${hidden.size} hidden</span><button class="membership-save-top" type="button">Save Changes</button></div></div><p class="finance-tab-manager-note"><strong>Visible</strong> controls whether a section can be opened. <strong>Top Tab</strong> places it in the button row. Unpinned visible sections remain in “All membership sections.” Names and order only change this portal—not Google Sheets.</p><div class="finance-tab-manager-grid">${order.map(name => `<div class="finance-tab-admin-row" data-admin-tab="${esc(name)}"><label class="membership-admin-check"><input class="membership-visible" type="checkbox" ${hidden.has(name) ? '' : 'checked'}> Visible</label><label class="membership-admin-check"><input class="membership-pinned" type="checkbox" ${savedPinned.includes(name) ? 'checked' : ''}> Top Tab</label><input class="finance-tab-name" value="${esc(names[name] || defaultMembershipNames[name] || name)}" aria-label="Portal name for ${esc(name)}"><div class="finance-tab-order"><button type="button" data-move="up" aria-label="Move section up">↑</button><button type="button" data-move="down" aria-label="Move section down">↓</button></div></div>`).join('')}</div><div class="finance-tab-manager-actions"><button class="show-all-tabs" type="button">Show All Sections</button><button class="done-managing-tabs" type="button">Save &amp; Close</button></div>`;
       workspace.querySelector('.membership-tabs').insertAdjacentElement('afterend',panel);
       panel.querySelectorAll('[data-move]').forEach(button => button.addEventListener('click',() => {
         const row = button.closest('.finance-tab-admin-row'); const sibling = button.dataset.move === 'up' ? row.previousElementSibling : row.nextElementSibling;
         if (!sibling) return; if (button.dataset.move === 'up') row.parentElement.insertBefore(row,sibling); else row.parentElement.insertBefore(sibling,row);
       }));
       panel.querySelector('.show-all-tabs').addEventListener('click',() => panel.querySelectorAll('.membership-visible').forEach(input => { input.checked = true; }));
-      panel.querySelector('.done-managing-tabs').addEventListener('click',() => {
+      const saveMembershipSettings = () => {
         const rows = [...panel.querySelectorAll('.finance-tab-admin-row')];
         if (!rows.some(row => row.querySelector('.membership-visible').checked)) return alert('At least one Membership section must remain visible.');
         const hiddenSections = rows.filter(row => !row.querySelector('.membership-visible').checked).map(row => row.dataset.adminTab);
@@ -2133,7 +2142,9 @@
         const savedNames = {}; rows.forEach(row => { savedNames[row.dataset.adminTab] = row.querySelector('.finance-tab-name').value.trim() || row.dataset.adminTab; });
         localStorage.setItem(MEMBERSHIP_HIDDEN_KEY,JSON.stringify(hiddenSections)); localStorage.setItem(MEMBERSHIP_PINNED_KEY,JSON.stringify(pinnedSections)); localStorage.setItem(MEMBERSHIP_NAMES_KEY,JSON.stringify(savedNames));
         panel.remove(); applyMembershipPreferences();
-      });
+      };
+      panel.querySelector('.done-managing-tabs').addEventListener('click',saveMembershipSettings);
+      panel.querySelector('.membership-save-top').addEventListener('click',saveMembershipSettings);
     }
 
     async function loadFinanceTab(key, force = false) {
