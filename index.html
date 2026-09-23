@@ -142,6 +142,7 @@
     .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 11px; scrollbar-color: var(--gold) #e7e7e9; scrollbar-width: auto; }
     .data-table { width: 100%; border-collapse: collapse; min-width: 900px; font-size: .84rem; }
     .data-table th { position: sticky; top: 0; z-index: 2; padding: 12px 11px; text-align: left; line-height: 1.35; color: white; background: #111113; border-right: 1px solid #343438; border-bottom: 3px solid var(--gold); }
+    #financeTransactions2026Table .data-table th { text-align:center; }
     .data-table td { padding: 12px 11px; border-right: 1px solid #ececef; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.45; }
     .data-table tbody tr:nth-child(even) td { background: #fafafa; }
     .data-table tbody tr:hover td { background: #fff6f7; }
@@ -1266,7 +1267,7 @@
       bft:{sheet:'Bikes for Tykes (BFT)',range:"'Bikes for Tykes (BFT)'!A1:X1450",target:'financeBftTable',status:'financeBftStatus',header:0,columns:24,editable:true},
       lineitem:{sheet:'Line-Item Budget',range:"'Line-Item Budget'!A1:L200",target:'financeLineItemTable',status:'financeLineItemStatus',header:0,columns:12,editable:true},
       baseline:{sheet:'Operating Budget – Baseline',range:"'Operating Budget – Baseline'!A1:I100",target:'financeBaselineTable',status:'financeBaselineStatus',header:0,columns:9,editable:true},
-      transactions2026:{sheet:'Transactions-2026',range:"'Transactions-2026'!A1:W1870",target:'financeTransactions2026Table',status:'financeTransactions2026Status',header:0,columns:23,editable:true},
+      transactions2026:{sheet:'Transactions-2026',range:"'Transactions-2026'!A1:U1870",target:'financeTransactions2026Table',status:'financeTransactions2026Status',header:0,columns:21,editable:true},
       transactions2025:{sheet:'Transactions-2025',range:"'Transactions-2025'!A1:P1000",target:'financeTransactions2025Table',status:'financeTransactions2025Status',header:0,columns:16,editable:false},
       tally:{sheet:'Tally 2026',range:"'Tally 2026'!A1:L1000",target:'financeTallyTable',status:'financeTallyStatus',header:0,columns:12,editable:false},
       transactionlist:{sheet:'Transaction List',range:"'Transaction List'!A1:J100",target:'financeTransactionListTable',status:'financeTransactionListStatus',header:0,columns:10,editable:true},
