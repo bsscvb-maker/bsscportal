@@ -91,6 +91,31 @@
     .finance-admin-header.visible { display:inline-flex; }
     .finance-admin-header:hover { background:#e21640; border-color:#e21640; transform:translateY(-1px); }
     .finance-admin-header:focus-visible { outline:3px solid #fff; outline-offset:3px; }
+    .membership-workspace { display:none; }
+    .membership-workspace.active { display:block; }
+    .membership-tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+    .membership-tab { border:1px solid #d1d6dc; border-radius:999px; padding:10px 14px; color:#101216; background:#fff; font-weight:850; cursor:pointer; }
+    .membership-tab.active { color:#fff; border-color:#cf1235; background:#cf1235; }
+    .membership-section-picker { min-height:42px; min-width:220px; padding:8px 12px; border:1px solid #c7ccd2; border-radius:9px; background:#fff; font:inherit; font-weight:800; }
+    .membership-dashboard-title { display:flex; align-items:end; justify-content:space-between; gap:20px; margin:4px 0 12px; padding:18px 20px; color:#fff; background:#111113; border-bottom:4px solid #cf1235; border-radius:10px; }
+    .membership-dashboard-title span { display:block; margin-bottom:4px; color:#cfd2d6; font-size:.76rem; font-weight:900; text-transform:uppercase; letter-spacing:.08em; }
+    .membership-dashboard-title h2 { margin:0; color:#fff; }
+    .membership-dashboard-title > strong { font-size:1rem; }
+    .membership-summary-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:11px; margin:14px 0; }
+    .membership-summary-card { padding:16px; border:1px solid #d8dce1; border-top:4px solid #cf1235; border-radius:10px; background:#fff; }
+    .membership-summary-card span { display:block; color:#5f6670; font-size:.78rem; font-weight:850; text-transform:uppercase; letter-spacing:.04em; }
+    .membership-summary-card strong { display:block; margin-top:7px; color:#111113; font-size:1.45rem; }
+    .membership-dashboard-grid { display:grid; grid-template-columns:minmax(0,.85fr) minmax(0,1.4fr); gap:14px; }
+    .membership-dashboard-card { overflow:hidden; border:1px solid #cfd4da; border-radius:10px; background:#fff; }
+    .membership-dashboard-card h3 { margin:0; padding:11px 13px; color:#fff; background:#111113; border-bottom:3px solid #cf1235; font-size:1rem; }
+    .membership-dashboard-body { padding:12px 13px; }
+    .membership-dashboard-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; padding:7px 0; border-bottom:1px solid #e4e6e9; }
+    .membership-dashboard-row:last-child { border-bottom:0; }
+    .membership-dashboard-row strong { text-align:right; }
+    .membership-event-table { width:100%; border-collapse:collapse; }
+    .membership-event-table th,.membership-event-table td { padding:8px; border-bottom:1px solid #e1e4e8; text-align:left; }
+    .membership-event-table th { color:#fff; background:#111113; }
+    .membership-system-note { margin:10px 0; padding:10px 12px; border-left:4px solid #3d7fb1; background:#eaf4fb; color:#244c69; border-radius:6px; font-size:.86rem; }
     .portal-health { display:none; flex:0 0 300px; min-height:82px; align-items:center; gap:14px; padding:14px 18px; border:2px solid transparent; border-radius:14px; color:#fff; box-shadow:0 8px 24px rgba(0,0,0,.28); }
     .portal-health.visible { display:flex; }
     .portal-health-dot { flex:0 0 18px; width:18px; height:18px; border:4px solid rgba(255,255,255,.72); border-radius:50%; box-shadow:0 0 0 5px rgba(255,255,255,.12); }
@@ -457,6 +482,7 @@
       .market-kpi-grid, .market-vendor-row { grid-template-columns: 1fr; }
       .admin-overview { grid-template-columns:1fr; }
       .finance-dashboard-grid { grid-template-columns:1fr; }
+      .membership-summary-grid,.membership-dashboard-grid { grid-template-columns:1fr; }
       .control-grid,.activity-results,.bft-finance-summary { grid-template-columns:1fr; }
       .transaction-consistency { margin-left:0; }
       .activity-controls { grid-template-columns:1fr; }
@@ -512,7 +538,7 @@
           <div class="welcome"><div><h1>Club operations, organized.</h1><p>Select an area below. We will move each workbook into the portal in stages while preserving the original files as backups.</p></div></div>
 
           <div class="module-grid">
-            <article class="module" style="--accent:#3d7fb1;--tint:#e8f3fb"><div class="module-top"><div class="module-identity"><div class="module-icon">M</div><h2>Membership</h2></div><div class="status">Planned</div></div><p>Member profiles, renewals, attendance, waivers, vetting, officers, lifers, anniversaries, and history.</p><footer><span class="source">37 workbook sections mapped</span><button class="open-btn" data-open="membership">View layout</button></footer></article>
+            <article class="module" style="--accent:#3d7fb1;--tint:#e8f3fb"><div class="module-top"><div class="module-identity"><div class="module-icon">M</div><h2>Membership</h2></div><div class="status live-status">Live</div></div><p>Member profiles, renewals, attendance, waivers, vetting, officers, lifers, anniversaries, and history.</p><footer><span class="source">38 connected workbook sections</span><button class="open-btn" data-open="membership">Open module</button></footer></article>
             <article class="module" style="--accent:#16845b;--tint:#e5f6ef"><div class="module-top"><div class="module-identity"><div class="module-icon">$</div><h2>Finance</h2></div><div class="status live-status">Live</div></div><p>Transactions, fund balances, operating budgets, event budgets, reconciliations, and reporting.</p><footer><span class="source">14 connected workbook sections</span><button class="open-btn" data-open="finance">Open module</button></footer></article>
             <article class="module" style="--accent:#d98c16;--tint:#fff1d9"><div class="module-top"><div class="module-identity"><div class="module-icon">B</div><h2>Bikes for Tykes</h2></div><div class="status live-status">Live</div></div><p>Donations, ticket control, event tracking, purchase budgets, and financial synchronization.</p><footer><span class="source">6 live workbook sections</span><button class="open-btn" data-open="bft">Open module</button></footer></article>
             <article class="module" style="--accent:#cf1235;--tint:#fff0f3"><div class="module-top"><div class="module-identity"><div class="module-icon">N</div><h2>Bike Nights</h2></div><div class="status live-status">Live</div></div><p>Monthly visit planning, club scorecards, attendance history, and upcoming bike nights.</p><footer><span class="source">3 live workbook sections</span><button class="open-btn" data-open="bikenights">Open module</button></footer></article>
@@ -529,7 +555,21 @@
 
         <section class="detail-view" id="detail">
           <button class="back" id="back">← Back to portal home</button>
-          <div class="detail-shell"><div class="detail-head"><div><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><button class="finance-admin-header" id="financeAdminToggle" type="button">Admin</button><div class="portal-health checking" id="portalHealth" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong id="portalHealthStatus">Checking</strong><small id="portalHealthDetail">Verifying connected systems…</small></div></div></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div><div class="sponsor-workspace" id="sponsorWorkspace">
+          <div class="detail-shell"><div class="detail-head"><div><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><button class="finance-admin-header" id="financeAdminToggle" type="button">Admin</button><div class="portal-health checking" id="portalHealth" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong id="portalHealthStatus">Checking</strong><small id="portalHealthDetail">Verifying connected systems…</small></div></div></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div><div class="membership-workspace" id="membershipWorkspace">
+            <div class="membership-tabs" aria-label="Membership sections">
+              <button class="membership-tab" data-membership-sheet="Dashboard 2027">Dashboard 2027</button>
+              <button class="membership-tab" data-membership-sheet="2027">2027 Roster</button>
+              <button class="membership-tab" data-membership-sheet="2027-Attendance">2027 Attendance</button>
+              <button class="membership-tab active" data-membership-sheet="Dashboard 2026">Dashboard 2026</button>
+              <button class="membership-tab" data-membership-sheet="2026">2026 Roster</button>
+              <button class="membership-tab" data-membership-sheet="2026-Attendance">2026 Attendance</button>
+              <button class="membership-tab" data-membership-sheet="Officer List">Officer List</button>
+              <button class="membership-tab" data-membership-sheet="Lifer">Lifers</button>
+              <select class="membership-section-picker" id="membershipSectionPicker" aria-label="Open another membership section"><option value="">All membership sections…</option></select>
+            </div>
+            <div class="data-status" id="membershipStatus">Loading membership dashboard…</div>
+            <div id="membershipContent"></div>
+          </div><div class="sponsor-workspace" id="sponsorWorkspace">
             <div class="sponsor-tabs" aria-label="Sponsorship sections">
               <button class="sponsor-tab active" data-sponsor-tab="dashboard">Sponsor Dashboard</button>
               <button class="sponsor-tab" data-sponsor-tab="current">Current Sponsors</button>
@@ -631,13 +671,14 @@
             <section class="sponsor-panel" data-finance-panel="eventbudgets"><div class="coming-soon"><h2>Event Budgets</h2><div class="data-status" id="financeEventBudgetsStatus">Open this tab to load event budgets.</div><div id="financeEventBudgetsTable"></div></div></section>
           </div><div class="admin-workspace" id="adminWorkspace">
             <div class="admin-overview">
-              <div class="admin-stat good"><span>Live Modules</span><strong>5</strong></div>
-              <div class="admin-stat"><span>Modules in Build</span><strong>1</strong></div>
+              <div class="admin-stat good"><span>Live Modules</span><strong>6</strong></div>
+              <div class="admin-stat"><span>Modules in Build</span><strong>0</strong></div>
               <div class="admin-stat good"><span>Google Access</span><strong>Authorized</strong></div>
               <div class="admin-stat"><span>Portal Release</span><strong>09/23/2026</strong></div>
             </div>
             <div class="admin-grid">
               <section class="admin-card"><h2>System &amp; Spreadsheet Status</h2><div class="admin-card-body" id="adminSystemStatus">
+                <div class="admin-row"><div><strong>Membership</strong><small>Checking Google Sheets connection…</small></div><span class="admin-badge">Checking</span></div>
                 <div class="admin-row"><div><strong>Finance</strong><small>Checking Google Sheets connection…</small></div><span class="admin-badge">Checking</span></div>
                 <div class="admin-row"><div><strong>Bikes for Tykes</strong><small>Checking Google Sheets connection…</small></div><span class="admin-badge">Checking</span></div>
                 <div class="admin-row"><div><strong>Bike Nights</strong><small>Checking Google Sheets connection…</small></div><span class="admin-badge">Checking</span></div>
@@ -651,6 +692,7 @@
                 <div class="admin-row"><div><strong>Google Auth Settings</strong><small>Manage authorized audience and OAuth configuration</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://console.cloud.google.com/auth/overview?project=bssc-management-portal">Open</a></div>
               </div></section>
               <section class="admin-card"><h2>Source Workbooks</h2><div class="admin-card-body">
+                <div class="admin-row"><div><strong>Membership</strong><small>38 connected workbook sections</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/1G1GhywDG-FYEo00fY_FeWheScve333LIdBqZpqLbZZM/edit">Open Sheet</a></div>
                 <div class="admin-row"><div><strong>Finance</strong><small>14 connected workbook sections</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/1a6DfwnnNmy0ykQi7S8DKAt1RhauTh7ISwxSXm59b5NU/edit">Open Sheet</a></div>
                 <div class="admin-row"><div><strong>Bikes for Tykes</strong><small>6 connected workbook sections</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/1cFhb2-Um1rBKj81dFeNWLSfKxuNfc768AFLbcjXdudY/edit">Open Sheet</a></div>
                 <div class="admin-row"><div><strong>Bike Nights</strong><small>3 connected workbook sections</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/1rXMHIVq52X3kqj_ICz7g8oZoD_eXR_0qHP7bZ9jhU0k/edit">Open Sheet</a></div>
@@ -677,6 +719,7 @@
     const MARKETPLACE_SPREADSHEET_ID = '1ByYajlmaWea7W1mUmKENDti2QEa04GsQCYsArakpqbQ';
     const FINANCE_SPREADSHEET_ID = '1a6DfwnnNmy0ykQi7S8DKAt1RhauTh7ISwxSXm59b5NU';
     const CASH_TALLY_SPREADSHEET_ID = '16bMnwTt8H6Z2ZCc3uMk7THRXZOrY4efi1gY53nqFCHw';
+    const MEMBERSHIP_SPREADSHEET_ID = '1G1GhywDG-FYEo00fY_FeWheScve333LIdBqZpqLbZZM';
     const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
     const SESSION_KEY = 'bssc-google-session-edit-v1';
     const IDLE_TIMEOUT_MS = 60 * 60 * 1000;
@@ -1280,7 +1323,8 @@
         for (const edit of edits) await updateSheetCell(edit.spreadsheetId || BFT_SPREADSHEET_ID, edit.sheet, edit.row, edit.column, edit.value);
         tableEditModes[targetId] = false;
         tablePendingEdits[targetId] = new Map();
-        if (targetId.startsWith('finance')) await loadFinanceTab(financeTargetToKey[targetId], true);
+        if (targetId === 'membershipContent') await loadMembershipSheet(currentMembershipSheet, true);
+        else if (targetId.startsWith('finance')) await loadFinanceTab(financeTargetToKey[targetId], true);
         else if (targetId.startsWith('market')) await loadMarketplaceData();
         else if (targetId.startsWith('bike')) await loadBikeNightData();
         else await loadBftData();
@@ -1891,6 +1935,102 @@
       });
     }
 
+    const membershipSheetConfig = {
+      'Charter':{range:"'Charter'!A1:Z1000",columns:26,editable:true,group:'Member Lists'},
+      'Lifer':{range:"'Lifer'!A1:AB1000",columns:28,editable:true,group:'Member Lists'},
+      'Past Presidents':{range:"'Past Presidents'!A1:I1000",columns:9,editable:true,group:'Member Lists'},
+      'Veterans':{range:"'Veterans'!A1:Z1000",columns:26,editable:true,group:'Member Lists'},
+      'Honorary':{range:"'Honorary'!A1:V1000",columns:22,editable:true,group:'Member Lists'},
+      'Future Shakers':{range:"'Future Shakers'!A1:AR600",columns:44,editable:true,group:'Member Lists'},
+      'Year Count':{range:"'Year Count'!A1:Z1000",columns:26,editable:true,group:'Member Lists'},
+      'Officer List':{range:"'Officer List'!A1:AI1000",columns:35,editable:true,group:'Member Lists'},
+      'Dashboard 2027':{range:"'Dashboard 2027'!A1:Z80",columns:26,dashboard:true,group:'Current'},
+      '2027-Attendance':{range:"'2027-Attendance'!A1:BP1013",columns:68,editable:true,group:'Current'},
+      '2027':{range:"'2027'!A1:AK856",columns:37,editable:true,group:'Current'},
+      'Dashboard 2026':{range:"'Dashboard 2026'!A1:Z80",columns:26,dashboard:true,group:'Current'},
+      '2026-Attendance':{range:"'2026-Attendance'!A1:BR1017",columns:70,editable:true,group:'Current'},
+      '2026':{range:"'2026'!A1:AH855",columns:34,editable:true,group:'Current'},
+      '2025-A':{range:"'2025-A'!A1:Z1000",columns:26,group:'System & Automation'},
+      'Vetting_Raw':{range:"'Vetting_Raw'!A1:AZ989",columns:52,group:'System & Automation'},
+      'Vetting_Raw_2027':{range:"'Vetting_Raw_2027'!A1:BD990",columns:56,group:'System & Automation'},
+      'Waiver Audit':{range:"'Waiver Audit'!A1:Z2257",columns:26,group:'System & Automation'},
+      'Waiver_Phone_Keys_2026':{range:"'Waiver_Phone_Keys_2026'!A1:Z1000",columns:26,group:'System & Automation'},
+      'Waiver_Phone_Keys_2027':{range:"'Waiver_Phone_Keys_2027'!A1:Z1000",columns:26,group:'System & Automation'},
+      'Anniversaries_2026':{range:"'Anniversaries_2026'!A1:Z1000",columns:26,group:'System & Automation'},
+      'Anniversaries_2027':{range:"'Anniversaries_2027'!A1:Z1000",columns:26,group:'System & Automation'},
+      '2025 - Non Renewal':{range:"'2025 - Non Renewal'!A1:Z1000",columns:26,group:'System & Automation'},
+      ...Object.fromEntries(['2025','2024','2023','2022','2021','2020','2019','2018','2017','2016','2015','2014','2013','2012','2005'].map(year => [year,{range:`'${year}'!A1:Z1000`,columns:26,group:'Archives'}]))
+    };
+    let currentMembershipSheet = 'Dashboard 2026';
+
+    function membershipValue(rows, label) {
+      const wanted = String(label).toLowerCase();
+      for (const row of rows) for (let index = 0; index < row.length; index += 1) {
+        if (String(row[index] || '').trim().toLowerCase().replace(/:$/,'') !== wanted) continue;
+        for (let next = index + 1; next < row.length; next += 1) if (String(row[next] || '').trim()) return row[next];
+      }
+      return '—';
+    }
+
+    function renderMembershipDashboard(rows, year) {
+      const target = document.getElementById('membershipContent');
+      const status = document.getElementById('membershipStatus');
+      const metricLabels = ['Current Membership','Projected Membership','Active Members','Prospects','Dues Paid','Waivers Signed','Waiver Compliance','Average Age','Average Tenure'];
+      const metrics = metricLabels.map(label => ({label,value:membershipValue(rows,label)})).filter(item => item.value !== '—').slice(0,8);
+      const section = (title, labels) => {
+        const items = labels.map(label => ({label,value:membershipValue(rows,label)})).filter(item => item.value !== '—');
+        if (!items.length) return '';
+        return `<section class="membership-dashboard-card"><h3>${esc(title)}</h3><div class="membership-dashboard-body">${items.map(item => `<div class="membership-dashboard-row"><span>${esc(item.label)}</span><strong>${esc(item.value)}</strong></div>`).join('')}</div></section>`;
+      };
+      const attendanceStart = rows.findIndex(row => row.some(value => /attendance summary/i.test(String(value || ''))));
+      let attendance = '';
+      if (attendanceStart >= 0) {
+        const subset = rows.slice(attendanceStart + 1,attendanceStart + 18).filter(row => row.some(value => String(value || '').trim()));
+        if (subset.length) attendance = `<section class="membership-dashboard-card membership-dashboard-wide"><h3>Attendance Summary</h3><div class="table-wrap"><table class="data-table"><tbody>${subset.map(row => `<tr>${row.filter(value => String(value || '').trim()).slice(0,6).map(value => `<td>${esc(value)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section>`;
+      }
+      target.innerHTML = `<div class="membership-dashboard"><div class="membership-dashboard-title"><div><span>Live membership workbook</span><h2>Membership Dashboard ${esc(year)}</h2></div><strong>${esc(membershipValue(rows,'As of'))}</strong></div>${metrics.length ? `<div class="membership-summary-grid">${metrics.map(item => `<div class="membership-summary-card"><span>${esc(item.label)}</span><strong>${esc(item.value)}</strong></div>`).join('')}</div>` : '<div class="empty-state">This dashboard is connected and ready; the workbook does not yet contain current-year totals.</div>'}<div class="membership-dashboard-grid">${section('Officers',['President','Vice President','Secretary','Treasurer','Sergeant at Arms','Road Captain'])}${section('Compliance',['Dues Paid','Dues Unpaid','Waivers Signed','Waivers Missing','Code of Conduct Signed','Code of Conduct Missing'])}${section('Roster Overview',['Current Membership','Active Members','Prospects','Lifers','Honorary Members','Veterans'])}${section('Age & Tenure',['Average Age','Youngest Member','Oldest Member','Average Tenure','Longest Tenure'])}${section('Next Upcoming Event',['Event','Date','Location','Expected Attendance'])}${year === '2027' ? section('Military Service',['Veterans','Military Service','Army','Navy','Air Force','Marines','Coast Guard']) : ''}${attendance}</div></div>`;
+      status.textContent = `Dashboard ${year} loaded live from Google Sheets. Formula results are read-only here.`;
+    }
+
+    async function loadMembershipSheet(sheetName, force = false) {
+      const config = membershipSheetConfig[sheetName];
+      if (!config || !accessToken) return;
+      currentMembershipSheet = sheetName;
+      const status = document.getElementById('membershipStatus');
+      const target = document.getElementById('membershipContent');
+      status.textContent = `Loading ${sheetName} from Google Sheets…`;
+      target.innerHTML = '<div class="empty-state">Loading membership records…</div>';
+      try {
+        const reads = [getSheetValues(config.range,MEMBERSHIP_SPREADSHEET_ID)];
+        if (config.editable) reads.push(getSheetValues(config.range,MEMBERSHIP_SPREADSHEET_ID,'FORMULA'));
+        const [rows,formulas = []] = await Promise.all(reads);
+        if (config.dashboard) renderMembershipDashboard(rows,sheetName.replace('Dashboard ',''));
+        else {
+          const editOptions = config.editable ? {sheetName,spreadsheetId:MEMBERSHIP_SPREADSHEET_ID,formulaRows:formulas} : null;
+          renderDataTable('membershipContent','membershipStatus',rows,0,config.columns,editOptions);
+          if (!config.editable) {
+            target.insertAdjacentHTML('afterbegin',`<div class="membership-system-note"><strong>Protected ${esc(config.group)} section.</strong> This view stays connected to Google Sheets, but portal editing is disabled to protect formulas, automation feeds, and historical records.</div>`);
+          }
+        }
+      } catch (error) {
+        target.innerHTML = '<div class="empty-state">This membership section could not be loaded.</div>';
+        status.textContent = `${sheetName} could not load from Google Sheets. Confirm this Google account can access the Club Membership Roster workbook.`;
+      }
+    }
+
+    function initializeMembershipPicker() {
+      const picker = document.getElementById('membershipSectionPicker');
+      if (!picker || picker.options.length > 1) return;
+      const primary = new Set([...document.querySelectorAll('[data-membership-sheet]')].map(button => button.dataset.membershipSheet));
+      ['Member Lists','System & Automation','Archives'].forEach(group => {
+        const entries = Object.entries(membershipSheetConfig).filter(([name,config]) => config.group === group && !primary.has(name));
+        if (!entries.length) return;
+        const optgroup = document.createElement('optgroup'); optgroup.label = group;
+        entries.forEach(([name]) => { const option = document.createElement('option'); option.value = name; option.textContent = name; optgroup.appendChild(option); });
+        picker.appendChild(optgroup);
+      });
+    }
+
     async function loadFinanceTab(key, force = false) {
       if (!key) return;
       if (key === 'dashboard') { if (force || !loadedFinanceTabs.has(key)) await loadFinanceDashboard(); return; }
@@ -1934,6 +2074,7 @@
       const target = document.getElementById('adminSystemStatus');
       if (!target) return;
       const connections = [
+        ['Membership','38 connected workbook sections',MEMBERSHIP_SPREADSHEET_ID,"'Dashboard 2026'!A1:A1"],
         ['Finance','14 connected workbook sections',FINANCE_SPREADSHEET_ID,"'Dashboard-2026'!A1:A1"],
         ['Bikes for Tykes','6 connected workbook sections',BFT_SPREADSHEET_ID,"'DashBoard'!A1:A1"],
         ['Bike Nights','3 connected workbook sections',BIKE_NIGHTS_SPREADSHEET_ID,"'Dashboard'!A1:A1"],
@@ -1980,66 +2121,42 @@
       document.getElementById('detailTitle').textContent = item.title;
       document.getElementById('detailDescription').textContent = item.description;
       const sponsorWorkspace = document.getElementById('sponsorWorkspace');
+      const membershipWorkspace = document.getElementById('membershipWorkspace');
       const bftWorkspace = document.getElementById('bftWorkspace');
       const bikeNightsWorkspace = document.getElementById('bikeNightsWorkspace');
       const marketplaceWorkspace = document.getElementById('marketplaceWorkspace');
       const financeWorkspace = document.getElementById('financeWorkspace');
       const adminWorkspace = document.getElementById('adminWorkspace');
       const taskGrid = document.getElementById('detailTasks');
-      financeWorkspace.classList.remove('active');
+      [membershipWorkspace,sponsorWorkspace,bftWorkspace,bikeNightsWorkspace,marketplaceWorkspace,financeWorkspace,adminWorkspace].forEach(workspace => workspace.classList.remove('active'));
       if (key === 'finance') {
         taskGrid.innerHTML = '';
-        sponsorWorkspace.classList.remove('active');
-        bftWorkspace.classList.remove('active');
-        bikeNightsWorkspace.classList.remove('active');
-        marketplaceWorkspace.classList.remove('active');
-        adminWorkspace.classList.remove('active');
         financeWorkspace.classList.add('active');
         loadFinanceTab('dashboard',true);
         refreshFinanceReconciliationCount();
       } else if (key === 'sponsors') {
         taskGrid.innerHTML = '';
         sponsorWorkspace.classList.add('active');
-        bftWorkspace.classList.remove('active');
-        bikeNightsWorkspace.classList.remove('active');
-        marketplaceWorkspace.classList.remove('active');
-        adminWorkspace.classList.remove('active');
         loadSponsorData();
       } else if (key === 'bft') {
         taskGrid.innerHTML = '';
-        sponsorWorkspace.classList.remove('active');
         bftWorkspace.classList.add('active');
-        bikeNightsWorkspace.classList.remove('active');
-        marketplaceWorkspace.classList.remove('active');
-        adminWorkspace.classList.remove('active');
       } else if (key === 'bikenights') {
         taskGrid.innerHTML = '';
-        sponsorWorkspace.classList.remove('active');
-        bftWorkspace.classList.remove('active');
         bikeNightsWorkspace.classList.add('active');
-        marketplaceWorkspace.classList.remove('active');
-        adminWorkspace.classList.remove('active');
       } else if (key === 'marketplace') {
         taskGrid.innerHTML = '';
-        sponsorWorkspace.classList.remove('active');
-        bftWorkspace.classList.remove('active');
-        bikeNightsWorkspace.classList.remove('active');
         marketplaceWorkspace.classList.add('active');
-        adminWorkspace.classList.remove('active');
       } else if (key === 'admin') {
         taskGrid.innerHTML = '';
-        sponsorWorkspace.classList.remove('active');
-        bftWorkspace.classList.remove('active');
-        bikeNightsWorkspace.classList.remove('active');
-        marketplaceWorkspace.classList.remove('active');
         adminWorkspace.classList.add('active');
         loadAdminSystemStatus();
+      } else if (key === 'membership') {
+        taskGrid.innerHTML = '';
+        membershipWorkspace.classList.add('active');
+        initializeMembershipPicker();
+        loadMembershipSheet(currentMembershipSheet,true);
       } else {
-        sponsorWorkspace.classList.remove('active');
-        bftWorkspace.classList.remove('active');
-        bikeNightsWorkspace.classList.remove('active');
-        marketplaceWorkspace.classList.remove('active');
-        adminWorkspace.classList.remove('active');
         taskGrid.innerHTML = item.tasks.map((task, i) => `<div class="task"><strong>${task}</strong><span>${i === 0 ? 'First working screen will be added during this module\'s build phase.' : 'Scheduled for a later build phase.'}</span></div>`).join('');
       }
       dashboard.classList.add('hidden'); detail.classList.add('active'); setActive(key); window.scrollTo({top:0,behavior:'smooth'}); sidebar.classList.remove('open');
@@ -2047,6 +2164,17 @@
     function setActive(key) { document.querySelectorAll('[data-module]').forEach(b => b.classList.toggle('active', b.dataset.module === key)); }
     document.querySelectorAll('[data-module]').forEach(b => b.addEventListener('click', () => showModule(b.dataset.module)));
     document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => showModule(b.dataset.open)));
+    document.querySelectorAll('[data-membership-sheet]').forEach(button => button.addEventListener('click', () => {
+      document.querySelectorAll('[data-membership-sheet]').forEach(tab => tab.classList.toggle('active',tab === button));
+      const picker = document.getElementById('membershipSectionPicker'); if (picker) picker.value = '';
+      loadMembershipSheet(button.dataset.membershipSheet);
+    }));
+    document.getElementById('membershipSectionPicker').addEventListener('change', event => {
+      if (!event.target.value) return;
+      document.querySelectorAll('[data-membership-sheet]').forEach(tab => tab.classList.remove('active'));
+      loadMembershipSheet(event.target.value);
+    });
+    initializeMembershipPicker();
     document.querySelectorAll('[data-sponsor-tab]').forEach(button => button.addEventListener('click', () => {
       const selected = button.dataset.sponsorTab;
       document.querySelectorAll('[data-sponsor-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
