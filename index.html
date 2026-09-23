@@ -733,6 +733,14 @@
     .nav button:disabled { cursor:not-allowed; opacity:.48; }
     .nav button:disabled:hover { background:transparent; }
     @keyframes module-status-pulse { 50% { box-shadow:0 0 0 2px rgba(33,232,103,.1),0 0 6px rgba(33,232,103,.35); } }
+
+    /* Keep all nine Marketplace dashboard fact cards in two rows on desktop. */
+    .market-kpi-grid { grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
+    .market-kpi { min-height:100px; padding:12px; }
+    .market-kpi strong { font-size:1.35rem; }
+    @media(max-width:1200px) { .market-kpi-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media(max-width:760px) { .market-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media(max-width:480px) { .market-kpi-grid { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -2312,8 +2320,9 @@
         ${kpi('Profit Margin',`${margin}%`,'Realized profit divided by collected revenue','profit')}
         ${kpi('Cash to Collect',at(6,16)||'$0.00','Outstanding cash payments','cash')}
         ${kpi('Total Orders',String(periodOrders.length),'Orders in selected period')}
-        ${kpi('Pieces Sold',String(pieceCount),'Merchandise pieces from paid orders')}
+        ${kpi('Pieces Sold',String(pieceCount),'Merchandise pieces ordered in selected period')}
         ${kpi('Average Paid Order',periodPaid.length?cash(collected/periodPaid.length):'$0.00',`${periodPaid.length} paid orders`)}
+        ${kpi('Top-Selling Color',colorCounts.size?[...colorCounts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0][0]:'—',colorCounts.size?'Most popular color in selected period':'No color-specific sales in this period')}
       </div>
       <div class="market-dashboard-lower">
         <section class="market-action-card"><h3>Vendor Order Readiness</h3><div class="market-action-body">
