@@ -682,6 +682,39 @@
     .audit-clear[hidden] { display:none !important; }
     @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition-duration:.01ms!important; animation-duration:.01ms!important; animation-iteration-count:1!important; } }
 
+  
+    .market-summary-card.on-hold { border-color:#c78300; border-top-color:#c78300; color:#563b00; background:#fff0c2; }
+    .market-summary-card.on-hold span,.market-summary-card.on-hold strong { color:#563b00; }
+    .market-summary-card.amount-needed { border-color:#256b9a; border-top-color:#256b9a; color:#fff; background:#256b9a; }
+    .market-summary-card.amount-needed span,.market-summary-card.amount-needed strong { color:#fff; }
+    .market-dashboard-section { margin-top:18px; }
+    .market-dashboard-section > h3 { margin:0 0 10px; color:#202126; font-size:1rem; }
+    .market-pipeline-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
+    .market-pipeline-card { min-width:0; padding:13px; border:1px solid var(--line); border-top:4px solid #536273; border-radius:9px; background:#fff; }
+    .market-pipeline-card.payment { border-top-color:#c78300; }
+    .market-pipeline-card.unsent { border-top-color:#c8102e; }
+    .market-pipeline-card.vendor { border-top-color:#256b9a; }
+    .market-pipeline-card.pickup { border-top-color:#16823b; }
+    .market-pipeline-card.complete { border-top-color:#536273; }
+    .market-pipeline-card span,.market-pipeline-card small { display:block; color:var(--muted); }
+    .market-pipeline-card span { font-size:.69rem; font-weight:900; text-transform:uppercase; letter-spacing:.035em; }
+    .market-pipeline-card strong { display:block; margin:5px 0 3px; color:#111113; font-size:1.5rem; }
+    .market-pipeline-card small { font-size:.72rem; line-height:1.35; }
+    .market-insights-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-top:16px; }
+    .market-insight-note { margin:0 0 9px; color:var(--muted); font-size:.8rem; }
+    .market-insight-row { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(60px,1fr) 28px; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid #e4e6e9; }
+    .market-insight-row:last-child { border-bottom:0; }
+    .market-insight-row > span { overflow-wrap:anywhere; font-size:.82rem; font-weight:700; }
+    .market-insight-row > strong { text-align:right; font-variant-numeric:tabular-nums; }
+    .market-bar-track { height:9px; overflow:hidden; border-radius:99px; background:#e8ebef; }
+    .market-bar-track i { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#256b9a,#51a6c9); }
+    .market-insight-empty { padding:10px 0; color:var(--muted); }
+    .market-glance-row { display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid #e4e6e9; }
+    .market-glance-row:last-of-type { border-bottom:0; }
+    .market-glance-row strong { white-space:nowrap; }
+    @media (max-width:1000px) { .market-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .market-pipeline-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media (max-width:650px) { .market-insights-grid,.market-dashboard-lower { grid-template-columns:1fr; } .market-kpi-grid { grid-template-columns:1fr 1fr; } .market-pipeline-grid { grid-template-columns:1fr 1fr; } .market-vendor-row { grid-template-columns:1fr; } .market-insight-row { grid-template-columns:minmax(0,1.2fr) minmax(42px,.7fr) 24px; gap:7px; } }
+
   </style>
 </head>
 <body>
@@ -2137,75 +2170,96 @@
       return '';
     }
 
-    function renderMarketplaceDashboard(rows) {
-      const at = (row, column) => String((rows[row] && rows[row][column]) || '');
-      const money = value => Number(String(value || '').replace(/[^0-9.-]/g,'')) || 0;
-      const collected = money(at(6,6));
-      const profit = money(at(6,11));
-      const vendorOrder = money(at(12,1));
-      const vendorMinimum = money(at(12,6));
-      const profitMargin = collected ? Math.round((profit / collected) * 100) : 0;
-      const vendorProgress = vendorMinimum ? Math.min(100, Math.round((vendorOrder / vendorMinimum) * 100)) : 0;
-      const vendorNeeded = Math.max(0, vendorMinimum - vendorOrder);
-      const ready = vendorNeeded <= 0 && vendorMinimum > 0;
-      const cash = value => `$${value.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
-      const kpi = (label,value,note,cls='') => `<div class="market-kpi ${cls}"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong><small>${esc(note)}</small></div>`;
-      const whoOwes = at(6,21) || 'All paid';
-      document.getElementById('marketDashboard').innerHTML = `<div class="market-dashboard">
-        <div class="market-hero"><h2>${esc(at(0,1) || 'BSSC / MARKETPLACE PERFORMANCE')}</h2><p>${esc(at(2,1) || 'BOARD REPORT • Live marketplace activity • Revenue and profit reflect paid orders only')}</p></div>
-        <div class="market-executive">
-          <div class="market-kpi-grid">
-            ${kpi('Total Collected',at(6,6),'Money received from paid orders','revenue')}
-            ${kpi('Realized Profit',at(6,11),'Profit earned on collected sales','profit')}
-            ${kpi('Profit Margin',`${profitMargin}%`,'Profit divided by collected revenue','profit')}
-            ${kpi('Cash to Collect',at(6,16) || '$0.00','Outstanding cash payments','cash')}
-            ${kpi('Total Orders',at(6,1),'Marketplace orders currently recorded')}
-            ${kpi('Pieces Sold',at(18,11),'Total merchandise pieces ordered')}
-          </div>
-          <div class="market-dashboard-lower">
-            <section class="market-action-card"><h3>Vendor Order Readiness</h3><div class="market-action-body">
-              <div class="market-vendor-row">
-                <div class="market-vendor-stat"><span>Current Vendor Order</span><strong>${esc(at(12,1) || '$0.00')}</strong></div>
-                <div class="market-vendor-stat"><span>Vendor Minimum</span><strong>${esc(at(12,6) || '$0.00')}</strong></div>
-                <div class="market-vendor-stat"><span>Still Needed</span><strong>${esc(cash(vendorNeeded))}</strong></div>
-              </div>
-              <div class="market-progress"><span style="width:${vendorProgress}%"></span></div>
-              <p class="market-progress-note">${vendorProgress}% of the vendor minimum reached</p>
-              <span class="market-status-pill ${ready ? 'ready' : ''}">${ready ? 'Ready to Submit' : 'On Hold'}</span>
-              <div class="market-vendor-action">
-                <button class="market-send-vendor-order" id="marketplaceSendVendorOrder" type="button" ${MARKETPLACE_AUTOMATION_URL ? '' : 'disabled'} data-minimum-met="${ready ? 'true' : 'false'}" data-current-order="${vendorOrder}" data-vendor-minimum="${vendorMinimum}">Send Vendor Order</button>
-                <span class="market-vendor-action-note">${!MARKETPLACE_AUTOMATION_URL ? 'Automation connection needs to be completed.' : !ready ? 'Below minimum. An authorized override requires a password and reason.' : 'Sends the current vendor order email.'}</span>
-              </div>
-            </div></section>
-            <section class="market-action-card"><h3>Cash Collection</h3><div class="market-action-body">
-              <span class="market-collection-label">Outstanding</span><div class="market-kpi cash" style="margin-top:7px;min-height:auto"><strong>${esc(at(6,16) || '$0.00')}</strong></div>
-              <span class="market-collection-label" style="margin-top:14px">Who Owes</span><div class="market-owed-list">${esc(whoOwes)}</div>
-            </div></section>
-          </div>
-        </div>
-      </div>`;
-    }
+    function renderMarketplaceDashboard(rows, ordersRows = [], salesRows = []) {
+  const at=(r,c)=>String((rows[r]&&rows[r][c])||'');
+  const money=v=>Number(String(v||'').replace(/[^0-9.-]/g,''))||0;
+  const cash=v=>`$${v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  const collected=money(at(6,6)), profit=money(at(6,11)), vendorOrder=money(at(12,1)), vendorMinimum=money(at(12,6));
+  const margin=collected?Math.round(profit/collected*100):0, progress=vendorMinimum?Math.min(100,Math.round(vendorOrder/vendorMinimum*100)):0;
+  const vendorNeeded=Math.max(0,vendorMinimum-vendorOrder), vendorReady=vendorMinimum>0&&vendorNeeded<=0;
+  const orders=ordersRows.slice(1).filter(r=>r[1]&&r[4]);
+  const yes=v=>/^(true|yes|1)$/i.test(String(v||'').trim());
+  const due=orders.filter(r=>/pending|cash due/i.test(String(r[12]||'')));
+  const paid=orders.filter(r=>/^paid/i.test(String(r[12]||'')));
+  const unsent=orders.filter(r=>!yes(r[13])&&!yes(r[15]));
+  const withVendor=orders.filter(r=>yes(r[13])&&!yes(r[14])&&!yes(r[15]));
+  const pickup=orders.filter(r=>yes(r[14])&&!yes(r[15]));
+  const handed=orders.filter(r=>yes(r[15]));
+  const owedLines=due.map(r=>`${r[4]} — ${cash(money(r[11]))}`);
+  const items=new Map();
+  for(const r of salesRows.slice(6)){const name=String(r[2]||'').trim(),qty=Number(String(r[3]||'').replace(/,/g,''))||0;if(name&&qty>0)items.set(name,(items.get(name)||0)+qty);}
+  const top=[...items.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,5);
+  const topMax=Math.max(1,...top.map(x=>x[1]));
+  const topHtml=top.length?top.map(([name,qty])=>`<div class="market-insight-row"><span>${esc(name)}</span><div class="market-bar-track"><i style="width:${Math.max(6,Math.round(qty/topMax*100))}%"></i></div><strong>${qty}</strong></div>`).join(''):'<div class="market-insight-empty">No merchandise sales are listed yet.</div>';
+  const stages=[['Awaiting Payment',due.length,'Cash due at meeting','payment'],['Not Yet Submitted',unsent.length,'Orders not sent to manufacturer','unsent'],['With Manufacturer',withVendor.length,'Submitted, not ready for pickup','vendor'],['Ready for Pickup',pickup.length,'Ready, not handed out','pickup'],['Handed Out',handed.length,'Completed customer orders','complete']];
+  const stagesHtml=stages.map(([name,count,note,tone])=>`<article class="market-pipeline-card ${tone}"><span>${esc(name)}</span><strong>${count}</strong><small>${esc(note)}</small></article>`).join('');
+  const kpi=(label,value,note,cls='')=>`<div class="market-kpi ${cls}"><span>${esc(label)}</span><strong>${esc(value||'—')}</strong><small>${esc(note)}</small></div>`;
+  document.getElementById('marketDashboard').innerHTML=`<div class="market-dashboard">
+    <div class="market-hero"><h2>${esc(at(0,1)||'BSSC / MARKETPLACE PERFORMANCE')}</h2><p>${esc(at(2,1)||'BOARD REPORT • Live marketplace activity • Revenue and profit reflect paid orders only')}</p></div>
+    <div class="market-executive">
+      <div class="market-kpi-grid">
+        ${kpi('Total Collected',at(6,6),'Money received from paid orders','revenue')}
+        ${kpi('Merchandise Collected',at(18,1),'Product sales before tax and fees','revenue')}
+        ${kpi('Realized Profit',at(6,11),'Profit earned on collected sales','profit')}
+        ${kpi('Profit Margin',`${margin}%`,'Realized profit divided by collected revenue','profit')}
+        ${kpi('Cash to Collect',at(6,16)||'$0.00','Outstanding cash payments','cash')}
+        ${kpi('Total Orders',at(6,1),'Orders currently recorded')}
+        ${kpi('Pieces Sold',at(18,11),'Total merchandise pieces ordered')}
+        ${kpi('Average Paid Order',paid.length?cash(collected/paid.length):'$0.00',`${paid.length} paid orders`)}
+      </div>
+      <div class="market-dashboard-lower">
+        <section class="market-action-card"><h3>Vendor Order Readiness</h3><div class="market-action-body">
+          <div class="market-vendor-row"><div class="market-vendor-stat"><span>Current Vendor Order</span><strong>${esc(at(12,1)||'$0.00')}</strong></div><div class="market-vendor-stat"><span>Vendor Minimum</span><strong>${esc(at(12,6)||'$0.00')}</strong></div><div class="market-vendor-stat"><span>Still Needed</span><strong>${esc(cash(vendorNeeded))}</strong></div></div>
+          <div class="market-progress"><span style="width:${progress}%"></span></div><p class="market-progress-note">${progress}% of the vendor minimum reached</p>
+          <span class="market-status-pill ${vendorReady?'ready':''}">${vendorReady?'Ready to Submit':'On Hold'}</span>
+          <div class="market-vendor-action"><button class="market-send-vendor-order" id="marketplaceSendVendorOrder" type="button" ${MARKETPLACE_AUTOMATION_URL?'':'disabled'} data-minimum-met="${vendorReady?'true':'false'}" data-current-order="${vendorOrder}" data-vendor-minimum="${vendorMinimum}">Send Vendor Order</button><span class="market-vendor-action-note">${!MARKETPLACE_AUTOMATION_URL?'Automation connection needs to be completed.':!vendorReady?'Below minimum. An authorized override requires a password and reason.':'Sends the current vendor order email.'}</span></div>
+        </div></section>
+        <section class="market-action-card"><h3>Cash Due at Next Meeting</h3><div class="market-action-body"><span class="market-collection-label">${due.length?`${due.length} customer${due.length===1?'':'s'} to follow up`:'No cash payments outstanding'}</span><div class="market-owed-list">${owedLines.length?owedLines.map(esc).join('<br>'):'No cash due.'}</div></div></section>
+      </div>
+      <section class="market-dashboard-section"><h3>Order Pipeline</h3><div class="market-pipeline-grid">${stagesHtml}</div></section>
+      <div class="market-insights-grid">
+        <section class="market-action-card"><h3>Top-Selling Merchandise</h3><div class="market-action-body"><p class="market-insight-note">Most ordered items, ranked by pieces sold.</p>${topHtml}</div></section>
+        <section class="market-action-card"><h3>Marketplace at a Glance</h3><div class="market-action-body">
+          <div class="market-glance-row"><span>Paid orders</span><strong>${paid.length}</strong></div><div class="market-glance-row"><span>Customers with cash due</span><strong>${due.length}</strong></div><div class="market-glance-row"><span>Orders not yet submitted</span><strong>${unsent.length}</strong></div><div class="market-glance-row"><span>Orders with manufacturer</span><strong>${withVendor.length}</strong></div><div class="market-glance-row"><span>Ready for pickup</span><strong>${pickup.length}</strong></div>
+          <p class="market-insight-note">Use the Fulfillment Tracker to open an order and update its payment or handout status.</p>
+        </div></section>
+      </div>
+    </div>
+  </div>`;
+}
 
     function renderMarketSummary(targetId, cards) {
       document.getElementById(targetId).innerHTML = `<div class="market-subsummary">${cards.map(([label,value,cls = '']) => `<div class="market-summary-card ${esc(cls)}"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong></div>`).join('')}</div>`;
     }
 
-    function renderManufacturerSummary(rows) {
-      const summary = rows[2] || [];
-      const vendorMinimum = String(summary[1] || '—');
-      const currentCost = String(summary[3] || '—');
-      const rawStatus = String(summary[5] || '');
-      const amountMatch = rawStatus.match(/\$[\d,]+(?:\.\d{2})?/);
-      const ready = /ready/i.test(rawStatus);
-      const status = ready ? 'Ready to Submit' : 'On Hold';
-      const amountNeeded = ready ? '$0.00' : (amountMatch ? amountMatch[0] : '—');
-      renderMarketSummary('marketManufacturerSummary',[
-        ['Vendor Minimum',vendorMinimum],
-        ['Current Vendor Cost',currentCost,'warning'],
-        ['Order Status',status,ready ? 'success' : 'danger'],
-        ['Amount Needed',amountNeeded,ready ? 'success' : 'danger']
-      ]);
+    function renderManufacturerSummary(rows, ordersRows=[]) {
+  const summary=rows[2]||[], minimum=String(summary[1]||'—'), current=String(summary[3]||'—'), raw=String(summary[5]||'');
+  const amount=raw.match(/\$[\d,]+(?:\.\d{2})?/), ready=/ready/i.test(raw);
+  renderMarketSummary('marketManufacturerSummary',[
+    ['Vendor Minimum',minimum],['Current Vendor Cost',current,'warning'],
+    ['Order Status',ready?'Ready to Submit':'On Hold',ready?'success':'on-hold'],
+    ['Amount Needed',ready?'$0.00':(amount?amount[0]:'—'),ready?'success':'amount-needed']
+  ]);
+  const candidates=[],isTrue=v=>/^(true|yes|1)$/i.test(String(v||'').trim());
+  for(const order of ordersRows.slice(1)){
+    if(!order[1]||!order[4]||isTrue(order[13]))continue;
+    for(const line of String(order[8]||'').split(/\s*\|\s*/)){
+      const match=line.trim().match(/^(.*?)\s+\((.+)\)\s+x\s*(\d+)\s*$/i);if(!match)continue;
+      const details=match[2].split(',').map(v=>v.trim());
+      candidates.push({key:[match[1],details[0]||'',details.slice(1).join(', ')].map(v=>v.trim().toLowerCase()).join('|'),name:String(order[4]).trim(),quantity:Number(match[3])||1});
     }
+  }
+  const enriched=rows.map(row=>Array.isArray(row)?[...row]:row), header=rows[4]||['ITEM TYPE','SIZE','COLOR','QTY','PRICE EACH','LINE TOTAL'];
+  enriched[4]=['CUSTOMER',...header];
+  for(let i=5;i<enriched.length;i++){
+    const row=enriched[i];if(!Array.isArray(row)||!row.some(v=>String(v||'').trim()))continue;
+    const key=row.slice(0,3).map(v=>String(v||'').trim().toLowerCase()).join('|');
+    let remaining=Number(String(row[3]||'1').replace(/,/g,''))||1;const names=[];
+    for(const candidate of candidates){if(candidate.key!==key||candidate.quantity<=0||remaining<=0)continue;const used=Math.min(candidate.quantity,remaining);candidate.quantity-=used;remaining-=used;if(!names.includes(candidate.name))names.push(candidate.name);}
+    enriched[i]=[names.join(' • ')||'Name not matched',...row];
+  }
+  renderDataTable('marketManufacturerTable','marketManufacturerStatus',enriched,4,7);
+}
 
     function submitMarketplaceVendorOrder() {
       const button = document.getElementById('marketplaceSendVendorOrder');
@@ -2364,14 +2418,13 @@
         getSheetValues("'Merchandise Pricing Reference'!A1:G100", MARKETPLACE_SPREADSHEET_ID)
       ]);
       const [dashboardResult, fulfillmentResult, manufacturerResult, financialsResult, ordersResult, pricingResult, historyResult, referenceResult] = results;
-      if (dashboardResult.status === 'fulfilled') { renderMarketplaceDashboard(dashboardResult.value); document.getElementById('marketDashboardStatus').textContent = 'Marketplace dashboard connected to Google Sheets.'; }
+      if (dashboardResult.status === 'fulfilled') { renderMarketplaceDashboard(dashboardResult.value, ordersResult.status === 'fulfilled' ? ordersResult.value : [], historyResult.status === 'fulfilled' ? historyResult.value : []); document.getElementById('marketDashboardStatus').textContent = 'Marketplace dashboard connected to Google Sheets.'; }
       else document.getElementById('marketDashboardStatus').textContent = 'Dashboard could not be loaded from Google Sheets.';
       if (fulfillmentResult.status === 'fulfilled') renderDataTable('marketFulfillmentTable','marketFulfillmentStatus',fulfillmentResult.value,3,12);
       else document.getElementById('marketFulfillmentStatus').textContent = 'Fulfillment Tracker could not be loaded from Google Sheets.';
       if (manufacturerResult.status === 'fulfilled') {
         const rows = manufacturerResult.value;
-        renderManufacturerSummary(rows);
-        renderDataTable('marketManufacturerTable','marketManufacturerStatus',rows,4,6);
+        renderManufacturerSummary(rows, ordersResult.status === 'fulfilled' ? ordersResult.value : []);
       } else document.getElementById('marketManufacturerStatus').textContent = 'Manufacturer Summary could not be loaded from Google Sheets.';
       if (financialsResult.status === 'fulfilled') {
         const rows = financialsResult.value;
