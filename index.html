@@ -194,6 +194,9 @@
     .table-tool-actions { display:flex; align-items:center; gap:9px; }
     .new-transaction-btn { flex:0 0 auto; border:0; border-radius:9px; padding:11px 15px; color:#fff; background:#111113; font-weight:900; cursor:pointer; }
     .new-transaction-btn:hover { background:#303034; }
+    .tally-send-btn { flex:0 0 auto; border:0; border-radius:9px; padding:11px 16px; color:#fff; background:#cf1235; font-weight:900; cursor:pointer; box-shadow:0 6px 16px rgba(207,18,53,.2); }
+    .tally-send-btn:hover { background:#e21640; }
+    .tally-send-btn:disabled { color:#6d7177; background:#dfe2e5; box-shadow:none; cursor:not-allowed; }
     .transaction-entry { margin:4px 0 16px; padding:18px; border:2px solid #111113; border-top:5px solid var(--gold); border-radius:12px; background:#f8f9fa; }
     .transaction-entry-head { display:flex; align-items:center; justify-content:space-between; gap:15px; margin-bottom:15px; }
     .transaction-entry-head h3 { margin:0; color:#111113; font-size:1.15rem; }
@@ -610,7 +613,7 @@
               <button class="sponsor-tab" data-finance-tab="charities">Charities</button>
               <button class="sponsor-tab" data-finance-tab="eventbudgets">Event Budgets</button>
             </div>
-            <div class="finance-note">Finance is connected to the current BSSC Finance System 2026 workbook. Calculated cells are protected. Tally 2026 remains a read-only transfer log while its separate automation is being preserved.</div>
+            <div class="finance-note">Finance is connected to the current BSSC Finance System 2026 workbook. Calculated cells are protected. Website entries continue to collect in Tally 2026; use Send to Transactions to move the pending batch, while the Google Sheets Tally Tools menu remains available.</div>
             <section class="sponsor-panel active" data-finance-panel="dashboard"><div class="data-status" id="financeDashboardStatus">Loading financial dashboard…</div><div id="financeDashboard"></div></section>
             <section class="sponsor-panel" data-finance-panel="control"><div class="coming-soon"><h2>Control-2026</h2><div class="data-status" id="financeControlStatus">Open this tab to load the control snapshot.</div><div id="financeControlTable"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="activity"><div class="coming-soon"><h2>Activity Summary</h2><div class="data-status" id="financeActivityStatus">Open this tab to review spending for a particular activity.</div><div id="financeActivitySummary"></div></div></section>
@@ -794,6 +797,31 @@
         method:'POST',
         headers:{Authorization:`Bearer ${accessToken}`, 'Content-Type':'application/json'},
         body:JSON.stringify({range, majorDimension:'ROWS', values:[values]})
+      });
+      if (!response.ok) throw new Error(`Google Sheets returned ${response.status}`);
+      return response.json();
+    }
+
+    async function appendSheetRows(spreadsheetId, sheetName, values) {
+      if (!values.length) return null;
+      const range = `'${sheetName.replace(/'/g, "''")}'!A:Q`;
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+      const response = await fetch(url, {
+        method:'POST',
+        headers:{Authorization:`Bearer ${accessToken}`, 'Content-Type':'application/json'},
+        body:JSON.stringify({range, majorDimension:'ROWS', values})
+      });
+      if (!response.ok) throw new Error(`Google Sheets returned ${response.status}`);
+      return response.json();
+    }
+
+    async function updateSheetRanges(spreadsheetId, updates) {
+      if (!updates.length) return null;
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`;
+      const response = await fetch(url, {
+        method:'POST',
+        headers:{Authorization:`Bearer ${accessToken}`, 'Content-Type':'application/json'},
+        body:JSON.stringify({valueInputOption:'USER_ENTERED',data:updates.map(update => ({range:update.range,majorDimension:'ROWS',values:[[update.value]]}))})
       });
       if (!response.ok) throw new Error(`Google Sheets returned ${response.status}`);
       return response.json();
@@ -1761,6 +1789,108 @@
       } catch (error) { document.getElementById('financeReconciliationStatus').textContent = 'Uncleared transactions could not load from Google Sheets.'; }
     }
 
+    function tallyTransactionFromRow(row) {
+      const eventName = String(row[1] || '').trim();
+      const date = String(row[2] || '').trim();
+      const treasurer = String(row[3] || '').trim();
+      const moneyType = String(row[4] || '').trim();
+      const amount = Number(String(row[5] || '').replace(/[$,]/g,'').trim());
+      const givenBy = String(row[6] || '').trim() || 'Cash';
+      const paymentMethod = String(row[7] || '').trim() || 'Cash';
+      const checkNumber = String(row[8] || '').trim();
+      const cardReference = String(row[9] || '').trim();
+      const entryTime = String(row[10] || '').trim();
+      const enteredDate = new Date(`${date} 12:00:00`);
+      if (!date || !moneyType || !Number.isFinite(amount)) throw new Error(`A pending Tally row is missing its date, money type, or amount.`);
+      const transaction = Array.from({length:17}, () => '');
+      transaction[0] = date;
+      transaction[1] = Number.isNaN(enteredDate.getTime()) ? '' : enteredDate.toLocaleString('en-US',{month:'long'});
+      transaction[2] = Number.isNaN(enteredDate.getTime()) ? '' : enteredDate.getFullYear();
+      transaction[8] = givenBy;
+      transaction[9] = amount;
+      transaction[12] = 'Income';
+      transaction[13] = paymentMethod;
+      transaction[14] = 'No';
+      transaction[15] = false;
+      const detailParts = [`Event: ${eventName}`,`Treasurer: ${treasurer}`];
+      if (entryTime) detailParts.push(`Entry time: ${entryTime}`);
+      if (checkNumber) detailParts.push(`Check: ${checkNumber}`);
+      if (cardReference) detailParts.push(`Reference: ${cardReference}`);
+      transaction[16] = detailParts.filter(part => !part.endsWith(': ')).join(' | ');
+      const normalizedType = moneyType.toLowerCase();
+      if (normalizedType === 'bikes for tykes ticket') {
+        transaction[3] = `Bikes for Tykes Ticket — ${givenBy}`;
+        transaction[4] = 'Fundraising';
+        transaction[5] = 'Ticket Sales';
+        transaction[6] = 'Bikes For Tykes';
+        transaction[7] = 'Bikes For Tykes Fundraiser 2026';
+      } else if (normalizedType === 'membership dues') {
+        transaction[3] = 'Membership Dues Received';
+        transaction[4] = 'Membership';
+        transaction[5] = 'Patched – Partial Dues';
+        transaction[6] = 'General Fund';
+        transaction[7] = 'General Fund';
+      } else if (normalizedType === 'general donation') {
+        transaction[3] = `General Donation — ${givenBy}`;
+        transaction[4] = 'Donations';
+        transaction[5] = 'Individual Donation';
+        transaction[6] = 'General Fund';
+        transaction[7] = /bike night/i.test(eventName) ? 'Bike Night' : eventName;
+      } else if (normalizedType === 'merchandise') {
+        transaction[3] = `Merchandise — ${givenBy}`;
+        transaction[4] = 'Merchandise';
+        transaction[5] = 'Merchandise Sales';
+        transaction[6] = 'General Fund';
+        transaction[7] = /bikes for tykes|big ugly/i.test(eventName) ? 'Bikes For Tykes Fundraiser 2026' : eventName;
+      } else {
+        throw new Error(`“${moneyType}” does not have a transaction rule yet. Nothing was transferred.`);
+      }
+      return transaction;
+    }
+
+    function tallyTransferKey(values) {
+      return [values[0],values[3],values[8],Number(String(values[9] || '').replace(/[$,]/g,'')),values[16]].map(value => String(value || '').trim().toLowerCase()).join('\u001f');
+    }
+
+    function enhanceFinanceTally(rows) {
+      const target = document.getElementById('financeTallyTable');
+      const status = document.getElementById('financeTallyStatus');
+      const pending = rows.slice(1).map((row,index) => ({row,sourceRow:index + 2})).filter(item => item.row.some(value => String(value || '').trim()) && !String(item.row[11] || '').trim());
+      const actionArea = target.querySelector('.table-tool-actions');
+      if (!actionArea) return;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'tally-send-btn';
+      button.disabled = pending.length === 0;
+      button.textContent = `Send to Transactions (${pending.length})`;
+      actionArea.appendChild(button);
+      status.textContent = pending.length ? `${pending.length} Tally ${pending.length === 1 ? 'entry is' : 'entries are'} ready to send.` : 'All Tally entries have been sent to Transactions-2026.';
+      button.addEventListener('click', async () => {
+        if (!window.confirm(`Send all ${pending.length} pending Tally ${pending.length === 1 ? 'entry' : 'entries'} to Transactions-2026?`)) return;
+        button.disabled = true;
+        button.textContent = 'Checking entries…';
+        try {
+          const latestTally = await getSheetValues("'Tally 2026'!A1:L1000",FINANCE_SPREADSHEET_ID);
+          const latestPending = latestTally.slice(1).map((row,index) => ({row,sourceRow:index + 2})).filter(item => item.row.some(value => String(value || '').trim()) && !String(item.row[11] || '').trim());
+          const prepared = latestPending.map(item => ({...item,transaction:tallyTransactionFromRow(item.row)}));
+          const existing = await getSheetValues("'Transactions-2026'!A1:Q1870",FINANCE_SPREADSHEET_ID);
+          const existingKeys = new Set(existing.slice(1).map(tallyTransferKey));
+          const newTransactions = prepared.filter(item => !existingKeys.has(tallyTransferKey(item.transaction))).map(item => item.transaction);
+          button.textContent = newTransactions.length ? 'Sending…' : 'Finishing…';
+          if (newTransactions.length) await appendSheetRows(FINANCE_SPREADSHEET_ID,'Transactions-2026',newTransactions);
+          const sentStamp = `✓ Sent — ${new Date().toLocaleString('en-US',{timeZone:'America/New_York'})} ET`;
+          await updateSheetRanges(FINANCE_SPREADSHEET_ID,prepared.map(item => ({range:`'Tally 2026'!L${item.sourceRow}`,value:sentStamp})));
+          ['tally','transactions2026','reconciliation','dashboard','control'].forEach(tab => loadedFinanceTabs.delete(tab));
+          await loadFinanceTab('tally',true);
+          refreshFinanceReconciliationCount();
+        } catch (error) {
+          button.disabled = false;
+          button.textContent = `Send to Transactions (${pending.length})`;
+          alert(error.message || 'The Tally entries could not be sent. Nothing was marked as sent.');
+        }
+      });
+    }
+
     async function loadFinanceTab(key, force = false) {
       if (!key) return;
       if (key === 'dashboard') { if (force || !loadedFinanceTabs.has(key)) await loadFinanceDashboard(); return; }
@@ -1783,6 +1913,7 @@
         if (key === 'transactions2026') buildFinanceTransactionOptions(listRows,rows,historicalRows);
         const editOptions = config.editable ? {sheetName:config.sheet,spreadsheetId:FINANCE_SPREADSHEET_ID,formulaRows:formulas} : null;
         renderDataTable(config.target,config.status,rows,config.header,config.columns,editOptions);
+        if (key === 'tally') enhanceFinanceTally(rows);
         loadedFinanceTabs.add(key);
       } catch (error) { document.getElementById(config.status).textContent = `${config.sheet} could not load from Google Sheets.`; }
     }
