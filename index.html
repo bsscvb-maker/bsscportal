@@ -304,7 +304,14 @@
     .admin-badge.error { background:var(--gold); }
     .admin-link { display:inline-block; padding:7px 10px; border-radius:7px; color:#fff; background:var(--gold); font-size:.76rem; font-weight:900; text-decoration:none; }
     .admin-note { padding:12px; border-left:4px solid var(--gold); border-radius:7px; color:#5f101d; background:#fff0f2; font-size:.85rem; line-height:1.45; }
-    @media (max-width: 900px) { .market-metrics,.market-kpi-grid,.admin-overview { grid-template-columns:repeat(2,minmax(0,1fr)); } .market-dashboard-lower,.pricing-config,.market-subsummary,.admin-grid { grid-template-columns:1fr; } }
+    .formula-cell { background:#f1f3f5 !important; color:#555; }
+    .finance-dashboard-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:18px; }
+    .finance-dashboard-card { padding:16px; border:1px solid var(--line); border-top:5px solid #111113; border-radius:10px; background:#fff; }
+    .finance-dashboard-card.good { border-top-color:#16845b; }
+    .finance-dashboard-card span { display:block; color:var(--muted); font-size:.74rem; font-weight:900; text-transform:uppercase; }
+    .finance-dashboard-card strong { display:block; margin-top:6px; color:#111113; font-size:1.55rem; }
+    .finance-note { margin-bottom:14px; padding:11px 13px; border-left:4px solid var(--gold); border-radius:7px; background:#fff0f2; color:#64101e; font-size:.85rem; }
+    @media (max-width: 900px) { .market-metrics,.market-kpi-grid,.admin-overview,.finance-dashboard-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .market-dashboard-lower,.pricing-config,.market-subsummary,.admin-grid { grid-template-columns:1fr; } }
     @media (max-width: 950px) { .bft-dashboard-grid { grid-template-columns: 1fr; } }
     .edit-help { margin: -5px 0 14px; padding: 10px 12px; border-left: 4px solid var(--gold); background: #fff1f3; color: #6b0d1c; border-radius: 7px; font-size: .86rem; font-weight: 750; }
     .tracking-table { width: max-content; min-width: 2550px; table-layout: fixed; }
@@ -333,6 +340,7 @@
       .bike-night-metrics, .bike-night-panels { grid-template-columns: 1fr; }
       .market-kpi-grid, .market-vendor-row { grid-template-columns: 1fr; }
       .admin-overview { grid-template-columns:1fr; }
+      .finance-dashboard-grid { grid-template-columns:1fr; }
       .market-executive { padding: 14px; }
       .sponsor-summary, .sponsor-panels { grid-template-columns: 1fr; }
       .module { min-height: 210px; }
@@ -382,7 +390,7 @@
 
           <div class="module-grid">
             <article class="module" style="--accent:#3d7fb1;--tint:#e8f3fb"><div class="module-top"><div class="module-identity"><div class="module-icon">M</div><h2>Membership</h2></div><div class="status">Planned</div></div><p>Member profiles, renewals, attendance, waivers, vetting, officers, lifers, anniversaries, and history.</p><footer><span class="source">37 workbook sections mapped</span><button class="open-btn" data-open="membership">View layout</button></footer></article>
-            <article class="module" style="--accent:#16845b;--tint:#e5f6ef"><div class="module-top"><div class="module-identity"><div class="module-icon">$</div><h2>Finance</h2></div><div class="status">Planned</div></div><p>Transactions, fund balances, operating budgets, event budgets, reconciliations, and reporting.</p><footer><span class="source">14 workbook sections mapped</span><button class="open-btn" data-open="finance">View layout</button></footer></article>
+            <article class="module" style="--accent:#16845b;--tint:#e5f6ef"><div class="module-top"><div class="module-identity"><div class="module-icon">$</div><h2>Finance</h2></div><div class="status">Working</div></div><p>Transactions, fund balances, operating budgets, event budgets, reconciliations, and reporting.</p><footer><span class="source">14 connected workbook sections</span><button class="open-btn" data-open="finance">Open module</button></footer></article>
             <article class="module" style="--accent:#d98c16;--tint:#fff1d9"><div class="module-top"><div class="module-identity"><div class="module-icon">B</div><h2>Bikes for Tykes</h2></div><div class="status live-status">Live</div></div><p>Donations, ticket control, event tracking, purchase budgets, and financial synchronization.</p><footer><span class="source">6 live workbook sections</span><button class="open-btn" data-open="bft">Open module</button></footer></article>
             <article class="module" style="--accent:#cf1235;--tint:#fff0f3"><div class="module-top"><div class="module-identity"><div class="module-icon">N</div><h2>Bike Nights</h2></div><div class="status live-status">Live</div></div><p>Monthly visit planning, club scorecards, attendance history, and upcoming bike nights.</p><footer><span class="source">3 live workbook sections</span><button class="open-btn" data-open="bikenights">Open module</button></footer></article>
             <article class="module" style="--accent:#8c5bb5;--tint:#f2eafb"><div class="module-top"><div class="module-identity"><div class="module-icon">O</div><h2>Marketplace</h2></div><div class="status live-status">Live</div></div><p>Orders, fulfillment, pricing, fees, manufacturers, sales history, and merchandise reporting.</p><footer><span class="source">8 live workbook sections</span><button class="open-btn" data-open="marketplace">Open module</button></footer></article>
@@ -463,10 +471,42 @@
             <section class="sponsor-panel" data-market-panel="pricing"><div class="coming-soon"><h2>Pricing &amp; Fees</h2><div class="data-status" id="marketPricingStatus">Sign in to load pricing and fees.</div><div id="marketPricingConfig"></div><div id="marketPricingTable"></div></div></section>
             <section class="sponsor-panel" data-market-panel="history"><div class="coming-soon"><div class="data-status" id="marketHistoryStatus">Sign in to load sales history.</div><div id="marketHistorySummary"></div><div id="marketHistoryTable"></div></div></section>
             <section class="sponsor-panel" data-market-panel="reference"><div class="coming-soon"><h2>Merchandise Pricing Reference</h2><div class="data-status" id="marketReferenceStatus">Sign in to load merchandise pricing.</div><div id="marketReferenceSummary"></div><div id="marketReferenceTable"></div></div></section>
+          </div><div class="bft-workspace" id="financeWorkspace">
+            <div class="sponsor-tabs" aria-label="Finance sections">
+              <button class="sponsor-tab active" data-finance-tab="dashboard">Dashboard-2026</button>
+              <button class="sponsor-tab" data-finance-tab="control">Control-2026</button>
+              <button class="sponsor-tab" data-finance-tab="operating">Operating Budget</button>
+              <button class="sponsor-tab" data-finance-tab="bft">Bikes for Tykes (BFT)</button>
+              <button class="sponsor-tab" data-finance-tab="lineitem">Line-Item Budget</button>
+              <button class="sponsor-tab" data-finance-tab="baseline">Operating Budget – Baseline</button>
+              <button class="sponsor-tab" data-finance-tab="transactions2026">Transactions-2026</button>
+              <button class="sponsor-tab" data-finance-tab="transactions2025">Transactions-2025</button>
+              <button class="sponsor-tab" data-finance-tab="tally">Tally 2026</button>
+              <button class="sponsor-tab" data-finance-tab="transactionlist">Transaction List</button>
+              <button class="sponsor-tab" data-finance-tab="expenses">Club Expenses</button>
+              <button class="sponsor-tab" data-finance-tab="events">Events &amp; Fundraising</button>
+              <button class="sponsor-tab" data-finance-tab="charities">Charities</button>
+              <button class="sponsor-tab" data-finance-tab="eventbudgets">Event Budgets</button>
+            </div>
+            <div class="finance-note">Finance is connected to the current BSSC Finance System 2026 workbook. Calculated cells are protected. Tally 2026 remains a read-only transfer log while its separate automation is being preserved.</div>
+            <section class="sponsor-panel active" data-finance-panel="dashboard"><div class="data-status" id="financeDashboardStatus">Loading financial dashboard…</div><div id="financeDashboard"></div></section>
+            <section class="sponsor-panel" data-finance-panel="control"><div class="coming-soon"><h2>Control-2026</h2><div class="data-status" id="financeControlStatus">Open this tab to load the control snapshot.</div><div id="financeControlTable"></div></div></section>
+            <section class="sponsor-panel" data-finance-panel="operating"><div class="coming-soon"><h2>Operating Budget</h2><div class="data-status" id="financeOperatingStatus">Open this tab to load the operating budget.</div><div id="financeOperatingTable"></div></div></section>
+            <section class="sponsor-panel" data-finance-panel="bft"><div class="coming-soon"><h2>Bikes for Tykes (BFT)</h2><div class="data-status" id="financeBftStatus">Open this tab to load Bikes for Tykes finance.</div><div id="financeBftTable"></div></div></section>
+            <section class="sponsor-panel" data-finance-panel="lineitem"><div class="coming-soon"><h2>Line-Item Budget</h2><div class="data-status" id="financeLineItemStatus">Open this tab to load the line-item budget.</div><div id="financeLineItemTable"></div></div></section>
+            <section class="sponsor-panel" data-finance-panel="baseline"><div class="coming-soon"><h2>Operating Budget – Baseline</h2><div class="data-status" id="financeBaselineStatus">Open this tab to load the baseline.</div><div id="financeBaselineTable"></div></div></section>
+            <section class="sponsor-panel" data-finance-panel="transactions2026"><div class="coming-soon"><h2>Transactions-2026</h2><div class="data-status" id="financeTransactions2026Status">Open this tab to load current transactions.</div><div id="financeTransactions2026Table"></div></div></section>
+            <section class="sponsor-panel" data-finance-panel="transactions2025"><div class="coming-soon"><h2>Transactions-2025</h2><div class="data-status" id="financeTransactions2025Status">Open this tab to load historical transactions.</div><div id="financeTransactions2025Table"></div></div></section>
+            <section class="sponsor-panel" data-finance-panel="tally"><div class="coming-soon"><h2>Tally 2026</h2><div class="data-status" id="financeTallyStatus">Open this tab to load the tally transfer log.</div><div id="financeTallyTable"></div></div></section>
+            <section class="sponsor-panel" data-finance-panel="transactionlist"><div class="coming-soon"><h2>Transaction List</h2><div class="data-status" id="financeTransactionListStatus">Open this tab to load transaction lists.</div><div id="financeTransactionListTable"></div></div></section>
+            <section class="sponsor-panel" data-finance-panel="expenses"><div class="coming-soon"><h2>Club Expenses</h2><div class="data-status" id="financeExpensesStatus">Open this tab to load club expenses.</div><div id="financeExpensesTable"></div></div></section>
+            <section class="sponsor-panel" data-finance-panel="events"><div class="coming-soon"><h2>Events &amp; Fundraising</h2><div class="data-status" id="financeEventsStatus">Open this tab to load events and fundraising.</div><div id="financeEventsTable"></div></div></section>
+            <section class="sponsor-panel" data-finance-panel="charities"><div class="coming-soon"><h2>Charities</h2><div class="data-status" id="financeCharitiesStatus">Open this tab to load charity reporting.</div><div id="financeCharitiesTable"></div></div></section>
+            <section class="sponsor-panel" data-finance-panel="eventbudgets"><div class="coming-soon"><h2>Event Budgets</h2><div class="data-status" id="financeEventBudgetsStatus">Open this tab to load event budgets.</div><div id="financeEventBudgetsTable"></div></div></section>
           </div><div class="admin-workspace" id="adminWorkspace">
             <div class="admin-overview">
               <div class="admin-stat good"><span>Live Modules</span><strong>4</strong></div>
-              <div class="admin-stat"><span>Planned Modules</span><strong>2</strong></div>
+              <div class="admin-stat"><span>Modules in Build</span><strong>1</strong></div>
               <div class="admin-stat good"><span>Google Access</span><strong>Authorized</strong></div>
               <div class="admin-stat"><span>Portal Release</span><strong>09/23/2026</strong></div>
             </div>
@@ -484,6 +524,7 @@
                 <div class="admin-row"><div><strong>Google Auth Settings</strong><small>Manage authorized audience and OAuth configuration</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://console.cloud.google.com/auth/overview?project=bssc-management-portal">Open</a></div>
               </div></section>
               <section class="admin-card"><h2>Source Workbooks</h2><div class="admin-card-body">
+                <div class="admin-row"><div><strong>Finance</strong><small>14 connected workbook sections</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/1a6DfwnnNmy0ykQi7S8DKAt1RhauTh7ISwxSXm59b5NU/edit">Open Sheet</a></div>
                 <div class="admin-row"><div><strong>Bikes for Tykes</strong><small>6 connected workbook sections</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/1cFhb2-Um1rBKj81dFeNWLSfKxuNfc768AFLbcjXdudY/edit">Open Sheet</a></div>
                 <div class="admin-row"><div><strong>Bike Nights</strong><small>3 connected workbook sections</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/1rXMHIVq52X3kqj_ICz7g8oZoD_eXR_0qHP7bZ9jhU0k/edit">Open Sheet</a></div>
                 <div class="admin-row"><div><strong>Marketplace</strong><small>8 connected workbook sections</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/1ByYajlmaWea7W1mUmKENDti2QEa04GsQCYsArakpqbQ/edit">Open Sheet</a></div>
@@ -507,6 +548,8 @@
     const BFT_SPREADSHEET_ID = '1cFhb2-Um1rBKj81dFeNWLSfKxuNfc768AFLbcjXdudY';
     const BIKE_NIGHTS_SPREADSHEET_ID = '1rXMHIVq52X3kqj_ICz7g8oZoD_eXR_0qHP7bZ9jhU0k';
     const MARKETPLACE_SPREADSHEET_ID = '1ByYajlmaWea7W1mUmKENDti2QEa04GsQCYsArakpqbQ';
+    const FINANCE_SPREADSHEET_ID = '1a6DfwnnNmy0ykQi7S8DKAt1RhauTh7ISwxSXm59b5NU';
+    const CASH_TALLY_SPREADSHEET_ID = '16bMnwTt8H6Z2ZCc3uMk7THRXZOrY4efi1gY53nqFCHw';
     const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
     const SESSION_KEY = 'bssc-google-session-edit-v1';
     const IDLE_TIMEOUT_MS = 60 * 60 * 1000;
@@ -600,8 +643,8 @@
       } catch (error) {}
     }, 60000);
 
-    async function getSheetValues(range, spreadsheetId = SPREADSHEET_ID) {
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?majorDimension=ROWS`;
+    async function getSheetValues(range, spreadsheetId = SPREADSHEET_ID, valueRenderOption = 'FORMATTED_VALUE') {
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?majorDimension=ROWS&valueRenderOption=${encodeURIComponent(valueRenderOption)}`;
       const response = await fetch(url, {headers: {Authorization: `Bearer ${accessToken}`}});
       if (!response.ok) throw new Error(`Google Sheets returned ${response.status}`);
       return (await response.json()).values || [];
@@ -877,13 +920,14 @@
         const isMarketReady = isMarketplaceTable && labels.some(value => value === 'ready' || value === 'yes');
         const rowClasses = [isTotal ? 'total-row' : '', isSubtotal ? 'subtotal-row' : '', isBudgetSection ? 'budget-section-row' : '', isBudgetSubhead ? 'budget-subhead-row' : '', isGrandTotal ? 'grand-total-row' : '', isNeverVisited ? 'never-visited' : '', isPlanned ? 'planned-row' : '', isMarketPaid ? 'market-paid' : '', isMarketPending ? 'market-pending' : '', isMarketReady ? 'market-ready' : ''].filter(Boolean).join(' ');
         return `<tr class="${rowClasses}">${finalHeaders.map((_, columnIndex) => {
-          const editable = editMode;
+          const formulaValue = editOptions && editOptions.formulaRows && editOptions.formulaRows[item.sourceIndex] ? String(editOptions.formulaRows[item.sourceIndex][columnIndex] || '') : '';
+          const editable = editMode && !formulaValue.startsWith('=');
           let shownValue = item.row[columnIndex] || '';
           if (isTicketLedger && columnIndex === ticketGroupStart + 2) {
             const quantity = Number(String(item.row[ticketGroupStart + 1] || '').replace(/[$,]/g, ''));
             if (Number.isFinite(quantity) && quantity > 0) shownValue = money(quantity * ticketPrice);
           }
-          return `<td class="${editable ? 'editable-cell' : ''}" ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${item.sourceIndex + 1}" data-column="${columnIndex}" data-value="${esc(shownValue)}"` : ''}>${esc(shownValue)}</td>`;
+          return `<td class="${editable ? 'editable-cell' : (editMode && formulaValue.startsWith('=') ? 'formula-cell' : '')}" ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${item.sourceIndex + 1}" data-column="${columnIndex}" data-value="${esc(shownValue)}"` : ''}>${esc(shownValue)}</td>`;
         }).join('')}</tr>`;
       }).join('')}</tbody></table></div>`;
       status.textContent = `${indexedData.length} row${indexedData.length === 1 ? '' : 's'} loaded from Google Sheets${editOptions ? (editMode ? ' — edit mode is on.' : ' — view mode.') : '.'}`;
@@ -959,7 +1003,8 @@
         for (const edit of edits) await updateSheetCell(edit.spreadsheetId || BFT_SPREADSHEET_ID, edit.sheet, edit.row, edit.column, edit.value);
         tableEditModes[targetId] = false;
         tablePendingEdits[targetId] = new Map();
-        if (targetId.startsWith('market')) await loadMarketplaceData();
+        if (targetId.startsWith('finance')) await loadFinanceTab(financeTargetToKey[targetId], true);
+        else if (targetId.startsWith('market')) await loadMarketplaceData();
         else if (targetId.startsWith('bike')) await loadBikeNightData();
         else await loadBftData();
       } catch (error) {
@@ -1203,10 +1248,75 @@
       } else document.getElementById('marketReferenceStatus').textContent = 'Merchandise Pricing Reference could not be loaded from Google Sheets.';
     }
 
+    const financeTabConfig = {
+      operating:{sheet:'Operating Budget',range:"'Operating Budget'!A1:L100",target:'financeOperatingTable',status:'financeOperatingStatus',header:3,columns:12,editable:true},
+      bft:{sheet:'Bikes for Tykes (BFT)',range:"'Bikes for Tykes (BFT)'!A1:X1450",target:'financeBftTable',status:'financeBftStatus',header:0,columns:24,editable:true},
+      lineitem:{sheet:'Line-Item Budget',range:"'Line-Item Budget'!A1:L200",target:'financeLineItemTable',status:'financeLineItemStatus',header:0,columns:12,editable:true},
+      baseline:{sheet:'Operating Budget – Baseline',range:"'Operating Budget – Baseline'!A1:I100",target:'financeBaselineTable',status:'financeBaselineStatus',header:0,columns:9,editable:true},
+      transactions2026:{sheet:'Transactions-2026',range:"'Transactions-2026'!A1:W1870",target:'financeTransactions2026Table',status:'financeTransactions2026Status',header:0,columns:23,editable:true},
+      transactions2025:{sheet:'Transactions-2025',range:"'Transactions-2025'!A1:P1000",target:'financeTransactions2025Table',status:'financeTransactions2025Status',header:0,columns:16,editable:false},
+      tally:{sheet:'Tally 2026',range:"'Tally 2026'!A1:L1000",target:'financeTallyTable',status:'financeTallyStatus',header:0,columns:12,editable:false},
+      transactionlist:{sheet:'Transaction List',range:"'Transaction List'!A1:J100",target:'financeTransactionListTable',status:'financeTransactionListStatus',header:0,columns:10,editable:true},
+      expenses:{sheet:'Club Expenses',range:"'Club Expenses'!A1:X200",target:'financeExpensesTable',status:'financeExpensesStatus',header:0,columns:24,editable:true},
+      events:{sheet:'Events & Fundraising',range:"'Events & Fundraising'!A1:O200",target:'financeEventsTable',status:'financeEventsStatus',header:0,columns:15,editable:true},
+      charities:{sheet:'Charities',range:"'Charities'!A1:K100",target:'financeCharitiesTable',status:'financeCharitiesStatus',header:0,columns:11,editable:true},
+      eventbudgets:{sheet:'Event Budgets',range:"'Event Budgets'!A1:F100",target:'financeEventBudgetsTable',status:'financeEventBudgetsStatus',header:2,columns:6,editable:true}
+    };
+    const financeTargetToKey = Object.fromEntries(Object.entries(financeTabConfig).map(([key,value]) => [value.target,key]));
+    const loadedFinanceTabs = new Set();
+
+    function renderFinanceDashboard(rows) {
+      const at = (r,c) => String((rows[r] && rows[r][c]) || '—');
+      const card = (label,value,cls='') => `<div class="finance-dashboard-card ${cls}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
+      const months = rows.slice(2,14).filter(row => row[19]);
+      document.getElementById('financeDashboard').innerHTML = `<div class="finance-dashboard-grid">
+        ${card(at(4,1),at(6,1),'good')}${card(at(4,5),at(6,5),'good')}${card(at(4,9),at(6,9),'good')}
+        ${card(at(9,1),at(11,1))}${card(at(9,5),at(11,5))}${card(at(9,9),at(11,9))}
+      </div><section class="admin-card"><h2>Monthly Net Activity</h2><div class="admin-card-body"><div class="table-wrap"><table class="data-table"><thead><tr><th>Month</th><th>Net</th></tr></thead><tbody>${months.map(row => `<tr><td>${esc(row[19] || '')}</td><td>${esc(row[20] || '')}</td></tr>`).join('')}</tbody></table></div></div></section>`;
+      document.getElementById('financeDashboardStatus').textContent = 'Executive dashboard connected to BSSC Finance System 2026.';
+    }
+
+    async function loadFinanceDashboard() {
+      document.getElementById('financeDashboardStatus').textContent = 'Loading financial dashboard…';
+      try {
+        const rows = await getSheetValues("'Dashboard-2026'!A1:AF80",FINANCE_SPREADSHEET_ID);
+        renderFinanceDashboard(rows);
+        loadedFinanceTabs.add('dashboard');
+      } catch (error) { document.getElementById('financeDashboardStatus').textContent = 'Dashboard-2026 could not load from Google Sheets.'; }
+    }
+
+    async function loadFinanceControl() {
+      document.getElementById('financeControlStatus').textContent = 'Loading control snapshot…';
+      try {
+        const rows = await getSheetValues("'Control-2026'!A1:H80",FINANCE_SPREADSHEET_ID);
+        renderDataTable('financeControlTable','financeControlStatus',rows,0,8);
+        loadedFinanceTabs.add('control');
+      } catch (error) { document.getElementById('financeControlStatus').textContent = 'Control-2026 could not load from Google Sheets.'; }
+    }
+
+    async function loadFinanceTab(key, force = false) {
+      if (!key) return;
+      if (key === 'dashboard') { if (force || !loadedFinanceTabs.has(key)) await loadFinanceDashboard(); return; }
+      if (key === 'control') { if (force || !loadedFinanceTabs.has(key)) await loadFinanceControl(); return; }
+      if (!force && loadedFinanceTabs.has(key)) return;
+      const config = financeTabConfig[key];
+      if (!config) return;
+      document.getElementById(config.status).textContent = `Loading ${config.sheet}…`;
+      try {
+        const reads = [getSheetValues(config.range,FINANCE_SPREADSHEET_ID)];
+        if (config.editable) reads.push(getSheetValues(config.range,FINANCE_SPREADSHEET_ID,'FORMULA'));
+        const [rows,formulas = []] = await Promise.all(reads);
+        const editOptions = config.editable ? {sheetName:config.sheet,spreadsheetId:FINANCE_SPREADSHEET_ID,formulaRows:formulas} : null;
+        renderDataTable(config.target,config.status,rows,config.header,config.columns,editOptions);
+        loadedFinanceTabs.add(key);
+      } catch (error) { document.getElementById(config.status).textContent = `${config.sheet} could not load from Google Sheets.`; }
+    }
+
     async function loadAdminSystemStatus() {
       const target = document.getElementById('adminSystemStatus');
       if (!target) return;
       const connections = [
+        ['Finance','14 connected workbook sections',FINANCE_SPREADSHEET_ID,"'Dashboard-2026'!A1:A1"],
         ['Bikes for Tykes','6 connected workbook sections',BFT_SPREADSHEET_ID,"'DashBoard'!A1:A1"],
         ['Bike Nights','3 connected workbook sections',BIKE_NIGHTS_SPREADSHEET_ID,"'Dashboard'!A1:A1"],
         ['Marketplace','8 connected workbook sections',MARKETPLACE_SPREADSHEET_ID,"'Dashboard'!A1:A1"],
@@ -1243,9 +1353,20 @@
       const bftWorkspace = document.getElementById('bftWorkspace');
       const bikeNightsWorkspace = document.getElementById('bikeNightsWorkspace');
       const marketplaceWorkspace = document.getElementById('marketplaceWorkspace');
+      const financeWorkspace = document.getElementById('financeWorkspace');
       const adminWorkspace = document.getElementById('adminWorkspace');
       const taskGrid = document.getElementById('detailTasks');
-      if (key === 'sponsors') {
+      financeWorkspace.classList.remove('active');
+      if (key === 'finance') {
+        taskGrid.innerHTML = '';
+        sponsorWorkspace.classList.remove('active');
+        bftWorkspace.classList.remove('active');
+        bikeNightsWorkspace.classList.remove('active');
+        marketplaceWorkspace.classList.remove('active');
+        adminWorkspace.classList.remove('active');
+        financeWorkspace.classList.add('active');
+        loadFinanceTab('dashboard',true);
+      } else if (key === 'sponsors') {
         taskGrid.innerHTML = '';
         sponsorWorkspace.classList.add('active');
         bftWorkspace.classList.remove('active');
@@ -1315,6 +1436,12 @@
       const selected = button.dataset.marketTab;
       document.querySelectorAll('[data-market-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
       document.querySelectorAll('[data-market-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.marketPanel === selected));
+    }));
+    document.querySelectorAll('[data-finance-tab]').forEach(button => button.addEventListener('click', () => {
+      const selected = button.dataset.financeTab;
+      document.querySelectorAll('[data-finance-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
+      document.querySelectorAll('[data-finance-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.financePanel === selected));
+      loadFinanceTab(selected);
     }));
     document.getElementById('back').addEventListener('click', () => showModule('home'));
     document.getElementById('menuToggle').addEventListener('click', () => sidebar.classList.toggle('open'));
