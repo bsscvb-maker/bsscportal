@@ -116,6 +116,34 @@
     .membership-event-table th,.membership-event-table td { padding:8px; border-bottom:1px solid #e1e4e8; text-align:left; }
     .membership-event-table th { color:#fff; background:#111113; }
     .membership-system-note { margin:10px 0; padding:10px 12px; border-left:4px solid #3d7fb1; background:#eaf4fb; color:#244c69; border-radius:6px; font-size:.86rem; }
+    .membership-sheet-dashboard { border:1px solid #aeb4bb; background:#fff; }
+    .membership-sheet-banner { display:flex; justify-content:space-between; gap:16px; padding:10px 16px; color:#fff; background:#111820; border-bottom:3px solid #cf1235; }
+    .membership-sheet-banner h2 { margin:0; color:#fff; font-size:1.25rem; }
+    .membership-sheet-source { padding:7px 14px; color:#626a73; background:#f4f5f6; border-bottom:1px solid #d8dce0; text-align:center; font-size:.78rem; }
+    .membership-sheet-layout { display:grid; grid-template-columns:minmax(360px,.82fr) minmax(570px,1.35fr); gap:18px; padding:16px; }
+    .membership-sheet-left { display:grid; grid-template-columns:1fr .86fr; gap:14px; align-content:start; }
+    .membership-sheet-column { display:grid; gap:14px; align-content:start; }
+    .membership-sheet-block { border:1px solid #1a1a1a; background:#fff; }
+    .membership-sheet-block.wide { grid-column:1/-1; }
+    .membership-sheet-block h3 { margin:0; padding:5px 8px; color:#111; background:#dfe1e4; border-bottom:1px solid #111; text-align:center; font-size:.88rem; }
+    .membership-kpi-row { display:grid; grid-template-columns:minmax(0,1fr) auto; border-bottom:1px solid #bbb; }
+    .membership-kpi-row:last-child { border-bottom:0; }
+    .membership-kpi-row span,.membership-kpi-row strong { padding:5px 7px; }
+    .membership-kpi-row span { font-weight:750; }
+    .membership-kpi-row strong { min-width:86px; border-left:1px solid #bbb; text-align:right; }
+    .membership-missing-list { margin:0; padding:8px 10px 9px 28px; color:#a8001d; background:#fff0f3; font-size:.83rem; font-weight:800; }
+    .membership-attendance { width:100%; border-collapse:collapse; font-size:.78rem; }
+    .membership-attendance caption { padding:7px; color:#111; background:#dfe1e4; border:1px solid #111; font-weight:900; }
+    .membership-attendance th { padding:5px 6px; color:#111; background:#e7e7e7; border:1px solid #222; text-align:center; }
+    .membership-attendance td { padding:4px 6px; border:1px solid #aeb4bb; }
+    .membership-attendance td:nth-child(2),.membership-attendance td:nth-child(3),.membership-attendance td:nth-child(4) { text-align:center; }
+    .membership-attendance .attendance-good { background:#d9ead3; color:#17662b; font-weight:900; }
+    .membership-attendance .attendance-fair { background:#fff2cc; color:#745700; font-weight:900; }
+    .membership-attendance .attendance-low { background:#f4cccc; color:#a8001d; font-weight:900; }
+    .membership-attendance .attendance-upcoming { background:#edf0f2; color:#6b737c; }
+    .membership-attendance .attendance-next td { background:#d9e7f5; font-weight:900; }
+    @media (max-width:1100px) { .membership-sheet-layout { grid-template-columns:1fr; } }
+    @media (max-width:700px) { .membership-sheet-left { grid-template-columns:1fr; } .membership-sheet-block.wide { grid-column:auto; } }
     .portal-health { display:none; flex:0 0 300px; min-height:82px; align-items:center; gap:14px; padding:14px 18px; border:2px solid transparent; border-radius:14px; color:#fff; box-shadow:0 8px 24px rgba(0,0,0,.28); }
     .portal-health.visible { display:flex; }
     .portal-health-dot { flex:0 0 18px; width:18px; height:18px; border:4px solid rgba(255,255,255,.72); border-radius:50%; box-shadow:0 0 0 5px rgba(255,255,255,.12); }
@@ -555,7 +583,7 @@
 
         <section class="detail-view" id="detail">
           <button class="back" id="back">← Back to portal home</button>
-          <div class="detail-shell"><div class="detail-head"><div><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><button class="finance-admin-header" id="financeAdminToggle" type="button">Admin</button><div class="portal-health checking" id="portalHealth" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong id="portalHealthStatus">Checking</strong><small id="portalHealthDetail">Verifying connected systems…</small></div></div></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div><div class="membership-workspace" id="membershipWorkspace">
+          <div class="detail-shell"><div class="detail-head"><div><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><button class="finance-admin-header" id="membershipAdminToggle" type="button">Admin</button><button class="finance-admin-header" id="financeAdminToggle" type="button">Admin</button><div class="portal-health checking" id="portalHealth" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong id="portalHealthStatus">Checking</strong><small id="portalHealthDetail">Verifying connected systems…</small></div></div></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div><div class="membership-workspace" id="membershipWorkspace">
             <div class="membership-tabs" aria-label="Membership sections">
               <button class="membership-tab" data-membership-sheet="Dashboard 2027">Dashboard 2027</button>
               <button class="membership-tab" data-membership-sheet="2027">2027 Roster</button>
@@ -1972,23 +2000,37 @@
       return '—';
     }
 
-    function renderMembershipDashboard(rows, year) {
+    function renderMembershipDashboard(rows, year, rosterRows = []) {
       const target = document.getElementById('membershipContent');
       const status = document.getElementById('membershipStatus');
-      const metricLabels = ['Current Membership','Projected Membership','Active Members','Prospects','Dues Paid','Waivers Signed','Waiver Compliance','Average Age','Average Tenure'];
-      const metrics = metricLabels.map(label => ({label,value:membershipValue(rows,label)})).filter(item => item.value !== '—').slice(0,8);
-      const section = (title, labels) => {
-        const items = labels.map(label => ({label,value:membershipValue(rows,label)})).filter(item => item.value !== '—');
-        if (!items.length) return '';
-        return `<section class="membership-dashboard-card"><h3>${esc(title)}</h3><div class="membership-dashboard-body">${items.map(item => `<div class="membership-dashboard-row"><span>${esc(item.label)}</span><strong>${esc(item.value)}</strong></div>`).join('')}</div></section>`;
-      };
-      const attendanceStart = rows.findIndex(row => row.some(value => /attendance summary/i.test(String(value || ''))));
-      let attendance = '';
-      if (attendanceStart >= 0) {
-        const subset = rows.slice(attendanceStart + 1,attendanceStart + 18).filter(row => row.some(value => String(value || '').trim()));
-        if (subset.length) attendance = `<section class="membership-dashboard-card membership-dashboard-wide"><h3>Attendance Summary</h3><div class="table-wrap"><table class="data-table"><tbody>${subset.map(row => `<tr>${row.filter(value => String(value || '').trim()).slice(0,6).map(value => `<td>${esc(value)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section>`;
-      }
-      target.innerHTML = `<div class="membership-dashboard"><div class="membership-dashboard-title"><div><span>Live membership workbook</span><h2>Membership Dashboard ${esc(year)}</h2></div><strong>${esc(membershipValue(rows,'As of'))}</strong></div>${metrics.length ? `<div class="membership-summary-grid">${metrics.map(item => `<div class="membership-summary-card"><span>${esc(item.label)}</span><strong>${esc(item.value)}</strong></div>`).join('')}</div>` : '<div class="empty-state">This dashboard is connected and ready; the workbook does not yet contain current-year totals.</div>'}<div class="membership-dashboard-grid">${section('Officers',['President','Vice President','Secretary','Treasurer','Sergeant at Arms','Road Captain'])}${section('Compliance',['Dues Paid','Dues Unpaid','Waivers Signed','Waivers Missing','Code of Conduct Signed','Code of Conduct Missing'])}${section('Roster Overview',['Current Membership','Active Members','Prospects','Lifers','Honorary Members','Veterans'])}${section('Age & Tenure',['Average Age','Youngest Member','Oldest Member','Average Tenure','Longest Tenure'])}${section('Next Upcoming Event',['Event','Date','Location','Expected Attendance'])}${year === '2027' ? section('Military Service',['Veterans','Military Service','Army','Navy','Air Force','Marines','Coast Guard']) : ''}${attendance}</div></div>`;
+      const cell = (row,column) => String((rows[row - 1] && rows[row - 1][column - 1]) ?? '').trim();
+      const block = (title,items,wide = false,extra = '') => `<section class="membership-sheet-block${wide ? ' wide' : ''}"><h3>${esc(title)}</h3>${items.filter(item => item[0] || item[1]).map(item => `<div class="membership-kpi-row"><span>${esc(item[0])}</span><strong>${esc(item[1] || '—')}</strong></div>`).join('')}${extra}</section>`;
+      const headers = rosterRows[0] || [];
+      const statusIndex = headers.findIndex(value => String(value).trim().toLowerCase() === 'status');
+      const firstIndex = headers.findIndex(value => String(value).trim().toLowerCase() === 'first name');
+      const lastIndex = headers.findIndex(value => String(value).trim().toLowerCase() === 'last name');
+      const roadIndex = headers.findIndex(value => String(value).trim().toLowerCase() === 'road name');
+      const waiverIndex = headers.findIndex(value => String(value).trim().toLowerCase() === 'waiver');
+      const missingWaivers = rosterRows.slice(1).filter(row => String(row[statusIndex] || '').trim().toLowerCase() === 'active' && String(row[waiverIndex] || '').trim().toLowerCase() === 'no').map(row => [row[firstIndex],row[roadIndex] ? `“${row[roadIndex]}”` : '',row[lastIndex]].filter(Boolean).join(' '));
+      const officers = rows.slice(5,12).map(row => [row[1],row[2]]);
+      const compliance = [[cell(5,5),cell(5,6)],[cell(6,5),cell(6,6)],[cell(7,5),cell(7,6)],[cell(8,5),cell(8,6)]];
+      const action = [[cell(11,5),cell(11,6)],[cell(12,5),cell(12,6)]];
+      const roster = rows.slice(16,24).map(row => [row[1],row[2]]);
+      const age = rows.slice(16,20).map(row => [row[4],row[5]]);
+      const nextEvent = rows.slice(28,30).map(row => [row[1],row[3]]);
+      nextEvent.push([cell(30,2),cell(30,4)]);
+      const overview = rows.slice(33,37).map(row => [row[1],row[3]]);
+      const attendanceRows = rows.slice(5).filter(row => String(row[7] || '').trim()).map(row => ({event:row[7],date:row[8],count:row[9],participation:row[10],notes:row[11]}));
+      let nextMarked = false;
+      const attendanceHtml = attendanceRows.map(item => {
+        const percent = Number(String(item.participation || '').replace('%',''));
+        const upcoming = !item.count && !item.participation;
+        const next = upcoming && !nextMarked; if (next) nextMarked = true;
+        const performance = upcoming ? 'attendance-upcoming' : percent >= 50 ? 'attendance-good' : percent >= 30 ? 'attendance-fair' : 'attendance-low';
+        return `<tr class="${next ? 'attendance-next' : ''}"><td>${esc(item.event)}</td><td>${esc(item.date)}</td><td>${esc(item.count)}</td><td class="${performance}">${esc(item.participation)}</td><td>${esc(item.notes)}</td></tr>`;
+      }).join('');
+      const missingList = missingWaivers.length ? `<ol class="membership-missing-list">${missingWaivers.map(name => `<li>${esc(name)}</li>`).join('')}</ol>` : '';
+      target.innerHTML = `<div class="membership-sheet-dashboard"><header class="membership-sheet-banner"><h2>${esc(cell(1,2) || `BSSC ${year} Dashboard`)}</h2><strong>${esc(cell(1,12))}</strong></header><div class="membership-sheet-source">${esc(cell(2,2))}</div><div class="membership-sheet-layout"><div class="membership-sheet-left"><div class="membership-sheet-column">${block(cell(4,2) || `Officers (${year})`,officers)}${block(cell(15,2) || 'Roster KPIs',roster)}${block(cell(27,2) || 'Next Upcoming Event',nextEvent)}${block(cell(32,2) || 'Attendance Overview',overview)}</div><div class="membership-sheet-column">${block(cell(4,5) || 'Compliance KPIs',compliance)}${block(cell(10,5) || 'Action Needed',action,false,missingList)}${block(cell(15,5) || 'Age & Tenure',age)}</div></div><div class="table-wrap"><table class="membership-attendance"><caption>${esc(cell(4,8) || `${year} Core Attendance Summary (Yes Count)`)}</caption><thead><tr><th>Event</th><th>Date</th><th>Count</th><th>Participation %</th><th>Notes</th></tr></thead><tbody>${attendanceHtml}</tbody></table></div></div></div>`;
       status.textContent = `Dashboard ${year} loaded live from Google Sheets. Formula results are read-only here.`;
     }
 
@@ -2003,10 +2045,11 @@
       try {
         const reads = [getSheetValues(config.range,MEMBERSHIP_SPREADSHEET_ID)];
         if (config.editable) reads.push(getSheetValues(config.range,MEMBERSHIP_SPREADSHEET_ID,'FORMULA'));
-        const [rows,formulas = []] = await Promise.all(reads);
-        if (config.dashboard) renderMembershipDashboard(rows,sheetName.replace('Dashboard ',''));
+        if (config.dashboard) reads.push(getSheetValues(`'${sheetName.replace('Dashboard ','')}'!A1:${sheetName.includes('2026') ? 'AH' : 'AK'}900`,MEMBERSHIP_SPREADSHEET_ID));
+        const [rows,formulasOrRoster = [],dashboardRoster = []] = await Promise.all(reads);
+        if (config.dashboard) renderMembershipDashboard(rows,sheetName.replace('Dashboard ',''),formulasOrRoster);
         else {
-          const editOptions = config.editable ? {sheetName,spreadsheetId:MEMBERSHIP_SPREADSHEET_ID,formulaRows:formulas} : null;
+          const editOptions = config.editable ? {sheetName,spreadsheetId:MEMBERSHIP_SPREADSHEET_ID,formulaRows:formulasOrRoster} : null;
           renderDataTable('membershipContent','membershipStatus',rows,0,config.columns,editOptions);
           if (!config.editable) {
             target.insertAdjacentHTML('afterbegin',`<div class="membership-system-note"><strong>Protected ${esc(config.group)} section.</strong> This view stays connected to Google Sheets, but portal editing is disabled to protect formulas, automation feeds, and historical records.</div>`);
@@ -2018,16 +2061,78 @@
       }
     }
 
-    function initializeMembershipPicker() {
+    const MEMBERSHIP_HIDDEN_KEY = 'bssc_membership_hidden_sections';
+    const MEMBERSHIP_PINNED_KEY = 'bssc_membership_pinned_sections';
+    const MEMBERSHIP_NAMES_KEY = 'bssc_membership_section_names';
+    const defaultMembershipPinned = ['Dashboard 2027','2027','2027-Attendance','Dashboard 2026','2026','2026-Attendance','Officer List','Lifer'];
+    const defaultMembershipNames = {'Dashboard 2027':'Dashboard 2027','2027':'2027 Roster','2027-Attendance':'2027 Attendance','Dashboard 2026':'Dashboard 2026','2026':'2026 Roster','2026-Attendance':'2026 Attendance','Officer List':'Officer List','Lifer':'Lifers'};
+    function membershipSetting(key,fallback) { try { const value = JSON.parse(localStorage.getItem(key) || 'null'); return value ?? fallback; } catch (error) { return fallback; } }
+    function membershipDisplayName(name) { return String(membershipSetting(MEMBERSHIP_NAMES_KEY,{})[name] || defaultMembershipNames[name] || name); }
+    function openMembershipSection(name) {
+      currentMembershipSheet = name;
+      document.querySelectorAll('[data-membership-sheet]').forEach(tab => tab.classList.toggle('active',tab.dataset.membershipSheet === name));
       const picker = document.getElementById('membershipSectionPicker');
-      if (!picker || picker.options.length > 1) return;
-      const primary = new Set([...document.querySelectorAll('[data-membership-sheet]')].map(button => button.dataset.membershipSheet));
-      ['Member Lists','System & Automation','Archives'].forEach(group => {
-        const entries = Object.entries(membershipSheetConfig).filter(([name,config]) => config.group === group && !primary.has(name));
+      if (picker) picker.value = [...picker.options].some(option => option.value === name) ? name : '';
+      loadMembershipSheet(name);
+    }
+    function applyMembershipPreferences() {
+      const bar = document.querySelector('#membershipWorkspace .membership-tabs');
+      const picker = document.getElementById('membershipSectionPicker');
+      if (!bar || !picker) return;
+      const allNames = Object.keys(membershipSheetConfig);
+      const hidden = new Set(membershipSetting(MEMBERSHIP_HIDDEN_KEY,[]).filter(name => allNames.includes(name)));
+      const savedPinned = membershipSetting(MEMBERSHIP_PINNED_KEY,defaultMembershipPinned);
+      const pinned = [...savedPinned.filter(name => allNames.includes(name) && !hidden.has(name)),...defaultMembershipPinned.filter(name => !savedPinned.includes(name) && !hidden.has(name))];
+      bar.querySelectorAll('[data-membership-sheet]').forEach(button => button.remove());
+      pinned.forEach(name => {
+        const button = document.createElement('button');
+        button.className = `membership-tab${name === currentMembershipSheet ? ' active' : ''}`;
+        button.type = 'button'; button.dataset.membershipSheet = name; button.textContent = membershipDisplayName(name);
+        button.addEventListener('click',() => openMembershipSection(name));
+        bar.insertBefore(button,picker);
+      });
+      picker.innerHTML = '<option value="">All membership sections…</option>';
+      const pinnedSet = new Set(pinned);
+      ['Current','Member Lists','System & Automation','Archives'].forEach(group => {
+        const entries = allNames.filter(name => membershipSheetConfig[name].group === group && !hidden.has(name) && !pinnedSet.has(name));
         if (!entries.length) return;
         const optgroup = document.createElement('optgroup'); optgroup.label = group;
-        entries.forEach(([name]) => { const option = document.createElement('option'); option.value = name; option.textContent = name; optgroup.appendChild(option); });
+        entries.forEach(name => { const option = document.createElement('option'); option.value = name; option.textContent = membershipDisplayName(name); optgroup.appendChild(option); });
         picker.appendChild(optgroup);
+      });
+      if (hidden.has(currentMembershipSheet)) {
+        currentMembershipSheet = pinned[0] || allNames.find(name => !hidden.has(name));
+        if (currentMembershipSheet) openMembershipSection(currentMembershipSheet);
+      }
+    }
+    function initializeMembershipPicker() { applyMembershipPreferences(); }
+
+    function openMembershipTabManager() {
+      const workspace = document.getElementById('membershipWorkspace');
+      const existing = workspace.querySelector('.finance-tab-manager');
+      if (existing) { existing.remove(); return; }
+      const allNames = Object.keys(membershipSheetConfig);
+      const hidden = new Set(membershipSetting(MEMBERSHIP_HIDDEN_KEY,[]));
+      const savedPinned = membershipSetting(MEMBERSHIP_PINNED_KEY,defaultMembershipPinned);
+      const order = [...savedPinned.filter(name => allNames.includes(name)),...allNames.filter(name => !savedPinned.includes(name))];
+      const names = membershipSetting(MEMBERSHIP_NAMES_KEY,{});
+      const panel = document.createElement('section'); panel.className = 'finance-tab-manager';
+      panel.innerHTML = `<div class="finance-tab-manager-head"><h3>Membership Tab Administration</h3><span>${hidden.size} hidden</span></div><p class="finance-tab-manager-note">Choose which sections are visible, which appear as top tabs, their order, and their portal names. These settings do not rename, move, or delete Google Sheet tabs.</p><div class="finance-tab-manager-grid">${order.map(name => `<div class="finance-tab-admin-row" data-admin-tab="${esc(name)}"><input class="membership-visible" type="checkbox" aria-label="Show ${esc(name)}" ${hidden.has(name) ? '' : 'checked'}><input class="membership-pinned" type="checkbox" aria-label="Pin ${esc(name)} as a top tab" ${savedPinned.includes(name) ? 'checked' : ''}><input class="finance-tab-name" value="${esc(names[name] || defaultMembershipNames[name] || name)}" aria-label="Portal name for ${esc(name)}"><div class="finance-tab-order"><button type="button" data-move="up" aria-label="Move section up">↑</button><button type="button" data-move="down" aria-label="Move section down">↓</button></div></div>`).join('')}</div><div class="finance-tab-manager-actions"><button class="show-all-tabs" type="button">Show All Sections</button><button class="done-managing-tabs" type="button">Save &amp; Close</button></div>`;
+      workspace.querySelector('.membership-tabs').insertAdjacentElement('afterend',panel);
+      panel.querySelectorAll('[data-move]').forEach(button => button.addEventListener('click',() => {
+        const row = button.closest('.finance-tab-admin-row'); const sibling = button.dataset.move === 'up' ? row.previousElementSibling : row.nextElementSibling;
+        if (!sibling) return; if (button.dataset.move === 'up') row.parentElement.insertBefore(row,sibling); else row.parentElement.insertBefore(sibling,row);
+      }));
+      panel.querySelector('.show-all-tabs').addEventListener('click',() => panel.querySelectorAll('.membership-visible').forEach(input => { input.checked = true; }));
+      panel.querySelector('.done-managing-tabs').addEventListener('click',() => {
+        const rows = [...panel.querySelectorAll('.finance-tab-admin-row')];
+        if (!rows.some(row => row.querySelector('.membership-visible').checked)) return alert('At least one Membership section must remain visible.');
+        const hiddenSections = rows.filter(row => !row.querySelector('.membership-visible').checked).map(row => row.dataset.adminTab);
+        let pinnedSections = rows.filter(row => row.querySelector('.membership-visible').checked && row.querySelector('.membership-pinned').checked).map(row => row.dataset.adminTab);
+        if (!pinnedSections.length) pinnedSections = [rows.find(row => row.querySelector('.membership-visible').checked).dataset.adminTab];
+        const savedNames = {}; rows.forEach(row => { savedNames[row.dataset.adminTab] = row.querySelector('.finance-tab-name').value.trim() || row.dataset.adminTab; });
+        localStorage.setItem(MEMBERSHIP_HIDDEN_KEY,JSON.stringify(hiddenSections)); localStorage.setItem(MEMBERSHIP_PINNED_KEY,JSON.stringify(pinnedSections)); localStorage.setItem(MEMBERSHIP_NAMES_KEY,JSON.stringify(savedNames));
+        panel.remove(); applyMembershipPreferences();
       });
     }
 
@@ -2116,6 +2221,8 @@
       if (healthPanel) healthPanel.classList.toggle('visible', key === 'admin');
       const financeAdminButton = document.getElementById('financeAdminToggle');
       if (financeAdminButton) financeAdminButton.classList.toggle('visible', key === 'finance');
+      const membershipAdminButton = document.getElementById('membershipAdminToggle');
+      if (membershipAdminButton) membershipAdminButton.classList.toggle('visible', key === 'membership');
       if (key === 'home') { dashboard.classList.remove('hidden'); detail.classList.remove('active'); setActive('home'); return; }
       const item = modules[key]; if (!item) return;
       document.getElementById('detailTitle').textContent = item.title;
@@ -2306,6 +2413,7 @@
       }
     }
     document.getElementById('financeAdminToggle').addEventListener('click', openFinanceTabManager);
+    document.getElementById('membershipAdminToggle').addEventListener('click', openMembershipTabManager);
     applyFinanceTabPreferences();
     document.getElementById('back').addEventListener('click', () => showModule('home'));
     document.getElementById('menuToggle').addEventListener('click', () => sidebar.classList.toggle('open'));
