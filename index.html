@@ -360,6 +360,8 @@
     .finance-dashboard-hero .finance-dashboard-card strong { font-size:1.85rem; }
     .finance-dashboard-card.good { border-top-color:#00a651; background:#d9f2e2; }
     .finance-dashboard-card.good strong { color:#006b35; }
+    .finance-dashboard-card.blue { border-top-color:#1f4e79; background:#d9eaf7; }
+    .finance-dashboard-card.blue strong { color:#1f4e79; }
     .finance-dashboard-card.alert { border-top-color:#d20f32; background:#ffd9df; }
     .finance-dashboard-card.alert strong { color:#a0001d; }
     .control-title { margin-bottom:14px; padding:17px 20px; color:#fff; background:#1f4e79; border-bottom:4px solid #9dc3e6; border-radius:11px; }
@@ -1441,8 +1443,13 @@
 
     function renderFinanceDashboard(rows) {
       const at = (r,c) => String((rows[r] && rows[r][c]) || '—').replace(/\s+/g,' ').trim();
-      const labelAt = (r,c) => String((rows[r] && rows[r][c]) || '—').trim().split(/\s{2,}/).map(word => word.replace(/\s+/g,'')).join(' ');
+      const labelAt = (r,c) => {
+        const raw = String((rows[r] && rows[r][c]) || '—').trim();
+        const label = raw.split(/\s{2,}/).map(part => /^([A-Za-z]\s+)+[A-Za-z]$/.test(part.trim()) ? part.replace(/\s+/g,'') : part.replace(/\s+/g,' ').trim()).join(' ');
+        return label.replace(/GENERAL FUND YTD NET/i,'GENERAL FUND YEAR TO DATE NET').replace(/CHARITABLE SPEND YTD/i,'CHARITABLE SPEND YEAR TO DATE');
+      };
       const metricClass = (label,value) => {
+        if (/lifetime community impact|charitable spend/i.test(label)) return 'blue';
         if (/reconciliation/i.test(label)) return /out of balance/i.test(value) ? 'alert' : (/balanced/i.test(value) ? 'good' : '');
         const numeric = Number(String(value).replace(/[$,%▲▼,()]/g,'').trim()) * (String(value).includes('(') ? -1 : 1);
         return Number.isFinite(numeric) ? (numeric < 0 ? 'alert' : (numeric > 0 ? 'good' : '')) : '';
