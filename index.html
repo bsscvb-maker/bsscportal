@@ -715,7 +715,17 @@
     @media (max-width:1000px) { .market-insights-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .market-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .market-pipeline-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
     @media (max-width:650px) { .market-insights-grid,.market-dashboard-lower { grid-template-columns:1fr; } .market-kpi-grid { grid-template-columns:1fr 1fr; } .market-pipeline-grid { grid-template-columns:1fr 1fr; } .market-vendor-row { grid-template-columns:1fr; } .market-insight-row { grid-template-columns:minmax(0,1.2fr) minmax(42px,.7fr) 24px; gap:7px; } }
 
-  </style>
+      .market-period-control { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin:0 0 13px; padding:11px 13px; border:1px solid var(--line); border-radius:9px; background:#f5f7f9; }
+    .market-period-control label { font-size:.78rem; font-weight:900; color:#34465a; }
+    .market-period-control select { min-width:145px; padding:7px 10px; border:1px solid #aeb9c4; border-radius:7px; background:#fff; color:#111113; font:inherit; font-size:.84rem; }
+    .market-period-control span { color:var(--muted); font-size:.75rem; flex:1 1 320px; }
+    .market-pipeline-card { display:block; width:100%; font:inherit; text-align:left; cursor:pointer; transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease; }
+    .market-pipeline-card:hover { transform:translateY(-2px); box-shadow:0 5px 14px rgba(0,0,0,.10); border-color:#8a98a6; }
+    .market-pipeline-card:focus-visible { outline:3px solid #3276b1; outline-offset:2px; }
+    .market-pipeline-filter-banner { display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin:0 0 10px; padding:10px 12px; border:1px solid #bfd5e5; border-radius:8px; background:#edf6fb; color:#173c56; font-size:.84rem; }
+    .market-pipeline-filter-banner button { margin-left:auto; padding:6px 10px; border:1px solid #8aafc7; border-radius:6px; background:#fff; color:#173c56; font-weight:800; cursor:pointer; }
+    @media(max-width:700px) { .market-period-control { align-items:flex-start; flex-direction:column; } .market-period-control span { flex:auto; } }
+</style>
 </head>
 <body>
   <section class="auth-gate" id="authGate">
@@ -1629,6 +1639,31 @@
     let bftDashboardRows = [];
     const bftDashboardPendingEdits = new Map();
 
+    function applyMarketplaceOrdersPipelineFilter(stage) {
+      const target = document.getElementById('marketOrdersTable');
+      if (!target) return;
+      const labels = {payment:'Awaiting Payment',unsent:'Not Yet Submitted',vendor:'With Manufacturer',pickup:'Ready for Pickup',complete:'Handed Out'};
+      target.dataset.marketPipelineStage = stage || '';
+      let banner = target.querySelector('.market-pipeline-filter-banner');
+      if (stage) {
+        if (!banner) {
+          banner = document.createElement('div');
+          banner.className = 'market-pipeline-filter-banner';
+          const toolbar = target.querySelector('.table-tools');
+          target.insertBefore(banner, toolbar || target.firstChild);
+        }
+        banner.innerHTML = `Showing <strong>${esc(labels[stage] || 'matching')}</strong> orders <button type="button" data-clear-market-pipeline>Show all orders</button>`;
+        banner.querySelector('[data-clear-market-pipeline]')?.addEventListener('click', () => applyMarketplaceOrdersPipelineFilter(''));
+      } else if (banner) {
+        banner.remove();
+      }
+      const input = target.querySelector('[data-table-search]');
+      if (input) {
+        input.value = '';
+        input.dispatchEvent(new Event('input', {bubbles:true}));
+      }
+    }
+
     function renderDataTable(targetId, statusId, rows, headerRowIndex = 0, maxColumns = 16, editOptions = null) {
       const target = document.getElementById(targetId);
       const status = document.getElementById(statusId);
@@ -1684,7 +1719,14 @@
         const isMarketReady = isMarketplaceTable && labels.some(value => value === 'ready' || value === 'yes');
         const sourceRowNumber = item.sourceIndex + 1 + Number((editOptions && editOptions.rowOffset) || 0);
         const rowClasses = [isTotal ? 'total-row' : '', isSubtotal ? 'subtotal-row' : '', isBudgetSection ? 'budget-section-row' : '', isBudgetSubhead ? 'budget-subhead-row' : '', isGrandTotal ? 'grand-total-row' : '', isNeverVisited ? 'never-visited' : '', isPlanned ? 'planned-row' : '', isMarketPaid ? 'market-paid' : '', isMarketPending ? 'market-pending' : '', isMarketReady ? 'market-ready' : '', isTransaction2026 && editMode ? 'transaction-selectable' : ''].filter(Boolean).join(' ');
-        return `<tr class="${rowClasses}" ${isTransaction2026 ? `data-transaction-row="${sourceRowNumber}" data-source-index="${item.sourceIndex}"` : ''}>${isTransaction2026 ? `<td class="transaction-row-number">${sourceRowNumber}</td>` : ''}${finalHeaders.map((_, columnIndex) => {
+        const orderId = targetId === 'marketOrdersTable' ? String(item.row[1] || '') : '';
+        const isOrder = targetId === 'marketOrdersTable';
+        const paymentDue = /pending|cash due/i.test(String(item.row[12] || ''));
+        const sentToVendor = /^(true|yes|1)$/i.test(String(item.row[13] || '').trim());
+        const readyForPickup = /^(true|yes|1)$/i.test(String(item.row[14] || '').trim());
+        const orderHandedOut = /^(true|yes|1)$/i.test(String(item.row[15] || '').trim());
+        const orderStages = [paymentDue?'payment':'',(!sentToVendor&&!orderHandedOut)?'unsent':'',(sentToVendor&&!readyForPickup&&!orderHandedOut)?'vendor':'',(readyForPickup&&!orderHandedOut)?'pickup':'',orderHandedOut?'complete':''].filter(Boolean).join(' ');
+        return `<tr class="${rowClasses}" ${isTransaction2026 ? `data-transaction-row="${sourceRowNumber}" data-source-index="${item.sourceIndex}"` : ''} ${isOrder ? `data-market-stages="${orderStages}" data-market-order-id="${esc(orderId)}"` : ''}>${isTransaction2026 ? `<td class="transaction-row-number">${sourceRowNumber}</td>` : ''}${finalHeaders.map((_, columnIndex) => {
           const formulaValue = editOptions && editOptions.formulaRows && editOptions.formulaRows[item.sourceIndex] ? String(editOptions.formulaRows[item.sourceIndex][columnIndex] || '') : '';
           const editable = editMode && !isTransaction2026 && !formulaValue.startsWith('=');
           let shownValue = item.row[columnIndex] || '';
@@ -1712,14 +1754,18 @@
       const searchCount = target.querySelector('[data-search-count]');
       if (searchInput) searchInput.addEventListener('input', () => {
         const query = searchInput.value.trim().toLowerCase();
+        const pipelineStage = targetId === 'marketOrdersTable' ? (target.dataset.marketPipelineStage || '') : '';
+        const pipelineLabel = ({payment:'Awaiting Payment',unsent:'Not Yet Submitted',vendor:'With Manufacturer',pickup:'Ready for Pickup',complete:'Handed Out'})[pipelineStage] || '';
         const bodyRows = [...target.querySelectorAll('tbody tr')];
         let visible = 0;
         bodyRows.forEach(row => {
-          const matches = !query || row.textContent.toLowerCase().includes(query);
+          const rowStages = (row.dataset.marketStages || '').split(/\\s+/);
+          const inStage = !pipelineStage || rowStages.includes(pipelineStage);
+          const matches = inStage && (!query || row.textContent.toLowerCase().includes(query));
           row.hidden = !matches;
           if (matches) visible += 1;
         });
-        searchCount.textContent = query ? `${visible} matching row${visible === 1 ? '' : 's'} shown` : '';
+        searchCount.textContent = pipelineStage ? `${visible} ${pipelineLabel} order${visible === 1 ? '' : 's'} shown` : (query ? `${visible} matching row${visible === 1 ? '' : 's'} shown` : '');
       });
       target.querySelectorAll('[data-edit-cell="true"]').forEach(cell => cell.addEventListener('input', () => {
         const value = cell.textContent.trim();
@@ -1742,6 +1788,7 @@
         ticketPriceField.classList.add('pending-change');
         target.querySelectorAll('td[data-edit-cell="true"]').forEach(cell => recalculateTicketRow(targetId, cell));
       });
+      if (targetId === 'marketOrdersTable' && target.dataset.marketPipelineStage) applyMarketplaceOrdersPipelineFilter(target.dataset.marketPipelineStage);
     }
 
     function openNewTransactionForm(targetId, headers) {
@@ -2170,12 +2217,12 @@
       return '';
     }
 
-    function renderMarketplaceDashboard(rows, ordersRows = [], salesRows = [], financialRows = []) {
+    function renderMarketplaceDashboard(rows, ordersRows = [], salesRows = [], financialRows = [], period = 'all') {
   const at=(r,c)=>String((rows[r]&&rows[r][c])||'');
   const money=v=>Number(String(v||'').replace(/[^0-9.-]/g,''))||0;
   const cash=v=>`$${v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
-  const collected=money(at(6,6)), profit=money(at(6,11)), vendorOrder=money(at(12,1)), vendorMinimum=money(at(12,6));
-  const margin=collected?Math.round(profit/collected*100):0, progress=vendorMinimum?Math.min(100,Math.round(vendorOrder/vendorMinimum*100)):0;
+  const vendorOrder=money(at(12,1)), vendorMinimum=money(at(12,6));
+  const progress=vendorMinimum?Math.min(100,Math.round(vendorOrder/vendorMinimum*100)):0;
   const vendorNeeded=Math.max(0,vendorMinimum-vendorOrder), vendorReady=vendorMinimum>0&&vendorNeeded<=0;
   const orders=ordersRows.slice(1).filter(r=>r[1]&&r[4]);
   const yes=v=>/^(true|yes|1)$/i.test(String(v||'').trim());
@@ -2185,17 +2232,47 @@
   const withVendor=orders.filter(r=>yes(r[13])&&!yes(r[14])&&!yes(r[15]));
   const pickup=orders.filter(r=>yes(r[14])&&!yes(r[15]));
   const handed=orders.filter(r=>yes(r[15]));
+  const parseDate=value=>{
+    const raw=String(value||'').trim();
+    if(!raw)return null;
+    const parsed=new Date(raw);
+    if(!Number.isNaN(parsed.getTime()))return parsed;
+    const match=raw.match(/^(\\d{1,2})[/-](\\d{1,2})[/-](\\d{2,4})/);
+    if(!match)return null;
+    const year=Number(match[3].length===2?'20'+match[3]:match[3]);
+    return new Date(year,Number(match[1])-1,Number(match[2]));
+  };
+  const today=new Date(); today.setHours(23,59,59,999);
+  const startDate=new Date(today); startDate.setHours(0,0,0,0);
+  if(period==='year')startDate.setMonth(0,1);
+  if(period==='month')startDate.setDate(1);
+  if(period==='90')startDate.setDate(startDate.getDate()-89);
+  const isInPeriod=order=>{
+    if(period==='all')return true;
+    const date=parseDate(order[0]);
+    return Boolean(date&&date>=startDate&&date<=today);
+  };
+  const periodOrders=orders.filter(isInPeriod);
+  const periodPaid=periodOrders.filter(r=>/^paid/i.test(String(r[12]||'')));
+  const paidIds=new Set(periodPaid.map(r=>String(r[1]).trim()));
+  const collected=periodPaid.reduce((sum,r)=>sum+money(r[11]),0);
+  const merchandise=periodPaid.reduce((sum,r)=>sum+money(r[9]),0);
   const financialOrders=financialRows.slice(5).filter(r=>r[0]&&r[1]);
+  const financeById=new Map(financialOrders.map(r=>[String(r[0]).trim(),r]));
+  const profit=periodPaid.reduce((sum,r)=>sum+money((financeById.get(String(r[1]).trim())||[])[10]),0);
+  const margin=collected?Math.round(profit/collected*100):0;
+  const sales= salesRows.slice(6).filter(r=>paidIds.has(String(r[1]||'').trim()));
+  const pieceCount=sales.reduce((sum,r)=>sum+(Number(String(r[3]||'').replace(/,/g,''))||0),0);
   const pendingFinance=financialOrders.filter(r=>/pending|cash due|unpaid/i.test(String(r[2]||''))||/unpaid/i.test(String(r[12]||''))).length;
   const reconciledFinance=financialOrders.filter(r=>/^ok$/i.test(String(r[12]||''))&&money(r[11])===0).length;
   const financeReview=financialOrders.filter(r=>(!/^ok$/i.test(String(r[12]||''))&&!/unpaid/i.test(String(r[12]||'')))||(/^ok$/i.test(String(r[12]||''))&&money(r[11])!==0)).length;
   const owedLines=due.map(r=>String(r[4])+' — '+cash(money(r[11])));
   const productCounts=new Map(), colorCounts=new Map();
-  for(const r of salesRows.slice(6)){
+  for(const r of sales){
     const item=String(r[2]||'').trim(),qty=Number(String(r[3]||'').replace(/,/g,''))||0;
     if(!item||qty<=0)continue;
-    const variant=item.match(/\(([^()]*)\)\s*$/);
-    const product=item.replace(/\s*\([^()]*\)\s*$/,'').trim();
+    const variant=item.match(/\\(([^()]*)\\)\\s*$/);
+    const product=item.replace(/\\s*\\([^()]*\\)\\s*$/,'').trim();
     productCounts.set(product,(productCounts.get(product)||0)+qty);
     const details=variant?variant[1].split(',').map(value=>value.trim()):[];
     if(details.length>1){const color=details.slice(1).join(', ');colorCounts.set(color,(colorCounts.get(color)||0)+qty);}
@@ -2211,20 +2288,22 @@
   };
   const productHtml=makeInsightList(productCounts),colorHtml=makeInsightList(colorCounts,true);
   const stages=[['Awaiting Payment',due.length,'Cash due at meeting','payment'],['Not Yet Submitted',unsent.length,'Orders not sent to manufacturer','unsent'],['With Manufacturer',withVendor.length,'Submitted, not ready for pickup','vendor'],['Ready for Pickup',pickup.length,'Ready, not handed out','pickup'],['Handed Out',handed.length,'Completed customer orders','complete']];
-  const stagesHtml=stages.map(([name,count,note,tone])=>`<article class="market-pipeline-card ${tone}"><span>${esc(name)}</span><strong>${count}</strong><small>${esc(note)}</small></article>`).join('');
+  const stagesHtml=stages.map(([name,count,note,tone])=>`<button type="button" class="market-pipeline-card ${tone}" data-market-pipeline="${tone}" aria-label="Show ${count} ${esc(name)} orders"><span>${esc(name)}</span><strong>${count}</strong><small>${esc(note)}</small></button>`).join('');
   const kpi=(label,value,note,cls='')=>`<div class="market-kpi ${cls}"><span>${esc(label)}</span><strong>${esc(value||'—')}</strong><small>${esc(note)}</small></div>`;
+  const periodLabel={all:'All time',year:'This year',90:'Last 90 days',month:'This month'}[period]||'All time';
   document.getElementById('marketDashboard').innerHTML=`<div class="market-dashboard">
     <div class="market-hero"><h2>${esc(at(0,1)||'BSSC / MARKETPLACE PERFORMANCE')}</h2><p>${esc(at(2,1)||'BOARD REPORT • Live marketplace activity • Revenue and profit reflect paid orders only')}</p></div>
     <div class="market-executive">
+      <div class="market-period-control"><label for="marketDashboardPeriod">Sales period</label><select id="marketDashboardPeriod"><option value="all" ${period==='all'?'selected':''}>All time</option><option value="year" ${period==='year'?'selected':''}>This year</option><option value="90" ${period==='90'?'selected':''}>Last 90 days</option><option value="month" ${period==='month'?'selected':''}>This month</option></select><span>Sales totals and rankings follow this period. Outstanding cash, vendor readiness, and order pipeline stay current.</span></div>
       <div class="market-kpi-grid">
-        ${kpi('Total Collected',at(6,6),'Money received from paid orders','revenue')}
-        ${kpi('Merchandise Collected',at(18,1),'Product sales before tax and fees','revenue')}
-        ${kpi('Realized Profit',at(6,11),'Profit earned on collected sales','profit')}
+        ${kpi('Total Collected',cash(collected),'Money received from paid orders','revenue')}
+        ${kpi('Merchandise Collected',cash(merchandise),'Product sales before tax and fees','revenue')}
+        ${kpi('Realized Profit',cash(profit),'Profit earned on collected sales','profit')}
         ${kpi('Profit Margin',`${margin}%`,'Realized profit divided by collected revenue','profit')}
         ${kpi('Cash to Collect',at(6,16)||'$0.00','Outstanding cash payments','cash')}
-        ${kpi('Total Orders',at(6,1),'Orders currently recorded')}
-        ${kpi('Pieces Sold',at(18,11),'Total merchandise pieces ordered')}
-        ${kpi('Average Paid Order',paid.length?cash(collected/paid.length):'$0.00',`${paid.length} paid orders`)}
+        ${kpi('Total Orders',String(periodOrders.length),'Orders in selected period')}
+        ${kpi('Pieces Sold',String(pieceCount),'Merchandise pieces from paid orders')}
+        ${kpi('Average Paid Order',periodPaid.length?cash(collected/periodPaid.length):'$0.00',`${periodPaid.length} paid orders`)}
       </div>
       <div class="market-dashboard-lower">
         <section class="market-action-card"><h3>Vendor Order Readiness</h3><div class="market-action-body">
@@ -2246,6 +2325,13 @@
       </div>
     </div>
   </div>`;
+  const periodSelect=document.getElementById('marketDashboardPeriod');
+  if(periodSelect)periodSelect.addEventListener('change',()=>renderMarketplaceDashboard(rows,ordersRows,salesRows,financialRows,periodSelect.value));
+  document.querySelectorAll('#marketDashboard [data-market-pipeline]').forEach(button=>button.addEventListener('click',()=>{
+    document.querySelector('[data-market-tab="orders"]')?.click();
+    applyMarketplaceOrdersPipelineFilter(button.dataset.marketPipeline);
+    document.getElementById('marketOrdersTable')?.scrollIntoView({behavior:'smooth',block:'start'});
+  }));
 }
 
     function renderMarketSummary(targetId, cards) {
