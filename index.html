@@ -284,7 +284,27 @@
     .marketplace-table tr.market-paid td { background:#e5f6e9 !important; }
     .marketplace-table tr.market-pending td { background:#fff0f2 !important; }
     .marketplace-table tr.market-ready td { box-shadow:inset 4px 0 #e7a600; }
-    @media (max-width: 900px) { .market-metrics,.market-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .market-dashboard-lower,.pricing-config,.market-subsummary { grid-template-columns:1fr; } }
+    .admin-workspace { display:none; }
+    .admin-workspace.active { display:block; }
+    .admin-overview { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:18px; }
+    .admin-stat { padding:16px; border:1px solid var(--line); border-top:5px solid #111113; border-radius:10px; background:#fff; }
+    .admin-stat.good { border-top-color:#19d866; }
+    .admin-stat span { display:block; color:var(--muted); font-size:.74rem; font-weight:900; letter-spacing:.04em; text-transform:uppercase; }
+    .admin-stat strong { display:block; margin-top:6px; color:#111113; font-size:1.35rem; }
+    .admin-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    .admin-card { overflow:hidden; border:1px solid #252528; border-radius:10px; background:#fff; }
+    .admin-card h2 { margin:0; padding:11px 14px; color:#fff; background:#111113; border-bottom:3px solid var(--gold); font-size:1rem; }
+    .admin-card-body { padding:14px; }
+    .admin-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:center; padding:11px 0; border-bottom:1px solid var(--line); }
+    .admin-row:last-child { border-bottom:0; }
+    .admin-row strong { display:block; }
+    .admin-row small { display:block; margin-top:3px; color:var(--muted); }
+    .admin-badge { padding:5px 9px; border-radius:999px; color:#fff; background:#68707a; font-size:.7rem; font-weight:900; text-transform:uppercase; }
+    .admin-badge.live { color:#031508; background:#19d866; box-shadow:0 0 10px rgba(25,216,102,.35); }
+    .admin-badge.error { background:var(--gold); }
+    .admin-link { display:inline-block; padding:7px 10px; border-radius:7px; color:#fff; background:var(--gold); font-size:.76rem; font-weight:900; text-decoration:none; }
+    .admin-note { padding:12px; border-left:4px solid var(--gold); border-radius:7px; color:#5f101d; background:#fff0f2; font-size:.85rem; line-height:1.45; }
+    @media (max-width: 900px) { .market-metrics,.market-kpi-grid,.admin-overview { grid-template-columns:repeat(2,minmax(0,1fr)); } .market-dashboard-lower,.pricing-config,.market-subsummary,.admin-grid { grid-template-columns:1fr; } }
     @media (max-width: 950px) { .bft-dashboard-grid { grid-template-columns: 1fr; } }
     .edit-help { margin: -5px 0 14px; padding: 10px 12px; border-left: 4px solid var(--gold); background: #fff1f3; color: #6b0d1c; border-radius: 7px; font-size: .86rem; font-weight: 750; }
     .tracking-table { width: max-content; min-width: 2550px; table-layout: fixed; }
@@ -312,6 +332,7 @@
       .module-grid, .task-grid { grid-template-columns: 1fr; }
       .bike-night-metrics, .bike-night-panels { grid-template-columns: 1fr; }
       .market-kpi-grid, .market-vendor-row { grid-template-columns: 1fr; }
+      .admin-overview { grid-template-columns:1fr; }
       .market-executive { padding: 14px; }
       .sponsor-summary, .sponsor-panels { grid-template-columns: 1fr; }
       .module { min-height: 210px; }
@@ -345,7 +366,7 @@
         <button data-module="sponsors"><span class="nav-icon">S</span>Sponsorships</button>
       </nav>
       <div class="nav-label">System</div>
-      <nav class="nav"><button data-module="admin"><span class="nav-icon">A</span>Administration</button></nav>
+      <nav class="nav"><button data-module="admin"><span class="nav-icon">A</span>Portal Control</button></nav>
       <div class="sidebar-footer">Private BSSC workspace<br>Phase 1: portal foundation</div>
     </aside>
 
@@ -366,7 +387,7 @@
             <article class="module" style="--accent:#cf1235;--tint:#fff0f3"><div class="module-top"><div class="module-identity"><div class="module-icon">N</div><h2>Bike Nights</h2></div><div class="status live-status">Live</div></div><p>Monthly visit planning, club scorecards, attendance history, and upcoming bike nights.</p><footer><span class="source">3 live workbook sections</span><button class="open-btn" data-open="bikenights">Open module</button></footer></article>
             <article class="module" style="--accent:#8c5bb5;--tint:#f2eafb"><div class="module-top"><div class="module-identity"><div class="module-icon">O</div><h2>Marketplace</h2></div><div class="status live-status">Live</div></div><p>Orders, fulfillment, pricing, fees, manufacturers, sales history, and merchandise reporting.</p><footer><span class="source">8 live workbook sections</span><button class="open-btn" data-open="marketplace">Open module</button></footer></article>
             <article class="module" style="--accent:#b64e50;--tint:#fbeaec"><div class="module-top"><div class="module-identity"><div class="module-icon">S</div><h2>Sponsorships</h2></div><div class="status">Pilot</div></div><p>Current and prospective sponsors, follow-up status, documentation requests, and sponsor reporting.</p><footer><span class="source">4 workbook sections mapped</span><button class="open-btn" data-open="sponsors">Open module</button></footer></article>
-            <article class="module" style="--accent:#52606d;--tint:#edf1f4"><div class="module-top"><div class="module-identity"><div class="module-icon">A</div><h2>Administration</h2></div><div class="status">Foundation</div></div><p>User access, shared lists, permissions, backups, exports, and the system change history.</p><footer><span class="source">Built as modules are activated</span><button class="open-btn" data-open="admin">View layout</button></footer></article>
+            <article class="module" style="--accent:#52606d;--tint:#edf1f4"><div class="module-top"><div class="module-identity"><div class="module-icon">A</div><h2>Portal Control Center</h2></div><div class="status live-status">Live</div></div><p>System health, spreadsheet connections, Google access, source workbooks, and portal information.</p><footer><span class="source">Live operational controls</span><button class="open-btn" data-open="admin">Open controls</button></footer></article>
           </div>
 
           <div class="panel">
@@ -442,6 +463,39 @@
             <section class="sponsor-panel" data-market-panel="pricing"><div class="coming-soon"><h2>Pricing &amp; Fees</h2><div class="data-status" id="marketPricingStatus">Sign in to load pricing and fees.</div><div id="marketPricingConfig"></div><div id="marketPricingTable"></div></div></section>
             <section class="sponsor-panel" data-market-panel="history"><div class="coming-soon"><div class="data-status" id="marketHistoryStatus">Sign in to load sales history.</div><div id="marketHistorySummary"></div><div id="marketHistoryTable"></div></div></section>
             <section class="sponsor-panel" data-market-panel="reference"><div class="coming-soon"><h2>Merchandise Pricing Reference</h2><div class="data-status" id="marketReferenceStatus">Sign in to load merchandise pricing.</div><div id="marketReferenceSummary"></div><div id="marketReferenceTable"></div></div></section>
+          </div><div class="admin-workspace" id="adminWorkspace">
+            <div class="admin-overview">
+              <div class="admin-stat good"><span>Live Modules</span><strong>4</strong></div>
+              <div class="admin-stat"><span>Planned Modules</span><strong>2</strong></div>
+              <div class="admin-stat good"><span>Google Access</span><strong>Authorized</strong></div>
+              <div class="admin-stat"><span>Portal Release</span><strong>09/23/2026</strong></div>
+            </div>
+            <div class="admin-grid">
+              <section class="admin-card"><h2>System &amp; Spreadsheet Status</h2><div class="admin-card-body" id="adminSystemStatus">
+                <div class="admin-row"><div><strong>Bikes for Tykes</strong><small>Checking Google Sheets connection…</small></div><span class="admin-badge">Checking</span></div>
+                <div class="admin-row"><div><strong>Bike Nights</strong><small>Checking Google Sheets connection…</small></div><span class="admin-badge">Checking</span></div>
+                <div class="admin-row"><div><strong>Marketplace</strong><small>Checking Google Sheets connection…</small></div><span class="admin-badge">Checking</span></div>
+                <div class="admin-row"><div><strong>Sponsorships</strong><small>Checking Google Sheets connection…</small></div><span class="admin-badge">Checking</span></div>
+              </div></section>
+              <section class="admin-card"><h2>Access &amp; Security</h2><div class="admin-card-body">
+                <div class="admin-note">Google controls portal sign-in and account access. This screen reports that security status; it does not pretend to add or remove Google users.</div>
+                <div class="admin-row"><div><strong>Authentication</strong><small>Google OAuth sign-in required</small></div><span class="admin-badge live">On</span></div>
+                <div class="admin-row"><div><strong>Session Protection</strong><small>Automatic sign-out after 60 minutes of inactivity</small></div><span class="admin-badge live">On</span></div>
+                <div class="admin-row"><div><strong>Google Auth Settings</strong><small>Manage authorized audience and OAuth configuration</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://console.cloud.google.com/auth/overview?project=bssc-management-portal">Open</a></div>
+              </div></section>
+              <section class="admin-card"><h2>Source Workbooks</h2><div class="admin-card-body">
+                <div class="admin-row"><div><strong>Bikes for Tykes</strong><small>6 connected workbook sections</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/1cFhb2-Um1rBKj81dFeNWLSfKxuNfc768AFLbcjXdudY/edit">Open Sheet</a></div>
+                <div class="admin-row"><div><strong>Bike Nights</strong><small>3 connected workbook sections</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/1rXMHIVq52X3kqj_ICz7g8oZoD_eXR_0qHP7bZ9jhU0k/edit">Open Sheet</a></div>
+                <div class="admin-row"><div><strong>Marketplace</strong><small>8 connected workbook sections</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/1ByYajlmaWea7W1mUmKENDti2QEa04GsQCYsArakpqbQ/edit">Open Sheet</a></div>
+                <div class="admin-row"><div><strong>Sponsorships</strong><small>Connected sponsorship records</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/14ZFdT1sA04z6Hp-iVaX2uRNjJq-JBoxmY1mvfL9X-Bk/edit">Open Sheet</a></div>
+              </div></section>
+              <section class="admin-card"><h2>Portal Information</h2><div class="admin-card-body">
+                <div class="admin-row"><div><strong>Hosting</strong><small>GitHub Pages</small></div><span class="admin-badge live">Live</span></div>
+                <div class="admin-row"><div><strong>Original Data</strong><small>Google Sheets remain the system of record and backup</small></div><span class="admin-badge live">Protected</span></div>
+                <div class="admin-row"><div><strong>Editing</strong><small>Portal edits save directly to connected Google Sheets</small></div><span class="admin-badge live">Enabled</span></div>
+                <div class="admin-row"><div><strong>Search</strong><small>Available above portal data tables</small></div><span class="admin-badge live">Enabled</span></div>
+              </div></section>
+            </div>
           </div></div></div>
         </section>
       </div>
@@ -1147,6 +1201,24 @@
       } else document.getElementById('marketReferenceStatus').textContent = 'Merchandise Pricing Reference could not be loaded from Google Sheets.';
     }
 
+    async function loadAdminSystemStatus() {
+      const target = document.getElementById('adminSystemStatus');
+      if (!target) return;
+      const connections = [
+        ['Bikes for Tykes','6 connected workbook sections',BFT_SPREADSHEET_ID,"'DashBoard'!A1:A1"],
+        ['Bike Nights','3 connected workbook sections',BIKE_NIGHTS_SPREADSHEET_ID,"'Dashboard'!A1:A1"],
+        ['Marketplace','8 connected workbook sections',MARKETPLACE_SPREADSHEET_ID,"'Dashboard'!A1:A1"],
+        ['Sponsorships','Connected sponsorship records',SPREADSHEET_ID,"'Sponsors - Current'!A1:A1"]
+      ];
+      target.innerHTML = connections.map(([name,detail]) => `<div class="admin-row"><div><strong>${esc(name)}</strong><small>${esc(detail)} · Checking connection…</small></div><span class="admin-badge">Checking</span></div>`).join('');
+      if (!accessToken) return;
+      const results = await Promise.allSettled(connections.map(([, ,id,range]) => getSheetValues(range,id)));
+      target.innerHTML = connections.map(([name,detail],index) => {
+        const connected = results[index].status === 'fulfilled';
+        return `<div class="admin-row"><div><strong>${esc(name)}</strong><small>${esc(detail)} · ${connected ? 'Google Sheets connection verified' : 'Connection needs attention'}</small></div><span class="admin-badge ${connected ? 'live' : 'error'}">${connected ? 'Connected' : 'Error'}</span></div>`;
+      }).join('');
+    }
+
     initializeGoogleAuth();
     const modules = {
       membership: {title:'Membership', description:'The central record for members, history, participation, and annual requirements.', tasks:['Member directory','Renewals and dues','Attendance','Waivers and vetting','Officers and honors','History and anniversaries']},
@@ -1155,7 +1227,7 @@
       bikenights: {title:'Bike Nights', description:'Plan monthly club visits, track attendance, and keep the 2026 bike-night schedule current.', tasks:['Dashboard','Club Scorecard','Raw Data - Bike Nights']},
       marketplace: {title:'Marketplace', description:'Order-to-fulfillment management with pricing, fees, and sales reporting.', tasks:['Order entry','Fulfillment queue','Pricing and fees','Manufacturer summary','Sales history','Finance synchronization']},
       sponsors: {title:'Sponsorships', description:'Manage active sponsors, prospects, outreach, and documentation requests.', tasks:['Sponsor dashboard','Current sponsors','Prospective sponsors','Contact history','Documents requested','Renewal reporting']},
-      admin: {title:'Administration', description:'Control access, shared lists, backups, and system settings.', tasks:['Users and access','Roles and permissions','Shared dropdown lists','Backups','Data exports','Change history']}
+      admin: {title:'Portal Control Center', description:'Monitor system health, spreadsheet connections, access protection, and portal configuration.', tasks:[]}
     };
     const dashboard = document.getElementById('dashboard');
     const detail = document.getElementById('detail');
@@ -1169,6 +1241,7 @@
       const bftWorkspace = document.getElementById('bftWorkspace');
       const bikeNightsWorkspace = document.getElementById('bikeNightsWorkspace');
       const marketplaceWorkspace = document.getElementById('marketplaceWorkspace');
+      const adminWorkspace = document.getElementById('adminWorkspace');
       const taskGrid = document.getElementById('detailTasks');
       if (key === 'sponsors') {
         taskGrid.innerHTML = '';
@@ -1176,29 +1249,42 @@
         bftWorkspace.classList.remove('active');
         bikeNightsWorkspace.classList.remove('active');
         marketplaceWorkspace.classList.remove('active');
+        adminWorkspace.classList.remove('active');
       } else if (key === 'bft') {
         taskGrid.innerHTML = '';
         sponsorWorkspace.classList.remove('active');
         bftWorkspace.classList.add('active');
         bikeNightsWorkspace.classList.remove('active');
         marketplaceWorkspace.classList.remove('active');
+        adminWorkspace.classList.remove('active');
       } else if (key === 'bikenights') {
         taskGrid.innerHTML = '';
         sponsorWorkspace.classList.remove('active');
         bftWorkspace.classList.remove('active');
         bikeNightsWorkspace.classList.add('active');
         marketplaceWorkspace.classList.remove('active');
+        adminWorkspace.classList.remove('active');
       } else if (key === 'marketplace') {
         taskGrid.innerHTML = '';
         sponsorWorkspace.classList.remove('active');
         bftWorkspace.classList.remove('active');
         bikeNightsWorkspace.classList.remove('active');
         marketplaceWorkspace.classList.add('active');
+        adminWorkspace.classList.remove('active');
+      } else if (key === 'admin') {
+        taskGrid.innerHTML = '';
+        sponsorWorkspace.classList.remove('active');
+        bftWorkspace.classList.remove('active');
+        bikeNightsWorkspace.classList.remove('active');
+        marketplaceWorkspace.classList.remove('active');
+        adminWorkspace.classList.add('active');
+        loadAdminSystemStatus();
       } else {
         sponsorWorkspace.classList.remove('active');
         bftWorkspace.classList.remove('active');
         bikeNightsWorkspace.classList.remove('active');
         marketplaceWorkspace.classList.remove('active');
+        adminWorkspace.classList.remove('active');
         taskGrid.innerHTML = item.tasks.map((task, i) => `<div class="task"><strong>${task}</strong><span>${i === 0 ? 'First working screen will be added during this module\'s build phase.' : 'Scheduled for a later build phase.'}</span></div>`).join('');
       }
       dashboard.classList.add('hidden'); detail.classList.add('active'); setActive(key); window.scrollTo({top:0,behavior:'smooth'}); sidebar.classList.remove('open');
