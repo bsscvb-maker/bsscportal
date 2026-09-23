@@ -87,6 +87,10 @@
     .detail-head { display:flex; align-items:center; justify-content:space-between; gap:28px; padding: 26px; color: white; background: linear-gradient(110deg, #050506, #1d1d20); border-bottom: 5px solid var(--gold); }
     .detail-head h1 { color: white; font-size: 1.8rem; }
     .detail-head p { margin: 8px 0 0; color: #d4d4d7; }
+    .finance-admin-header { display:none; align-items:center; justify-content:center; margin-left:auto; padding:12px 22px; border:2px solid #cf1235; border-radius:10px; color:#fff; background:#cf1235; box-shadow:0 7px 18px rgba(207,18,53,.28); font:900 .95rem/1 Arial,sans-serif; cursor:pointer; transition:background .16s ease, border-color .16s ease, transform .16s ease; }
+    .finance-admin-header.visible { display:inline-flex; }
+    .finance-admin-header:hover { background:#e21640; border-color:#e21640; transform:translateY(-1px); }
+    .finance-admin-header:focus-visible { outline:3px solid #fff; outline-offset:3px; }
     .portal-health { display:none; flex:0 0 300px; min-height:82px; align-items:center; gap:14px; padding:14px 18px; border:2px solid transparent; border-radius:14px; color:#fff; box-shadow:0 8px 24px rgba(0,0,0,.28); }
     .portal-health.visible { display:flex; }
     .portal-health-dot { flex:0 0 18px; width:18px; height:18px; border:4px solid rgba(255,255,255,.72); border-radius:50%; box-shadow:0 0 0 5px rgba(255,255,255,.12); }
@@ -199,6 +203,10 @@
     .transaction-field label { color:#111113; font-weight:850; }
     .transaction-field input,.transaction-field select { width:100%; min-height:42px; padding:9px 11px; border:1px solid #aeb4bb; border-radius:8px; background:#fff; font:inherit; }
     .transaction-field input:focus,.transaction-field select:focus { outline:2px solid var(--gold); border-color:var(--gold); }
+    .transaction-consistency { display:none; margin:4px 0 0 234px; padding:11px 13px; border-left:4px solid #d99a00; border-radius:7px; color:#533b00; background:#fff4c7; font-size:.88rem; line-height:1.45; }
+    .transaction-consistency.visible { display:block; }
+    .transaction-consistency.good { border-left-color:#0b9b50; color:#075c2d; background:#e2f7eb; }
+    .transaction-consistency button { margin-top:8px; border:0; border-radius:6px; padding:7px 10px; color:#fff; background:#111113; font-weight:850; cursor:pointer; }
     .transaction-entry-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:6px; }
     .transaction-entry-actions button { border:0; border-radius:8px; padding:10px 14px; font-weight:900; cursor:pointer; }
     .transaction-cancel { color:#202226; background:#e2e5e8; }
@@ -206,7 +214,6 @@
     .variance-good { color:#075c2d !important; background:#dff6e8 !important; font-weight:900; }
     .variance-over { color:#8c0c20 !important; background:#ffe1e6 !important; font-weight:900; }
     .finance-user-hidden { display:none !important; }
-    .hidden-tabs-toggle { margin-left:auto; border:2px solid #111113 !important; color:#fff !important; background:#111113 !important; }
     .finance-tab-manager { margin:0 0 16px; padding:16px; border:2px solid #111113; border-top:5px solid var(--gold); border-radius:11px; background:#f8f9fa; }
     .finance-tab-manager-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px; }
     .finance-tab-manager-head h3 { margin:0; color:#111113; font-size:1.05rem; }
@@ -448,6 +455,7 @@
       .admin-overview { grid-template-columns:1fr; }
       .finance-dashboard-grid { grid-template-columns:1fr; }
       .control-grid,.activity-results,.bft-finance-summary { grid-template-columns:1fr; }
+      .transaction-consistency { margin-left:0; }
       .activity-controls { grid-template-columns:1fr; }
       .market-executive { padding: 14px; }
       .sponsor-summary, .sponsor-panels { grid-template-columns: 1fr; }
@@ -518,7 +526,7 @@
 
         <section class="detail-view" id="detail">
           <button class="back" id="back">← Back to portal home</button>
-          <div class="detail-shell"><div class="detail-head"><div><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><div class="portal-health checking" id="portalHealth" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong id="portalHealthStatus">Checking</strong><small id="portalHealthDetail">Verifying connected systems…</small></div></div></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div><div class="sponsor-workspace" id="sponsorWorkspace">
+          <div class="detail-shell"><div class="detail-head"><div><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><button class="finance-admin-header" id="financeAdminToggle" type="button">Admin</button><div class="portal-health checking" id="portalHealth" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong id="portalHealthStatus">Checking</strong><small id="portalHealthDetail">Verifying connected systems…</small></div></div></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div><div class="sponsor-workspace" id="sponsorWorkspace">
             <div class="sponsor-tabs" aria-label="Sponsorship sections">
               <button class="sponsor-tab active" data-sponsor-tab="dashboard">Sponsor Dashboard</button>
               <button class="sponsor-tab" data-sponsor-tab="current">Current Sponsors</button>
@@ -601,7 +609,6 @@
               <button class="sponsor-tab" data-finance-tab="events">Events &amp; Fundraising</button>
               <button class="sponsor-tab" data-finance-tab="charities">Charities</button>
               <button class="sponsor-tab" data-finance-tab="eventbudgets">Event Budgets</button>
-              <button class="sponsor-tab hidden-tabs-toggle" id="financeAdminToggle" type="button">Admin</button>
             </div>
             <div class="finance-note">Finance is connected to the current BSSC Finance System 2026 workbook. Calculated cells are protected. Tally 2026 remains a read-only transfer log while its separate automation is being preserved.</div>
             <section class="sponsor-panel active" data-finance-panel="dashboard"><div class="data-status" id="financeDashboardStatus">Loading financial dashboard…</div><div id="financeDashboard"></div></section>
@@ -995,6 +1002,7 @@
     const tableRenderCache = {};
     const tablePendingEdits = {};
     let financeTransactionOptions = {};
+    let financePayeeHistory = new Map();
     let bftDashboardEditMode = false;
     let bftDashboardRows = [];
     const bftDashboardPendingEdits = new Map();
@@ -1134,14 +1142,52 @@
             const control = isSuggestedText ? `<input id="transactionField${field.column}" name="column${field.column}" type="text" list="transactionSuggestions${field.column}" value="" autocomplete="off" placeholder="Type a description or choose a previous one"><datalist id="transactionSuggestions${field.column}">${options.map(option => `<option value="${esc(option)}"></option>`).join('')}</datalist>` : options.length ? `<select id="transactionField${field.column}" name="column${field.column}" required><option value="">Select ${esc(field.header)}…</option>${options.map(option => `<option value="${esc(option)}">${esc(option)}</option>`).join('')}</select>` : `<input id="transactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} value="${esc(value)}" autocomplete="off">`;
             return `<div class="transaction-field"><label for="transactionField${field.column}">${esc(field.header)}</label>${control}</div>`;
           }).join('')}
+          <div class="transaction-consistency" id="transactionConsistency" role="status" aria-live="polite"></div>
           <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Add Transaction</button></div>
         </form>`;
       const tools = target.querySelector('.table-tools');
       tools.insertAdjacentElement('afterend', panel);
       panel.querySelector('.transaction-entry-close').addEventListener('click', () => panel.remove());
       panel.querySelector('.transaction-cancel').addEventListener('click', () => panel.remove());
+      const fieldByName = Object.fromEntries(fields.map(field => [field.header.toLowerCase(),field]));
+      const guidedFields = ['fund','activity','category','subcategory'];
+      const payeeField = fieldByName['payee/payer'];
+      const historyNotice = panel.querySelector('#transactionConsistency');
+      const currentValue = name => {
+        const field = fieldByName[name];
+        const control = field ? panel.querySelector(`[name="column${field.column}"]`) : null;
+        return control ? control.value.trim() : '';
+      };
+      const setValue = (name,value) => {
+        const field = fieldByName[name];
+        const control = field ? panel.querySelector(`[name="column${field.column}"]`) : null;
+        if (control && [...control.options || []].some(option => option.value === value)) control.value = value;
+      };
+      const getPayeeGuidance = () => financePayeeHistory.get(currentValue('payee/payer').toLowerCase()) || null;
+      const showPayeeGuidance = (fillBlanks = false) => {
+        const guidance = getPayeeGuidance();
+        historyNotice.className = 'transaction-consistency';
+        historyNotice.innerHTML = '';
+        if (!guidance) return null;
+        if (fillBlanks) guidedFields.forEach(name => { if (!currentValue(name) && guidance[name]) setValue(name,guidance[name]); });
+        const differences = guidedFields.filter(name => guidance[name] && currentValue(name) && currentValue(name) !== guidance[name]);
+        const summary = guidedFields.filter(name => guidance[name]).map(name => `${name.replace(/^./,letter => letter.toUpperCase())}: ${guidance[name]}`).join(' · ');
+        if (differences.length) {
+          historyNotice.classList.add('visible');
+          historyNotice.innerHTML = `<strong>This differs from prior entries for ${esc(guidance.payee)}.</strong><br>Most-used setup: ${esc(summary)}<br><button type="button" data-use-payee-history="true">Use previous choices</button>`;
+          historyNotice.querySelector('[data-use-payee-history]').addEventListener('click', () => { guidedFields.forEach(name => { if (guidance[name]) setValue(name,guidance[name]); }); showPayeeGuidance(false); });
+        } else {
+          historyNotice.classList.add('visible','good');
+          historyNotice.innerHTML = `<strong>Matches prior entries for ${esc(guidance.payee)}.</strong><br>${esc(summary)}`;
+        }
+        return {guidance,differences};
+      };
+      if (payeeField) panel.querySelector(`[name="column${payeeField.column}"]`).addEventListener('change', () => showPayeeGuidance(true));
+      guidedFields.forEach(name => { const field = fieldByName[name]; if (field) panel.querySelector(`[name="column${field.column}"]`).addEventListener('change', () => showPayeeGuidance(false)); });
       panel.querySelector('form').addEventListener('submit', async event => {
         event.preventDefault();
+          const consistency = showPayeeGuidance(false);
+          if (consistency && consistency.differences.length && !window.confirm(`This transaction does not match the usual setup for ${consistency.guidance.payee}. Add it anyway?`)) return;
           const saveButton = panel.querySelector('.transaction-save');
           const values = Array.from({length:headers.length}, () => '');
           fields.forEach(field => { values[field.column] = panel.querySelector(`[name="column${field.column}"]`).value.trim(); });
@@ -1471,18 +1517,36 @@
     let financeControlEditMode = false;
     let financeControlRows = [];
 
-    function buildFinanceTransactionOptions(listRows, transactionRows) {
+    function buildFinanceTransactionOptions(listRows, transactionRows, historicalRows = []) {
       const unique = values => [...new Set(values.map(value => String(value || '').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b));
+      const allTransactionRows = [transactionRows,...(historicalRows.length ? [historicalRows] : [])];
+      const combinedDataRows = allTransactionRows.flatMap(rows => rows.slice(1));
       financeTransactionOptions = {
         description: unique(listRows.slice(1).map(row => row[0])),
         category: unique(listRows.slice(1).map(row => row[1])),
         subcategory: unique(listRows.slice(1).map(row => row[2])),
         fund: unique([...listRows.slice(1).map(row => row[3]),'General Fund','Bikes For Tykes']),
         activity: unique(listRows.slice(1).map(row => row[4])),
-        'payee/payer': unique(transactionRows.slice(1).map(row => row[8])),
+        'payee/payer': unique(combinedDataRows.map(row => row[8])),
         'payment method': unique(listRows.slice(1).map(row => row[5])),
         cleared: unique(listRows.slice(1).map(row => row[6]))
       };
+      const combinations = new Map();
+      combinedDataRows.forEach(row => {
+        const payee = String(row[8] || '').trim();
+        if (!payee) return;
+        const record = {payee,category:String(row[4] || '').trim(),subcategory:String(row[5] || '').trim(),fund:String(row[6] || '').trim(),activity:String(row[7] || '').trim()};
+        const key = payee.toLowerCase();
+        if (!combinations.has(key)) combinations.set(key,new Map());
+        const signature = [record.fund,record.activity,record.category,record.subcategory].join('\u001f');
+        const existing = combinations.get(key).get(signature) || {record,count:0};
+        existing.count += 1;
+        combinations.get(key).set(signature,existing);
+      });
+      financePayeeHistory = new Map([...combinations].map(([payee,records]) => {
+        const mostUsed = [...records.values()].sort((a,b) => b.count - a.count)[0];
+        return [payee,mostUsed.record];
+      }));
     }
 
     function renderFinanceDashboard(rows) {
@@ -1709,9 +1773,12 @@
       try {
         const reads = [getSheetValues(config.range,FINANCE_SPREADSHEET_ID)];
         if (config.editable) reads.push(getSheetValues(config.range,FINANCE_SPREADSHEET_ID,'FORMULA'));
-        if (key === 'transactions2026') reads.push(getSheetValues("'Transaction List'!A1:G1000",FINANCE_SPREADSHEET_ID));
-        const [rows,formulas = [],listRows = []] = await Promise.all(reads);
-        if (key === 'transactions2026') buildFinanceTransactionOptions(listRows,rows);
+        if (key === 'transactions2026') {
+          reads.push(getSheetValues("'Transaction List'!A1:G1000",FINANCE_SPREADSHEET_ID));
+          reads.push(getSheetValues("'Transactions-2025'!A1:P1000",FINANCE_SPREADSHEET_ID));
+        }
+        const [rows,formulas = [],listRows = [],historicalRows = []] = await Promise.all(reads);
+        if (key === 'transactions2026') buildFinanceTransactionOptions(listRows,rows,historicalRows);
         const editOptions = config.editable ? {sheetName:config.sheet,spreadsheetId:FINANCE_SPREADSHEET_ID,formulaRows:formulas} : null;
         renderDataTable(config.target,config.status,rows,config.header,config.columns,editOptions);
         loadedFinanceTabs.add(key);
@@ -1773,6 +1840,8 @@
     function showModule(key) {
       const healthPanel = document.getElementById('portalHealth');
       if (healthPanel) healthPanel.classList.toggle('visible', key === 'admin');
+      const financeAdminButton = document.getElementById('financeAdminToggle');
+      if (financeAdminButton) financeAdminButton.classList.toggle('visible', key === 'finance');
       if (key === 'home') { dashboard.classList.remove('hidden'); detail.classList.remove('active'); setActive('home'); return; }
       const item = modules[key]; if (!item) return;
       document.getElementById('detailTitle').textContent = item.title;
@@ -1893,10 +1962,9 @@
       const hidden = new Set(getHiddenFinanceTabs());
       const tabs = [...document.querySelectorAll('[data-finance-tab]')];
       const tabBar = document.querySelector('#financeWorkspace .sponsor-tabs');
-      const adminButton = document.getElementById('financeAdminToggle');
       const savedOrder = getFinanceTabOrder();
       const completeOrder = [...savedOrder.filter(key => tabs.some(tab => tab.dataset.financeTab === key)),...tabs.map(tab => tab.dataset.financeTab).filter(key => !savedOrder.includes(key))];
-      completeOrder.forEach(key => { const tab = tabs.find(item => item.dataset.financeTab === key); if (tab) tabBar.insertBefore(tab,adminButton); });
+      completeOrder.forEach(key => { const tab = tabs.find(item => item.dataset.financeTab === key); if (tab) tabBar.appendChild(tab); });
       const names = getFinanceTabNames();
       tabs.forEach(tab => { tab.textContent = String(names[tab.dataset.financeTab] || defaultFinanceTabNames[tab.dataset.financeTab]); });
       tabs.forEach(tab => tab.classList.toggle('finance-user-hidden', hidden.has(tab.dataset.financeTab)));
