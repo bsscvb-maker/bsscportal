@@ -1785,8 +1785,8 @@
               <p class="market-progress-note">${vendorProgress}% of the vendor minimum reached</p>
               <span class="market-status-pill ${ready ? 'ready' : ''}">${ready ? 'Ready to Submit' : 'On Hold'}</span>
               <div class="market-vendor-action">
-                <button class="market-send-vendor-order" id="marketplaceSendVendorOrder" type="button" ${ready && MARKETPLACE_AUTOMATION_URL ? '' : 'disabled'}>Send Vendor Order</button>
-                <span class="market-vendor-action-note">${!ready ? 'The vendor minimum must be met before sending.' : !MARKETPLACE_AUTOMATION_URL ? 'Automation connection needs to be completed.' : 'Sends the current vendor order email.'}</span>
+                <button class="market-send-vendor-order" id="marketplaceSendVendorOrder" type="button" ${MARKETPLACE_AUTOMATION_URL ? '' : 'disabled'} data-minimum-met="${ready ? 'true' : 'false'}" data-current-order="${vendorOrder}" data-vendor-minimum="${vendorMinimum}">Send Vendor Order</button>
+                <span class="market-vendor-action-note">${!MARKETPLACE_AUTOMATION_URL ? 'Automation connection needs to be completed.' : !ready ? 'Below minimum. An authorized override requires a password and reason.' : 'Sends the current vendor order email.'}</span>
               </div>
             </div></section>
             <section class="market-action-card"><h3>Cash Collection</h3><div class="market-action-body">
@@ -1829,14 +1829,42 @@
         alert('Please sign in to the portal before sending the vendor order.');
         return;
       }
-      if (!window.confirm('Send the current vendor order email now?')) return;
+
+      const minimumMet = button && button.dataset.minimumMet === 'true';
+      const fields = [['action', 'sendVendorOrder'], ['accessToken', accessToken]];
+      if (minimumMet) {
+        if (!window.confirm('Send the current vendor order email now?')) return;
+      } else {
+        const formatMoney = value => Number(value || 0).toLocaleString('en-US', {
+          style: 'currency',
+          currency: 'USD',
+        });
+        const currentOrder = Number(button.dataset.currentOrder || 0);
+        const vendorMinimum = Number(button.dataset.vendorMinimum || 0);
+        if (!window.confirm(
+          `Current order: ${formatMoney(currentOrder)}. Vendor minimum: ${formatMoney(vendorMinimum)}.\n\nSend below minimum with a manual override?`
+        )) return;
+
+        const overrideReason = window.prompt('Enter the reason for sending below the vendor minimum:');
+        if (overrideReason === null || !overrideReason.trim()) {
+          alert('A reason is required. The vendor order was not sent.');
+          return;
+        }
+        const overridePassword = window.prompt('Enter the Marketplace override password:');
+        if (overridePassword === null || !overridePassword.trim()) {
+          alert('The override password is required. The vendor order was not sent.');
+          return;
+        }
+        fields.push(['overrideReason', overrideReason.trim()]);
+        fields.push(['overridePassword', overridePassword.trim()]);
+      }
 
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = MARKETPLACE_AUTOMATION_URL;
       form.target = '_blank';
       form.style.display = 'none';
-      [['action', 'sendVendorOrder'], ['accessToken', accessToken]].forEach(([name, value]) => {
+      fields.forEach(([name, value]) => {
         const input = document.createElement('input');
         input.type = 'hidden';
         input.name = name;
