@@ -206,13 +206,19 @@
     .variance-good { color:#075c2d !important; background:#dff6e8 !important; font-weight:900; }
     .variance-over { color:#8c0c20 !important; background:#ffe1e6 !important; font-weight:900; }
     .finance-user-hidden { display:none !important; }
-    .hidden-tabs-toggle { border-style:dashed !important; color:#555b63 !important; background:#f1f3f5 !important; }
+    .hidden-tabs-toggle { margin-left:auto; border:2px solid #111113 !important; color:#fff !important; background:#111113 !important; }
     .finance-tab-manager { margin:0 0 16px; padding:16px; border:2px solid #111113; border-top:5px solid var(--gold); border-radius:11px; background:#f8f9fa; }
     .finance-tab-manager-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px; }
     .finance-tab-manager-head h3 { margin:0; color:#111113; font-size:1.05rem; }
     .finance-tab-manager-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
     .finance-tab-choice { display:flex; align-items:center; gap:8px; padding:9px 10px; border:1px solid #d3d6da; border-radius:8px; background:#fff; font-weight:750; cursor:pointer; }
     .finance-tab-choice input { width:18px; height:18px; accent-color:var(--gold); }
+    .finance-tab-admin-row { display:grid; grid-template-columns:auto minmax(170px,1fr) auto; align-items:center; gap:9px; padding:9px; border:1px solid #d3d6da; border-radius:8px; background:#fff; }
+    .finance-tab-admin-row input[type="checkbox"] { width:18px; height:18px; accent-color:var(--gold); }
+    .finance-tab-name { width:100%; min-height:38px; padding:7px 9px; border:1px solid #aeb4bb; border-radius:7px; font:inherit; font-weight:750; }
+    .finance-tab-order { display:flex; gap:5px; }
+    .finance-tab-order button { width:36px; height:36px; border:1px solid #aeb4bb; border-radius:7px; background:#f1f3f5; font-weight:900; cursor:pointer; }
+    .finance-tab-manager-note { margin:0 0 13px; padding:10px 12px; border-left:4px solid #1f4e79; border-radius:7px; background:#eaf3fb; color:#173b5c; }
     .finance-tab-manager-actions { display:flex; justify-content:flex-end; gap:9px; margin-top:13px; }
     .finance-tab-manager-actions button { border:0; border-radius:8px; padding:9px 13px; font-weight:900; cursor:pointer; }
     .show-all-tabs { color:#202226; background:#e1e4e7; }
@@ -591,7 +597,7 @@
               <button class="sponsor-tab" data-finance-tab="events">Events &amp; Fundraising</button>
               <button class="sponsor-tab" data-finance-tab="charities">Charities</button>
               <button class="sponsor-tab" data-finance-tab="eventbudgets">Event Budgets</button>
-              <button class="sponsor-tab hidden-tabs-toggle" id="financeHiddenTabsToggle" type="button">Manage Tabs</button>
+              <button class="sponsor-tab hidden-tabs-toggle" id="financeAdminToggle" type="button">Admin</button>
             </div>
             <div class="finance-note">Finance is connected to the current BSSC Finance System 2026 workbook. Calculated cells are protected. Tally 2026 remains a read-only transfer log while its separate automation is being preserved.</div>
             <section class="sponsor-panel active" data-finance-panel="dashboard"><div class="data-status" id="financeDashboardStatus">Loading financial dashboard…</div><div id="financeDashboard"></div></section>
@@ -1114,7 +1120,8 @@
             const isAmount = /amount|cost|revenue|expense|income/i.test(field.header);
             const value = isDate ? localDate : '';
             const options = financeTransactionOptions[field.header.toLowerCase()] || [];
-            const control = options.length ? `<select id="transactionField${field.column}" name="column${field.column}" required><option value="">Select ${esc(field.header)}…</option>${options.map(option => `<option value="${esc(option)}">${esc(option)}</option>`).join('')}</select>` : `<input id="transactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} value="${esc(value)}" autocomplete="off">`;
+            const isSuggestedText = /^description$/i.test(field.header) && options.length;
+            const control = isSuggestedText ? `<input id="transactionField${field.column}" name="column${field.column}" type="text" list="transactionSuggestions${field.column}" value="" autocomplete="off" placeholder="Type a description or choose a previous one"><datalist id="transactionSuggestions${field.column}">${options.map(option => `<option value="${esc(option)}"></option>`).join('')}</datalist>` : options.length ? `<select id="transactionField${field.column}" name="column${field.column}" required><option value="">Select ${esc(field.header)}…</option>${options.map(option => `<option value="${esc(option)}">${esc(option)}</option>`).join('')}</select>` : `<input id="transactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} value="${esc(value)}" autocomplete="off">`;
             return `<div class="transaction-field"><label for="transactionField${field.column}">${esc(field.header)}</label>${control}</div>`;
           }).join('')}
           <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Add Transaction</button></div>
@@ -1806,21 +1813,38 @@
       loadFinanceTab(selected);
     }));
     const FINANCE_HIDDEN_TABS_KEY = 'bssc_finance_hidden_tabs';
+    const FINANCE_TAB_ORDER_KEY = 'bssc_finance_tab_order';
+    const FINANCE_TAB_NAMES_KEY = 'bssc_finance_tab_names';
+    const defaultFinanceTabNames = Object.fromEntries([...document.querySelectorAll('[data-finance-tab]')].map(tab => [tab.dataset.financeTab,tab.textContent.trim()]));
     function getHiddenFinanceTabs() {
       try {
         const saved = JSON.parse(localStorage.getItem(FINANCE_HIDDEN_TABS_KEY) || 'null');
         return Array.isArray(saved) ? saved : ['operating'];
       } catch (error) { return ['operating']; }
     }
-    function applyHiddenFinanceTabs() {
+    function getFinanceTabOrder() {
+      try { const saved = JSON.parse(localStorage.getItem(FINANCE_TAB_ORDER_KEY) || '[]'); return Array.isArray(saved) ? saved : []; }
+      catch (error) { return []; }
+    }
+    function getFinanceTabNames() {
+      try { const saved = JSON.parse(localStorage.getItem(FINANCE_TAB_NAMES_KEY) || '{}'); return saved && typeof saved === 'object' ? saved : {}; }
+      catch (error) { return {}; }
+    }
+    function applyFinanceTabPreferences() {
       const hidden = new Set(getHiddenFinanceTabs());
       const tabs = [...document.querySelectorAll('[data-finance-tab]')];
+      const tabBar = document.querySelector('#financeWorkspace .sponsor-tabs');
+      const adminButton = document.getElementById('financeAdminToggle');
+      const savedOrder = getFinanceTabOrder();
+      const completeOrder = [...savedOrder.filter(key => tabs.some(tab => tab.dataset.financeTab === key)),...tabs.map(tab => tab.dataset.financeTab).filter(key => !savedOrder.includes(key))];
+      completeOrder.forEach(key => { const tab = tabs.find(item => item.dataset.financeTab === key); if (tab) tabBar.insertBefore(tab,adminButton); });
+      const names = getFinanceTabNames();
+      tabs.forEach(tab => { tab.textContent = String(names[tab.dataset.financeTab] || defaultFinanceTabNames[tab.dataset.financeTab]); });
       tabs.forEach(tab => tab.classList.toggle('finance-user-hidden', hidden.has(tab.dataset.financeTab)));
-      const managerButton = document.getElementById('financeHiddenTabsToggle');
-      managerButton.textContent = hidden.size ? `Manage Tabs (${hidden.size} hidden)` : 'Manage Tabs';
       const activeHidden = tabs.find(tab => tab.classList.contains('active') && hidden.has(tab.dataset.financeTab));
       if (activeHidden) {
-        const firstVisible = tabs.find(tab => !hidden.has(tab.dataset.financeTab));
+        const orderedTabs = [...document.querySelectorAll('[data-finance-tab]')];
+        const firstVisible = orderedTabs.find(tab => !hidden.has(tab.dataset.financeTab));
         if (firstVisible) firstVisible.click();
       }
     }
@@ -1832,28 +1856,46 @@
       const tabs = [...document.querySelectorAll('[data-finance-tab]')];
       const panel = document.createElement('section');
       panel.className = 'finance-tab-manager';
-      panel.innerHTML = `<div class="finance-tab-manager-head"><h3>Choose Which Finance Tabs Are Visible</h3><span>Checked tabs are shown.</span></div><div class="finance-tab-manager-grid">${tabs.map(tab => `<label class="finance-tab-choice"><input type="checkbox" value="${esc(tab.dataset.financeTab)}" ${hidden.has(tab.dataset.financeTab) ? '' : 'checked'}><span>${esc(tab.textContent.trim())}</span></label>`).join('')}</div><div class="finance-tab-manager-actions"><button class="show-all-tabs" type="button">Show All Tabs</button><button class="done-managing-tabs" type="button">Done</button></div>`;
+      panel.innerHTML = `<div class="finance-tab-manager-head"><h3>Finance Tab Administration</h3><span>${hidden.size} hidden</span></div><p class="finance-tab-manager-note">These settings only change how tabs appear in this portal. The connected Google Sheet names and data destinations do not change.</p><div class="finance-tab-manager-grid">${tabs.map(tab => `<div class="finance-tab-admin-row" data-admin-tab="${esc(tab.dataset.financeTab)}"><input type="checkbox" aria-label="Show ${esc(tab.textContent.trim())}" ${hidden.has(tab.dataset.financeTab) ? '' : 'checked'}><input class="finance-tab-name" value="${esc(tab.textContent.trim())}" aria-label="Portal name for ${esc(tab.textContent.trim())}"><div class="finance-tab-order"><button type="button" data-move="up" aria-label="Move tab left">↑</button><button type="button" data-move="down" aria-label="Move tab right">↓</button></div></div>`).join('')}</div><div class="finance-tab-manager-actions"><button class="show-all-tabs" type="button">Show All Tabs</button><button class="done-managing-tabs" type="button">Save &amp; Close</button></div>`;
       workspace.querySelector('.sponsor-tabs').insertAdjacentElement('afterend', panel);
-      panel.querySelectorAll('input[type="checkbox"]').forEach(input => input.addEventListener('change', () => {
-        const visible = [...panel.querySelectorAll('input[type="checkbox"]:checked')];
+      panel.querySelectorAll('.finance-tab-admin-row input[type="checkbox"]').forEach(input => input.addEventListener('change', () => {
+        const visible = [...panel.querySelectorAll('.finance-tab-admin-row input[type="checkbox"]:checked')];
         if (!visible.length) {
           input.checked = true;
           alert('At least one Finance tab must remain visible.');
           return;
         }
-        const newHidden = [...panel.querySelectorAll('input[type="checkbox"]:not(:checked)')].map(item => item.value);
+        const newHidden = [...panel.querySelectorAll('.finance-tab-admin-row')].filter(row => !row.querySelector('input[type="checkbox"]').checked).map(row => row.dataset.adminTab);
         localStorage.setItem(FINANCE_HIDDEN_TABS_KEY, JSON.stringify(newHidden));
-        applyHiddenFinanceTabs();
+        applyFinanceTabPreferences();
+      }));
+      panel.querySelectorAll('[data-move]').forEach(button => button.addEventListener('click', () => {
+        const row = button.closest('.finance-tab-admin-row');
+        const sibling = button.dataset.move === 'up' ? row.previousElementSibling : row.nextElementSibling;
+        if (!sibling) return;
+        if (button.dataset.move === 'up') row.parentElement.insertBefore(row,sibling);
+        else row.parentElement.insertBefore(sibling,row);
+        const order = [...panel.querySelectorAll('.finance-tab-admin-row')].map(item => item.dataset.adminTab);
+        localStorage.setItem(FINANCE_TAB_ORDER_KEY,JSON.stringify(order));
+        applyFinanceTabPreferences();
       }));
       panel.querySelector('.show-all-tabs').addEventListener('click', () => {
-        panel.querySelectorAll('input[type="checkbox"]').forEach(input => { input.checked = true; });
+        panel.querySelectorAll('.finance-tab-admin-row input[type="checkbox"]').forEach(input => { input.checked = true; });
         localStorage.setItem(FINANCE_HIDDEN_TABS_KEY, '[]');
-        applyHiddenFinanceTabs();
+        applyFinanceTabPreferences();
       });
-      panel.querySelector('.done-managing-tabs').addEventListener('click', () => panel.remove());
+      panel.querySelector('.done-managing-tabs').addEventListener('click', () => {
+        const names = {};
+        panel.querySelectorAll('.finance-tab-admin-row').forEach(row => { names[row.dataset.adminTab] = row.querySelector('.finance-tab-name').value.trim() || defaultFinanceTabNames[row.dataset.adminTab]; });
+        const order = [...panel.querySelectorAll('.finance-tab-admin-row')].map(item => item.dataset.adminTab);
+        localStorage.setItem(FINANCE_TAB_NAMES_KEY,JSON.stringify(names));
+        localStorage.setItem(FINANCE_TAB_ORDER_KEY,JSON.stringify(order));
+        applyFinanceTabPreferences();
+        panel.remove();
+      });
     }
-    document.getElementById('financeHiddenTabsToggle').addEventListener('click', openFinanceTabManager);
-    applyHiddenFinanceTabs();
+    document.getElementById('financeAdminToggle').addEventListener('click', openFinanceTabManager);
+    applyFinanceTabPreferences();
     document.getElementById('back').addEventListener('click', () => showModule('home'));
     document.getElementById('menuToggle').addEventListener('click', () => sidebar.classList.toggle('open'));
   </script>
