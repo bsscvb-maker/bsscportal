@@ -205,9 +205,18 @@
     .transaction-save { color:#fff; background:var(--gold); }
     .variance-good { color:#075c2d !important; background:#dff6e8 !important; font-weight:900; }
     .variance-over { color:#8c0c20 !important; background:#ffe1e6 !important; font-weight:900; }
-    .finance-hidden-tab { display:none; }
-    #financeWorkspace.show-hidden-tabs .finance-hidden-tab { display:inline-flex; }
+    .finance-user-hidden { display:none !important; }
     .hidden-tabs-toggle { border-style:dashed !important; color:#555b63 !important; background:#f1f3f5 !important; }
+    .finance-tab-manager { margin:0 0 16px; padding:16px; border:2px solid #111113; border-top:5px solid var(--gold); border-radius:11px; background:#f8f9fa; }
+    .finance-tab-manager-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px; }
+    .finance-tab-manager-head h3 { margin:0; color:#111113; font-size:1.05rem; }
+    .finance-tab-manager-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
+    .finance-tab-choice { display:flex; align-items:center; gap:8px; padding:9px 10px; border:1px solid #d3d6da; border-radius:8px; background:#fff; font-weight:750; cursor:pointer; }
+    .finance-tab-choice input { width:18px; height:18px; accent-color:var(--gold); }
+    .finance-tab-manager-actions { display:flex; justify-content:flex-end; gap:9px; margin-top:13px; }
+    .finance-tab-manager-actions button { border:0; border-radius:8px; padding:9px 13px; font-weight:900; cursor:pointer; }
+    .show-all-tabs { color:#202226; background:#e1e4e7; }
+    .done-managing-tabs { color:#fff; background:var(--gold); }
     .table-search-wrap { position: relative; flex: 1 1 440px; max-width: 560px; }
     .table-search-wrap::before { content: '⌕'; position: absolute; left: 13px; top: 50%; transform: translateY(-52%); color: var(--muted); font-size: 1.25rem; pointer-events: none; }
     .table-search { width: 100%; min-height: 44px; padding: 10px 14px 10px 40px; border: 2px solid #bfc0c4; border-radius: 8px; color: var(--ink); background: white; font: inherit; }
@@ -385,6 +394,7 @@
       .table-tool-actions { width:100%; }
       .table-tool-actions button { flex:1 1 auto; }
       .transaction-field { grid-template-columns:1fr; gap:5px; }
+      .finance-tab-manager-grid { grid-template-columns:1fr; }
     }
   </style>
 </head>
@@ -513,7 +523,7 @@
             <div class="sponsor-tabs" aria-label="Finance sections">
               <button class="sponsor-tab active" data-finance-tab="dashboard">Dashboard-2026</button>
               <button class="sponsor-tab" data-finance-tab="control">Control-2026</button>
-              <button class="sponsor-tab finance-hidden-tab" data-finance-tab="operating">Operating Budget</button>
+              <button class="sponsor-tab" data-finance-tab="operating">Operating Budget</button>
               <button class="sponsor-tab" data-finance-tab="bft">Bikes for Tykes (BFT)</button>
               <button class="sponsor-tab" data-finance-tab="lineitem">Line-Item Budget</button>
               <button class="sponsor-tab" data-finance-tab="baseline">Operating Budget – Baseline</button>
@@ -525,7 +535,7 @@
               <button class="sponsor-tab" data-finance-tab="events">Events &amp; Fundraising</button>
               <button class="sponsor-tab" data-finance-tab="charities">Charities</button>
               <button class="sponsor-tab" data-finance-tab="eventbudgets">Event Budgets</button>
-              <button class="sponsor-tab hidden-tabs-toggle" id="financeHiddenTabsToggle" type="button">Hidden Tabs (1)</button>
+              <button class="sponsor-tab hidden-tabs-toggle" id="financeHiddenTabsToggle" type="button">Manage Tabs</button>
             </div>
             <div class="finance-note">Finance is connected to the current BSSC Finance System 2026 workbook. Calculated cells are protected. Tally 2026 remains a read-only transfer log while its separate automation is being preserved.</div>
             <section class="sponsor-panel active" data-finance-panel="dashboard"><div class="data-status" id="financeDashboardStatus">Loading financial dashboard…</div><div id="financeDashboard"></div></section>
@@ -1569,12 +1579,55 @@
       document.querySelectorAll('[data-finance-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.financePanel === selected));
       loadFinanceTab(selected);
     }));
-    document.getElementById('financeHiddenTabsToggle').addEventListener('click', () => {
+    const FINANCE_HIDDEN_TABS_KEY = 'bssc_finance_hidden_tabs';
+    function getHiddenFinanceTabs() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(FINANCE_HIDDEN_TABS_KEY) || 'null');
+        return Array.isArray(saved) ? saved : ['operating'];
+      } catch (error) { return ['operating']; }
+    }
+    function applyHiddenFinanceTabs() {
+      const hidden = new Set(getHiddenFinanceTabs());
+      const tabs = [...document.querySelectorAll('[data-finance-tab]')];
+      tabs.forEach(tab => tab.classList.toggle('finance-user-hidden', hidden.has(tab.dataset.financeTab)));
+      const managerButton = document.getElementById('financeHiddenTabsToggle');
+      managerButton.textContent = hidden.size ? `Manage Tabs (${hidden.size} hidden)` : 'Manage Tabs';
+      const activeHidden = tabs.find(tab => tab.classList.contains('active') && hidden.has(tab.dataset.financeTab));
+      if (activeHidden) {
+        const firstVisible = tabs.find(tab => !hidden.has(tab.dataset.financeTab));
+        if (firstVisible) firstVisible.click();
+      }
+    }
+    function openFinanceTabManager() {
       const workspace = document.getElementById('financeWorkspace');
-      const showing = workspace.classList.toggle('show-hidden-tabs');
-      document.getElementById('financeHiddenTabsToggle').textContent = showing ? 'Hide Hidden Tabs' : 'Hidden Tabs (1)';
-      if (!showing && document.querySelector('[data-finance-tab="operating"].active')) document.querySelector('[data-finance-tab="dashboard"]').click();
-    });
+      const existing = workspace.querySelector('.finance-tab-manager');
+      if (existing) { existing.remove(); return; }
+      const hidden = new Set(getHiddenFinanceTabs());
+      const tabs = [...document.querySelectorAll('[data-finance-tab]')];
+      const panel = document.createElement('section');
+      panel.className = 'finance-tab-manager';
+      panel.innerHTML = `<div class="finance-tab-manager-head"><h3>Choose Which Finance Tabs Are Visible</h3><span>Checked tabs are shown.</span></div><div class="finance-tab-manager-grid">${tabs.map(tab => `<label class="finance-tab-choice"><input type="checkbox" value="${esc(tab.dataset.financeTab)}" ${hidden.has(tab.dataset.financeTab) ? '' : 'checked'}><span>${esc(tab.textContent.trim())}</span></label>`).join('')}</div><div class="finance-tab-manager-actions"><button class="show-all-tabs" type="button">Show All Tabs</button><button class="done-managing-tabs" type="button">Done</button></div>`;
+      workspace.querySelector('.sponsor-tabs').insertAdjacentElement('afterend', panel);
+      panel.querySelectorAll('input[type="checkbox"]').forEach(input => input.addEventListener('change', () => {
+        const visible = [...panel.querySelectorAll('input[type="checkbox"]:checked')];
+        if (!visible.length) {
+          input.checked = true;
+          alert('At least one Finance tab must remain visible.');
+          return;
+        }
+        const newHidden = [...panel.querySelectorAll('input[type="checkbox"]:not(:checked)')].map(item => item.value);
+        localStorage.setItem(FINANCE_HIDDEN_TABS_KEY, JSON.stringify(newHidden));
+        applyHiddenFinanceTabs();
+      }));
+      panel.querySelector('.show-all-tabs').addEventListener('click', () => {
+        panel.querySelectorAll('input[type="checkbox"]').forEach(input => { input.checked = true; });
+        localStorage.setItem(FINANCE_HIDDEN_TABS_KEY, '[]');
+        applyHiddenFinanceTabs();
+      });
+      panel.querySelector('.done-managing-tabs').addEventListener('click', () => panel.remove());
+    }
+    document.getElementById('financeHiddenTabsToggle').addEventListener('click', openFinanceTabManager);
+    applyHiddenFinanceTabs();
     document.getElementById('back').addEventListener('click', () => showModule('home'));
     document.getElementById('menuToggle').addEventListener('click', () => sidebar.classList.toggle('open'));
   </script>
