@@ -352,8 +352,41 @@
     .finance-dashboard-card.good { border-top-color:#16845b; }
     .finance-dashboard-card span { display:block; color:var(--muted); font-size:.74rem; font-weight:900; text-transform:uppercase; }
     .finance-dashboard-card strong { display:block; margin-top:6px; color:#111113; font-size:1.55rem; }
+    .finance-dashboard-hero { padding:20px; border-radius:14px; background:#111113; border-bottom:5px solid var(--gold); }
+    .finance-dashboard-hero h2 { margin:0 0 5px; color:#fff; font-size:1.45rem; }
+    .finance-dashboard-hero p { margin:0 0 18px; color:#cfd1d4; }
+    .finance-dashboard-hero .finance-dashboard-grid { margin:0; }
+    .finance-dashboard-hero .finance-dashboard-card { min-height:122px; display:flex; flex-direction:column; justify-content:center; border:0; border-top:5px solid var(--gold); }
+    .finance-dashboard-hero .finance-dashboard-card strong { font-size:1.85rem; }
+    .finance-dashboard-card.alert { border-top-color:#d20f32; background:#fff1f3; }
+    .control-title { margin-bottom:14px; padding:17px 20px; color:#fff; background:#111113; border-bottom:4px solid var(--gold); border-radius:11px; }
+    .control-title h2 { margin:0; color:#fff; font-size:1.35rem; }
+    .control-title span { display:block; margin-top:5px; color:#d7d8da; }
+    .control-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .control-card { border:1px solid #2e3033; border-radius:10px; overflow:hidden; background:#fff; }
+    .control-card h3 { margin:0; padding:10px 12px; color:#fff; background:#111113; border-bottom:3px solid var(--gold); font-size:.95rem; text-transform:uppercase; letter-spacing:.03em; }
+    .control-card.wide { grid-column:1/-1; }
+    .control-rows { padding:10px 12px; }
+    .control-row { display:flex; justify-content:space-between; gap:16px; padding:8px 0; border-bottom:1px solid #e1e3e6; }
+    .control-row:last-child { border-bottom:0; }
+    .control-row strong { text-align:right; white-space:nowrap; }
+    .control-row.status-bad strong { color:#b70f2a; }
+    .activity-summary-panel { max-width:760px; }
+    .activity-controls { display:grid; grid-template-columns:160px minmax(0,1fr); gap:10px 14px; align-items:center; margin-bottom:16px; }
+    .activity-controls label { font-weight:900; }
+    .activity-controls select { min-height:44px; padding:9px 11px; border:2px solid #bfc0c4; border-radius:8px; background:#fff; font:inherit; }
+    .activity-results { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+    .activity-result { padding:16px; border:1px solid #d6d8dc; border-top:5px solid #111113; border-radius:10px; background:#fff; }
+    .activity-result span { display:block; color:var(--muted); font-size:.76rem; font-weight:900; text-transform:uppercase; }
+    .activity-result strong { display:block; margin-top:7px; font-size:1.45rem; }
+    .activity-result.good { border-top-color:#16845b; }
+    .activity-result.bad { border-top-color:#c8102e; background:#fff1f3; }
+    .bft-finance-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+    .bft-finance-section { margin-top:18px; }
+    .bft-finance-section h3 { margin:0 0 5px; font-size:1.15rem; }
+    .bft-finance-section > p { margin:0 0 12px; color:var(--muted); }
     .finance-note { margin-bottom:14px; padding:11px 13px; border-left:4px solid var(--gold); border-radius:7px; background:#fff0f2; color:#64101e; font-size:.85rem; }
-    @media (max-width: 900px) { .market-metrics,.market-kpi-grid,.admin-overview,.finance-dashboard-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .market-dashboard-lower,.pricing-config,.market-subsummary,.admin-grid { grid-template-columns:1fr; } }
+    @media (max-width: 900px) { .market-metrics,.market-kpi-grid,.admin-overview,.finance-dashboard-grid,.bft-finance-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .market-dashboard-lower,.pricing-config,.market-subsummary,.admin-grid { grid-template-columns:1fr; } }
     @media (max-width: 950px) { .bft-dashboard-grid { grid-template-columns: 1fr; } }
     .edit-help { margin: -5px 0 14px; padding: 10px 12px; border-left: 4px solid var(--gold); background: #fff1f3; color: #6b0d1c; border-radius: 7px; font-size: .86rem; font-weight: 750; }
     .tracking-table { width: max-content; min-width: 2550px; table-layout: fixed; }
@@ -385,6 +418,8 @@
       .market-kpi-grid, .market-vendor-row { grid-template-columns: 1fr; }
       .admin-overview { grid-template-columns:1fr; }
       .finance-dashboard-grid { grid-template-columns:1fr; }
+      .control-grid,.activity-results,.bft-finance-summary { grid-template-columns:1fr; }
+      .activity-controls { grid-template-columns:1fr; }
       .market-executive { padding: 14px; }
       .sponsor-summary, .sponsor-panels { grid-template-columns: 1fr; }
       .module { min-height: 210px; }
@@ -523,6 +558,7 @@
             <div class="sponsor-tabs" aria-label="Finance sections">
               <button class="sponsor-tab active" data-finance-tab="dashboard">Dashboard-2026</button>
               <button class="sponsor-tab" data-finance-tab="control">Control-2026</button>
+              <button class="sponsor-tab" data-finance-tab="activity">Activity Summary</button>
               <button class="sponsor-tab" data-finance-tab="operating">Operating Budget</button>
               <button class="sponsor-tab" data-finance-tab="bft">Bikes for Tykes (BFT)</button>
               <button class="sponsor-tab" data-finance-tab="lineitem">Line-Item Budget</button>
@@ -540,6 +576,7 @@
             <div class="finance-note">Finance is connected to the current BSSC Finance System 2026 workbook. Calculated cells are protected. Tally 2026 remains a read-only transfer log while its separate automation is being preserved.</div>
             <section class="sponsor-panel active" data-finance-panel="dashboard"><div class="data-status" id="financeDashboardStatus">Loading financial dashboard…</div><div id="financeDashboard"></div></section>
             <section class="sponsor-panel" data-finance-panel="control"><div class="coming-soon"><h2>Control-2026</h2><div class="data-status" id="financeControlStatus">Open this tab to load the control snapshot.</div><div id="financeControlTable"></div></div></section>
+            <section class="sponsor-panel" data-finance-panel="activity"><div class="coming-soon"><h2>Activity Summary</h2><div class="data-status" id="financeActivityStatus">Open this tab to review spending for a particular activity.</div><div id="financeActivitySummary"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="operating"><div class="coming-soon"><h2>Operating Budget</h2><div class="data-status" id="financeOperatingStatus">Open this tab to load the operating budget.</div><div id="financeOperatingTable"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="bft"><div class="coming-soon"><h2>Bikes for Tykes (BFT)</h2><div class="data-status" id="financeBftStatus">Open this tab to load Bikes for Tykes finance.</div><div id="financeBftTable"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="lineitem"><div class="coming-soon"><h2>Line-Item Budget</h2><div class="data-status" id="financeLineItemStatus">Open this tab to load the line-item budget.</div><div id="financeLineItemTable"></div></div></section>
@@ -993,7 +1030,8 @@
           const numericValue = Number(String(shownValue).replace(/[$,%(),]/g, '').replace(/\s/g, '')) * (String(shownValue).includes('(') ? -1 : 1);
           const varianceClass = targetId === 'financeBaselineTable' && headerName.includes('variance') && Number.isFinite(numericValue) ? (numericValue < 0 ? 'variance-over' : 'variance-good') : '';
           const baseClass = editable ? 'editable-cell' : (editMode && formulaValue.startsWith('=') ? 'formula-cell' : '');
-          return `<td class="${[baseClass,varianceClass].filter(Boolean).join(' ')}" ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${item.sourceIndex + 1}" data-column="${columnIndex}" data-value="${esc(shownValue)}"` : ''}>${esc(shownValue)}</td>`;
+          const sourceRowNumber = item.sourceIndex + 1 + Number((editOptions && editOptions.rowOffset) || 0);
+          return `<td class="${[baseClass,varianceClass].filter(Boolean).join(' ')}" ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${sourceRowNumber}" data-column="${columnIndex}" data-value="${esc(shownValue)}"` : ''}>${esc(shownValue)}</td>`;
         }).join('')}</tr>`;
       }).join('')}</tbody></table></div>`;
       status.textContent = `${indexedData.length} row${indexedData.length === 1 ? '' : 's'} loaded from Google Sheets${editOptions ? (editMode ? ' — edit mode is on.' : ' — view mode.') : '.'}`;
@@ -1377,17 +1415,39 @@
       eventbudgets:{sheet:'Event Budgets',range:"'Event Budgets'!A1:F100",target:'financeEventBudgetsTable',status:'financeEventBudgetsStatus',header:2,columns:6,editable:true}
     };
     const financeTargetToKey = Object.fromEntries(Object.entries(financeTabConfig).map(([key,value]) => [value.target,key]));
+    financeTargetToKey.financeBftBudgetTable = 'bft';
+    financeTargetToKey.financeBftTransactionsTable = 'bft';
     const loadedFinanceTabs = new Set();
 
     function renderFinanceDashboard(rows) {
-      const at = (r,c) => String((rows[r] && rows[r][c]) || '—');
+      const at = (r,c) => String((rows[r] && rows[r][c]) || '—').replace(/\s+/g,' ').trim();
       const card = (label,value,cls='') => `<div class="finance-dashboard-card ${cls}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
-      const months = rows.slice(2,14).filter(row => row[19]);
-      document.getElementById('financeDashboard').innerHTML = `<div class="finance-dashboard-grid">
-        ${card(at(4,1),at(6,1),'good')}${card(at(4,5),at(6,5),'good')}${card(at(4,9),at(6,9),'good')}
-        ${card(at(9,1),at(11,1))}${card(at(9,5),at(11,5))}${card(at(9,9),at(11,9))}
-      </div><section class="admin-card"><h2>Monthly Net Activity</h2><div class="admin-card-body"><div class="table-wrap"><table class="data-table"><thead><tr><th>Month</th><th>Net</th></tr></thead><tbody>${months.map(row => `<tr><td>${esc(row[19] || '')}</td><td>${esc(row[20] || '')}</td></tr>`).join('')}</tbody></table></div></div></section>`;
+      const reconciliation = at(16,9);
+      document.getElementById('financeDashboard').innerHTML = `<section class="finance-dashboard-hero">
+        <h2>${esc(at(1,1))}</h2><p>Nine executive measures from the live 2026 finance workbook.</p>
+        <div class="finance-dashboard-grid">
+          ${card(at(4,1),at(6,1),'good')}${card(at(4,5),at(6,5),'good')}${card(at(4,9),at(6,9),'good')}
+          ${card(at(9,1),at(11,1),'good')}${card(at(9,5),at(11,5),'good')}${card(at(9,9),at(11,9),'good')}
+          ${card(at(14,1),at(16,1),'good')}${card(at(14,5),at(16,5),'good')}${card(at(14,9),reconciliation,/out of balance/i.test(reconciliation) ? 'alert' : 'good')}
+        </div></section>`;
       document.getElementById('financeDashboardStatus').textContent = 'Executive dashboard connected to BSSC Finance System 2026.';
+    }
+
+    function renderFinanceControl(rows) {
+      const at = (r,c) => String((rows[r] && rows[r][c]) || '—').replace(/\s+/g,' ').trim();
+      const section = (title,pairs,cls='') => `<section class="control-card ${cls}"><h3>${esc(title)}</h3><div class="control-rows">${pairs.map(([label,value,bad]) => `<div class="control-row ${bad ? 'status-bad' : ''}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div></section>`;
+      const status = at(10,4);
+      document.getElementById('financeControlTable').innerHTML = `<div class="control-title"><h2>${esc(at(0,0))}</h2><span>${esc(at(0,6))}: ${esc(at(0,7))}</span></div><div class="control-grid">
+        ${section(at(3,0),[[at(5,0),at(5,1)],[at(7,0),at(7,1)],[at(8,0),at(8,1)]])}
+        ${section(at(3,3),[[at(5,3),at(5,4)],[at(6,3),at(6,4)],[at(7,3),at(7,4)],[at(8,3),at(8,4)],[at(9,3),at(9,4)],[at(10,3),status,/out of balance/i.test(status)]])}
+        ${section(at(3,6),[[at(4,6),at(4,7)],[at(5,6),at(5,7)],[at(6,6),at(6,7)],[at(7,6),at(7,7)],[at(8,6),at(8,7)]])}
+        ${section(at(12,0),[[at(14,0),at(14,1)],[at(15,0),at(15,1)],[at(16,0),at(16,1)]])}
+        ${section(at(12,3),[[at(14,3),at(14,4)],[at(15,3),at(15,4)],[at(16,3),at(16,4)],[at(18,3),at(18,4)],[at(19,3),at(19,4)]])}
+        ${section(at(19,0),[[at(20,0),at(20,1)],[at(21,0),at(21,1)],[at(22,0),at(22,1)]])}
+        ${section(at(22,3),[[at(22,3),at(22,4)],[at(24,3),at(24,4)],[at(25,3),at(25,4)],[at(26,3),at(26,4)]])}
+        ${section(at(25,0),[[at(27,0),at(27,1)]],'wide')}
+      </div>`;
+      document.getElementById('financeControlStatus').textContent = 'Executive financial snapshot connected to Control-2026.';
     }
 
     async function loadFinanceDashboard() {
@@ -1403,15 +1463,81 @@
       document.getElementById('financeControlStatus').textContent = 'Loading control snapshot…';
       try {
         const rows = await getSheetValues("'Control-2026'!A1:H80",FINANCE_SPREADSHEET_ID);
-        renderDataTable('financeControlTable','financeControlStatus',rows,0,8);
+        renderFinanceControl(rows);
         loadedFinanceTabs.add('control');
       } catch (error) { document.getElementById('financeControlStatus').textContent = 'Control-2026 could not load from Google Sheets.'; }
+    }
+
+    function renderFinanceActivity(rows, activities) {
+      const at = (r,c) => String((rows[r] && rows[r][c]) || '—').trim();
+      const year = at(4,7), activity = at(5,7), remaining = at(8,7);
+      const amount = Number(remaining.replace(/[$,()]/g,'').trim()) * (remaining.includes('(') ? -1 : 1);
+      const options = [...new Set([activity,...activities].filter(Boolean))];
+      document.getElementById('financeActivitySummary').innerHTML = `<div class="activity-summary-panel"><div class="activity-controls">
+        <label for="financeActivityYear">Year</label><select id="financeActivityYear">${['2026','2025','All Years'].map(value => `<option ${value === year ? 'selected' : ''}>${esc(value)}</option>`).join('')}</select>
+        <label for="financeActivityName">Activity</label><select id="financeActivityName">${options.map(value => `<option ${value === activity ? 'selected' : ''}>${esc(value)}</option>`).join('')}</select>
+      </div><div class="activity-results">
+        <div class="activity-result"><span>${esc(at(6,6))}</span><strong>${esc(at(6,7))}</strong></div>
+        <div class="activity-result"><span>${esc(at(7,6))}</span><strong>${esc(at(7,7))}</strong></div>
+        <div class="activity-result ${Number.isFinite(amount) && amount < 0 ? 'bad' : 'good'}"><span>${esc(at(8,6))}</span><strong>${esc(remaining)}</strong></div>
+      </div></div>`;
+      const saveSelection = async () => {
+        const yearSelect = document.getElementById('financeActivityYear');
+        const activitySelect = document.getElementById('financeActivityName');
+        yearSelect.disabled = activitySelect.disabled = true;
+        document.getElementById('financeActivityStatus').textContent = 'Updating activity summary…';
+        try {
+          await updateSheetCell(FINANCE_SPREADSHEET_ID,'Control-2026',5,7,yearSelect.value);
+          await updateSheetCell(FINANCE_SPREADSHEET_ID,'Control-2026',6,7,activitySelect.value);
+          loadedFinanceTabs.delete('control');
+          await loadFinanceActivity();
+        } catch (error) {
+          yearSelect.disabled = activitySelect.disabled = false;
+          document.getElementById('financeActivityStatus').textContent = 'The activity selection could not be updated.';
+        }
+      };
+      document.getElementById('financeActivityYear').addEventListener('change',saveSelection);
+      document.getElementById('financeActivityName').addEventListener('change',saveSelection);
+      document.getElementById('financeActivityStatus').textContent = 'Choose an activity to see its budget, spending, and remaining amount.';
+    }
+
+    async function loadFinanceActivity() {
+      try {
+        const [rows,eventRows] = await Promise.all([getSheetValues("'Control-2026'!A1:H30",FINANCE_SPREADSHEET_ID),getSheetValues("'Event Budgets'!A1:F100",FINANCE_SPREADSHEET_ID)]);
+        const activities = eventRows.slice(3).map(row => String(row[1] || row[0] || '').trim()).filter(Boolean);
+        renderFinanceActivity(rows,activities);
+        loadedFinanceTabs.add('activity');
+      } catch (error) { document.getElementById('financeActivityStatus').textContent = 'Activity Summary could not load from Google Sheets.'; }
+    }
+
+    function renderFinanceBft(rows, formulas) {
+      const at = (r,c) => String((rows[r] && rows[r][c]) || '—').trim();
+      const summary = (label,value,cls='') => `<div class="finance-dashboard-card ${cls}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
+      const target = document.getElementById('financeBftTable');
+      target.innerHTML = `<div class="bft-finance-summary">${summary('Total Deposits',at(1,11),'good')}${summary('Total Expenses',at(2,11))}${summary('Net Activity',at(5,11),'good')}${summary('Current Balance',at(6,11),'good')}${summary('Monthly Deposits',at(3,14),'good')}${summary('Monthly Expenses',at(4,14))}${summary('Monthly Net',at(5,14),'good')}${summary('Reporting Period',`${at(2,14)} ${at(1,14)}`)}</div>
+        <section class="bft-finance-section"><h3>2026 Program Budget</h3><p>Budget categories, ownership, approvals, actuals, and variance.</p><div class="data-status" id="financeBftBudgetStatus"></div><div id="financeBftBudgetTable"></div></section>
+        <section class="bft-finance-section"><h3>Bikes for Tykes Transactions</h3><p>The detailed deposit and expense ledger with a running program balance.</p><div class="data-status" id="financeBftTransactionsStatus"></div><div id="financeBftTransactionsTable"></div></section>`;
+      renderDataTable('financeBftBudgetTable','financeBftBudgetStatus',rows.slice(0,21),0,9,{sheetName:'Bikes for Tykes (BFT)',spreadsheetId:FINANCE_SPREADSHEET_ID,formulaRows:formulas.slice(0,21),rowOffset:0});
+      renderDataTable('financeBftTransactionsTable','financeBftTransactionsStatus',rows.slice(21),0,12,{sheetName:'Bikes for Tykes (BFT)',spreadsheetId:FINANCE_SPREADSHEET_ID,formulaRows:formulas.slice(21),rowOffset:21});
+      document.getElementById('financeBftStatus').textContent = 'Bikes for Tykes finances are organized into program totals, budget, and transactions.';
+    }
+
+    async function loadFinanceBft() {
+      document.getElementById('financeBftStatus').textContent = 'Loading Bikes for Tykes finance…';
+      try {
+        const range = "'Bikes for Tykes (BFT)'!A1:X1450";
+        const [rows,formulas] = await Promise.all([getSheetValues(range,FINANCE_SPREADSHEET_ID),getSheetValues(range,FINANCE_SPREADSHEET_ID,'FORMULA')]);
+        renderFinanceBft(rows,formulas);
+        loadedFinanceTabs.add('bft');
+      } catch (error) { document.getElementById('financeBftStatus').textContent = 'Bikes for Tykes finance could not load from Google Sheets.'; }
     }
 
     async function loadFinanceTab(key, force = false) {
       if (!key) return;
       if (key === 'dashboard') { if (force || !loadedFinanceTabs.has(key)) await loadFinanceDashboard(); return; }
       if (key === 'control') { if (force || !loadedFinanceTabs.has(key)) await loadFinanceControl(); return; }
+      if (key === 'activity') { if (force || !loadedFinanceTabs.has(key)) await loadFinanceActivity(); return; }
+      if (key === 'bft') { if (force || !loadedFinanceTabs.has(key)) await loadFinanceBft(); return; }
       if (!force && loadedFinanceTabs.has(key)) return;
       const config = financeTabConfig[key];
       if (!config) return;
