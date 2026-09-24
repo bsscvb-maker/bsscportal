@@ -3340,7 +3340,7 @@
       const cleanRole=(value,index)=>{const key=normalize(value).toLowerCase();if(key.startsWith('srg at arms')||key.startsWith('sergeant at arms'))return 'SRG at Arms';if(key.startsWith('road captian')||key.startsWith('road captain'))return 'Road Captain';if(key.startsWith('tail gunner'))return 'Tail Gunner';if(key==='director')return 'Director seat '+(index+1);return normalize(value).replace(/\s+non-board$/i,'');};
       const boardAppointmentRole=role=>/^(parliamentarian|media director)$/i.test(normalize(role));
       const clubOperationsRole=role=>/^(road captian|road captain|tail gunner|good will ambassador|pastor|football ambassador)$/i.test(normalize(role).replace(/\s+non-board$/i,''));
-      const cleanHolder=value=>normalize(value).replace(/\s*\\(president assigned\\)/ig,'').trim();
+      const cleanHolder=value=>normalize(value).replace(/\s*\(president assigned\)/ig,'').trim();
       const transition=/^(resigned|expelled|suspended|vacat(?:ed|ed-)|position sunset|assumed president role)\b/i;
       const isPlaceholder=value=>/^(open|unfilled|unestablished)$/i.test(normalize(value));
       const personValue=value=>{const raw=normalize(value);return raw&&!transition.test(raw)&&!isPlaceholder(raw);};
@@ -3386,7 +3386,7 @@
         {label:'2025-AsOf-2025-09-30',year:'2025',column:-107,baseColumn:4,timeline:'2025-09-30',rank:20250930},
         {label:'2025-AsOf-2025-11-25',year:'2025',column:-108,baseColumn:4,timeline:'2025-11-25',rank:20251125}
       ];
-      snapshots.splice(0,snapshots.length,...snapshots.filter(snapshot=>!/^2025-Update#\\d+$/i.test(snapshot.label)),...snapshots2025);
+      snapshots.splice(0,snapshots.length,...snapshots.filter(snapshot=>!/^2025-Update#\d+$/i.test(snapshot.label)),...snapshots2025);
       snapshots2025.forEach(snapshot=>{snapshot.buttonLabel=snapshotAnnotations[snapshot.label].buttonLabel;});
       savedUpdates.forEach((row,index)=>{const date=new Date(String(row[0]));if(Number.isNaN(date.getTime()))return;const year=String(date.getFullYear());snapshots.push({label:'Saved update '+index,year,column:-index-1,rank:1000+date.getTime(),dateKey:date.getTime(),buttonLabel:'As of '+date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),updateRow:row});});
       snapshots.sort((a,b)=>b.year.localeCompare(a.year)||b.rank-a.rank||b.column-a.column);
@@ -3398,12 +3398,14 @@
       const editOptions={sheetName:'Officer List',spreadsheetId:MEMBERSHIP_SPREADSHEET_ID,formulaRows};
       function showGrid(edit) {
         if(edit){tableEditModes.membershipContent=true;tablePendingEdits.membershipContent=new Map();}
-        renderDataTable('membershipContent','membershipStatus',rows,0,headers.length,editOptions);
+        const visibleColumns=headers.map((label,index)=>index).filter(index=>!/^2025-Update#\d+$/i.test(String(headers[index]||'').trim()));
+        const displayRows=edit?rows:rows.map(row=>visibleColumns.map(index=>row[index]));
+        renderDataTable('membershipContent','membershipStatus',displayRows,0,edit?headers.length:visibleColumns.length,editOptions);
         if(!edit){target.insertAdjacentHTML('afterbegin','<div class="officer-grid-backbar"><span>Original history grid · empty cells mean no entry was recorded</span><button type="button" id="officerBackToCards">← Year view</button></div>');document.getElementById('officerBackToCards').addEventListener('click',()=>renderMembershipOfficerHistory(rows,formulaRows,officerUpdates));}
       }
       const sourceNotes=rows.slice(1).filter(row=>!String(row[0]||'').trim()).flatMap(row=>row.slice(1).map(normalize).filter(Boolean));
       sourceNotes.splice(0,sourceNotes.length,...sourceNotes.filter(note=>!/^\*?board right-sized/i.test(note)));
-      target.innerHTML='<div class="officer-history-view"><header class="officer-history-hero"><div><span class="officer-eyebrow">MEMBERSHIP · LEADERSHIP</span><h2>Officer History</h2><p>Choose a year, then click a dated slate or update to see who held each role. Use Full history grid for the original year-by-year record.</p></div><div class="officer-hero-mark"><strong>'+snapshots.length+'</strong><span>saved snapshots</span></div></header><section class="officer-history-toolbar"><div class="officer-year-navigation"><label>Year<select id="officerYearSelect">'+yearMarkup+'</select></label><div class="officer-snapshot-nav"><span class="officer-eyebrow">SNAPSHOTS IN THIS YEAR</span><div id="officerSnapshotButtons" class="officer-snapshot-tabs" role="group" aria-label="Snapshots in selected year"></div></div></div><div class="officer-toolbar-actions"><button type="button" class="officer-grid-button" id="officerViewGrid">Full history grid</button><button type="button" class="officer-edit-button" id="officerAddUpdate">Add officer update</button><button type="button" class="officer-grid-button" id="officerEditData">Edit grid</button></div></section><div id="officerUpdateForm" hidden></div><div id="officerSnapshotDetail"></div><p class="officer-history-footnote">Empty cells are not labeled as vacancies. Names and transition notes are shown only when recorded in the source history.</p></div>';
+      target.innerHTML='<div class="officer-history-view"><header class="officer-history-hero"><div><span class="officer-eyebrow">MEMBERSHIP · LEADERSHIP</span><h2>Officer History</h2><p>Choose a year, then click a dated slate to see who held each role.</p></div><div class="officer-hero-mark"><strong>'+snapshots.length+'</strong><span>saved snapshots</span></div></header><section class="officer-history-toolbar"><div class="officer-year-navigation"><label>Year<select id="officerYearSelect">'+yearMarkup+'</select></label><div class="officer-snapshot-nav"><span class="officer-eyebrow">SNAPSHOTS IN THIS YEAR</span><div id="officerSnapshotButtons" class="officer-snapshot-tabs" role="group" aria-label="Snapshots in selected year"></div></div></div><div class="officer-toolbar-actions"><button type="button" class="officer-grid-button" id="officerViewGrid">Full history grid</button><button type="button" class="officer-edit-button" id="officerAddUpdate">Add officer update</button><button type="button" class="officer-grid-button" id="officerEditData">Edit grid</button></div></section><div id="officerUpdateForm" hidden></div><div id="officerSnapshotDetail"></div><p class="officer-history-footnote">The 2025 elected slate keeps vacant seats visible as Open. Other years show names and transitions recorded in the source history.</p></div>';
       const detail=document.getElementById('officerSnapshotDetail');
       const yearSelect=document.getElementById('officerYearSelect');
       const snapshotButtons=document.getElementById('officerSnapshotButtons');
@@ -3436,33 +3438,40 @@
               if(normalize(update[1])===normalize(row[0]))raw=normalize(update[2]);
             }
           }
-          if(!raw||isPlaceholder(raw)||/^vacat(?:ed|e)$/i.test(raw))return;
           const role=cleanRole(row[0],positions.slice(0,index).filter(item=>normalize(item[0]).toLowerCase()==='director').length);
           const displayRole=/^good will ambassador$/i.test(role)&&Number(snapshot.year)<2026?'Pastor':role;
-          const isRoadCaptain=/^(road captian|road captain)$/i.test(normalize(row[0]).replace(/\\s+non-board$/i,''));
-          const electedUntil2025=isRoadCaptain&&Number(snapshot.year)<2026&&!/\\(president assigned\\)/i.test(raw);
-          const groupKey=electedUntil2025?'elected':clubOperationsRole(row[0])?'operations':boardAppointmentRole(row[0])?'elected':'elected';
+          const positionName=normalize(row[0]).replace(/\s+non-board$/i,'');
+          const isRoadCaptain=/^(road captian|road captain)$/i.test(positionName);
+          const isTailGunner=/^tail gunner$/i.test(positionName);
+          const votedHolder=normalize(row[9]);
+          const was2025Seat=snapshot.year==='2025'&&!!votedHolder&&!/^(parliamentarian|good will ambassador)$/i.test(positionName);
+          const sunset=snapshot.timeline>='2025-09-30'&&/^(parliamentarian|media director)$/i.test(positionName);
+          const assigned=/\(president assigned\)/i.test(raw)||(snapshot.timeline>='2025-11-25'&&(isRoadCaptain||isTailGunner));
+          const groupKey=was2025Seat&&!sunset&&!assigned?'elected':clubOperationsRole(row[0])||assigned?'operations':boardAppointmentRole(row[0])?'elected':'elected';
+          if(was2025Seat&&sunset)return;
+          if(was2025Seat&&!assigned&&(!raw||isPlaceholder(raw)||/^vacat(?:ed|e)$/i.test(raw))){membershipByGroup.elected.push({role:displayRole,holder:'Open',vacant:true});return;}
+          if(!raw||isPlaceholder(raw)||/^vacat(?:ed|e)$/i.test(raw))return;
           if(transition.test(raw)){
-            const roadCaptainVacancy=['2025-07-27','2025-08-05','2025-08-06','2025-09-15','2025-09-30'].includes(snapshot.timeline)&&isRoadCaptain&&/^resigned\\b/i.test(raw);
+            const roadCaptainVacancy=['2025-07-27','2025-08-05','2025-08-06','2025-09-15','2025-09-30'].includes(snapshot.timeline)&&isRoadCaptain&&/^resigned\b/i.test(raw);
             transitions.push({role,note:roadCaptainVacancy?'Steve Leone resigned Road Captain on July 27, 2025 and remained on the Board.':raw});
-            if(roadCaptainVacancy)membershipByGroup[groupKey].push({role:displayRole,holder:'Open',note:'Vacant since July 27, 2025',vacant:true});
+            if(was2025Seat&&!assigned)membershipByGroup.elected.push({role:displayRole,holder:'Open',note:roadCaptainVacancy?'Vacant since July 27, 2025':raw,vacant:true});
             return;
           }
           if(!personValue(raw))return;
-          const note=/\\(president assigned\\)/i.test(raw)?'President assigned':'';
+          const note=/\(president assigned\)/i.test(raw)?'President assigned':'';
           const holder=cleanHolder(raw);
           membershipByGroup[groupKey].push({role:displayRole,holder,note});
         });
         const card=item=>'<article class="officer-role-card'+(item.vacant?' vacant':'')+'"><span class="officer-role-name">'+esc(item.role)+'</span><strong>'+esc(item.holder)+'</strong>'+(item.note?'<small>'+esc(item.note)+'</small>':'')+'</article>';
-        const group=(title,subtitle,items,kind)=>'<section class="officer-group '+kind+'"><div class="officer-group-head"><div><span class="officer-eyebrow">'+({elected:'ELECTED',assigned:'PRESIDENT ASSIGNED'}[kind]||'LEADERSHIP')+'</span><h4>'+title+'</h4></div><span class="officer-group-total">'+items.length+' '+(items.length===1?'name':'names')+'</span></div>'+(items.length?'<div class="officer-role-grid">'+items.map(card).join('')+'</div>':'<p class="officer-no-record">No names recorded in this snapshot.</p>')+'<p class="officer-group-caption">'+subtitle+'</p></section>';
+        const group=(title,subtitle,items,kind)=>'<section class="officer-group '+kind+'"><div class="officer-group-head"><div><span class="officer-eyebrow">'+({elected:'ELECTED',assigned:'PRESIDENT ASSIGNED'}[kind]||'LEADERSHIP')+'</span><h4>'+title+'</h4></div><span class="officer-group-total">'+items.length+' '+(items.length===1?'position':'positions')+'</span></div>'+(items.length?'<div class="officer-role-grid">'+items.map(card).join('')+'</div>':'<p class="officer-no-record">No names recorded in this snapshot.</p>')+'<p class="officer-group-caption">'+subtitle+'</p></section>';
         const is2026=/^2026/.test(snapshot.label);
-        const notes=['<section class="officer-context-notes"><div class="officer-context-title"><span class="officer-eyebrow">HISTORICAL NOTES</span><h4>Board structure and transitions</h4></div><ul><li><strong>2026 board right-sizing:</strong> the source note records a reduction from 11 board seats to 7.*</li><li><strong>2025 elected slate:</strong> the 2025 voted snapshot shows 11 elected board positions. Parliamentarian, Media Director, and Road Captain were removed from the elected board structure in 2026.</li><li><strong>2026 assignment change:</strong> Road Captain moved from an elected position to a president-assigned role. Tail Gunner is also shown as president-assigned.</li><li><strong>Role sunsets:</strong> Parliamentarian and Media Director were sunset effective September 30, 2025. They are historical roles, not open seats in 2026.</li><li><strong>Director labels:</strong> repeated Director rows are numbered by their order in the source sheet because the source does not give each seat a distinct title.</li><li><strong>Historical role title:</strong> Good Will Ambassador was called Pastor through 2025; the 2026 snapshots use Good Will Ambassador.</li>'+(sourceNotes.length?sourceNotes.map(note=>'<li>'+esc(note.replace(/^\\*|\\*$/g,''))+'</li>').join(''):'')+'</ul></section>'];
+        const notes=['<section class="officer-context-notes"><div class="officer-context-title"><span class="officer-eyebrow">HISTORICAL NOTES</span><h4>Board structure and transitions</h4></div><ul><li><strong>2025 elected slate:</strong> 11 seats, including Road Captain and Tail Gunner. A resignation leaves the seat open; it does not remove the seat.</li><li><strong>Director seats:</strong> Director seat 1 was Matt Albright, seat 2 Jennifer Lynch, and seat 3 Al Steven in the voted slate.</li><li><strong>2026 board right-sizing:</strong> the source note records a reduction from 11 board seats to 7.*</li><li><strong>Assignment change:</strong> Road Captain and Tail Gunner appear as president-assigned roles in the later source entries.</li><li><strong>Role sunsets:</strong> Parliamentarian and Media Director were sunset effective September 30, 2025.</li><li><strong>Historical role title:</strong> Good Will Ambassador was called Pastor through 2025; the 2026 snapshots use Good Will Ambassador.</li>'+(sourceNotes.length?sourceNotes.map(note=>'<li>'+esc(note.replace(/^\*|\*$/g,''))+'</li>').join(''):'')+'</ul></section>'];
         const transitionMarkup=transitions.length?'<section class="officer-transition-notes"><h4>Recorded transitions in this snapshot</h4>'+transitions.map(item=>'<div><strong>'+esc(item.role)+'</strong><span>'+esc(item.note)+'</span></div>').join('')+'</section>':'';
         const isHistoricalUpdate=/^\d{4}-Update#?\d+$/i.test(snapshot.label);
         const updateNote=snapshot.updateRow?{date:snapshot.buttonLabel.replace('As of ',''),context:String(snapshot.updateRow[3]||''),source:'Officer update record',buttonLabel:''}:snapshotAnnotations[snapshot.label]||(isHistoricalUpdate?{date:'Exact date not recorded',context:'Reason not recorded yet. Add a brief explanation here once the reason is confirmed.',source:'Add supporting details when confirmed'}:null);
         const updateDetail=Array.isArray(updateNote?.events)?'<ul>'+updateNote.events.map(item=>'<li>'+esc(item)+'</li>').join('')+'</ul>':'<p>'+esc(updateNote?.context||'')+'</p>';
         const updateMarkup=updateNote?'<section class="officer-update-context"><div><span class="officer-eyebrow">WHY THIS UPDATE</span><strong>'+esc(updateNote.date)+'</strong></div>'+updateDetail+'<small>Source: '+esc(updateNote.source)+'</small></section>':'';
-        detail.innerHTML='<section class="officer-snapshot-detail"><div class="officer-snapshot-heading"><div><span class="officer-eyebrow">SELECTED SLATE</span><h3>'+esc(snapshot.buttonLabel)+'</h3></div><div class="officer-snapshot-counts"><span><strong>'+(membershipByGroup.elected.length+membershipByGroup.appointed.length+membershipByGroup.operations.length)+'</strong> names recorded</span></div></div>'+updateMarkup+(is2026?'<p class="officer-period-note">This 2026 slate shows 7 board seats, down from 11.* The role changes are detailed below.</p>':'')+group('Elected Positions','Positions elected by the membership, including elected board offices.',membershipByGroup.elected,'elected')+group('President-Assigned Positions','Positions assigned by the president, including club operations.',membershipByGroup.appointed.concat(membershipByGroup.operations),'assigned')+transitionMarkup+notes.join('')+'</section>';
+        detail.innerHTML='<section class="officer-snapshot-detail"><div class="officer-snapshot-heading"><div><span class="officer-eyebrow">SELECTED SLATE</span><h3>'+esc(snapshot.buttonLabel)+'</h3></div><div class="officer-snapshot-counts"><span><strong>'+membershipByGroup.elected.length+'</strong> elected positions</span></div></div>'+updateMarkup+(is2026?'<p class="officer-period-note">This 2026 slate shows 7 board seats, down from 11.* The role changes are detailed below.</p>':'')+group('Elected Positions','Positions elected by the membership, including elected board offices.',membershipByGroup.elected,'elected')+group('President-Assigned Positions','Positions assigned by the president, including club operations.',membershipByGroup.appointed.concat(membershipByGroup.operations),'assigned')+transitionMarkup+notes.join('')+'</section>';
       }
       yearSelect.addEventListener('change',()=>{
         const yearSnapshots=snapshots.filter(snapshot=>snapshot.year===yearSelect.value);
