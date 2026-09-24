@@ -3354,7 +3354,7 @@
           'Jim Capasso resigned as Tail Gunner on May 25. He is no longer shown as the position holder.'
         ],source:'2025 Officer List; Board Meeting Summary'},
         '2025-AsOf-2025-07-27':{buttonLabel:'As of Jul 27, 2025',date:'July 27, 2025',events:[
-          'Steve Leone resigned as Road Captain on July 27 and remained on the Board. The Road Captain position is open as of this update.'
+          'Steve Leone left Road Captain and moved into an open Director seat on July 27. Road Captain is open as of this update.'
         ],source:'2025 Officer List; Board Meeting Summary'},
         '2025-AsOf-2025-08-05':{buttonLabel:'As of Aug 5, 2025',date:'August 5, 2025',events:[
           'Lee Kline resigned as President and from the Board on August 5. Vice President Todd Humphrey assumed presidential duties under the bylaws.',
@@ -3367,7 +3367,7 @@
           'The Board unanimously confirmed Todd Humphrey as President for the remainder of 2025 and the 2026 term, following Lee Kline’s August 5 resignation.'
         ],source:'Emergency Board Minutes September 15; Board Minutes August 19'},
         '2025-AsOf-2025-09-30':{buttonLabel:'As of Sep 30, 2025',date:'September 30, 2025',events:[
-          'Steve Leone was elected Vice President and James Hennings was elected Sergeant-at-Arms.',
+          'Steve Leone moved from Director to Vice President, and James Hennings was elected Sergeant-at-Arms.',
           'Parliamentarian and Media Director were sunset effective September 30. Road Captain remained open after Steve Leone’s July 27 resignation.'
         ],source:'Board Minutes September 30; 2025 Officer List'},
         '2025-AsOf-2025-11-25':{buttonLabel:'As of Nov 25, 2025',date:'November 25, 2025',events:[
@@ -3453,7 +3453,7 @@
           if(!raw||isPlaceholder(raw)||/^vacat(?:ed|e)$/i.test(raw))return;
           if(transition.test(raw)){
             const roadCaptainVacancy=['2025-07-27','2025-08-05','2025-08-06','2025-09-15','2025-09-30'].includes(snapshot.timeline)&&isRoadCaptain&&/^resigned\b/i.test(raw);
-            transitions.push({role,note:roadCaptainVacancy?'Steve Leone resigned Road Captain on July 27, 2025 and remained on the Board.':raw});
+            transitions.push({role,note:roadCaptainVacancy?'Steve Leone left Road Captain on July 27, 2025 and moved to an open Director seat.':raw});
             if(was2025Seat&&!assigned)membershipByGroup.elected.push({role:displayRole,holder:'Open',note:roadCaptainVacancy?'Vacant since July 27, 2025':raw,vacant:true});
             return;
           }
@@ -3462,10 +3462,21 @@
           const holder=cleanHolder(raw);
           membershipByGroup[groupKey].push({role:displayRole,holder,note});
         });
+        if(snapshot.year==='2025'){
+          const elected=membershipByGroup.elected;
+          const directorSlots=elected.filter(item=>/^Director seat \d+$/.test(item.role));
+          const firstSlot=elected.findIndex(item=>/^Director seat \d+$/.test(item.role));
+          if(directorSlots.length===3){
+            const incumbents=directorSlots.filter(item=>!item.vacant);
+            if(snapshot.timeline>='2025-07-27'&&snapshot.timeline<'2025-09-30'&&!incumbents.some(item=>item.holder==='Steve Leone'))incumbents.push({holder:'Steve Leone',note:'Moved from Road Captain July 27'});
+            const numbered=Array.from({length:3},(_,index)=>({...(incumbents[index]||{holder:'Open',vacant:true}),role:'Director seat '+(index+1)}));
+            elected.splice(firstSlot,3,...numbered);
+          }
+        }
         const card=item=>'<article class="officer-role-card'+(item.vacant?' vacant':'')+'"><span class="officer-role-name">'+esc(item.role)+'</span><strong>'+esc(item.holder)+'</strong>'+(item.note?'<small>'+esc(item.note)+'</small>':'')+'</article>';
         const group=(title,subtitle,items,kind)=>'<section class="officer-group '+kind+'"><div class="officer-group-head"><div><span class="officer-eyebrow">'+({elected:'ELECTED',assigned:'PRESIDENT ASSIGNED'}[kind]||'LEADERSHIP')+'</span><h4>'+title+'</h4></div><span class="officer-group-total">'+items.length+' '+(items.length===1?'position':'positions')+'</span></div>'+(items.length?'<div class="officer-role-grid">'+items.map(card).join('')+'</div>':'<p class="officer-no-record">No names recorded in this snapshot.</p>')+'<p class="officer-group-caption">'+subtitle+'</p></section>';
         const is2026=/^2026/.test(snapshot.label);
-        const notes=['<section class="officer-context-notes"><div class="officer-context-title"><span class="officer-eyebrow">HISTORICAL NOTES</span><h4>Board structure and transitions</h4></div><ul><li><strong>2025 elected slate:</strong> 11 seats, including Road Captain and Tail Gunner. A resignation leaves the seat open; it does not remove the seat.</li><li><strong>Director seats:</strong> Director seat 1 was Matt Albright, seat 2 Jennifer Lynch, and seat 3 Al Steven in the voted slate.</li><li><strong>2026 board right-sizing:</strong> the source note records a reduction from 11 board seats to 7.*</li><li><strong>Assignment change:</strong> Road Captain and Tail Gunner appear as president-assigned roles in the later source entries.</li><li><strong>Role sunsets:</strong> Parliamentarian and Media Director were sunset effective September 30, 2025.</li><li><strong>Historical role title:</strong> Good Will Ambassador was called Pastor through 2025; the 2026 snapshots use Good Will Ambassador.</li>'+(sourceNotes.length?sourceNotes.map(note=>'<li>'+esc(note.replace(/^\*|\*$/g,''))+'</li>').join(''):'')+'</ul></section>'];
+        const notes=['<section class="officer-context-notes"><div class="officer-context-title"><span class="officer-eyebrow">HISTORICAL NOTES</span><h4>Board structure and transitions</h4></div><ul><li><strong>2025 elected slate:</strong> 11 seats, including Road Captain and Tail Gunner. A resignation leaves the seat open; it does not remove the seat.</li><li><strong>Director seats:</strong> the voted slate listed Matt Albright, Jennifer Lynch, and Al Steven. As Directors leave, remaining Directors move up and the open seat appears last. Steve Leone moved from Road Captain to Director on July 27.</li><li><strong>2026 board right-sizing:</strong> the source note records a reduction from 11 board seats to 7.*</li><li><strong>Assignment change:</strong> Road Captain and Tail Gunner appear as president-assigned roles in the later source entries.</li><li><strong>Role sunsets:</strong> Parliamentarian and Media Director were sunset effective September 30, 2025.</li><li><strong>Historical role title:</strong> Good Will Ambassador was called Pastor through 2025; the 2026 snapshots use Good Will Ambassador.</li>'+(sourceNotes.length?sourceNotes.map(note=>'<li>'+esc(note.replace(/^\*|\*$/g,''))+'</li>').join(''):'')+'</ul></section>'];
         const transitionMarkup=transitions.length?'<section class="officer-transition-notes"><h4>Recorded transitions in this snapshot</h4>'+transitions.map(item=>'<div><strong>'+esc(item.role)+'</strong><span>'+esc(item.note)+'</span></div>').join('')+'</section>':'';
         const isHistoricalUpdate=/^\d{4}-Update#?\d+$/i.test(snapshot.label);
         const updateNote=snapshot.updateRow?{date:snapshot.buttonLabel.replace('As of ',''),context:String(snapshot.updateRow[3]||''),source:'Officer update record',buttonLabel:''}:snapshotAnnotations[snapshot.label]||(isHistoricalUpdate?{date:'Exact date not recorded',context:'Reason not recorded yet. Add a brief explanation here once the reason is confirmed.',source:'Add supporting details when confirmed'}:null);
