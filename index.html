@@ -3263,7 +3263,9 @@
           if(!personValue(raw))return;
           const note=/\\(president assigned\\)/i.test(raw)?'President assigned':'';
           const holder=cleanHolder(raw);
-          const groupKey=clubOperationsRole(row[0])?'operations':boardAppointmentRole(row[0])?'appointed':'elected';
+          const isRoadCaptain=/^(road captian|road captain)$/i.test(normalize(row[0]).replace(/\s+non-board$/i,''));
+          const electedUntil2025=isRoadCaptain&&Number(snapshot.year)<2026;
+          const groupKey=electedUntil2025?'elected':clubOperationsRole(row[0])?'operations':boardAppointmentRole(row[0])?'elected':'elected';
           membershipByGroup[groupKey].push({role:displayRole,holder,note});
         });
         const card=item=>'<article class="officer-role-card"><span class="officer-role-name">'+esc(item.role)+'</span><strong>'+esc(item.holder)+'</strong>'+(item.note?'<small>'+esc(item.note)+'</small>':'')+'</article>';
