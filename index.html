@@ -3387,7 +3387,7 @@
         {label:'2025-AsOf-2025-11-25',year:'2025',column:-108,baseColumn:4,timeline:'2025-11-25',rank:20251125}
       ];
       snapshots.splice(0,snapshots.length,...snapshots.filter(snapshot=>!/^2025-Update#\\d+$/i.test(snapshot.label)),...snapshots2025);
-      snapshots2025.forEach(snapshot=>Object.assign(snapshot,snapshotInfo(snapshot),{buttonLabel:snapshotAnnotations[snapshot.label].buttonLabel}));
+      snapshots2025.forEach(snapshot=>{snapshot.buttonLabel=snapshotAnnotations[snapshot.label].buttonLabel;});
       savedUpdates.forEach((row,index)=>{const date=new Date(String(row[0]));if(Number.isNaN(date.getTime()))return;const year=String(date.getFullYear());snapshots.push({label:'Saved update '+index,year,column:-index-1,rank:1000+date.getTime(),dateKey:date.getTime(),buttonLabel:'As of '+date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),updateRow:row});});
       snapshots.sort((a,b)=>b.year.localeCompare(a.year)||b.rank-a.rank||b.column-a.column);
       const filled=snapshots.map(snapshot=>({snapshot,count:snapshot.updateRow?1:positions.filter(row=>personValue(row[snapshot.baseColumn??snapshot.column])).length}));
