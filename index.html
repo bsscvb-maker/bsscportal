@@ -3347,15 +3347,16 @@
       const snapshotAnnotations={
         '2026-Update#1':{buttonLabel:'As of Jun 30, 2026',date:'June 30, 2026',context:'President Todd appointed David Reed as Good Will Ambassador after reporting that Dale Oran had stepped away from the Pastor role for personal obligations unrelated to the club.',source:'Board Minutes, June 30, 2026 · General Meeting Minutes, June 2, 2026'},
         '2025-Update#1':{buttonLabel:'As of Jun 30, 2025',date:'Officer changes recorded April 25–May 25, 2025; follow-up June 30',events:[
-          'April 25 — Matt Albright left the Board and club. The May 5 minutes say his resignation was submitted April 7 and cite work conflicts, a desire to focus on riding, and a possible Red Knights MC membership conflict. The board summary records his departure on April 25 to join another motorcycle club.',
-          'May 12 — The emergency minutes record Sergeant-at-Arms Kevin Lynch expelled from the Board and club over safety and affiliation conflicts. The board summary and Officer List show May 25, so the records differ on the effective date.',
-          'May 12 — Jennifer Lynch was suspended for five years; the minutes cite concerns about her continued association with Kevin. The board summary and Officer List show May 25, so the records differ on the effective date.',
-          'Jim Capasso — The May 5 minutes report a Board resignation submitted May 13 due to concerns about club direction. The May 12 emergency minutes instead record probation; the summary and Officer List date his Tail Gunner departure May 25. The action and date conflict across records.',
-          'June 30 — The minutes record Matt and Terry Albright submitting a resignation letter and note confusion about membership in multiple clubs. This later documentation does not change the Officer List date for Matt.'
-        ],source:'2025 Board Meeting Summary; Board Minutes May 5, May 12, and June 30; Officer List'},
+          'April 25 — Matt Albright resigned from the Board. He is no longer listed as a current Director in this snapshot.',
+          'May 25 — Jennifer Lynch was suspended. She is no longer listed as a current Director in this snapshot.',
+          'May 25 — Kevin Lynch was expelled. He is no longer listed as the current Sergeant-at-Arms in this snapshot.',
+          'May 25 — Jim Capasso resigned as Tail Gunner. The position is no longer shown with Jim as its current holder.',
+          'These dates and status changes follow the Officer List update. It does not provide reasons for these changes.'
+        ],source:'2025 Officer List update; Board Meeting Summary'},
         '2025-Update#2':{buttonLabel:'As of Jul 27, 2025',date:'July 27, 2025',events:[
-          'Steve Leone resigned as Road Captain but remained on the Board. The July 27 date appears in the board summary and Officer List; the July 29 attendance table still lists him as Road Captain. The minutes do not state a reason.'
-        ],source:'2025 Board Meeting Summary; Board Minutes July 29; Officer List'},
+          'July 27 — Steve Leone resigned as Road Captain. The Road Captain position is open as of this update; Steve remained on the Board.',
+          'The Officer List records the resignation date. It does not state a reason.'
+        ],source:'2025 Officer List update; Board Meeting Summary'},
         '2025-Update#3':{buttonLabel:'As of Aug 6, 2025',date:'August 5–6, 2025',events:[
           'August 5 — Lee Kline resigned as President and from the Board.',
           'August 6 — Carrie Kline resigned from the Board as Media Director. The August 19 minutes recap both departures; they do not state reasons.'
@@ -3415,16 +3416,21 @@
           if(!raw||isPlaceholder(raw)||/^vacat(?:ed|e)$/i.test(raw))return;
           const role=cleanRole(row[0],positions.slice(0,index).filter(item=>normalize(item[0]).toLowerCase()==='director').length);
           const displayRole=/^good will ambassador$/i.test(role)&&Number(snapshot.year)<2026?'Pastor':role;
-          if(transition.test(raw)){transitions.push({role,note:raw});return;}
+          const isRoadCaptain=/^(road captian|road captain)$/i.test(normalize(row[0]).replace(/\\s+non-board$/i,''));
+          const electedUntil2025=isRoadCaptain&&Number(snapshot.year)<2026;
+          const groupKey=electedUntil2025?'elected':clubOperationsRole(row[0])?'operations':boardAppointmentRole(row[0])?'elected':'elected';
+          if(transition.test(raw)){
+            const julyRoadCaptainVacancy=snapshot.label==='2025-Update#2'&&isRoadCaptain&&/^resigned\\b/i.test(raw);
+            transitions.push({role,note:julyRoadCaptainVacancy?'Steve Leone resigned July 27, 2025; he remained on the Board.':raw});
+            if(julyRoadCaptainVacancy)membershipByGroup[groupKey].push({role:displayRole,holder:'Open',note:'Vacant as of July 27, 2025',vacant:true});
+            return;
+          }
           if(!personValue(raw))return;
           const note=/\\(president assigned\\)/i.test(raw)?'President assigned':'';
           const holder=cleanHolder(raw);
-          const isRoadCaptain=/^(road captian|road captain)$/i.test(normalize(row[0]).replace(/\s+non-board$/i,''));
-          const electedUntil2025=isRoadCaptain&&Number(snapshot.year)<2026;
-          const groupKey=electedUntil2025?'elected':clubOperationsRole(row[0])?'operations':boardAppointmentRole(row[0])?'elected':'elected';
           membershipByGroup[groupKey].push({role:displayRole,holder,note});
         });
-        const card=item=>'<article class="officer-role-card"><span class="officer-role-name">'+esc(item.role)+'</span><strong>'+esc(item.holder)+'</strong>'+(item.note?'<small>'+esc(item.note)+'</small>':'')+'</article>';
+        const card=item=>'<article class="officer-role-card'+(item.vacant?' vacant':'')+'"><span class="officer-role-name">'+esc(item.role)+'</span><strong>'+esc(item.holder)+'</strong>'+(item.note?'<small>'+esc(item.note)+'</small>':'')+'</article>';
         const group=(title,subtitle,items,kind)=>'<section class="officer-group '+kind+'"><div class="officer-group-head"><div><span class="officer-eyebrow">'+({elected:'ELECTED',assigned:'PRESIDENT ASSIGNED'}[kind]||'LEADERSHIP')+'</span><h4>'+title+'</h4></div><span class="officer-group-total">'+items.length+' '+(items.length===1?'name':'names')+'</span></div>'+(items.length?'<div class="officer-role-grid">'+items.map(card).join('')+'</div>':'<p class="officer-no-record">No names recorded in this snapshot.</p>')+'<p class="officer-group-caption">'+subtitle+'</p></section>';
         const is2026=/^2026/.test(snapshot.label);
         const notes=['<section class="officer-context-notes"><div class="officer-context-title"><span class="officer-eyebrow">HISTORICAL NOTES</span><h4>Board structure and transitions</h4></div><ul><li><strong>2026 board right-sizing:</strong> the source note records a reduction from 11 board seats to 7.*</li><li><strong>2025 elected slate:</strong> the 2025 voted snapshot shows 11 elected board positions. Parliamentarian, Media Director, and Road Captain were removed from the elected board structure in 2026.</li><li><strong>2026 assignment change:</strong> Road Captain moved from an elected position to a president-assigned role. Tail Gunner is also shown as president-assigned.</li><li><strong>Role sunsets:</strong> Parliamentarian and Media Director were sunset effective September 30, 2025. They are historical roles, not open seats in 2026.</li><li><strong>Director labels:</strong> repeated Director rows are numbered by their order in the source sheet because the source does not give each seat a distinct title.</li><li><strong>Historical role title:</strong> Good Will Ambassador was called Pastor through 2025; the 2026 snapshots use Good Will Ambassador.</li>'+(sourceNotes.length?sourceNotes.map(note=>'<li>'+esc(note.replace(/^\\*|\\*$/g,''))+'</li>').join(''):'')+'</ul></section>'];
