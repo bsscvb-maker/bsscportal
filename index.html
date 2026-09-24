@@ -3342,7 +3342,7 @@
       const transition=/^(resigned|expelled|suspended|vacat(?:ed|ed-)|position sunset|assumed president role)\\b/i;
       const isPlaceholder=value=>/^(open|unfilled|unestablished)$/i.test(normalize(value));
       const personValue=value=>{const raw=normalize(value);return raw&&!transition.test(raw)&&!isPlaceholder(raw);};
-      const snapshotAnnotations={'2026-Update#1':{buttonLabel:'David Reed · Jun 30',date:'June 30, 2026',context:'President Todd appointed David Reed as Good Will Ambassador after reporting that Dale Oran had stepped away from the Pastor role for personal obligations unrelated to the club.',source:'BSSC Board Minutes'}};
+      const snapshotAnnotations={'2026-Update#1':{buttonLabel:'David Reed · Jun 30',date:'June 30, 2026',context:'President Todd appointed David Reed as Good Will Ambassador after reporting that Dale Oran had stepped away from the Pastor role for personal obligations unrelated to the club.',source:'Board Minutes, June 30, 2026 · General Meeting Minutes, June 2, 2026'}};
       const snapshotInfo=snapshot=>{const match=snapshot.label.match(/^(\d{4})(?:-(.*))?$/);const year=match?match[1]:'Other';const suffix=match?(match[2]||'Roster'):snapshot.label;const voted=/^Voted\*?$/i.test(suffix);const update=suffix.match(/^Update#?(\d+)$/i);const annotation=snapshotAnnotations[snapshot.label];return{year,buttonLabel:annotation?.buttonLabel||(voted?(suffix.endsWith('*')?'Voted*':'Voted'):update?'Update '+update[1]:suffix),rank:voted?0:update?Number(update[1]):999};};
       snapshots.forEach(snapshot=>Object.assign(snapshot,snapshotInfo(snapshot)));
       snapshots.sort((a,b)=>b.year.localeCompare(a.year)||a.rank-b.rank||a.column-b.column);
