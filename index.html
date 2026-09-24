@@ -3440,7 +3440,7 @@
           const role=cleanRole(row[0],positions.slice(0,index).filter(item=>normalize(item[0]).toLowerCase()==='director').length);
           const displayRole=/^good will ambassador$/i.test(role)&&Number(snapshot.year)<2026?'Pastor':role;
           const isRoadCaptain=/^(road captian|road captain)$/i.test(normalize(row[0]).replace(/\\s+non-board$/i,''));
-          const electedUntil2025=isRoadCaptain&&Number(snapshot.year)<2026;
+          const electedUntil2025=isRoadCaptain&&Number(snapshot.year)<2026&&!/\\(president assigned\\)/i.test(raw);
           const groupKey=electedUntil2025?'elected':clubOperationsRole(row[0])?'operations':boardAppointmentRole(row[0])?'elected':'elected';
           if(transition.test(raw)){
             const roadCaptainVacancy=['2025-07-27','2025-08-05','2025-08-06','2025-09-15','2025-09-30'].includes(snapshot.timeline)&&isRoadCaptain&&/^resigned\\b/i.test(raw);
