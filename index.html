@@ -504,6 +504,11 @@
     .admin-badge.error { background:var(--gold); }
     .admin-link { display:inline-block; padding:7px 10px; border-radius:7px; color:#fff; background:var(--gold); font-size:.76rem; font-weight:900; text-decoration:none; }
     .admin-note { padding:12px; border-left:4px solid var(--gold); border-radius:7px; color:#5f101d; background:#fff0f2; font-size:.85rem; line-height:1.45; }
+    .admin-activity .audit-item { border-top-color:#e1e3e7; }
+    .admin-activity .audit-item strong { color:#161616; }
+    .admin-activity .audit-item small,.admin-activity .audit-time,.admin-activity .audit-empty { color:#626872; }
+    .admin-activity .portal-audit-status { display:block; margin-top:8px; color:#626872; font-size:.78rem; }
+    .admin-activity #portalAuditNote { margin:7px 0 0; color:#626872; font-size:.8rem; line-height:1.45; }
     .uptimerobot-connect { margin-top:8px; padding:11px; border:1px solid var(--line); border-radius:8px; background:#f7f8f9; }
     .uptimerobot-connect summary { font-weight:900; cursor:pointer; }
     .uptimerobot-connect p { margin:8px 0; color:var(--muted); font-size:.82rem; line-height:1.45; }
@@ -652,8 +657,11 @@
     .operations-kpi span { display:block; color:#626a73; font-size:.72rem; font-weight:900; letter-spacing:.045em; text-transform:uppercase; }
     .operations-kpi strong { display:block; margin-top:7px; overflow-wrap:anywhere; font-size:1.2rem; line-height:1.25; }
     .operations-kpi small { display:block; margin-top:5px; color:#68707a; font-size:.75rem; line-height:1.35; }
-    .operations-lower { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+    .operations-lower { display:block; margin-top:12px; }
     .operations-note { min-width:0; padding:13px 15px; border:1px solid #37383e; border-radius:10px; background:#151619; }
+    .operations-note.operations-freshness { display:flex; align-items:center; gap:8px; padding:8px 12px; border:0; border-left:3px solid var(--gold); border-radius:6px; background:#191a1e; }
+    .operations-note.operations-freshness h3 { flex:0 0 auto; margin:0; font-size:.76rem; }
+    .operations-note.operations-freshness p { color:#c4c6cb; font-size:.76rem; }
     .operations-note h3 { margin:0 0 8px; color:#fff; font-size:.9rem; }
     .operations-note p { margin:0; color:#c4c6cb; font-size:.8rem; line-height:1.45; }
     .audit-list { display:grid; gap:6px; }
@@ -807,8 +815,7 @@
               <article class="operations-kpi"><span>Marketplace Cash to Collect</span><strong>—</strong><small>Live Marketplace workbook</small></article>
             </div>
             <div class="operations-lower">
-              <section class="operations-note"><h3>Data freshness</h3><p id="operationsOverviewFreshness">The command center refreshes after sign-in and when you select Refresh.</p></section>
-              <section class="operations-note" aria-labelledby="portalActivityTitle"><h3 id="portalActivityTitle">Recent Portal Activity</h3><div class="audit-list" id="portalAuditList" aria-live="polite"></div><small class="portal-audit-status" id="portalAuditStatus" role="status" aria-live="polite">Shared activity log will load after sign-in.</small><p style="margin-top:7px" id="portalAuditNote">The shared log stores who changed what workbook area and when. It does not store cell contents.</p><button class="audit-clear" id="portalAuditClear" type="button">Clear local-only history</button></section>
+              <section class="operations-note operations-freshness"><h3>Last refreshed</h3><p id="operationsOverviewFreshness">The command center refreshes after sign-in and when you select Refresh.</p></section>
             </div>
           </section>
           <div class="module-grid">
@@ -992,6 +999,7 @@
                 </details>
                 <div class="admin-row"><div><strong>Portal source and update history</strong><small>Review recent code changes and publishing activity</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://github.com/bsscvb-maker/bsscportal">View GitHub</a></div>
               </div></section>
+              <section class="admin-card admin-activity" aria-labelledby="portalActivityTitle"><h2 id="portalActivityTitle">Recent Portal Activity</h2><div class="admin-card-body"><div class="audit-list" id="portalAuditList" aria-live="polite"></div><small class="portal-audit-status" id="portalAuditStatus" role="status" aria-live="polite">Shared activity log will load after sign-in.</small><p id="portalAuditNote">The shared log stores who changed what workbook area and when. It does not store cell contents.</p><button class="audit-clear" id="portalAuditClear" type="button">Clear local-only history</button></div></section>
             </div>
           </div></div></div>
         </section>
