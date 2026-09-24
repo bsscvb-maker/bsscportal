@@ -3447,7 +3447,7 @@
           const was2025Seat=snapshot.year==='2025'&&!!votedHolder&&!/^(parliamentarian|good will ambassador)$/i.test(positionName);
           const sunset=snapshot.timeline>='2025-09-30'&&/^(parliamentarian|media director)$/i.test(positionName);
           const assigned=/\(president assigned\)/i.test(raw)||(snapshot.timeline>='2025-11-25'&&(isRoadCaptain||isTailGunner));
-          const groupKey=was2025Seat&&!sunset&&!assigned?'elected':clubOperationsRole(row[0])||assigned?'operations':boardAppointmentRole(row[0])?'elected':'elected';
+          const groupKey=was2025Seat&&!sunset&&!assigned?'elected':clubOperationsRole(row[0])||assigned||snapshot.year==='2025'&&/^parliamentarian$/i.test(positionName)?'operations':boardAppointmentRole(row[0])?'elected':'elected';
           if(was2025Seat&&sunset)return;
           if(was2025Seat&&!assigned&&(!raw||isPlaceholder(raw)||/^vacat(?:ed|e)$/i.test(raw))){membershipByGroup.elected.push({role:displayRole,holder:'Open',vacant:true});return;}
           if(!raw||isPlaceholder(raw)||/^vacat(?:ed|e)$/i.test(raw))return;
