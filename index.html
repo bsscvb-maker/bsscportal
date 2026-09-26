@@ -3380,7 +3380,7 @@
       const newMemberShare = projectedRoster.length ? newForYear / projectedRoster.length : 0;
       const projectedGrowth = startingRoster ? newForYear / startingRoster : 0;
       const officers = rows.slice(5,year === '2026' ? 10 : 12).map(row => [row[1],row[2]]);
-      const assignedRoles = year === '2026' ? rows.slice(10,12).map(row => [row[1],row[2]]) : [];
+      const assignedRoles = year === '2026' ? rows.slice(10,12).map(row => [row[1],row[2]]).concat(officerRows.slice(1).filter(row => /^good will ambassador$/i.test(String(row[0] || '').trim()) && /president assigned/i.test(String(row[2] || ''))).map(row => ['Good Will Ambassador',String(row[2] || '').replace(/\s*\(president assigned\)/i,'').trim()])) : [];
       // The two current director seats are the first two Director entries in the latest 2026 update.
       const directors = year === '2026' ? officerRows.slice(1).filter(row => String(row[0] || '').trim().toLowerCase() === 'director').slice(0,2).map(row => ['Director',String(row[2] || '').trim()]) : [];
       const compactRows = items => items.map(item => `<div class="membership-highlight-row"><span>${esc(item[0])}</span><strong>${esc(item[1] || '—')}</strong></div>`).join('');
@@ -3743,7 +3743,7 @@
         const reads = [getSheetValues(config.range,MEMBERSHIP_SPREADSHEET_ID)];
         if (config.editable) reads.push(getSheetValues(config.range,MEMBERSHIP_SPREADSHEET_ID,'FORMULA'));
         if (config.dashboard) reads.push(getSheetValues(`'${sheetName.replace('Dashboard ','')}'!A1:${sheetName.includes('2026') ? 'AH' : 'AK'}900`,MEMBERSHIP_SPREADSHEET_ID));
-        if (sheetName === 'Dashboard 2026') reads.push(getSheetValues("'Officer List'!A1:D16",MEMBERSHIP_SPREADSHEET_ID));
+        if (sheetName === 'Dashboard 2026') reads.push(getSheetValues("'Officer List'!A1:D17",MEMBERSHIP_SPREADSHEET_ID));
         const [rows,formulasOrRoster = [],officerRows = []] = await Promise.all(reads);
         if (config.dashboard) renderMembershipDashboard(rows,sheetName.replace('Dashboard ',''),formulasOrRoster,officerRows);
         else if (config.attendanceSummary) renderMembershipAttendanceSummary(rows);
