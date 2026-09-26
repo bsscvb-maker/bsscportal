@@ -337,7 +337,10 @@
     .transaction-entry-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:6px; }
     .transaction-entry-actions button { border:0; border-radius:8px; padding:10px 14px; font-weight:900; cursor:pointer; }
     .transaction-cancel { color:#202226; background:#e2e5e8; }
-    .transaction-save { color:#fff; background:var(--gold); }
+    .transaction-save { color:#fff; background:#08783f; }
+    .transaction-save:disabled { opacity:.7; cursor:wait; }
+    .transaction-save.saved { background:#08783f; }
+    .transaction-field input:invalid,.transaction-field select:invalid { border-color:#b42332; }
     .variance-good { color:#075c2d !important; background:#dff6e8 !important; font-weight:900; }
     .variance-over { color:#8c0c20 !important; background:#ffe1e6 !important; font-weight:900; }
     .finance-user-hidden { display:none !important; }
@@ -1962,7 +1965,8 @@
             const options = financeTransactionOptions[field.header.toLowerCase()] || [];
             const isSuggestedText = /^(description|payee\/payer)$/i.test(field.header) && options.length;
             const suggestedPlaceholder = /^payee\/payer$/i.test(field.header) ? 'Type a new payee/payer or choose a previous one' : 'Type a description or choose a previous one';
-            const control = isSuggestedText ? `<input id="transactionField${field.column}" name="column${field.column}" type="text" list="transactionSuggestions${field.column}" value="" autocomplete="off" placeholder="${suggestedPlaceholder}"><datalist id="transactionSuggestions${field.column}">${options.map(option => `<option value="${esc(option)}"></option>`).join('')}</datalist>` : options.length ? `<select id="transactionField${field.column}" name="column${field.column}" required><option value="">Select ${esc(field.header)}…</option>${options.map(option => `<option value="${esc(option)}">${esc(option)}</option>`).join('')}</select>` : `<input id="transactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} value="${esc(value)}" autocomplete="off">`;
+            const required = !/^note$/i.test(field.header) ? 'required' : '';
+            const control = isSuggestedText ? `<input id="transactionField${field.column}" name="column${field.column}" type="text" list="transactionSuggestions${field.column}" value="" autocomplete="off" ${required} placeholder="${suggestedPlaceholder}"><datalist id="transactionSuggestions${field.column}">${options.map(option => `<option value="${esc(option)}"></option>`).join('')}</datalist>` : options.length ? `<select id="transactionField${field.column}" name="column${field.column}" ${required}><option value="">Select ${esc(field.header)}…</option>${options.map(option => `<option value="${esc(option)}">${esc(option)}</option>`).join('')}</select>` : `<input id="transactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} ${required} value="${esc(value)}" autocomplete="off">`;
             return `<div class="transaction-field"><label for="transactionField${field.column}">${esc(field.header)}</label>${control}</div>`;
           }).join('')}
           <section class="paypal-bundle" id="paypalBundle" aria-live="polite">
@@ -2047,6 +2051,8 @@
           const saveButton = panel.querySelector('.transaction-save');
           const values = Array.from({length:headers.length}, () => '');
           fields.forEach(field => { values[field.column] = panel.querySelector(`[name="column${field.column}"]`).value.trim(); });
+          const missing = fields.find(field => !/^note$/i.test(field.header) && !values[field.column]);
+          if (missing) { const control = panel.querySelector(`[name="column${missing.column}"]`); control.setCustomValidity(`${missing.header} is required.`); control.reportValidity(); control.addEventListener('input',() => control.setCustomValidity(''),{once:true}); return; }
           const dateColumn = headers.findIndex(header => /^date$/i.test(String(header || '').trim()));
           const monthColumn = headers.findIndex(header => /^month$/i.test(String(header || '').trim()));
           const yearColumn = headers.findIndex(header => /^year$/i.test(String(header || '').trim()));
@@ -2193,11 +2199,12 @@
             const isSuggestedText = /^(description|payee\/payer)$/i.test(field.header);
             const placeholder = /^payee\/payer$/i.test(field.header) ? 'Type a new payee/payer or choose a previous one' : 'Type a description or choose a previous one';
             let control;
-            if (isSuggestedText) control = `<input id="editTransactionField${field.column}" name="column${field.column}" type="text" ${options.length ? `list="editTransactionSuggestions${field.column}"` : ''} value="${esc(value)}" data-original="${esc(value)}" autocomplete="off" placeholder="${placeholder}">${options.length ? `<datalist id="editTransactionSuggestions${field.column}">${options.map(option => `<option value="${esc(option)}"></option>`).join('')}</datalist>` : ''}`;
+            const required = !/^note$/i.test(field.header) ? 'required' : '';
+            if (isSuggestedText) control = `<input id="editTransactionField${field.column}" name="column${field.column}" type="text" ${options.length ? `list="editTransactionSuggestions${field.column}"` : ''} value="${esc(value)}" data-original="${esc(value)}" autocomplete="off" ${required} placeholder="${placeholder}">${options.length ? `<datalist id="editTransactionSuggestions${field.column}">${options.map(option => `<option value="${esc(option)}"></option>`).join('')}</datalist>` : ''}`;
             else if (options.length) {
               const selectable = options.includes(value) || !value ? options : [value,...options];
-              control = `<select id="editTransactionField${field.column}" name="column${field.column}" data-original="${esc(value)}"><option value="">Select ${esc(field.header)}…</option>${selectable.map(option => `<option value="${esc(option)}" ${option === value ? 'selected' : ''}>${esc(option)}</option>`).join('')}</select>`;
-            } else control = `<input id="editTransactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} value="${esc(value)}" data-original="${esc(value)}" autocomplete="off">`;
+              control = `<select id="editTransactionField${field.column}" name="column${field.column}" data-original="${esc(value)}" ${required}><option value="">Select ${esc(field.header)}…</option>${selectable.map(option => `<option value="${esc(option)}" ${option === value ? 'selected' : ''}>${esc(option)}</option>`).join('')}</select>`;
+            } else control = `<input id="editTransactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} ${required} value="${esc(value)}" data-original="${esc(value)}" autocomplete="off">`;
             return `<div class="transaction-field"><label for="editTransactionField${field.column}">${esc(field.header)}</label>${control}</div>`;
           }).join('')}
           <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Save Changes</button></div>
@@ -2209,6 +2216,8 @@
       panel.querySelector('.transaction-cancel').addEventListener('click',close);
       panel.querySelector('form').addEventListener('submit',async event => {
         event.preventDefault();
+        const missing = fields.find(field => !/^note$/i.test(field.header) && !panel.querySelector(`[name="column${field.column}"]`).value.trim());
+        if (missing) { const control = panel.querySelector(`[name="column${missing.column}"]`); control.setCustomValidity(`${missing.header} is required.`); control.reportValidity(); control.addEventListener('input',() => control.setCustomValidity(''),{once:true}); return; }
         const updates = fields.map(field => {
           const control = panel.querySelector(`[name="column${field.column}"]`);
           const value = control.value.trim();
@@ -2221,8 +2230,17 @@
         saveButton.textContent = 'Saving…';
         try {
           await updateSheetRanges(FINANCE_SPREADSHEET_ID,updates);
+          const saved = await Promise.all(updates.map(update => getSheetValues(update.range,FINANCE_SPREADSHEET_ID)));
+          if (saved.some((rows,index) => {
+            const actual = String(rows[0]?.[0] ?? '').trim();
+            const expected = String(updates[index].value).trim();
+            if (actual === expected) return false;
+            if (actual && expected && !Number.isNaN(Number(actual.replace(/[$,]/g,''))) && !Number.isNaN(Number(expected))) return Number(actual.replace(/[$,]/g,'')) !== Number(expected);
+            return transactionDateForInput(actual) !== transactionDateForInput(expected);
+          })) throw new Error('The saved values did not match the submitted changes.');
           tableEditModes[targetId] = false;
           await loadFinanceTab('transactions2026',true);
+          document.getElementById('financeTransactions2026Status').textContent = `Row ${rowNumber} saved successfully. The updated values were confirmed in Google Sheets.`;
         } catch (error) {
           saveButton.disabled = false;
           saveButton.textContent = 'Save Changes';
