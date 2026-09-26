@@ -3744,7 +3744,7 @@
         if (config.editable) reads.push(getSheetValues(config.range,MEMBERSHIP_SPREADSHEET_ID,'FORMULA'));
         if (config.dashboard) reads.push(getSheetValues(`'${sheetName.replace('Dashboard ','')}'!A1:${sheetName.includes('2026') ? 'AH' : 'AK'}900`,MEMBERSHIP_SPREADSHEET_ID));
         if (sheetName === 'Dashboard 2026') reads.push(getSheetValues("'Officer List'!A1:D16",MEMBERSHIP_SPREADSHEET_ID));
-        const [rows,formulasOrRoster = [],dashboardRoster = [],officerRows = []] = await Promise.all(reads);
+        const [rows,formulasOrRoster = [],officerRows = []] = await Promise.all(reads);
         if (config.dashboard) renderMembershipDashboard(rows,sheetName.replace('Dashboard ',''),formulasOrRoster,officerRows);
         else if (config.attendanceSummary) renderMembershipAttendanceSummary(rows);
         else if (config.attendanceDashboard) renderMembershipAttendanceDashboard(rows);
