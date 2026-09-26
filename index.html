@@ -1214,10 +1214,14 @@
           portalAuditSharedError = '';
           saveSession(response.expires_in);
           document.getElementById('authGate').classList.add('hidden');
+          restorePortalView();
           await Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData(), loadMarketplaceData(), loadAdminSystemStatus(), loadOperationsOverview(true), loadSharedPortalAudit()]);
         }
       });
-      if (restoreSession()) Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData(), loadMarketplaceData(), loadAdminSystemStatus(), loadOperationsOverview(true), loadSharedPortalAudit()]);
+      if (restoreSession()) {
+        setTimeout(restorePortalView,0);
+        Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData(), loadMarketplaceData(), loadAdminSystemStatus(), loadOperationsOverview(true), loadSharedPortalAudit()]);
+      }
     }
 
     document.getElementById('googleSignIn').addEventListener('click', () => {
@@ -1235,6 +1239,7 @@
       portalAuditSharedState = 'not-loaded';
       portalAuditSharedError = '';
       clearSession();
+      sessionStorage.removeItem('bssc_portal_current_view');
       document.getElementById('authGate').classList.remove('hidden');
     });
 
@@ -4156,6 +4161,37 @@
     const dashboard = document.getElementById('dashboard');
     const detail = document.getElementById('detail');
     const sidebar = document.getElementById('sidebar');
+    const PORTAL_VIEW_KEY = 'bssc_portal_current_view';
+    function savePortalView() {
+      const module = document.querySelector('[data-module].active')?.dataset.module || 'home';
+      const view = {module, membership:currentMembershipSheet};
+      for (const [name,attribute] of Object.entries({finance:'financeTab',bft:'bftTab',bikenights:'bikeTab',marketplace:'marketTab',sponsors:'sponsorTab'})) {
+        const selector = '[data-' + attribute.replace(/[A-Z]/g,letter => '-' + letter.toLowerCase()) + ']';
+        view[name] = document.querySelector(selector + '.active')?.dataset[attribute] || '';
+      }
+      try { sessionStorage.setItem(PORTAL_VIEW_KEY,JSON.stringify(view)); } catch (error) {}
+    }
+    function restorePortalView() {
+      let view;
+      try { view = JSON.parse(sessionStorage.getItem(PORTAL_VIEW_KEY) || 'null'); } catch (error) { return; }
+      if (!view || !modules[view.module]) return;
+      if (view.membership && membershipSheetConfig[view.membership]) {
+        currentMembershipSheet = view.membership;
+        document.querySelectorAll('[data-membership-sheet]').forEach(tab => tab.classList.toggle('active',tab.dataset.membershipSheet === view.membership));
+        const picker = document.getElementById('membershipSectionPicker');
+        if (picker && [...picker.options].some(option => option.value === view.membership)) picker.value = view.membership;
+      }
+      for (const [name,attribute,panelAttribute] of [['finance','financeTab','financePanel'],['bft','bftTab','bftPanel'],['bikenights','bikeTab','bikePanel'],['marketplace','marketTab','marketPanel'],['sponsors','sponsorTab','sponsorPanel']]) {
+        const selector = '[data-' + attribute.replace(/[A-Z]/g,letter => '-' + letter.toLowerCase()) + ']';
+        const buttons = [...document.querySelectorAll(selector)];
+        const selected = buttons.find(button => button.dataset[attribute] === view[name] && !button.classList.contains('finance-user-hidden'));
+        if (!selected) continue;
+        buttons.forEach(button => button.classList.toggle('active',button === selected));
+        const panelSelector = '[data-' + panelAttribute.replace(/[A-Z]/g,letter => '-' + letter.toLowerCase()) + ']';
+        document.querySelectorAll(panelSelector).forEach(panel => panel.classList.toggle('active',panel.dataset[panelAttribute] === view[name]));
+      }
+      showModule(view.module);
+    }
     function showModule(key) {
       if (key !== 'home' && key !== 'admin') {
         const index = moduleConnectionIndexes[key];
@@ -4183,7 +4219,7 @@
       if (key === 'finance') {
         taskGrid.innerHTML = '';
         financeWorkspace.classList.add('active');
-        loadFinanceTab('dashboard',true);
+        loadFinanceTab(document.querySelector('[data-finance-tab].active')?.dataset.financeTab || 'dashboard',true);
         refreshFinanceReconciliationCount();
       } else if (key === 'sponsors') {
         taskGrid.innerHTML = '';
@@ -4212,7 +4248,7 @@
       }
       dashboard.classList.add('hidden'); detail.classList.add('active'); setActive(key); window.scrollTo({top:0,behavior:'smooth'}); sidebar.classList.remove('open');
     }
-    function setActive(key) { document.querySelectorAll('[data-module]').forEach(b => b.classList.toggle('active', b.dataset.module === key)); }
+    function setActive(key) { document.querySelectorAll('[data-module]').forEach(b => b.classList.toggle('active', b.dataset.module === key)); savePortalView(); }
     document.querySelectorAll('[data-module]').forEach(b => b.addEventListener('click', () => showModule(b.dataset.module)));
     document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => showModule(b.dataset.open)));
     document.querySelectorAll('[data-membership-sheet]').forEach(button => button.addEventListener('click', () => {
@@ -4359,6 +4395,10 @@
     document.getElementById('financeAdminToggle').addEventListener('click', openFinanceTabManager);
     document.getElementById('membershipAdminToggle').addEventListener('click', openMembershipTabManager);
     applyFinanceTabPreferences();
+    document.addEventListener('click',event => {
+      if (event.target.closest('[data-finance-tab],[data-membership-sheet],[data-bft-tab],[data-bike-tab],[data-market-tab],[data-sponsor-tab]')) queueMicrotask(savePortalView);
+    });
+    document.getElementById('membershipSectionPicker').addEventListener('change',savePortalView);
     document.getElementById('back').addEventListener('click', () => showModule('home'));
     document.getElementById('menuToggle').addEventListener('click', () => sidebar.classList.toggle('open'));
   </script>
