@@ -252,6 +252,10 @@
     #financeTransactions2026Table .data-table thead th { position:sticky; top:0; z-index:5; box-shadow:0 2px 0 var(--gold); }
     #financeTransactions2026Table .transaction-row-number { position:sticky; left:0; z-index:3; min-width:58px; width:58px; color:#555b63; background:#eef0f2 !important; border-right:2px solid #c9cdd2; text-align:center; font-weight:900; }
     #financeTransactions2026Table thead .transaction-row-number { z-index:7; color:#fff; background:#303238 !important; }
+    #financeTransactions2026Table .transaction-picking .transaction-pick-cell { position:sticky; left:0; z-index:4; min-width:52px; width:52px; background:#fff; text-align:center; border-right:1px solid #c9cdd2; }
+    #financeTransactions2026Table .transaction-picking thead .transaction-pick-cell { z-index:8; color:#fff; background:#303238; }
+    #financeTransactions2026Table .transaction-picking .transaction-row-number { left:52px; }
+    #financeTransactions2026Table .transaction-pick-cell input { width:21px; height:21px; accent-color:#c8102e; cursor:pointer; vertical-align:middle; }
     #financeTransactions2026Table tr.transaction-selectable { cursor:pointer; }
     #financeTransactions2026Table tr.transaction-selectable:hover td { background:#fff0f3; }
     #financeTransactions2026Table tr.transaction-selected td { background:#fff0bd !important; }
@@ -1852,8 +1856,8 @@
       }
       if (!Number.isFinite(ticketPrice) || ticketPrice <= 0) ticketPrice = 20;
       const ticketPriceBar = isTicketLedger ? `<div class="ticket-price-bar"><strong>Ticket Cost</strong><span class="ticket-price-value" data-ticket-price="true" data-value="${ticketPrice}" ${editMode ? 'contenteditable="true" spellcheck="false"' : ''}>${money(ticketPrice)}</span></div>` : '';
-      const editHelp = editMode ? (isTransaction2026 ? '<div class="edit-help" role="status"><strong>Choose the transaction you want to change.</strong> Click its numbered row below. Check the row number and description in the editor before saving.</div>' : '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>') : '';
-      target.innerHTML = `${toolbar}${editHelp}${ticketPriceBar}<div class="table-wrap"><table class="${tableClass}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${isTransaction2026 ? '<th class="transaction-row-number">Row</th>' : ''}${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
+      const editHelp = editMode ? (isTransaction2026 ? '<div class="edit-help" role="status"><strong>Check the box next to the row you want to edit.</strong> Only the checked transaction will open. Confirm its row number and description before saving.</div>' : '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>') : '';
+      target.innerHTML = `${toolbar}${editHelp}${ticketPriceBar}<div class="table-wrap"><table class="${tableClass}${isTransaction2026 && editMode ? ' transaction-picking' : ''}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${isTransaction2026 && editMode ? '<th class="transaction-pick-cell">Edit</th>' : ''}${isTransaction2026 ? '<th class="transaction-row-number">Row</th>' : ''}${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
         const labels = item.row.map(value => String(value).trim().toLowerCase());
         const isSubtotal = labels.some(value => value.includes('subtotal'));
         const isTotal = !isSubtotal && labels.some(value => value === 'total' || value.endsWith(' total') || value.includes('total with locks'));
@@ -1874,7 +1878,7 @@
         const readyForPickup = /^(true|yes|1)$/i.test(String(item.row[14] || '').trim());
         const orderHandedOut = /^(true|yes|1)$/i.test(String(item.row[15] || '').trim());
         const orderStages = [paymentDue?'payment':'',(!sentToVendor&&!orderHandedOut)?'unsent':'',(sentToVendor&&!readyForPickup&&!orderHandedOut)?'vendor':'',(readyForPickup&&!orderHandedOut)?'pickup':'',orderHandedOut?'complete':''].filter(Boolean).join(' ');
-        return `<tr class="${rowClasses}" ${isTransaction2026 ? `data-transaction-row="${sourceRowNumber}" data-source-index="${item.sourceIndex}"` : ''} ${isOrder ? `data-market-stages="${orderStages}" data-market-order-id="${esc(orderId)}"` : ''}>${isTransaction2026 ? `<td class="transaction-row-number">${sourceRowNumber}</td>` : ''}${finalHeaders.map((_, columnIndex) => {
+        return `<tr class="${rowClasses}" ${isTransaction2026 ? `data-transaction-row="${sourceRowNumber}" data-source-index="${item.sourceIndex}"` : ''} ${isOrder ? `data-market-stages="${orderStages}" data-market-order-id="${esc(orderId)}"` : ''}>${isTransaction2026 && editMode ? `<td class="transaction-pick-cell"><input type="checkbox" data-pick-transaction aria-label="Edit row ${sourceRowNumber}: ${esc(String(item.row[headers.findIndex(header => /^description$/i.test(String(header || '').trim()))] || 'Transaction'))}"></td>` : ''}${isTransaction2026 ? `<td class="transaction-row-number">${sourceRowNumber}</td>` : ''}${finalHeaders.map((_, columnIndex) => {
           const formulaValue = editOptions && editOptions.formulaRows && editOptions.formulaRows[item.sourceIndex] ? String(editOptions.formulaRows[item.sourceIndex][columnIndex] || '') : '';
           const editable = editMode && !isTransaction2026 && !formulaValue.startsWith('=');
           let shownValue = item.row[columnIndex] || '';
@@ -1894,7 +1898,14 @@
       if (toggleButton) toggleButton.addEventListener('click', () => isTransaction2026 ? toggleTransactionVerticalEditing(targetId) : toggleTableEditing(targetId, toggleButton));
       const newTransaction = target.querySelector('[data-new-transaction="true"]');
       if (newTransaction) newTransaction.addEventListener('click', () => openNewTransactionForm(targetId, finalHeaders));
-      if (isTransaction2026 && editMode) target.querySelectorAll('[data-transaction-row]').forEach(row => row.addEventListener('click', () => {
+      if (isTransaction2026 && editMode) target.querySelectorAll('[data-pick-transaction]').forEach(checkbox => checkbox.addEventListener('change', () => {
+        const row = checkbox.closest('[data-transaction-row]');
+        if (!checkbox.checked) {
+          target.querySelector('.transaction-edit-entry')?.remove();
+          row.classList.remove('transaction-selected');
+          return;
+        }
+        target.querySelectorAll('[data-pick-transaction]').forEach(other => { if (other !== checkbox) other.checked = false; });
         const item = indexedData.find(candidate => candidate.sourceIndex === Number(row.dataset.sourceIndex));
         if (item) openTransactionEditForm(targetId,finalHeaders,item.row,Number(row.dataset.transactionRow),row);
       }));
@@ -2210,7 +2221,7 @@
         </form>`;
       const tools = target.querySelector('.table-tools');
       tools.insertAdjacentElement('afterend',panel);
-      const close = () => { panel.remove(); if (selectedRow) selectedRow.classList.remove('transaction-selected'); };
+      const close = () => { panel.remove(); if (selectedRow) { selectedRow.classList.remove('transaction-selected'); const checkbox = selectedRow.querySelector('[data-pick-transaction]'); if (checkbox) checkbox.checked = false; } };
       panel.querySelector('.transaction-entry-close').addEventListener('click',close);
       panel.querySelector('.transaction-cancel').addEventListener('click',close);
       panel.querySelector('form').addEventListener('submit',async event => {
