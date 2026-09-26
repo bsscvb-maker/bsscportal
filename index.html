@@ -2151,7 +2151,7 @@
             const formulaUpdates = [];
             for (let appendedRow = firstAppendedRow; appendedRow <= lastAppendedRow; appendedRow += 1) {
               const bankImpact = status => `SUMIFS($J$322:$J${appendedRow},$O$322:$O${appendedRow},"${status}",$N$322:$N${appendedRow},"<>PayPal")+SUMIFS($J$322:$J${appendedRow},$O$322:$O${appendedRow},"${status}",$N$322:$N${appendedRow},"PayPal",$M$322:$M${appendedRow},"Transfer In")+SUMIFS($J$322:$J${appendedRow},$O$322:$O${appendedRow},"${status}",$N$322:$N${appendedRow},"PayPal",$M$322:$M${appendedRow},"Transfer Out")`;
-              const clearedBalance = `=IF($A${appendedRow}="","",'Control-2026'!$E$30+${bankImpact('Yes')})`;
+              const clearedBalance = `=IF($A${appendedRow}="","",'Control-2026'!$E$30+SUM($J$317:$J$318)+$J$321-28.93+${bankImpact('Yes')})`;
               const projectedBalance = `=IF($A${appendedRow}="","",K${appendedRow}+${bankImpact('<>Yes')})`;
               if (runningColumn >= 0) formulaUpdates.push({range:`'Transactions-2026'!${columnNumberToLetters(runningColumn + 1)}${appendedRow}`,value:clearedBalance});
               if (totalRunningColumn >= 0) formulaUpdates.push({range:`'Transactions-2026'!${columnNumberToLetters(totalRunningColumn + 1)}${appendedRow}`,value:projectedBalance});
