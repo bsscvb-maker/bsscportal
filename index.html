@@ -2851,7 +2851,7 @@
       bft:{sheet:'Bikes for Tykes (BFT)',range:"'Bikes for Tykes (BFT)'!A1:X1450",target:'financeBftTable',status:'financeBftStatus',header:0,columns:24,editable:true},
       lineitem:{sheet:'Line-Item Budget',range:"'Line-Item Budget'!A1:L200",target:'financeLineItemTable',status:'financeLineItemStatus',header:0,columns:12,editable:true},
       baseline:{sheet:'Operating Budget – Baseline',range:"'Operating Budget – Baseline'!A1:I100",target:'financeBaselineTable',status:'financeBaselineStatus',header:0,columns:9,editable:true},
-      transactions2026:{sheet:'Transactions-2026',range:"'Transactions-2026'!A1:Q1870",target:'financeTransactions2026Table',status:'financeTransactions2026Status',header:0,columns:17,editable:true},
+      transactions2026:{sheet:'Transactions-2026',range:"'Transactions-2026'!A1:Q",target:'financeTransactions2026Table',status:'financeTransactions2026Status',header:0,columns:17,editable:true},
       transactions2025:{sheet:'Transactions-2025',range:"'Transactions-2025'!A1:P1000",target:'financeTransactions2025Table',status:'financeTransactions2025Status',header:0,columns:16,editable:false},
       tally:{sheet:'Tally 2026',range:"'Tally 2026'!A1:L1000",target:'financeTallyTable',status:'financeTallyStatus',header:0,columns:12,editable:false},
       transactionlist:{sheet:'Transaction List',range:"'Transaction List'!A1:J100",target:'financeTransactionListTable',status:'financeTransactionListStatus',header:0,columns:10,editable:true},
@@ -3052,7 +3052,7 @@
       try {
         let [rows,transactions] = await Promise.all([
           getSheetValues("'Dashboard-2026'!A1:AF80",FINANCE_SPREADSHEET_ID),
-          getSheetValues("'Transactions-2026'!A1:Q1870",FINANCE_SPREADSHEET_ID)
+          getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID)
         ]);
         const restored = await restorePayPalTransferRows(transactions);
         if (restored) {
@@ -3069,7 +3069,7 @@
       try {
         const [rows,transactions] = await Promise.all([
           getSheetValues("'Control-2026'!A1:H33",FINANCE_SPREADSHEET_ID),
-          getSheetValues("'Transactions-2026'!A1:Q1870",FINANCE_SPREADSHEET_ID)
+          getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID)
         ]);
         if (!rows.length) throw new Error('Control-2026 returned no rows');
         renderFinanceControl(rows,transactions);
@@ -3192,7 +3192,7 @@
     async function loadFinanceReconciliation() {
       document.getElementById('financeReconciliationStatus').textContent = 'Loading uncleared transactions…';
       try {
-        const rows = await getSheetValues("'Transactions-2026'!A1:Q1870",FINANCE_SPREADSHEET_ID);
+        const rows = await getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID);
         renderFinanceReconciliation(rows);
         loadedFinanceTabs.add('reconciliation');
       } catch (error) { document.getElementById('financeReconciliationStatus').textContent = 'Uncleared transactions could not load from Google Sheets.'; }
@@ -3282,7 +3282,7 @@
           const latestTally = await getSheetValues("'Tally 2026'!A1:L1000",FINANCE_SPREADSHEET_ID);
           const latestPending = latestTally.slice(1).map((row,index) => ({row,sourceRow:index + 2})).filter(item => item.row.some(value => String(value || '').trim()) && !String(item.row[11] || '').trim());
           const prepared = latestPending.map(item => ({...item,transaction:tallyTransactionFromRow(item.row)}));
-          const existing = await getSheetValues("'Transactions-2026'!A1:Q1870",FINANCE_SPREADSHEET_ID);
+          const existing = await getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID);
           const existingKeys = new Set(existing.slice(1).map(tallyTransferKey));
           const newTransactions = prepared.filter(item => !existingKeys.has(tallyTransferKey(item.transaction))).map(item => item.transaction);
           button.textContent = newTransactions.length ? 'Sending…' : 'Finishing…';
@@ -4332,7 +4332,7 @@
 
     async function refreshFinanceReconciliationCount() {
       try {
-        const rows = await getSheetValues("'Transactions-2026'!O2:O1870",FINANCE_SPREADSHEET_ID);
+        const rows = await getSheetValues("'Transactions-2026'!O2:O",FINANCE_SPREADSHEET_ID);
         const count = rows.filter(row => String(row[0] || '').trim().toLowerCase() === 'no').length;
         updateFinanceReconciliationCount(count);
       } catch (error) {
