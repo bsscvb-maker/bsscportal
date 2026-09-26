@@ -337,9 +337,9 @@
     .transaction-entry-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:6px; }
     .transaction-entry-actions button { border:0; border-radius:8px; padding:10px 14px; font-weight:900; cursor:pointer; }
     .transaction-cancel { color:#202226; background:#e2e5e8; }
-    .transaction-save { color:#fff; background:#08783f; }
-    .transaction-save:disabled { opacity:.7; cursor:wait; }
-    .transaction-save.saved { background:#08783f; }
+    .transaction-save { color:#fff; background:#c8102e; }
+    .transaction-save.saving { color:#171717; background:#f7c948; cursor:wait; }
+    .transaction-save.saved { color:#fff; background:#08783f; cursor:default; }
     .transaction-field input:invalid,.transaction-field select:invalid { border-color:#b42332; }
     .variance-good { color:#075c2d !important; background:#dff6e8 !important; font-weight:900; }
     .variance-over { color:#8c0c20 !important; background:#ffe1e6 !important; font-weight:900; }
@@ -1573,7 +1573,8 @@
       return writePortalSheetRequest(url,{
         method:'POST',
         headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
-        body:JSON.stringify({valueInputOption:'USER_ENTERED',data:updates.map(update => ({range:update.range,majorDimension:'ROWS',values:[[update.value]]}))})
+        body:JSON.stringify({valueInputOption:'USER_ENTERED',data:updates.map(update => ({range:update.range,majorDimension:'ROWS',values:[[update.value]]}))}),
+        signal:AbortSignal.timeout(15000)
       },'Updated workbook cells',sheets.join(', '),updates.length);
     }
 
@@ -2227,24 +2228,45 @@
         if (!updates.length) { close(); return; }
         const saveButton = panel.querySelector('.transaction-save');
         saveButton.disabled = true;
+        saveButton.classList.add('saving');
         saveButton.textContent = 'Saving…';
         try {
           await updateSheetRanges(FINANCE_SPREADSHEET_ID,updates);
-          const saved = await Promise.all(updates.map(update => getSheetValues(update.range,FINANCE_SPREADSHEET_ID)));
-          if (saved.some((rows,index) => {
-            const actual = String(rows[0]?.[0] ?? '').trim();
-            const expected = String(updates[index].value).trim();
+          const firstColumn = Math.min(...updates.map(update => {
+            const letters = update.range.match(/!([A-Z]+)\d+$/)[1];
+            return [...letters].reduce((number,letter) => number * 26 + letter.charCodeAt(0) - 64,0);
+          }));
+          const lastColumn = Math.max(...updates.map(update => {
+            const letters = update.range.match(/!([A-Z]+)\d+$/)[1];
+            return [...letters].reduce((number,letter) => number * 26 + letter.charCodeAt(0) - 64,0);
+          }));
+          const readRange = `'Transactions-2026'!${columnNumberToLetters(firstColumn)}${rowNumber}:${columnNumberToLetters(lastColumn)}${rowNumber}`;
+          const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${FINANCE_SPREADSHEET_ID}/values/${encodeURIComponent(readRange)}?valueRenderOption=FORMATTED_VALUE`,{
+            headers:{Authorization:`Bearer ${accessToken}`},signal:AbortSignal.timeout(15000)
+          });
+          if (!response.ok) throw new Error(`Google Sheets returned ${response.status} when confirming the save.`);
+          const savedRow = (await response.json()).values?.[0] || [];
+          if (updates.some(update => {
+            const letters = update.range.match(/!([A-Z]+)\d+$/)[1];
+            const column = [...letters].reduce((number,letter) => number * 26 + letter.charCodeAt(0) - 64,0);
+            const actual = String(savedRow[column - firstColumn] ?? '').trim();
+            const expected = String(update.value).trim();
             if (actual === expected) return false;
             if (actual && expected && !Number.isNaN(Number(actual.replace(/[$,]/g,''))) && !Number.isNaN(Number(expected))) return Number(actual.replace(/[$,]/g,'')) !== Number(expected);
             return transactionDateForInput(actual) !== transactionDateForInput(expected);
           })) throw new Error('The saved values did not match the submitted changes.');
+          saveButton.classList.remove('saving');
+          saveButton.classList.add('saved');
+          saveButton.textContent = '✓ Saved';
+          const status = document.getElementById('financeTransactions2026Status');
+          status.textContent = `Row ${rowNumber} saved successfully.`;
           tableEditModes[targetId] = false;
-          await loadFinanceTab('transactions2026',true);
-          document.getElementById('financeTransactions2026Status').textContent = `Row ${rowNumber} saved successfully. The updated values were confirmed in Google Sheets.`;
+          setTimeout(() => loadFinanceTab('transactions2026',true),1800);
         } catch (error) {
           saveButton.disabled = false;
+          saveButton.classList.remove('saving');
           saveButton.textContent = 'Save Changes';
-          alert('This transaction could not be updated. Your changes are still in the form so you can try again.');
+          alert(`This transaction could not be confirmed. Your changes are still in the form. ${error.message || 'Please try again.'}`);
         }
       });
       panel.scrollIntoView({behavior:'smooth',block:'start'});
