@@ -3011,7 +3011,7 @@
         <div class="control-action-bar"><button class="dashboard-edit-btn ${financeControlEditMode ? 'active' : ''}" id="financeControlEditToggle" aria-pressed="${financeControlEditMode}">${financeControlEditMode ? 'Done Editing' : 'Edit Bank Reconciliation'}</button></div>
         ${financeControlEditMode ? '<div class="control-edit-note">Enter the latest balances shown by Chase. Difference and Status calculate automatically.</div>' : ''}<div class="control-grid">
         ${section(at(3,0),[[at(5,0),at(5,1)],[at(7,0),at(7,1)],[at(8,0),at(8,1)]],'tone-green')}
-        ${section(at(3,3),[['Chase balance',at(5,4),false,6],...(financeControlEditMode ? [['General Fund at Chase',at(6,4),false,7],['Bikes for Tykes at Chase',at(7,4),false,8]] : []),['Calculated balance',at(8,4)],['Difference',at(9,4)],['Review status',status,/out of balance/i.test(status)]],/out of balance/i.test(status) ? 'tone-red' : (/pending/i.test(status) ? 'tone-yellow' : 'tone-green'))}
+        ${section(at(3,3),[['Chase balance',at(5,4),false,6],['General Fund',at(6,4),false,7],['Bikes for Tykes',at(7,4),false,8],['Difference',at(9,4)],['Review status',status,/out of balance/i.test(status)]],/out of balance/i.test(status) ? 'tone-red' : (/pending/i.test(status) ? 'tone-yellow' : 'tone-green'))}
         ${monthSection('GENERAL FUND — CURRENT MONTH',at(5,1),generalMonth)}
         ${section(at(12,0),[[at(14,0),at(14,1)],[at(15,0),at(15,1)],[at(16,0),at(16,1)]],resultTone(at(16,1)))}
         ${monthSection('BIKES FOR TYKES — CURRENT MONTH',at(7,1),bftMonth)}
