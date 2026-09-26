@@ -2159,6 +2159,9 @@
             await updateSheetRanges(FINANCE_SPREADSHEET_ID,formulaUpdates);
           }
           panel.remove();
+          loadedFinanceTabs.delete('control');
+          loadedFinanceTabs.delete('dashboard');
+          loadedFinanceTabs.delete('reconciliation');
           await loadFinanceTab('transactions2026', true);
         } catch (error) {
           saveButton.disabled = false;
@@ -2293,6 +2296,9 @@
           saveButton.textContent = '✓ Saved';
           const status = document.getElementById('financeTransactions2026Status');
           status.textContent = `Row ${rowNumber} saved successfully.`;
+          loadedFinanceTabs.delete('control');
+          loadedFinanceTabs.delete('dashboard');
+          loadedFinanceTabs.delete('reconciliation');
           tableEditModes[targetId] = false;
           setTimeout(() => loadFinanceTab('transactions2026',true),1800);
         } catch (error) {
@@ -3076,6 +3082,17 @@
         loadedFinanceTabs.add('control');
       } catch (error) { document.getElementById('financeControlStatus').textContent = 'Control-2026 could not load from Google Sheets.'; }
     }
+    let financeControlRefreshInFlight = false;
+    window.setInterval(async () => {
+      if (financeControlRefreshInFlight || financeControlEditMode || document.hidden || !document.querySelector('[data-finance-panel="control"].active')) return;
+      financeControlRefreshInFlight = true;
+      try {
+        const rows = await getSheetValues("'Control-2026'!A1:H33",FINANCE_SPREADSHEET_ID);
+        if (JSON.stringify(rows) !== JSON.stringify(financeControlRows)) renderFinanceControl(rows,financeControlTransactionRows);
+      } catch (error) {
+        document.getElementById('financeControlStatus').textContent = 'Could not refresh bank reconciliation. Reopen the tab to retry.';
+      } finally { financeControlRefreshInFlight = false; }
+    },4000);
 
     function renderFinanceActivity(rows, activities) {
       const at = (r,c) => String((rows[r] && rows[r][c]) || '—').trim();
@@ -4234,7 +4251,7 @@
       const selected = button.dataset.financeTab;
       document.querySelectorAll('[data-finance-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
       document.querySelectorAll('[data-finance-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.financePanel === selected));
-      loadFinanceTab(selected);
+      loadFinanceTab(selected,selected === 'control');
     }));
     const FINANCE_HIDDEN_TABS_KEY = 'bssc_finance_hidden_tabs';
     const FINANCE_TAB_ORDER_KEY = 'bssc_finance_tab_order';
