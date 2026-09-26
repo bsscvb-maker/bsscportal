@@ -666,6 +666,9 @@
     .operations-kpi span { display:block; color:#626a73; font-size:.72rem; font-weight:900; letter-spacing:.045em; text-transform:uppercase; }
     .operations-kpi strong { display:block; margin-top:7px; overflow-wrap:anywhere; font-size:1.2rem; line-height:1.25; }
     .operations-kpi small { display:block; margin-top:5px; color:#68707a; font-size:.75rem; line-height:1.35; }
+    .operations-membership-breakdown { display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:8px; color:#414a55; font-size:.78rem; line-height:1.35; }
+    .operations-membership-breakdown b { color:#111113; font-size:.88rem; }
+    .operations-membership-breakdown small { flex-basis:100%; margin-top:1px; }
     .operations-lower { display:block; margin-top:12px; }
     .operations-note { min-width:0; padding:13px 15px; border:1px solid #37383e; border-radius:10px; background:#151619; }
     .operations-note.operations-freshness { display:flex; align-items:center; gap:8px; padding:8px 12px; border:0; border-left:3px solid var(--gold); border-radius:6px; background:#191a1e; }
@@ -1495,21 +1498,27 @@
       const status = document.getElementById('operationsOverviewStatus');
       const freshness = document.getElementById('operationsOverviewFreshness');
       if (!target) return;
-      const [finance,membership,bft,marketplace] = results;
+      const [finance,membership,bft,marketplace,roster] = results;
       const card = (label,value,note) => `<article class="operations-kpi"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong><small>${esc(note)}</small></article>`;
       const rowsOrEmpty = item => item.status === 'fulfilled' ? item.value : [];
       const financeRows = rowsOrEmpty(finance);
       const membershipRows = rowsOrEmpty(membership);
       const bftRows = rowsOrEmpty(bft);
       const marketRows = rowsOrEmpty(marketplace);
-      const membershipLabel = String(membershipRows[15]?.[1] || 'Membership snapshot').trim();
+      const rosterRows = rowsOrEmpty(roster);
       const membershipValue = String(membershipRows[15]?.[2] || '').trim();
+      const activeCount = Number(membershipValue.replace(/,/g,''));
+      const statusIndex = (rosterRows[0] || []).findIndex(value => String(value).trim().toLowerCase() === 'status');
+      const prospectCount = statusIndex < 0 ? null : rosterRows.slice(1).filter(row => String(row[statusIndex] || '').trim().toLowerCase() === 'prospect').length;
+      const membershipCard = Number.isFinite(activeCount) && membershipValue && prospectCount !== null
+        ? `<article class="operations-kpi"><span>Member count</span><strong>${esc(String(activeCount + prospectCount))}</strong><div class="operations-membership-breakdown"><span>Active members <b>${esc(String(activeCount))}</b></span><span>Prospects <b>${esc(String(prospectCount))}</b></span><small>Membership · Dashboard 2026 and 2026 roster</small></div></article>`
+        : card('Active Members',membershipValue || '—',prospectCount === null ? 'Prospect count unavailable · refresh to retry' : 'Membership · Dashboard 2026');
       const bftRaised = findCommandValue(bftRows,'Total Raised So Far');
       const bftGoal = findCommandValue(bftRows,'Goal Amount');
       const bftProgress = findCommandValue(bftRows,'Progress Toward Goal');
       const marketplaceDue = String(marketRows[6]?.[16] || '').trim();
       const cards = [
-        card(membershipLabel,membershipValue || 'Dashboard available','Membership · Dashboard 2026'),
+        membershipCard,
         card('Cash on Hand',String(financeRows[6]?.[1] || ''),'Finance · Dashboard-2026'),
         card('Lifetime Community Impact',String(financeRows[6]?.[5] || ''),'Finance · Dashboard-2026'),
         card('Bikes for Tykes Raised',bftRaised,bftGoal ? `${bftProgress || 'Progress not shown'} of ${bftGoal} goal` : 'Bikes for Tykes · Dashboard'),
@@ -1518,7 +1527,7 @@
       target.innerHTML = cards.join('');
       const successful = results.filter(result => result.status === 'fulfilled').length;
       const total = results.length;
-      if (status) status.textContent = successful === total ? 'All four workbooks refreshed' : `${successful} of ${total} workbooks refreshed`;
+      if (status) status.textContent = successful === total ? 'All four workbooks refreshed' : `${successful} of ${total} data sources refreshed`;
       if (freshness) freshness.textContent = `Last refreshed ${new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',timeZoneName:'short'})}. Values are read directly from the connected Google Sheets.`;
       operationsOverviewLoadedAt = Date.now();
     }
@@ -1534,7 +1543,8 @@
           getSheetValues("'Dashboard-2026'!A1:AF80",FINANCE_SPREADSHEET_ID),
           getSheetValues("'Dashboard 2026'!A1:Z80",MEMBERSHIP_SPREADSHEET_ID),
           getSheetValues("'DashBoard'!A1:G40",BFT_SPREADSHEET_ID),
-          getSheetValues("'Dashboard'!A1:V22",MARKETPLACE_SPREADSHEET_ID)
+          getSheetValues("'Dashboard'!A1:V22",MARKETPLACE_SPREADSHEET_ID),
+          getSheetValues("'2026'!A1:AH855",MEMBERSHIP_SPREADSHEET_ID)
         ]);
         renderOperationsOverview(results);
       } catch (error) {
