@@ -3383,6 +3383,7 @@
       const assignedRoles = year === '2026' ? rows.slice(10,12).map(row => [row[1],row[2]]) : [];
       // The two current director seats are the first two Director entries in the latest 2026 update.
       const directors = year === '2026' ? officerRows.slice(1).filter(row => String(row[0] || '').trim().toLowerCase() === 'director').slice(0,2).map(row => ['Director',String(row[2] || '').trim()]) : [];
+      const compactRows = items => items.map(item => `<div class="membership-highlight-row"><span>${esc(item[0])}</span><strong>${esc(item[1] || '—')}</strong></div>`).join('');
       const leadershipSections = year === '2026'
         ? `<section class="membership-highlight"><h3>Board Members — Officers</h3><div class="membership-highlight-grid">${compactRows(officers)}</div></section><section class="membership-highlight"><h3>Board Members — Directors</h3><div class="membership-highlight-grid">${compactRows(directors)}</div></section><section class="membership-highlight"><h3>President Assigned — Non-Board</h3><div class="membership-highlight-grid">${compactRows(assignedRoles)}</div></section>`
         : `<section class="membership-highlight"><h3>${esc(cell(4,2) || `Officers (${year})`)}</h3><div class="membership-highlight-grid">${compactRows(officers)}</div></section>`;
@@ -3410,7 +3411,7 @@
         return `<tr class="${next ? 'attendance-next' : ''}"><td>${esc(item.event)}</td><td>${esc(item.date)}</td><td>${esc(item.count)}</td><td class="${performance}">${esc(item.participation)}</td><td>${esc(item.notes)}</td></tr>`;
       }).join('');
       const missingList = missingWaivers.length ? `<ol class="membership-missing-list">${missingWaivers.map(name => `<li>${esc(name)}</li>`).join('')}</ol>` : '';
-      const compactRows = items => items.map(item => `<div class="membership-highlight-row"><span>${esc(item[0])}</span><strong>${esc(item[1] || '—')}</strong></div>`).join('');
+
       const complianceNames = missingWaivers.length ? `<div class="membership-action-callout"><strong>Waivers missing:</strong> ${missingWaivers.map(esc).join(', ')}</div>` : '';
       const rosterWithoutOldGrowth = roster.slice(1).filter(item => !String(item[0] || '').toLowerCase().includes('new member growth'));
       const growthSection = year === '2026' ? `<section class="membership-highlight"><h3>2026 Membership Growth</h3><div class="membership-attendance-snapshot"><div><span>New Members &amp; Prospects</span><strong>${newForYear}</strong></div><div><span>Starting Membership</span><strong>${startingRoster}</strong></div><div><span>New-Member Share</span><strong>${(newMemberShare * 100).toFixed(1)}%</strong></div><div><span>Projected Growth</span><strong>${(projectedGrowth * 100).toFixed(1)}%</strong></div></div><div class="membership-action-callout"><strong>Assumption:</strong> all current prospects will be patched. New-member share is ${newForYear} ÷ ${projectedRoster.length}; projected growth is ${newForYear} ÷ ${startingRoster}.</div></section>` : '';
