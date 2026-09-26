@@ -3385,7 +3385,7 @@
       const directors = year === '2026' ? officerRows.slice(1).filter(row => String(row[0] || '').trim().toLowerCase() === 'director').slice(0,2).map(row => ['Director',String(row[2] || '').trim()]) : [];
       const compactRows = items => items.map(item => `<div class="membership-highlight-row"><span>${esc(item[0])}</span><strong>${esc(item[1] || '—')}</strong></div>`).join('');
       const leadershipSections = year === '2026'
-        ? `<section class="membership-highlight"><h3>Board Members — Officers</h3><div class="membership-highlight-grid">${compactRows(officers)}</div></section><section class="membership-highlight"><h3>Board Members — Directors</h3><div class="membership-highlight-grid">${compactRows(directors)}</div></section><section class="membership-highlight"><h3>President Assigned — Non-Board</h3><div class="membership-highlight-grid">${compactRows(assignedRoles)}</div></section>`
+        ? `<section class="membership-highlight"><h3>Board Members — Officers</h3><div class="membership-highlight-grid">${compactRows(officers)}</div></section><section class="membership-highlight"><h3>Board Members — Directors</h3><div class="membership-highlight-grid">${compactRows(directors)}</div></section><section class="membership-highlight"><h3>President-Appointed Roles — Non-Board</h3><div class="membership-highlight-grid">${compactRows(assignedRoles)}</div></section>`
         : `<section class="membership-highlight"><h3>${esc(cell(4,2) || `Officers (${year})`)}</h3><div class="membership-highlight-grid">${compactRows(officers)}</div></section>`;
       const compliance = [[cell(5,5),cell(5,6)],[cell(6,5),cell(6,6)],[cell(7,5),cell(7,6)],[cell(8,5),cell(8,6)]];
       const action = [[cell(11,5),cell(11,6)],[cell(12,5),cell(12,6)]];
