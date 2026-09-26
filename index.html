@@ -1852,7 +1852,7 @@
       }
       if (!Number.isFinite(ticketPrice) || ticketPrice <= 0) ticketPrice = 20;
       const ticketPriceBar = isTicketLedger ? `<div class="ticket-price-bar"><strong>Ticket Cost</strong><span class="ticket-price-value" data-ticket-price="true" data-value="${ticketPrice}" ${editMode ? 'contenteditable="true" spellcheck="false"' : ''}>${money(ticketPrice)}</span></div>` : '';
-      const editHelp = editMode ? (isTransaction2026 ? '<div class="edit-help">The newest transaction is open above. Click any numbered row below to edit a different transaction.</div>' : '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>') : '';
+      const editHelp = editMode ? (isTransaction2026 ? '<div class="edit-help" role="status"><strong>Choose the transaction you want to change.</strong> Click its numbered row below. Check the row number and description in the editor before saving.</div>' : '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>') : '';
       target.innerHTML = `${toolbar}${editHelp}${ticketPriceBar}<div class="table-wrap"><table class="${tableClass}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${isTransaction2026 ? '<th class="transaction-row-number">Row</th>' : ''}${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
         const labels = item.row.map(value => String(value).trim().toLowerCase());
         const isSubtotal = labels.some(value => value.includes('subtotal'));
@@ -2167,8 +2167,6 @@
       }
       tableEditModes[targetId] = true;
       renderDataTable(args.targetId,args.statusId,args.rows,args.headerRowIndex,args.maxColumns,args.editOptions);
-      const firstRow = document.getElementById(targetId).querySelector('[data-transaction-row]');
-      if (firstRow) firstRow.click();
     }
 
     function openTransactionEditForm(targetId,headers,rowValues,rowNumber,selectedRow) {
@@ -2189,7 +2187,7 @@
       });
       const panel = document.createElement('section');
       panel.className = 'transaction-entry transaction-edit-entry';
-      panel.innerHTML = `<div class="transaction-entry-head"><div><h3>Edit Transaction — Row ${rowNumber}</h3><small>Calculated balance fields remain protected.</small></div><button class="transaction-entry-close" type="button" aria-label="Close transaction editor">✕ Close</button></div>
+      panel.innerHTML = `<div class="transaction-entry-head"><div><h3>Edit Row ${rowNumber}: ${esc(String(rowValues[headers.findIndex(header => /^description$/i.test(String(header || '').trim()))] || 'Transaction'))}</h3><small>Confirm this is the transaction you intend to change. Calculated balance fields remain protected.</small></div><button class="transaction-entry-close" type="button" aria-label="Close transaction editor">✕ Close</button></div>
         <form class="transaction-entry-form">
           ${fields.map(field => {
             const isDate = /^date$/i.test(field.header);
