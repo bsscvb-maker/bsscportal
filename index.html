@@ -3361,7 +3361,7 @@
       return '—';
     }
 
-    function renderMembershipDashboard(rows, year, rosterRows = []) {
+    function renderMembershipDashboard(rows, year, rosterRows = [], officerRows = []) {
       const target = document.getElementById('membershipContent');
       const status = document.getElementById('membershipStatus');
       const cell = (row,column) => String((rows[row - 1] && rows[row - 1][column - 1]) ?? '').trim();
@@ -3379,7 +3379,13 @@
       const startingRoster = Math.max(0,projectedRoster.length - newForYear);
       const newMemberShare = projectedRoster.length ? newForYear / projectedRoster.length : 0;
       const projectedGrowth = startingRoster ? newForYear / startingRoster : 0;
-      const officers = rows.slice(5,12).map(row => [row[1],row[2]]);
+      const officers = rows.slice(5,year === '2026' ? 10 : 12).map(row => [row[1],row[2]]);
+      const assignedRoles = year === '2026' ? rows.slice(10,12).map(row => [row[1],row[2]]) : [];
+      // The two current director seats are the first two Director entries in the latest 2026 update.
+      const directors = year === '2026' ? officerRows.slice(1).filter(row => String(row[0] || '').trim().toLowerCase() === 'director').slice(0,2).map(row => ['Director',String(row[2] || '').trim()]) : [];
+      const leadershipSections = year === '2026'
+        ? `<section class="membership-highlight"><h3>Board Members — Officers</h3><div class="membership-highlight-grid">${compactRows(officers)}</div></section><section class="membership-highlight"><h3>Board Members — Directors</h3><div class="membership-highlight-grid">${compactRows(directors)}</div></section><section class="membership-highlight"><h3>President Assigned — Non-Board</h3><div class="membership-highlight-grid">${compactRows(assignedRoles)}</div></section>`
+        : `<section class="membership-highlight"><h3>${esc(cell(4,2) || `Officers (${year})`)}</h3><div class="membership-highlight-grid">${compactRows(officers)}</div></section>`;
       const compliance = [[cell(5,5),cell(5,6)],[cell(6,5),cell(6,6)],[cell(7,5),cell(7,6)],[cell(8,5),cell(8,6)]];
       const action = [[cell(11,5),cell(11,6)],[cell(12,5),cell(12,6)]];
       const roster = rows.slice(16,24).map(row => [row[1],row[2]]);
@@ -3408,7 +3414,7 @@
       const complianceNames = missingWaivers.length ? `<div class="membership-action-callout"><strong>Waivers missing:</strong> ${missingWaivers.map(esc).join(', ')}</div>` : '';
       const rosterWithoutOldGrowth = roster.slice(1).filter(item => !String(item[0] || '').toLowerCase().includes('new member growth'));
       const growthSection = year === '2026' ? `<section class="membership-highlight"><h3>2026 Membership Growth</h3><div class="membership-attendance-snapshot"><div><span>New Members &amp; Prospects</span><strong>${newForYear}</strong></div><div><span>Starting Membership</span><strong>${startingRoster}</strong></div><div><span>New-Member Share</span><strong>${(newMemberShare * 100).toFixed(1)}%</strong></div><div><span>Projected Growth</span><strong>${(projectedGrowth * 100).toFixed(1)}%</strong></div></div><div class="membership-action-callout"><strong>Assumption:</strong> all current prospects will be patched. New-member share is ${newForYear} ÷ ${projectedRoster.length}; projected growth is ${newForYear} ÷ ${startingRoster}.</div></section>` : '';
-      target.innerHTML = `<div class="membership-executive"><header class="membership-hero"><div><h2>${esc(cell(1,2) || `BSSC ${year} Dashboard`)}</h2><p>Membership, compliance, leadership, and participation at a glance</p></div><strong>${esc(cell(1,12))}</strong></header><div class="membership-executive-kpis"><div class="membership-executive-kpi"><span>${esc(cell(16,2))}</span><strong>${esc(cell(16,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(18,2))}</span><strong>${esc(cell(18,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(19,2))}</span><strong>${esc(cell(19,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(20,2))}</span><strong>${esc(cell(20,3))}</strong></div></div><div class="membership-executive-grid"><section class="membership-highlight"><h3>${esc(cell(4,2) || `Officers (${year})`)}</h3><div class="membership-highlight-grid">${compactRows(officers)}</div></section><section class="membership-highlight"><h3>Compliance &amp; Action Needed</h3><div class="membership-highlight-grid">${compactRows([...compliance,...action])}</div>${complianceNames}</section><section class="membership-highlight"><h3>${esc(cell(15,2) || 'Roster KPIs')}</h3><div class="membership-highlight-grid">${compactRows(rosterWithoutOldGrowth)}</div></section><section class="membership-highlight"><h3>${esc(cell(15,5) || 'Age & Tenure')}</h3><div class="membership-highlight-grid">${compactRows(age)}</div></section>${growthSection}<section class="membership-highlight"><h3>Next Three Upcoming Events</h3>${upcomingHtml}</section><section class="membership-highlight"><h3>Attendance Snapshot</h3><div class="membership-attendance-snapshot">${overview.map(item => `<div><span>${esc(item[0])}</span><strong>${esc(item[1] || '—')}</strong></div>`).join('')}</div>${year === '2026' ? '<button class="membership-summary-link" type="button" data-open-attendance-summary>View Full Attendance Summary</button>' : ''}</section></div></div>`;
+      target.innerHTML = `<div class="membership-executive"><header class="membership-hero"><div><h2>${esc(cell(1,2) || `BSSC ${year} Dashboard`)}</h2><p>Membership, compliance, leadership, and participation at a glance</p></div><strong>${esc(cell(1,12))}</strong></header><div class="membership-executive-kpis"><div class="membership-executive-kpi"><span>${esc(cell(16,2))}</span><strong>${esc(cell(16,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(18,2))}</span><strong>${esc(cell(18,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(19,2))}</span><strong>${esc(cell(19,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(20,2))}</span><strong>${esc(cell(20,3))}</strong></div></div><div class="membership-executive-grid">${leadershipSections}<section class="membership-highlight"><h3>Compliance &amp; Action Needed</h3><div class="membership-highlight-grid">${compactRows([...compliance,...action])}</div>${complianceNames}</section><section class="membership-highlight"><h3>${esc(cell(15,2) || 'Roster KPIs')}</h3><div class="membership-highlight-grid">${compactRows(rosterWithoutOldGrowth)}</div></section><section class="membership-highlight"><h3>${esc(cell(15,5) || 'Age & Tenure')}</h3><div class="membership-highlight-grid">${compactRows(age)}</div></section>${growthSection}<section class="membership-highlight"><h3>Next Three Upcoming Events</h3>${upcomingHtml}</section><section class="membership-highlight"><h3>Attendance Snapshot</h3><div class="membership-attendance-snapshot">${overview.map(item => `<div><span>${esc(item[0])}</span><strong>${esc(item[1] || '—')}</strong></div>`).join('')}</div>${year === '2026' ? '<button class="membership-summary-link" type="button" data-open-attendance-summary>View Full Attendance Summary</button>' : ''}</section></div></div>`;
       const summaryButton = target.querySelector('[data-open-attendance-summary]');
       if (summaryButton) summaryButton.addEventListener('click',() => openMembershipSection('2026 Attendance Summary'));
       status.textContent = `Dashboard ${year} loaded live from Google Sheets. Formula results are read-only here.`;
@@ -3736,8 +3742,9 @@
         const reads = [getSheetValues(config.range,MEMBERSHIP_SPREADSHEET_ID)];
         if (config.editable) reads.push(getSheetValues(config.range,MEMBERSHIP_SPREADSHEET_ID,'FORMULA'));
         if (config.dashboard) reads.push(getSheetValues(`'${sheetName.replace('Dashboard ','')}'!A1:${sheetName.includes('2026') ? 'AH' : 'AK'}900`,MEMBERSHIP_SPREADSHEET_ID));
-        const [rows,formulasOrRoster = [],dashboardRoster = []] = await Promise.all(reads);
-        if (config.dashboard) renderMembershipDashboard(rows,sheetName.replace('Dashboard ',''),formulasOrRoster);
+        if (sheetName === 'Dashboard 2026') reads.push(getSheetValues("'Officer List'!A1:D16",MEMBERSHIP_SPREADSHEET_ID));
+        const [rows,formulasOrRoster = [],dashboardRoster = [],officerRows = []] = await Promise.all(reads);
+        if (config.dashboard) renderMembershipDashboard(rows,sheetName.replace('Dashboard ',''),formulasOrRoster,officerRows);
         else if (config.attendanceSummary) renderMembershipAttendanceSummary(rows);
         else if (config.attendanceDashboard) renderMembershipAttendanceDashboard(rows);
         else if (sheetName === 'Officer List') {
