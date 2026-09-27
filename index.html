@@ -490,6 +490,7 @@
     .pricing-rules-table td:nth-child(2) { font-weight:900; text-align:center; }
     .marketplace-table tr.market-paid td { background:#e5f6e9 !important; }
     .marketplace-table tr.market-pending td { background:#fff0f2 !important; }
+    .marketplace-table tr.market-ready td { box-shadow:inset 4px 0 #e7a600; }
     .receive-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:16px 0; }
     .receive-summary div,.receive-order { border:1px solid var(--line); border-radius:10px; padding:13px; background:#fff; }
     .receive-summary strong { display:block; font-size:1.5rem; color:#c8102e; }
@@ -505,8 +506,17 @@
     .receive-order button { border:0; border-radius:7px; padding:10px 13px; background:#c8102e; color:#fff; font-weight:800; cursor:pointer; }
     .receive-order button:disabled { background:#96999f; cursor:default; }
     .receive-message { padding:10px; border-radius:7px; background:#eaf7ee; margin:10px 0; }
+    .receive-tools > button,.receive-modal button { border:0; border-radius:7px; padding:10px 14px; background:#c8102e; color:white; font-weight:800; cursor:pointer; }
+    .receive-modal { width:min(650px,calc(100vw - 24px)); max-height:90vh; overflow:auto; border:0; border-radius:15px; padding:24px; box-shadow:0 20px 70px #0008; }
+    .receive-modal::backdrop { background:#0009; }
+    .receive-modal label { display:block; font-weight:750; margin:12px 0; }
+    .receive-modal select,.receive-modal input[type="number"] { width:100%; min-height:42px; padding:8px; border:1px solid #abb1ba; border-radius:7px; font:inherit; }
+    .receive-colors { display:flex; gap:9px; flex-wrap:wrap; margin:10px 0; }
+    .receive-colors label { margin:0; padding:9px 12px; border:1px solid #bbb; border-radius:20px; cursor:pointer; }
+    .receive-preview { padding:12px; border-radius:8px; background:#f3f4f6; margin:12px 0; }
+    .receive-modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
+    .receive-modal-actions button:first-child { background:#404348; }
     @media(max-width:700px) { .receive-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-    .marketplace-table tr.market-ready td { box-shadow:inset 4px 0 #e7a600; }
     .admin-workspace { display:none; }
     .admin-workspace.active { display:block; }
     .admin-overview { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:18px; }
@@ -1053,6 +1063,11 @@
             </div>
             <section class="sponsor-panel active" data-market-panel="dashboard"><div class="data-status" id="marketDashboardStatus">Sign in to load Marketplace performance.</div><div id="marketDashboard"></div></section>
             <section class="sponsor-panel" data-market-panel="fulfillment"><div class="coming-soon"><h2>Receive &amp; Fulfill Merchandise</h2><p>Record each item as it arrives, then hand out completed orders.</p><div class="data-status" id="marketFulfillmentStatus">Sign in to load fulfillment records.</div><div id="marketReceiving"></div><details><summary>View original Fulfillment Tracker</summary><div id="marketFulfillmentTable"></div></details></div></section>
+            <dialog class="receive-modal" id="receiveOrderDialog" aria-labelledby="receiveOrderTitle"><h2 id="receiveOrderTitle">Receive Merchandise</h2><p>Choose what arrived. Matching pieces go to the oldest unfilled orders first.</p>
+              <form id="receiveOrderForm"><label>Item<select id="receiveProduct" required></select></label><label>Size<select id="receiveSize" required></select></label>
+              <fieldset><legend>Color</legend><div class="receive-colors" id="receiveColors"></div></fieldset>
+              <label>Quantity received<input id="receiveQuantity" type="number" min="1" step="1" required></label>
+              <div class="receive-preview" id="receiveAllocationPreview"></div><div class="receive-modal-actions"><button type="button" id="receiveCancel">Cancel</button><button type="submit" id="receiveStockPrint" data-mode="stock">Assign Existing Stock</button><button type="submit" id="receiveSavePrint">Receive &amp; Print Tickets</button></div></form></dialog>
             <section class="sponsor-panel" data-market-panel="manufacturer"><div class="coming-soon"><h2>Manufacturer Summary</h2><div class="data-status" id="marketManufacturerStatus">Sign in to load manufacturer totals.</div><div id="marketManufacturerSummary"></div><div id="marketManufacturerTable"></div></div></section>
             <section class="sponsor-panel" data-market-panel="financials"><div class="coming-soon"><h2>Order Financials</h2><div class="data-status" id="marketFinancialsStatus">Sign in to load order financials.</div><div id="marketFinancialsSummary"></div><div id="marketFinancialsTable"></div></div></section>
             <section class="sponsor-panel" data-market-panel="orders"><div class="coming-soon"><h2>Orders</h2><div class="data-status" id="marketOrdersStatus">Sign in to load orders.</div><div id="marketOrdersTable"></div></div></section>
@@ -2827,11 +2842,188 @@
         <section class="pricing-box"><h3>Cost Tiers &amp; Markup</h3><table class="pricing-rules-table"><thead><tr><th>${esc(at(3,5) || 'Cost Tier')}</th><th>${esc(at(3,6) || 'Standard Markup')}</th><th>${esc(at(3,7) || 'Pricing Rule')}</th></tr></thead><tbody>${[4,5,6,7].map(row => `<tr><td>${esc(at(row,5))}</td><td>${esc(at(row,6))}</td><td>${esc(at(row,7))}</td></tr>`).join('')}</tbody></table></section>
       </div>`;
     }
+
     const MERCH_ACTIVITY_SHEET = 'Merchandise Activity';
     let merchandiseOrders = [];
     let merchandiseLines = [];
     let merchandiseEvents = [];
     let merchandiseBusy = false;
+    let merchandiseCatalog = [];
+    let lastMerchandiseTickets = [];
+
+    function merchandiseProductName(value) {
+      const name = String(value || '').trim();
+      if (/^Men's Pullover Hoodie$/i.test(name)) return 'Pullover Hoodie';
+      if (/^Men's Short Sleeve$/i.test(name)) return "Men's Short Sleeve T-Shirt";
+      if (/^Men's Long Sleeve$/i.test(name)) return "Men's Long Sleeve T-Shirt — BSSC Sleeve";
+      if (/^Women's Long Sleeve V-Neck$/i.test(name)) return "Women's V-Neck Long Sleeve";
+      return name;
+    }
+
+    function merchandiseVariant(item) {
+      const match = String(item).match(/^(.*?)\s*\(([^)]*)\)$/);
+      if (!match) return {product:merchandiseProductName(item),size:'One Size',color:''};
+      const parts = match[2].split(',').map(part => part.trim());
+      return {product:merchandiseProductName(match[1]),size:parts[0] || 'One Size',color:parts.slice(1).join(', ')};
+    }
+
+    function pendingMerchandiseMatches(product,size,color) {
+      const allocation = [];
+      merchandiseOrders.slice(1).map((order,index) => ({order,index}))
+        .sort((a,b) => (Date.parse(a.order[0]) || 0)-(Date.parse(b.order[0]) || 0) || a.index-b.index)
+        .forEach(({order,index}) => {
+        if (!order[1] || /^(true|yes|1)$/i.test(String(order[15] || ''))) return;
+        const state = merchandiseState(order,merchandiseLines,merchandiseEvents);
+        state.items.forEach(line => {
+          const variant = merchandiseVariant(line.item);
+          if (variant.product === product && variant.size === size && variant.color.toLowerCase() === color.toLowerCase()) {
+            const needed = line.quantity-line.received;
+            if (needed > 0) allocation.push({orderId:String(order[1]),customer:String(order[4]),item:line.item,needed,sourceRow:index+2});
+          }
+        });
+      });
+      return allocation;
+    }
+
+    function availableMerchandiseStock(product,size,color) {
+      return merchandiseEvents.filter(event => ['Stock Received','Stock Assigned'].includes(event[1])).reduce((total,event) => {
+        const variant = merchandiseVariant(event[3]);
+        if (variant.product !== product || variant.size !== size || variant.color.toLowerCase() !== color.toLowerCase()) return total;
+        return total + (event[1] === 'Stock Received' ? 1 : -1) * (Number(event[4]) || 0);
+      },0);
+    }
+
+    function receiveOptions() {
+      const products = [...new Set([...merchandiseCatalog,...merchandiseLines.map(line => merchandiseVariant(line.item).product)])].filter(Boolean).sort();
+      document.getElementById('receiveProduct').innerHTML = products.map(product => `<option value="${esc(product)}">${esc(product)}</option>`).join('');
+      updateReceiveOptions();
+    }
+
+    function updateReceiveOptions() {
+      const product = document.getElementById('receiveProduct').value;
+      const isOneSize = /hat|beanie|koozie|coozie/i.test(product);
+      const observed = merchandiseLines.map(line => merchandiseVariant(line.item)).filter(v => v.product === product);
+      const sizes = isOneSize ? [...new Set(observed.map(v => v.size).concat(product === 'Flexfit Hat' ? ['S/M','L/XL'] : ['One Size']))] :
+        ['XS','S','M','L','XL','2XL','3XL','4XL','5XL'];
+      const sizeInput = document.getElementById('receiveSize'),previous = sizeInput.value;
+      sizeInput.innerHTML = sizes.map(size => `<option value="${esc(size)}">${esc(size)}</option>`).join('');
+      if (sizes.includes(previous)) sizeInput.value = previous;
+      const colors = [...new Set(observed.map(v => v.color).concat(isOneSize ? [''] : ['Red','Black','White','Gray']))];
+      const colorBox = document.getElementById('receiveColors');
+      const selected = colorBox.querySelector('input:checked')?.value;
+      colorBox.innerHTML = colors.map((color,index) => `<label><input type="radio" name="receiveColor" value="${esc(color)}" ${color === selected || (!colors.includes(selected) && index === 0) ? 'checked' : ''}> ${esc(color || 'No color')}</label>`).join('');
+      colorBox.querySelectorAll('input').forEach(input => input.addEventListener('change',previewMerchandiseAllocation));
+      previewMerchandiseAllocation();
+    }
+
+    function previewMerchandiseAllocation() {
+      const product = document.getElementById('receiveProduct').value;
+      const size = document.getElementById('receiveSize').value;
+      const color = document.querySelector('#receiveColors input:checked')?.value || '';
+      const quantity = Number(document.getElementById('receiveQuantity').value) || 0;
+      const matches = pendingMerchandiseMatches(product,size,color);
+      const needed = matches.reduce((sum,match) => sum+match.needed,0);
+      const stock = availableMerchandiseStock(product,size,color);
+      document.getElementById('receiveAllocationPreview').textContent =
+        `${needed} piece${needed === 1 ? '' : 's'} needed across ${matches.length} open order${matches.length === 1 ? '' : 's'}. ${stock} in unassigned stock.` +
+        (quantity > needed ? ` ${quantity-needed} extra will be recorded as unassigned stock.` : '');
+      document.getElementById('receiveStockPrint').disabled = !stock || !needed;
+    }
+
+    function openMerchandiseReceiving() {
+      receiveOptions();
+      document.getElementById('receiveOrderDialog').showModal();
+    }
+
+    function merchandisePrintTickets(tickets,printWindow) {
+      const rows = tickets.map(ticket => `<div class="ticket"><div class="brand">BONESHAKERS · PICK TICKET</div>
+        <strong>${esc(ticket.customer)}</strong><div class="item">${esc(ticket.item)}</div>
+        <div class="footer"><b>QTY ${ticket.quantity}</b><span>${esc(ticket.orderId)}</span></div></div>`).join('');
+      printWindow.document.open();
+      printWindow.document.write(`<!doctype html><html><head><title>Merchandise Pick Tickets</title><style>
+        @page{size:letter;margin:.35in}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;margin:0}
+        .sheet{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+        .ticket{height:1.9in;border:1px dashed #777;padding:.13in;break-inside:avoid;display:flex;flex-direction:column}
+        .brand{font-size:8pt;font-weight:800;border-bottom:1px solid #999;padding-bottom:5px;margin-bottom:7px}
+        strong{font-size:15pt;line-height:1.1}.item{font-size:11pt;margin-top:9px;line-height:1.25}
+        .footer{margin-top:auto;display:flex;justify-content:space-between;gap:5px;font-size:8pt}
+        .footer b{font-size:12pt}.print-only{display:none}
+        @media screen{body{padding:15px}.print-only{display:block;margin-bottom:15px}.print-only button{padding:10px 15px}}
+      </style></head><body><div class="print-only"><button onclick="window.print()">Print pick tickets</button> · Cut along the dotted lines.</div><div class="sheet">${rows}</div></body></html>`);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => { if (!printWindow.closed) printWindow.print(); },350);
+    }
+
+    async function receiveBulkMerchandise(event) {
+      event.preventDefault();
+      if (merchandiseBusy) return;
+      const product = document.getElementById('receiveProduct').value;
+      const size = document.getElementById('receiveSize').value;
+      const color = document.querySelector('#receiveColors input:checked')?.value || '';
+      const quantity = Number(document.getElementById('receiveQuantity').value);
+      const useStock = event.submitter?.dataset.mode === 'stock';
+      if (!product || !size || !Number.isInteger(quantity) || quantity < 1) return;
+      const printWindow = window.open('', '_blank');
+      if (printWindow) printWindow.document.write('<p>Receiving merchandise and preparing tickets…</p>');
+      merchandiseBusy = true;
+      document.getElementById('receiveSavePrint').disabled = true;
+      document.getElementById('receiveStockPrint').disabled = true;
+      try {
+        await refreshMerchandiseState();
+        const matches = pendingMerchandiseMatches(product,size,color);
+        const available = availableMerchandiseStock(product,size,color);
+        if (useStock && (quantity > available || quantity > matches.reduce((sum,match) => sum+match.needed,0))) {
+          throw new Error('The requested quantity exceeds available stock or open order demand.');
+        }
+        const actor = await getPortalAuditActor(), stamp = new Date().toISOString();
+        const entries = [],tickets = [];
+        let remaining = quantity;
+        matches.forEach(match => {
+          if (remaining <= 0) return;
+          const assigned = Math.min(match.needed,remaining);
+          entries.push([stamp,'Received',match.orderId,match.item,assigned,actor,'Auto-assigned oldest open order']);
+          tickets.push({customer:match.customer,orderId:match.orderId,item:match.item,quantity:assigned});
+          remaining -= assigned;
+        });
+        if (useStock) entries.push([stamp,'Stock Assigned','',`${product} (${size}${color ? ', '+color : ''})`,quantity,actor,'Assigned to oldest open orders']);
+        else if (remaining) entries.push([stamp,'Stock Received','',`${product} (${size}${color ? ', '+color : ''})`,remaining,actor,'Unassigned stock']);
+        await appendSheetRows(MARKETPLACE_SPREADSHEET_ID,MERCH_ACTIVITY_SHEET,entries);
+        await refreshMerchandiseState();
+        const updates = [];
+        const assignedIds = new Set(tickets.map(ticket => ticket.orderId));
+        merchandiseOrders.slice(1).forEach((order,index) => {
+          if (!assignedIds.has(String(order[1]))) return;
+          const state = merchandiseState(order,merchandiseLines,merchandiseEvents);
+          if (!state.complete || state.ready) return;
+          const row = index+2;
+          updates.push({range:`'Orders'!O${row}`,value:true},
+            {range:`'Orders'!Q${row}`,value:new Date().toLocaleDateString('en-US')},
+            {range:`'Orders'!T${row}`,value:'Ready for Pickup'});
+        });
+        if (updates.length) await updateSheetRanges(MARKETPLACE_SPREADSHEET_ID,updates);
+        lastMerchandiseTickets = tickets;
+        document.getElementById('receiveOrderDialog').close();
+        document.getElementById('receiveQuantity').value = '';
+        await loadMarketplaceData();
+        if (tickets.length && printWindow) merchandisePrintTickets(tickets,printWindow);
+        else if (printWindow) {printWindow.document.body.innerHTML = '<p>All pieces were recorded as unassigned stock. No customer tickets to print.</p>'; }
+        if (!printWindow && tickets.length) alert('Items were saved. Allow pop-ups for this portal, then use Reprint Last Tickets.');
+      } catch (error) {
+        if (printWindow) printWindow.close();
+        alert('Receiving could not finish: '+error.message+' Refresh the activity log before trying again to avoid duplicate entries.');
+      } finally {
+        merchandiseBusy = false;
+        document.getElementById('receiveSavePrint').disabled = false;
+        document.getElementById('receiveStockPrint').disabled = false;
+      }
+    }
+
+    document.getElementById('receiveProduct').addEventListener('change',updateReceiveOptions);
+    document.getElementById('receiveSize').addEventListener('change',previewMerchandiseAllocation);
+    document.getElementById('receiveQuantity').addEventListener('input',previewMerchandiseAllocation);
+    document.getElementById('receiveCancel').addEventListener('click',() => document.getElementById('receiveOrderDialog').close());
+    document.getElementById('receiveOrderForm').addEventListener('submit',receiveBulkMerchandise);
 
     function merchandiseState(order, lines, events) {
       const items = lines.filter(line => line.orderId === order[1]).map(line => {
@@ -2864,7 +3056,7 @@
       target.innerHTML = `<div class="receive-summary">
         <div>Awaiting Delivery<strong>${counts.waiting}</strong></div><div>Partially Received<strong>${counts.partial}</strong></div>
         <div>Ready for Pickup<strong>${counts.ready}</strong></div><div>Handed Out<strong>${counts.handed}</strong></div></div>
-        <div class="receive-tools"><input data-receive-search type="search" value="${esc(search)}" placeholder="Search customer, order, or item" aria-label="Search merchandise orders">
+        <div class="receive-tools"><button type="button" data-receive-order>＋ Receive Order</button>${lastMerchandiseTickets.length ? '<button type="button" data-reprint-tickets>Reprint Last Tickets</button>' : ''}<input data-receive-search type="search" value="${esc(search)}" placeholder="Search customer, order, or item" aria-label="Search merchandise orders">
         <select data-receive-filter aria-label="Filter orders"><option value="open">Open orders</option><option value="ready">Ready for pickup</option><option value="handed">Handed out</option><option value="all">All orders</option></select>
         <button type="button" data-receive-refresh>Refresh</button></div>
         <div class="receive-message" data-receive-message hidden></div>
@@ -2886,6 +3078,12 @@
         replacement.setSelectionRange(position,position);
       });
       target.querySelector('[data-receive-filter]').addEventListener('change',renderMerchandiseReceiving);
+      target.querySelector('[data-receive-order]').addEventListener('click',openMerchandiseReceiving);
+      target.querySelector('[data-reprint-tickets]')?.addEventListener('click',() => {
+        const printWindow = window.open('', '_blank');
+        if (printWindow) merchandisePrintTickets(lastMerchandiseTickets,printWindow);
+        else alert('Allow pop-ups for this portal to print the tickets.');
+      });
       target.querySelector('[data-receive-refresh]').addEventListener('click',loadMarketplaceData);
       target.querySelectorAll('[data-receive-item]').forEach(button => button.addEventListener('click',() => receiveMerchandiseItem(button)));
       target.querySelectorAll('[data-handout-order]').forEach(button => button.addEventListener('click',() => handOutMerchandiseOrder(button)));
@@ -2969,7 +3167,6 @@
       } finally { merchandiseBusy = false; }
     }
 
-
     async function loadMarketplaceData() {
       const statusIds = ['marketDashboardStatus','marketFulfillmentStatus','marketManufacturerStatus','marketFinancialsStatus','marketOrdersStatus','marketPricingStatus','marketHistoryStatus','marketReferenceStatus'];
       statusIds.forEach(id => document.getElementById(id).textContent = 'Loading from Google Sheets…');
@@ -2988,13 +3185,14 @@
       if (dashboardResult.status === 'fulfilled') { renderMarketplaceDashboard(dashboardResult.value, ordersResult.status === 'fulfilled' ? ordersResult.value : [], historyResult.status === 'fulfilled' ? historyResult.value : [], financialsResult.status === 'fulfilled' ? financialsResult.value : []); document.getElementById('marketDashboardStatus').textContent = 'Marketplace dashboard connected to Google Sheets.'; }
       else document.getElementById('marketDashboardStatus').textContent = 'Dashboard could not be loaded from Google Sheets.';
       if (fulfillmentResult.status === 'fulfilled') renderDataTable('marketFulfillmentTable','marketFulfillmentStatus',fulfillmentResult.value,3,12);
+      else document.getElementById('marketFulfillmentStatus').textContent = 'Fulfillment Tracker could not be loaded from Google Sheets.';
       if (ordersResult.status === 'fulfilled' && historyResult.status === 'fulfilled' && activityResult.status === 'fulfilled') {
         merchandiseOrders = ordersResult.value;
         merchandiseEvents = activityResult.value.slice(1);
         merchandiseLines = buildMerchandiseLines(historyResult.value);
+        merchandiseCatalog = referenceResult.status === 'fulfilled' ? [...new Set(referenceResult.value.slice(8).map(row => merchandiseProductName(row[0])).filter(Boolean))] : [];
         renderMerchandiseReceiving();
       } else document.getElementById('marketReceiving').innerHTML = '<p>Receiving is unavailable. Check access to Orders, Sales History, and Merchandise Activity.</p>';
-      else document.getElementById('marketFulfillmentStatus').textContent = 'Fulfillment Tracker could not be loaded from Google Sheets.';
       if (manufacturerResult.status === 'fulfilled') {
         const rows = manufacturerResult.value;
         renderManufacturerSummary(rows, ordersResult.status === 'fulfilled' ? ordersResult.value : []);
