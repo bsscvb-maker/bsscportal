@@ -3662,11 +3662,9 @@
       return [values[0],values[3],values[8],Number(String(values[9] || '').replace(/[$,]/g,'')),values[16]].map(value => String(value || '').trim().toLowerCase()).join('\u001f');
     }
 
-    let showSentTallyHistory = false;
-
     function renderFinanceTally(rows) {
       const pendingRows = rows.slice(1).filter(row => row.some(value => String(value || '').trim()) && !String(row[11] || '').trim());
-      renderDataTable('financeTallyTable','financeTallyStatus',showSentTallyHistory ? rows : [rows[0],...pendingRows],0,12);
+      renderDataTable('financeTallyTable','financeTallyStatus',[rows[0],...pendingRows],0,12);
       enhanceFinanceTally(rows);
     }
 
@@ -3682,12 +3680,13 @@
       button.disabled = pending.length === 0;
       button.textContent = `Send to Transactions (${pending.length})`;
       actionArea.appendChild(button);
-      const historyButton = document.createElement('button');
-      historyButton.type = 'button';
-      historyButton.className = 'dashboard-edit-btn';
-      historyButton.textContent = showSentTallyHistory ? 'Show pending only' : 'Show sent history';
-      historyButton.addEventListener('click', () => { showSentTallyHistory = !showSentTallyHistory; renderFinanceTally(rows); });
-      actionArea.appendChild(historyButton);
+      const historyLink = document.createElement('a');
+      historyLink.className = 'dashboard-edit-btn';
+      historyLink.href = 'https://docs.google.com/spreadsheets/d/1a6DfwnnNmy0ykQi7S8DKAt1RhauTh7ISwxSXm59b5NU/edit#gid=2005059339';
+      historyLink.target = '_blank';
+      historyLink.rel = 'noopener noreferrer';
+      historyLink.textContent = 'View sent archive';
+      actionArea.appendChild(historyLink);
       const pendingTotal = pending.reduce((sum,item) => sum + Number(String(item.row[5] || '').replace(/[$,]/g,'')),0);
       const summary = document.createElement('div');
       summary.className = 'table-search-count';
