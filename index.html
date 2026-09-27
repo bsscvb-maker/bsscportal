@@ -3640,6 +3640,12 @@
         transaction[5] = 'Individual Donation';
         transaction[6] = 'General Fund';
         transaction[7] = /bike night/i.test(eventName) ? 'Bike Night' : eventName;
+      } else if (normalizedType === 'bikes for tykes donation') {
+        transaction[3] = `Bikes for Tykes Donation — ${givenBy}`;
+        transaction[4] = 'Donations';
+        transaction[5] = 'Individual Donation';
+        transaction[6] = 'Bikes For Tykes';
+        transaction[7] = 'Bikes For Tykes Fundraiser 2026';
       } else if (normalizedType === 'merchandise') {
         transaction[3] = `Merchandise — ${givenBy}`;
         transaction[4] = 'Merchandise';
