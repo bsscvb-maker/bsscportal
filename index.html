@@ -3662,6 +3662,14 @@
       return [values[0],values[3],values[8],Number(String(values[9] || '').replace(/[$,]/g,'')),values[16]].map(value => String(value || '').trim().toLowerCase()).join('\u001f');
     }
 
+    let showSentTallyHistory = false;
+
+    function renderFinanceTally(rows) {
+      const pendingRows = rows.slice(1).filter(row => row.some(value => String(value || '').trim()) && !String(row[11] || '').trim());
+      renderDataTable('financeTallyTable','financeTallyStatus',showSentTallyHistory ? rows : [rows[0],...pendingRows],0,12);
+      enhanceFinanceTally(rows);
+    }
+
     function enhanceFinanceTally(rows) {
       const target = document.getElementById('financeTallyTable');
       const status = document.getElementById('financeTallyStatus');
@@ -3674,7 +3682,19 @@
       button.disabled = pending.length === 0;
       button.textContent = `Send to Transactions (${pending.length})`;
       actionArea.appendChild(button);
-      status.textContent = pending.length ? `${pending.length} Tally ${pending.length === 1 ? 'entry is' : 'entries are'} ready to send.` : 'All Tally entries have been sent to Transactions-2026.';
+      const historyButton = document.createElement('button');
+      historyButton.type = 'button';
+      historyButton.className = 'dashboard-edit-btn';
+      historyButton.textContent = showSentTallyHistory ? 'Show pending only' : 'Show sent history';
+      historyButton.addEventListener('click', () => { showSentTallyHistory = !showSentTallyHistory; renderFinanceTally(rows); });
+      actionArea.appendChild(historyButton);
+      const pendingTotal = pending.reduce((sum,item) => sum + Number(String(item.row[5] || '').replace(/[$,]/g,'')),0);
+      const summary = document.createElement('div');
+      summary.className = 'table-search-count';
+      summary.style.cssText = 'padding:16px 4px;font-size:1rem;font-weight:800;text-align:right';
+      summary.textContent = `Pending total: ${money(pendingTotal)}`;
+      target.appendChild(summary);
+      status.textContent = pending.length ? `${pending.length} Tally ${pending.length === 1 ? 'entry is' : 'entries are'} ready to send.` : 'All Tally entries have been sent to Transactions-2026. Pending total: $0.00.';
       button.addEventListener('click', async () => {
         if (!window.confirm(`Send all ${pending.length} pending Tally ${pending.length === 1 ? 'entry' : 'entries'} to Transactions-2026?`)) return;
         button.disabled = true;
@@ -4264,8 +4284,8 @@
         }
         if (key === 'transactions2026') buildFinanceTransactionOptions(listRows,rows,historicalRows);
         const editOptions = config.editable ? {sheetName:config.sheet,spreadsheetId:FINANCE_SPREADSHEET_ID,formulaRows:formulas,reverseRows:key === 'transactions2026'} : null;
-        renderDataTable(config.target,config.status,rows,config.header,config.columns,editOptions);
-        if (key === 'tally') enhanceFinanceTally(rows);
+        if (key === 'tally') renderFinanceTally(rows);
+        else renderDataTable(config.target,config.status,rows,config.header,config.columns,editOptions);
         loadedFinanceTabs.add(key);
       } catch (error) { document.getElementById(config.status).textContent = `${config.sheet} could not load from Google Sheets.`; }
     }
