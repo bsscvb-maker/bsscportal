@@ -490,6 +490,22 @@
     .pricing-rules-table td:nth-child(2) { font-weight:900; text-align:center; }
     .marketplace-table tr.market-paid td { background:#e5f6e9 !important; }
     .marketplace-table tr.market-pending td { background:#fff0f2 !important; }
+    .receive-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:16px 0; }
+    .receive-summary div,.receive-order { border:1px solid var(--line); border-radius:10px; padding:13px; background:#fff; }
+    .receive-summary strong { display:block; font-size:1.5rem; color:#c8102e; }
+    .receive-tools { display:flex; gap:10px; flex-wrap:wrap; margin:16px 0; }
+    .receive-tools input,.receive-tools select,.receive-line input { min-height:40px; padding:8px; border:1px solid #adb2ba; border-radius:7px; font:inherit; }
+    .receive-tools input { flex:1; min-width:190px; }
+    .receive-order { margin:12px 0; border-left:5px solid #c8102e; }
+    .receive-order header { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .receive-order h3 { margin:0 0 5px; }
+    .receive-line { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 0; border-top:1px solid var(--line); }
+    .receive-line span { flex:1; min-width:230px; }
+    .receive-line input { width:70px; }
+    .receive-order button { border:0; border-radius:7px; padding:10px 13px; background:#c8102e; color:#fff; font-weight:800; cursor:pointer; }
+    .receive-order button:disabled { background:#96999f; cursor:default; }
+    .receive-message { padding:10px; border-radius:7px; background:#eaf7ee; margin:10px 0; }
+    @media(max-width:700px) { .receive-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } }
     .marketplace-table tr.market-ready td { box-shadow:inset 4px 0 #e7a600; }
     .admin-workspace { display:none; }
     .admin-workspace.active { display:block; }
@@ -1036,7 +1052,7 @@
               <button class="sponsor-tab" data-market-tab="reference">Merchandise Pricing Reference</button>
             </div>
             <section class="sponsor-panel active" data-market-panel="dashboard"><div class="data-status" id="marketDashboardStatus">Sign in to load Marketplace performance.</div><div id="marketDashboard"></div></section>
-            <section class="sponsor-panel" data-market-panel="fulfillment"><div class="coming-soon"><h2>Fulfillment Tracker</h2><div class="data-status" id="marketFulfillmentStatus">Sign in to load fulfillment records.</div><div id="marketFulfillmentTable"></div></div></section>
+            <section class="sponsor-panel" data-market-panel="fulfillment"><div class="coming-soon"><h2>Receive &amp; Fulfill Merchandise</h2><p>Record each item as it arrives, then hand out completed orders.</p><div class="data-status" id="marketFulfillmentStatus">Sign in to load fulfillment records.</div><div id="marketReceiving"></div><details><summary>View original Fulfillment Tracker</summary><div id="marketFulfillmentTable"></div></details></div></section>
             <section class="sponsor-panel" data-market-panel="manufacturer"><div class="coming-soon"><h2>Manufacturer Summary</h2><div class="data-status" id="marketManufacturerStatus">Sign in to load manufacturer totals.</div><div id="marketManufacturerSummary"></div><div id="marketManufacturerTable"></div></div></section>
             <section class="sponsor-panel" data-market-panel="financials"><div class="coming-soon"><h2>Order Financials</h2><div class="data-status" id="marketFinancialsStatus">Sign in to load order financials.</div><div id="marketFinancialsSummary"></div><div id="marketFinancialsTable"></div></div></section>
             <section class="sponsor-panel" data-market-panel="orders"><div class="coming-soon"><h2>Orders</h2><div class="data-status" id="marketOrdersStatus">Sign in to load orders.</div><div id="marketOrdersTable"></div></div></section>
@@ -2811,6 +2827,148 @@
         <section class="pricing-box"><h3>Cost Tiers &amp; Markup</h3><table class="pricing-rules-table"><thead><tr><th>${esc(at(3,5) || 'Cost Tier')}</th><th>${esc(at(3,6) || 'Standard Markup')}</th><th>${esc(at(3,7) || 'Pricing Rule')}</th></tr></thead><tbody>${[4,5,6,7].map(row => `<tr><td>${esc(at(row,5))}</td><td>${esc(at(row,6))}</td><td>${esc(at(row,7))}</td></tr>`).join('')}</tbody></table></section>
       </div>`;
     }
+    const MERCH_ACTIVITY_SHEET = 'Merchandise Activity';
+    let merchandiseOrders = [];
+    let merchandiseLines = [];
+    let merchandiseEvents = [];
+    let merchandiseBusy = false;
+
+    function merchandiseState(order, lines, events) {
+      const items = lines.filter(line => line.orderId === order[1]).map(line => {
+        const received = events.filter(event => event[2] === line.orderId && event[3] === line.item && event[1] === 'Received')
+          .reduce((total,event) => total + (Number(event[4]) || 0), 0);
+        return {...line, received:Math.min(line.quantity,received)};
+      });
+      const complete = items.length > 0 && items.every(item => item.received >= item.quantity);
+      const partial = items.some(item => item.received > 0) && !complete;
+      return {items,complete,partial,handed:/^(true|yes|1)$/i.test(String(order[15] || '')),ready:/^(true|yes|1)$/i.test(String(order[14] || ''))};
+    }
+
+    function renderMerchandiseReceiving() {
+      const target = document.getElementById('marketReceiving');
+      if (!target) return;
+      const search = target.querySelector('[data-receive-search]')?.value || '';
+      const filter = target.querySelector('[data-receive-filter]')?.value || 'open';
+      const orders = merchandiseOrders.slice(1).filter(row => row[1] && row[4]);
+      const states = orders.map(row => ({row,state:merchandiseState(row,merchandiseLines,merchandiseEvents)}));
+      const counts = {
+        waiting:states.filter(x => !x.state.handed && !x.state.partial && !x.state.complete && !x.state.ready).length,
+        partial:states.filter(x => !x.state.handed && x.state.partial).length,
+        ready:states.filter(x => !x.state.handed && (x.state.complete || x.state.ready)).length,
+        handed:states.filter(x => x.state.handed).length
+      };
+      const shown = states.filter(({row,state}) => {
+        const match = (String(row[1])+' '+String(row[4])+' '+String(row[8])).toLowerCase().includes(search.toLowerCase());
+        return match && (filter === 'all' || (filter === 'open' && !state.handed) || (filter === 'ready' && !state.handed && (state.complete || state.ready)) || (filter === 'handed' && state.handed));
+      });
+      target.innerHTML = `<div class="receive-summary">
+        <div>Awaiting Delivery<strong>${counts.waiting}</strong></div><div>Partially Received<strong>${counts.partial}</strong></div>
+        <div>Ready for Pickup<strong>${counts.ready}</strong></div><div>Handed Out<strong>${counts.handed}</strong></div></div>
+        <div class="receive-tools"><input data-receive-search type="search" value="${esc(search)}" placeholder="Search customer, order, or item" aria-label="Search merchandise orders">
+        <select data-receive-filter aria-label="Filter orders"><option value="open">Open orders</option><option value="ready">Ready for pickup</option><option value="handed">Handed out</option><option value="all">All orders</option></select>
+        <button type="button" data-receive-refresh>Refresh</button></div>
+        <div class="receive-message" data-receive-message hidden></div>
+        ${shown.length ? shown.map(({row,state}) => {
+          const id = String(row[1]), due = /pending|cash due/i.test(String(row[12] || ''));
+          const label = state.handed ? 'Handed Out' : (state.complete || state.ready ? 'Ready for Pickup' : state.partial ? 'Partially Received' : 'Awaiting Delivery');
+          return `<article class="receive-order"><header><div><h3>${esc(row[4])}</h3><small>${esc(id)} · ${esc(row[12] || 'Payment unknown')}</small></div><strong>${label}</strong></header>
+          ${state.items.length ? state.items.map(item => `<div class="receive-line"><span>${esc(item.item)}<br><small>Received ${item.received} of ${item.quantity}</small></span>
+          ${!state.handed && item.received < item.quantity ? `<label>Qty <input type="number" min="1" max="${item.quantity-item.received}" value="${item.quantity-item.received}" data-receive-qty></label><button type="button" data-receive-item data-order="${esc(id)}" data-item="${esc(item.item)}">Receive</button>` : ''}</div>`).join('') : '<p>Item details unavailable. Check Sales History before receiving this order.</p>'}
+          ${!state.handed && (state.complete || state.ready) ? `<button type="button" data-handout-order data-order="${esc(id)}" ${due ? 'disabled title="Record payment first"' : ''}>Mark Handed Out</button>` : ''}
+          ${due ? '<small>Payment is due before handout.</small>' : ''}</article>`;
+        }).join('') : '<p>No orders match this view.</p>'}`;
+      target.querySelector('[data-receive-filter]').value = filter;
+      target.querySelector('[data-receive-search]').addEventListener('input',event => {
+        const position = event.target.selectionStart;
+        renderMerchandiseReceiving();
+        const replacement = target.querySelector('[data-receive-search]');
+        replacement.focus();
+        replacement.setSelectionRange(position,position);
+      });
+      target.querySelector('[data-receive-filter]').addEventListener('change',renderMerchandiseReceiving);
+      target.querySelector('[data-receive-refresh]').addEventListener('click',loadMarketplaceData);
+      target.querySelectorAll('[data-receive-item]').forEach(button => button.addEventListener('click',() => receiveMerchandiseItem(button)));
+      target.querySelectorAll('[data-handout-order]').forEach(button => button.addEventListener('click',() => handOutMerchandiseOrder(button)));
+    }
+
+    async function refreshMerchandiseState() {
+      const [orders,history,events] = await Promise.all([
+        getSheetValues("'Orders'!A1:T1000",MARKETPLACE_SPREADSHEET_ID),
+        getSheetValues("'Sales History'!A1:F1000",MARKETPLACE_SPREADSHEET_ID),
+        getSheetValues("'Merchandise Activity'!A1:G1000",MARKETPLACE_SPREADSHEET_ID)
+      ]);
+      merchandiseOrders = orders;
+      merchandiseEvents = events.slice(1);
+      merchandiseLines = buildMerchandiseLines(history);
+      renderMerchandiseReceiving();
+    }
+
+    function buildMerchandiseLines(history) {
+      const lines = new Map();
+      history.slice(6).filter(row => row[1] && row[2] && Number(row[3]) > 0).forEach(row => {
+        const orderId = String(row[1]), item = String(row[2]), key = JSON.stringify([orderId,item]);
+        const current = lines.get(key) || {orderId,item,quantity:0};
+        current.quantity += Number(row[3]);
+        lines.set(key,current);
+      });
+      return [...lines.values()];
+    }
+
+    async function receiveMerchandiseItem(button) {
+      if (merchandiseBusy) return;
+      merchandiseBusy = true; button.disabled = true;
+      try {
+        await refreshMerchandiseState();
+        const id = button.dataset.order, item = button.dataset.item;
+        const order = merchandiseOrders.find(row => row[1] === id);
+        if (!order || /^(true|yes|1)$/i.test(String(order[15] || ''))) throw new Error('This order is already handed out or no longer exists.');
+        const state = merchandiseState(order,merchandiseLines,merchandiseEvents);
+        const line = state.items.find(entry => entry.item === item);
+        const qty = Number(button.closest('.receive-line').querySelector('[data-receive-qty]').value);
+        if (!line || !Number.isInteger(qty) || qty < 1 || qty > line.quantity-line.received) throw new Error('Enter a quantity no greater than the pieces still needed.');
+        const actor = await getPortalAuditActor();
+        await appendSheetRow(MARKETPLACE_SPREADSHEET_ID,MERCH_ACTIVITY_SHEET,[new Date().toISOString(),'Received',id,item,qty,actor,'']);
+        await refreshMerchandiseState();
+        const updated = merchandiseOrders.find(row => row[1] === id);
+        if (merchandiseState(updated,merchandiseLines,merchandiseEvents).complete && !/^(true|yes|1)$/i.test(String(updated[14] || ''))) {
+          const rowNumber = merchandiseOrders.indexOf(updated)+1;
+          await updateSheetRanges(MARKETPLACE_SPREADSHEET_ID,[
+            {range:`'Orders'!O${rowNumber}`,value:true},
+            {range:`'Orders'!Q${rowNumber}`,value:new Date().toLocaleDateString('en-US')},
+            {range:`'Orders'!T${rowNumber}`,value:'Ready for Pickup'}
+          ]);
+        }
+        await loadMarketplaceData();
+      } catch (error) {
+        alert('Receiving could not finish: '+error.message+' Refresh the page and check the activity log before trying again.');
+      } finally { merchandiseBusy = false; }
+    }
+
+    async function handOutMerchandiseOrder(button) {
+      if (merchandiseBusy) return;
+      merchandiseBusy = true; button.disabled = true;
+      try {
+        await refreshMerchandiseState();
+        const id = button.dataset.order;
+        const rowNumber = merchandiseOrders.findIndex(row => row[1] === id)+1;
+        const order = merchandiseOrders[rowNumber-1];
+        if (rowNumber < 2 || !order) throw new Error('Order not found.');
+        const state = merchandiseState(order,merchandiseLines,merchandiseEvents);
+        if (state.handed || (!state.complete && !state.ready)) throw new Error('This order is not ready for pickup.');
+        if (/pending|cash due/i.test(String(order[12] || ''))) throw new Error('Record the payment on the Orders tab first.');
+        if (!confirm('Confirm merchandise was handed to '+order[4]+'?')) return;
+        await updateSheetRanges(MARKETPLACE_SPREADSHEET_ID,[
+          {range:`'Orders'!P${rowNumber}`,value:true},
+          {range:`'Orders'!R${rowNumber}`,value:new Date().toLocaleDateString('en-US')},
+          {range:`'Orders'!T${rowNumber}`,value:'Handed Out'}
+        ]);
+        await appendSheetRow(MARKETPLACE_SPREADSHEET_ID,MERCH_ACTIVITY_SHEET,[new Date().toISOString(),'Handed Out',id,'',0,await getPortalAuditActor(),'']);
+        await loadMarketplaceData();
+      } catch (error) {
+        alert('Handout could not finish: '+error.message+' Refresh and check the order before trying again.');
+      } finally { merchandiseBusy = false; }
+    }
+
 
     async function loadMarketplaceData() {
       const statusIds = ['marketDashboardStatus','marketFulfillmentStatus','marketManufacturerStatus','marketFinancialsStatus','marketOrdersStatus','marketPricingStatus','marketHistoryStatus','marketReferenceStatus'];
@@ -2823,12 +2981,19 @@
         getSheetValues("'Orders'!A1:T1000", MARKETPLACE_SPREADSHEET_ID),
         getSheetValues("'Pricing & Fees'!A1:J100", MARKETPLACE_SPREADSHEET_ID),
         getSheetValues("'Sales History'!A1:F1000", MARKETPLACE_SPREADSHEET_ID),
-        getSheetValues("'Merchandise Pricing Reference'!A1:G100", MARKETPLACE_SPREADSHEET_ID)
+        getSheetValues("'Merchandise Pricing Reference'!A1:G100", MARKETPLACE_SPREADSHEET_ID),
+        getSheetValues("'Merchandise Activity'!A1:G1000", MARKETPLACE_SPREADSHEET_ID)
       ]);
-      const [dashboardResult, fulfillmentResult, manufacturerResult, financialsResult, ordersResult, pricingResult, historyResult, referenceResult] = results;
+      const [dashboardResult, fulfillmentResult, manufacturerResult, financialsResult, ordersResult, pricingResult, historyResult, referenceResult, activityResult] = results;
       if (dashboardResult.status === 'fulfilled') { renderMarketplaceDashboard(dashboardResult.value, ordersResult.status === 'fulfilled' ? ordersResult.value : [], historyResult.status === 'fulfilled' ? historyResult.value : [], financialsResult.status === 'fulfilled' ? financialsResult.value : []); document.getElementById('marketDashboardStatus').textContent = 'Marketplace dashboard connected to Google Sheets.'; }
       else document.getElementById('marketDashboardStatus').textContent = 'Dashboard could not be loaded from Google Sheets.';
       if (fulfillmentResult.status === 'fulfilled') renderDataTable('marketFulfillmentTable','marketFulfillmentStatus',fulfillmentResult.value,3,12);
+      if (ordersResult.status === 'fulfilled' && historyResult.status === 'fulfilled' && activityResult.status === 'fulfilled') {
+        merchandiseOrders = ordersResult.value;
+        merchandiseEvents = activityResult.value.slice(1);
+        merchandiseLines = buildMerchandiseLines(historyResult.value);
+        renderMerchandiseReceiving();
+      } else document.getElementById('marketReceiving').innerHTML = '<p>Receiving is unavailable. Check access to Orders, Sales History, and Merchandise Activity.</p>';
       else document.getElementById('marketFulfillmentStatus').textContent = 'Fulfillment Tracker could not be loaded from Google Sheets.';
       if (manufacturerResult.status === 'fulfilled') {
         const rows = manufacturerResult.value;
