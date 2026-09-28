@@ -1090,7 +1090,7 @@
               <label>Quantity received<input id="receiveQuantity" type="number" min="1" step="1" required></label>
               <div class="receive-preview" id="receiveAllocationPreview"></div><div class="receive-modal-actions"><button type="button" id="receiveCancel">Cancel</button><button type="submit" id="receiveStockPrint" data-mode="stock">Assign Existing Stock</button><button type="submit" id="receiveSavePrint">Receive &amp; Print Tickets</button></div></form></dialog>
             <dialog class="receive-modal" id="orderActionDialog" aria-labelledby="orderActionTitle"><h2 id="orderActionTitle">Update Order</h2><p id="orderActionContext"></p>
-              <form id="orderActionForm"><label>Action<select id="orderActionType" required><option value="Cancelled">Cancel order</option><option value="Refunded">Record refund issued</option><option value="Damaged">Report damaged item</option><option value="Deleted">Remove mistaken order</option></select></label>
+              <form id="orderActionForm"><label>Action<select id="orderActionType" required><option value="Cancelled">Cancel and remove order</option><option value="Refunded">Record refund issued</option><option value="Damaged">Report damaged item</option><option value="Deleted">Remove mistaken order</option></select></label>
               <label id="orderActionItemLabel">Item<select id="orderActionItem"></select></label>
               <label id="orderActionQtyLabel">Damaged quantity<input id="orderActionQty" type="number" min="1" step="1" value="1"></label>
               <label id="orderActionAmountLabel">Refund amount ($)<input id="orderActionAmount" type="number" min="0.01" step="0.01" placeholder="0.00"></label>
@@ -3263,9 +3263,9 @@
       document.getElementById('orderActionQty').required = type === 'Damaged';
       const order = merchandiseOrders.find(row => String(row[1]) === managedOrderId);
       const closed = order && merchandiseOrderClosed(order);
-      document.getElementById('orderActionType').querySelector('[value="Cancelled"]').disabled = Boolean(closed);
+      document.getElementById('orderActionType').querySelector('[value="Cancelled"]').disabled = Boolean(closed) || Boolean(order && /^(true|yes|1)$/i.test(String(order[15] || '')));
       document.getElementById('orderActionType').querySelector('[value="Damaged"]').disabled = Boolean(closed);
-      document.getElementById('orderActionType').querySelector('[value="Deleted"]').disabled = Boolean(closed) || merchandiseOrderRefunds(managedOrderId) > 0 || Boolean(order && /^(true|yes|1)$/i.test(String(order[15] || '')));
+      document.getElementById('orderActionType').querySelector('[value="Deleted"]').disabled = merchandiseOrderRefunds(managedOrderId) > 0 || Boolean(order && /^(true|yes|1)$/i.test(String(order[15] || '')));
     }
     function updateOrderOtherField() {
       const other = document.getElementById('orderActionReason').value === 'Other';
@@ -3275,6 +3275,30 @@
     document.getElementById('orderActionType').addEventListener('change',updateOrderActionFields);
     document.getElementById('orderActionReason').addEventListener('change',updateOrderOtherField);
     document.getElementById('orderActionClose').addEventListener('click',() => document.getElementById('orderActionDialog').close());
+    async function removeMarketplaceOrderRows(orderIndex,id,reason,actor) {
+      const metadataUrl = `https://sheets.googleapis.com/v4/spreadsheets/${MARKETPLACE_SPREADSHEET_ID}?fields=sheets.properties(sheetId,title)`;
+      const metadata = await fetchSheetRead(metadataUrl);
+      const sheetIds = Object.fromEntries((metadata.sheets || []).map(sheet => [sheet.properties.title,sheet.properties.sheetId]));
+      const required = ['Orders','Fulfillment Tracker','Order Financials','Merchandise Activity'];
+      if (required.some(name => !Number.isInteger(sheetIds[name]))) throw new Error('A required Marketplace tab is missing. Nothing was removed.');
+      const dimension = (name,startIndex) => ({deleteDimension:{range:{sheetId:sheetIds[name],dimension:'ROWS',startIndex,endIndex:startIndex+1}}});
+      const activityIndexes = merchandiseEvents.map((entry,index) => String(entry[2]) === id ? index+1 : -1)
+        .filter(index => index >= 0).sort((a,b) => b-a);
+      const requests = activityIndexes.map(index => dimension('Merchandise Activity',index));
+      requests.push(dimension('Fulfillment Tracker',orderIndex+3),dimension('Order Financials',orderIndex+4),dimension('Orders',orderIndex));
+      const order = merchandiseOrders[orderIndex];
+      const stock = merchandiseState(order,merchandiseLines,merchandiseEvents).items.filter(line => line.received > 0);
+      if (stock.length) requests.push({appendCells:{sheetId:sheetIds['Merchandise Activity'],rows:stock.map(line => ({values:[
+        {userEnteredValue:{stringValue:new Date().toISOString()}},
+        {userEnteredValue:{stringValue:'Stock Received'}},
+        {},{userEnteredValue:{stringValue:line.item}},
+        {userEnteredValue:{numberValue:line.received}},
+        {userEnteredValue:{stringValue:actor}},
+        {userEnteredValue:{stringValue:'Returned to stock after order removal'}}
+      ]})),fields:'userEnteredValue'}});
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${MARKETPLACE_SPREADSHEET_ID}:batchUpdate`;
+      await writePortalSheetRequest(url,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({requests})},'Removed Marketplace order',`Order ${id}: ${reason}`,requests.length);
+    }
     document.getElementById('orderActionForm').addEventListener('submit',async event => {
       event.preventDefault();
       if (merchandiseBusy) return;
@@ -3293,31 +3317,29 @@
         const quantity = Number(document.getElementById('orderActionQty').value);
         const amount = Number(document.getElementById('orderActionAmount').value);
         if (!reason) throw new Error('Select a reason or write your own.');
-        if (type !== 'Refunded' && merchandiseOrderClosed(order)) throw new Error('This order is already cancelled.');
+        if (type !== 'Refunded' && type !== 'Deleted' && merchandiseOrderClosed(order)) throw new Error('This order is already cancelled.');
         if (type === 'Damaged') {
           const line = merchandiseState(order,merchandiseLines,merchandiseEvents).items.find(line => line.item === item);
           if (!line || !Number.isInteger(quantity) || quantity < 1 || quantity > line.received) throw new Error('Damaged quantity must be no greater than received quantity.');
           if (/^(true|yes|1)$/i.test(String(order[15] || ''))) throw new Error('A handed out order cannot be returned to the receiving queue here.');
         }
         if (type === 'Refunded' && (!Number.isFinite(amount) || amount <= 0)) throw new Error('Enter the actual amount refunded.');
-        if (type === 'Deleted' && (merchandiseOrderRefunds(id) || /^(true|yes|1)$/i.test(String(order[15] || '')))) throw new Error('Refunded or handed out orders must remain in the record.');
-        const message = type === 'Deleted' ? `Remove ${order[4]}'s mistaken order from active portal views? The original sheet row remains for audit and workbook reconciliation.` : type === 'Cancelled' ? `Cancel ${order[4]}'s order? It will leave open fulfillment. This does not send a refund.` : type === 'Refunded' ? `Confirm $${amount.toFixed(2)} has already been refunded outside this portal? This records the refund; it does not send money.` : `Record ${quantity} damaged ${item} and return them to the needs-replacement list?`;
+        if ((type === 'Deleted' || type === 'Cancelled') && /^(true|yes|1)$/i.test(String(order[15] || ''))) throw new Error('Handed out orders cannot be removed here.');
+        if (type === 'Deleted' && merchandiseOrderRefunds(id)) throw new Error('Refunded orders cannot be removed as mistaken entries.');
+        const message = type === 'Deleted' || type === 'Cancelled' ? `Remove ${order[4]}'s order ${id} from the entire Marketplace workbook? Related order rows will be deleted from Orders, Fulfillment Tracker, Order Financials, and the activity log. Calculated tabs will update. This cannot be undone here and does not send a refund.` : type === 'Refunded' ? `Confirm $${amount.toFixed(2)} has already been refunded outside this portal? This records the refund; it does not send money.` : `Record ${quantity} damaged ${item} and return them to the needs-replacement list?`;
         if (!confirm(message)) return;
         const stamp = new Date().toISOString(), actor = await getPortalAuditActor();
-        const entries = [[stamp,type,id,item,type === 'Refunded' ? amount : type === 'Damaged' ? quantity : 0,actor,reason]];
         if (type === 'Cancelled' || type === 'Deleted') {
-          const state = merchandiseState(order,merchandiseLines,merchandiseEvents);
-          state.items.filter(line => line.received > 0).forEach(line => entries.push([stamp,'Stock Received','',line.item,line.received,actor,`Released from cancelled order ${id}`]));
+          await removeMarketplaceOrderRows(orderIndex,id,reason,actor);
+        } else {
+          await appendSheetRows(MARKETPLACE_SPREADSHEET_ID,MERCH_ACTIVITY_SHEET,[[stamp,type,id,item,type === 'Refunded' ? amount : quantity,actor,reason]]);
         }
-        await appendSheetRows(MARKETPLACE_SPREADSHEET_ID,MERCH_ACTIVITY_SHEET,entries);
         saved = true;
-        if (type === 'Cancelled' || type === 'Deleted') await updateSheetRanges(MARKETPLACE_SPREADSHEET_ID,[{range:`'Orders'!T${orderIndex+1}`,value:type}]);
         if (type === 'Damaged') await updateSheetRanges(MARKETPLACE_SPREADSHEET_ID,[{range:`'Orders'!O${orderIndex+1}`,value:false},{range:`'Orders'!Q${orderIndex+1}`,value:''},{range:`'Orders'!T${orderIndex+1}`,value:'Awaiting Replacement'}]);
         document.getElementById('orderActionDialog').close();
         await loadMarketplaceData();
         if (type === 'Refunded') alert('Refund recorded. Reconcile the actual payment and financial workbook separately.');
-        if (type === 'Deleted') alert('Mistaken order removed from active portal views. Its source sheet row remains for audit; reconcile any workbook totals separately.');
-        if (type === 'Cancelled') alert('Order cancelled and removed from open fulfillment. Review the financial workbook for any refund or accounting adjustment.');
+        if (type === 'Deleted' || type === 'Cancelled') alert('Order removed from the Marketplace workbook. If payment was collected, issue and reconcile any refund separately.');
       } catch (error) {
         alert(saved ? 'Action recorded, but the order display could not fully update: '+error.message+' Refresh before doing anything else.' : 'Action was not saved: '+error.message);
       } finally { merchandiseBusy = false; save.disabled = false; }
