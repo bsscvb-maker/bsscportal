@@ -530,7 +530,8 @@
     .receive-modal::backdrop { background:#0009; }
     .receive-modal label { display:block; font-weight:750; margin:12px 0; }
     .receive-modal label[hidden] { display:none; }
-    .receive-modal select,.receive-modal input[type="number"],.receive-modal input[type="text"] { width:100%; min-height:42px; padding:8px; border:1px solid #abb1ba; border-radius:7px; font:inherit; }
+    .receive-modal select,.receive-modal input[type="number"],.receive-modal input[type="text"],.receive-modal textarea { display:block; width:100%; min-height:42px; margin-top:7px; padding:10px 12px; border:1px solid #abb1ba; border-radius:8px; font:inherit; box-sizing:border-box; }
+    .receive-modal textarea { min-height:100px; resize:vertical; line-height:1.45; }
     .receive-colors { display:flex; gap:9px; flex-wrap:wrap; margin:10px 0; }
     .receive-colors label { margin:0; padding:9px 12px; border:1px solid #bbb; border-radius:20px; cursor:pointer; }
     .receive-preview { padding:12px; border-radius:8px; background:#f3f4f6; margin:12px 0; }
@@ -1093,7 +1094,8 @@
               <label id="orderActionItemLabel">Item<select id="orderActionItem"></select></label>
               <label id="orderActionQtyLabel">Damaged quantity<input id="orderActionQty" type="number" min="1" step="1" value="1"></label>
               <label id="orderActionAmountLabel">Refund amount ($)<input id="orderActionAmount" type="number" min="0.01" step="0.01" placeholder="0.00"></label>
-              <label>Reason / reference<input id="orderActionReason" maxlength="200" required placeholder="Why, or refund transaction reference"></label>
+              <label>Reason<select id="orderActionReason" required></select></label>
+              <label id="orderActionOtherLabel" hidden>Tell us more<textarea id="orderActionOther" maxlength="200" placeholder="Enter the reason here"></textarea></label>
               <div class="receive-modal-actions"><button type="button" id="orderActionClose">Go Back</button><button type="submit" id="orderActionSave">Save Action</button></div></form></dialog>
             <section class="sponsor-panel" data-market-panel="manufacturer"><div class="coming-soon"><h2>Manufacturer Summary</h2><div class="data-status" id="marketManufacturerStatus">Sign in to load manufacturer totals.</div><div id="marketManufacturerSummary"></div><div id="marketManufacturerTable"></div></div></section>
             <section class="sponsor-panel" data-market-panel="financials"><div class="coming-soon"><h2>Order Financials</h2><div class="data-status" id="marketFinancialsStatus">Sign in to load order financials.</div><div id="marketFinancialsSummary"></div><div id="marketFinancialsTable"></div></div></section>
@@ -3236,13 +3238,24 @@
       const select = document.getElementById('orderActionItem');
       select.innerHTML = merchandiseState(order,merchandiseLines,merchandiseEvents).items.map(line => `<option value="${esc(line.item)}">${esc(line.item)} · ${line.received} received</option>`).join('');
       document.getElementById('orderActionType').value = merchandiseOrderClosed(order) ? 'Refunded' : 'Cancelled';
-      document.getElementById('orderActionReason').value = '';
+      document.getElementById('orderActionOther').value = '';
       document.getElementById('orderActionAmount').value = '';
       updateOrderActionFields();
       document.getElementById('orderActionDialog').showModal();
     }
     function updateOrderActionFields() {
       const type = document.getElementById('orderActionType').value;
+      const choices = type === 'Cancelled' ? [
+        'Customer requested cancellation','Ordered by mistake','Duplicate order','Wrong item, size, or color',
+        'Item unavailable','Delivery taking too long','Payment not completed','Customer did not respond','Club entered order incorrectly'
+      ] : type === 'Refunded' ? [
+        'Order cancelled','Item unavailable','Wrong item, size, or color','Item damaged','Duplicate payment','Price adjustment'
+      ] : type === 'Damaged' ? [
+        'Arrived damaged','Damaged in storage','Damaged during delivery','Print or manufacturing defect','Wrong condition from vendor'
+      ] : ['Duplicate order','Test order','Order entered incorrectly','Customer details entered incorrectly'];
+      const reasonSelect = document.getElementById('orderActionReason');
+      reasonSelect.innerHTML = '<option value="">Select a reason…</option>' + choices.map(choice => `<option value="${esc(choice)}">${esc(choice)}</option>`).join('') + '<option value="Other">Other — write my own</option>';
+      updateOrderOtherField();
       document.getElementById('orderActionItemLabel').hidden = type !== 'Damaged';
       document.getElementById('orderActionQtyLabel').hidden = type !== 'Damaged';
       document.getElementById('orderActionAmountLabel').hidden = type !== 'Refunded';
@@ -3254,7 +3267,13 @@
       document.getElementById('orderActionType').querySelector('[value="Damaged"]').disabled = Boolean(closed);
       document.getElementById('orderActionType').querySelector('[value="Deleted"]').disabled = Boolean(closed) || merchandiseOrderRefunds(managedOrderId) > 0 || Boolean(order && /^(true|yes|1)$/i.test(String(order[15] || '')));
     }
+    function updateOrderOtherField() {
+      const other = document.getElementById('orderActionReason').value === 'Other';
+      document.getElementById('orderActionOtherLabel').hidden = !other;
+      document.getElementById('orderActionOther').required = other;
+    }
     document.getElementById('orderActionType').addEventListener('change',updateOrderActionFields);
+    document.getElementById('orderActionReason').addEventListener('change',updateOrderOtherField);
     document.getElementById('orderActionClose').addEventListener('click',() => document.getElementById('orderActionDialog').close());
     document.getElementById('orderActionForm').addEventListener('submit',async event => {
       event.preventDefault();
@@ -3268,11 +3287,12 @@
         if (orderIndex < 1) throw new Error('Order not found. Refresh and check its status.');
         const order = merchandiseOrders[orderIndex];
         const type = document.getElementById('orderActionType').value;
-        const reason = document.getElementById('orderActionReason').value.trim();
+        const selectedReason = document.getElementById('orderActionReason').value;
+        const reason = (selectedReason === 'Other' ? document.getElementById('orderActionOther').value : selectedReason).trim();
         const item = type === 'Damaged' ? document.getElementById('orderActionItem').value : '';
         const quantity = Number(document.getElementById('orderActionQty').value);
         const amount = Number(document.getElementById('orderActionAmount').value);
-        if (!reason) throw new Error('Enter a reason or reference.');
+        if (!reason) throw new Error('Select a reason or write your own.');
         if (type !== 'Refunded' && merchandiseOrderClosed(order)) throw new Error('This order is already cancelled.');
         if (type === 'Damaged') {
           const line = merchandiseState(order,merchandiseLines,merchandiseEvents).items.find(line => line.item === item);
