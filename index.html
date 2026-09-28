@@ -509,14 +509,21 @@
     .receive-tools { display:flex; gap:10px; flex-wrap:wrap; margin:16px 0; }
     .receive-tools input,.receive-tools select,.receive-line input { min-height:40px; padding:8px; border:1px solid #adb2ba; border-radius:7px; font:inherit; }
     .receive-tools input { flex:1; min-width:190px; }
-    .receive-order { margin:12px 0; border-left:5px solid #c8102e; }
-    .receive-order header { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
-    .receive-order h3 { margin:0 0 5px; }
-    .receive-line { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 0; border-top:1px solid var(--line); }
+    .receive-order { margin:12px 0; padding:17px 18px; border:1px solid #e0e3e8; border-left:4px solid #c8102e; border-radius:12px; box-shadow:0 2px 9px rgba(15,20,30,.035); }
+    .receive-order header { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; padding-bottom:11px; }
+    .receive-order header > strong { color:#49515e; font-size:.78rem; font-weight:800; }
+    .receive-order h3 { margin:0 0 5px; font-size:1.04rem; }
+    .receive-order header small,.receive-line small { color:#69717d; }
+    .receive-line { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:9px 0; border-top:1px solid #edf0f2; }
     .receive-line span { flex:1; min-width:230px; }
     .receive-line input { width:70px; }
-    .receive-order button { border:0; border-radius:7px; padding:10px 13px; background:#c8102e; color:#fff; font-weight:800; cursor:pointer; }
+    .receive-order button { border:0; border-radius:8px; padding:10px 15px; background:#c8102e; color:#fff; font-weight:800; cursor:pointer; }
     .receive-order button:disabled { background:#96999f; cursor:default; }
+    .receive-order-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:11px; padding-top:12px; border-top:1px solid #edf0f2; }
+    .receive-order-actions [data-manage-order] { background:#fff; color:#343c49; border:1px solid #b9c0c9; }
+    .receive-order-actions [data-manage-order]:hover { background:#f3f5f7; }
+    .receive-order-actions small { margin-right:auto; color:#69717d; }
+    @media (max-width:600px) { .receive-order-actions button { flex:1 1 140px; } }
     .receive-message { padding:10px; border-radius:7px; background:#eaf7ee; margin:10px 0; }
     .receive-tools > button,.receive-modal button { border:0; border-radius:7px; padding:10px 14px; background:#c8102e; color:white; font-weight:800; cursor:pointer; }
     .receive-modal { width:min(650px,calc(100vw - 24px)); max-height:90vh; overflow:auto; border:0; border-radius:15px; padding:24px; box-shadow:0 20px 70px #0008; }
@@ -3116,9 +3123,12 @@
           return `<article class="receive-order"><header><div><h3>${esc(row[4])}</h3><small>${esc(id)} · ${esc(row[12] || 'Payment unknown')}</small></div><strong>${label}</strong></header>
           ${state.items.length ? state.items.map(item => `<div class="receive-line"><span>${esc(item.item)}<br><small>Received ${item.received} of ${item.quantity}</small></span>
           ${!merchandiseOrderClosed(row) && !state.handed && item.received < item.quantity ? `<label>Qty <input type="number" min="1" max="${item.quantity-item.received}" value="${item.quantity-item.received}" data-receive-qty></label><button type="button" data-receive-item data-order="${esc(id)}" data-item="${esc(item.item)}">Receive</button>` : ''}</div>`).join('') : '<p>Item details unavailable. Check Sales History before receiving this order.</p>'}
-          ${!merchandiseOrderClosed(row) && !state.handed && (state.complete || state.ready) ? `<button type="button" data-handout-order data-order="${esc(id)}" ${due ? 'disabled title="Record payment first"' : ''}>Mark Handed Out</button>` : ''}
-          ${due && !merchandiseOrderClosed(row) ? '<small>Payment is due before handout.</small>' : ''}
-          <div class="receive-order-actions"><button type="button" data-manage-order data-order="${esc(id)}">Manage Order</button>${merchandiseOrderRefunds(id) ? `<small>Refund recorded: $${merchandiseOrderRefunds(id).toFixed(2)}</small>` : ''}</div></article>`;
+          <div class="receive-order-actions">
+            ${due && !merchandiseOrderClosed(row) ? '<small>Payment is due before handout.</small>' : ''}
+            ${merchandiseOrderRefunds(id) ? `<small>Refund recorded: $${merchandiseOrderRefunds(id).toFixed(2)}</small>` : ''}
+            <button type="button" data-manage-order data-order="${esc(id)}">Manage Order</button>
+            ${!merchandiseOrderClosed(row) && !state.handed && (state.complete || state.ready) ? `<button type="button" data-handout-order data-order="${esc(id)}" ${due ? 'disabled title="Record payment first"' : ''}>Mark Handed Out</button>` : ''}
+          </div></article>`;
         }).join('') : '<p>No orders match this view.</p>'}`;
       target.querySelector('[data-receive-filter]').value = filter;
       target.querySelector('[data-receive-search]').addEventListener('input',event => {
