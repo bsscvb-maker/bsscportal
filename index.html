@@ -2086,6 +2086,7 @@
 
     const tableEditModes = {};
     const tableRenderCache = {};
+    const financeTransactionViewState = {values:{},open:false};
     const tablePendingEdits = {};
     let financeTransactionOptions = {};
     let financePayeeHistory = new Map();
@@ -2122,6 +2123,19 @@
     function renderDataTable(targetId, statusId, rows, headerRowIndex = 0, maxColumns = 16, editOptions = null) {
       const target = document.getElementById(targetId);
       const status = document.getElementById(statusId);
+      if (targetId === 'financeTransactions2026Table') {
+        const previous = target.querySelector('.finance-filter-panel');
+        if (previous) {
+          financeTransactionViewState.open = Boolean(previous.querySelector('details')?.open);
+          financeTransactionViewState.values = Object.fromEntries(
+            [...target.querySelectorAll('[data-table-search], .finance-filter-panel input, .finance-filter-panel select')]
+              .map(element => [element.dataset.financeFilter ? 'filter:'+element.dataset.financeFilter
+                : element.dataset.tableSearch ? 'search' : element.dataset.financeDescription !== undefined ? 'description'
+                : element.dataset.financeDateFrom !== undefined ? 'dateFrom' : element.dataset.financeDateTo !== undefined ? 'dateTo'
+                : element.dataset.financeMin !== undefined ? 'min' : element.dataset.financeMax !== undefined ? 'max' : 'sort', element.value])
+          );
+        }
+      }
       tableRenderCache[targetId] = {targetId, statusId, rows, headerRowIndex, maxColumns, editOptions};
       if (!rows.length || !rows[headerRowIndex]) {
         target.innerHTML = '<div class="empty-state">No records found.</div>';
@@ -2166,7 +2180,7 @@
       }
       if (!Number.isFinite(ticketPrice) || ticketPrice <= 0) ticketPrice = 20;
       const ticketPriceBar = isTicketLedger ? `<div class="ticket-price-bar"><strong>Ticket Cost</strong><span class="ticket-price-value" data-ticket-price="true" data-value="${ticketPrice}" ${editMode ? 'contenteditable="true" spellcheck="false"' : ''}>${money(ticketPrice)}</span></div>` : '';
-      const editHelp = editMode ? (isTransaction2026 || isBftTracking ? '<div class="edit-help" role="status"><strong>Check the box next to the row you want to edit.</strong> Only the checked row will open. Confirm its Donation ID and donor before saving.</div>' : '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>') : '';
+      const editHelp = editMode ? (isTransaction2026 || isBftTracking ? '<div class="edit-help" role="status"><strong>Check the box next to the row you want to edit.</strong> Only the checked row will open. Confirm its row number and description before saving.</div>' : '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>') : '';
       target.innerHTML = `${toolbar}${editHelp}${ticketPriceBar}<div class="table-wrap"><table class="${tableClass}${isTransaction2026 && editMode ? ' transaction-picking' : isBftTracking && editMode ? ' tracking-picking' : ''}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${(isTransaction2026 || isBftTracking) && editMode ? '<th class="transaction-pick-cell">Edit</th>' : ''}${isTransaction2026 ? '<th class="transaction-row-number">Row</th>' : ''}${finalHeaders.map((header,index) => `<th class="${isTransaction2026 && [1,2,16].includes(index) ? 'transaction-extra' : ''}">${esc(isTransaction2026 && index === 10 ? 'Chase balance' : isTransaction2026 && index === 11 ? 'With outstanding' : header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
         const labels = item.row.map(value => String(value).trim().toLowerCase());
         const isSubtotal = labels.some(value => value.includes('subtotal'));
@@ -2299,9 +2313,18 @@
           controls.querySelectorAll('select').forEach(select => { select.value = select.hasAttribute('data-finance-sort') ? 'row-desc' : ''; });
           controls.querySelectorAll('input').forEach(input => { input.value = ''; });
           target.querySelector('[data-table-search]').value = '';
+          financeTransactionViewState.values = {};
           applyFilters();
         });
         target.querySelector('[data-table-search]').addEventListener('input',applyFilters);
+        const saved = financeTransactionViewState.values;
+        const restore = (selector,key) => { const element = target.querySelector(selector); if (element && saved[key] !== undefined) element.value = saved[key]; };
+        restore('[data-table-search]','search');
+        controls.querySelectorAll('[data-finance-filter]').forEach(element => { const value = saved['filter:'+element.dataset.financeFilter]; if (value !== undefined) element.value = value; });
+        restore('[data-finance-description]','description');
+        restore('[data-finance-date-from]','dateFrom'); restore('[data-finance-date-to]','dateTo');
+        restore('[data-finance-min]','min'); restore('[data-finance-max]','max'); restore('[data-finance-sort]','sort');
+        controls.querySelector('details').open = financeTransactionViewState.open;
         applyFilters();
       }
       const searchInput = target.querySelector('[data-table-search]');
