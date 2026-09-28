@@ -350,6 +350,17 @@
     .paypal-bundle-preview div { padding:10px; border:1px solid #b9d6eb; border-radius:8px; background:#fff; text-align:center; }
     .paypal-bundle-preview span { display:block; color:#5d6d78; font-size:.73rem; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
     .paypal-bundle-preview strong { display:block; margin-top:3px; color:#111113; font-size:1rem; }
+    .tally-payout-dialog { width:min(760px,calc(100vw - 24px)); }
+    .tally-payout-dialog > form > p { color:#4b5563; line-height:1.45; }
+    .tally-payout-card { margin:14px 0; padding:15px; border:1px solid #ccd3db; border-radius:10px; }
+    .tally-payout-card legend { padding:0 5px; font-weight:800; }
+    .tally-payout-card legend label { margin:0; }
+    .tally-payout-card strong,.tally-payout-card small { display:block; }
+    .tally-payout-card small { margin-top:3px; color:#5f6772; }
+    .tally-payout-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .tally-payout-fields label { font-size:.83rem; }
+    .tally-payout-fields input { width:100%; min-height:42px; padding:8px; border:1px solid #abb1ba; border-radius:7px; font:inherit; box-sizing:border-box; }
+    @media (max-width:600px) { .tally-payout-fields { grid-template-columns:1fr; } }
     .transaction-entry-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:6px; }
     .transaction-entry-actions button { border:0; border-radius:8px; padding:10px 14px; font-weight:900; cursor:pointer; }
     .transaction-cancel { color:#202226; background:#e2e5e8; }
@@ -3419,7 +3430,7 @@
       baseline:{sheet:'Operating Budget – Baseline',range:"'Operating Budget – Baseline'!A1:I100",target:'financeBaselineTable',status:'financeBaselineStatus',header:0,columns:9,editable:true},
       transactions2026:{sheet:'Transactions-2026',range:"'Transactions-2026'!A1:Q",target:'financeTransactions2026Table',status:'financeTransactions2026Status',header:0,columns:17,editable:true},
       transactions2025:{sheet:'Transactions-2025',range:"'Transactions-2025'!A1:P1000",target:'financeTransactions2025Table',status:'financeTransactions2025Status',header:0,columns:16,editable:false},
-      tally:{sheet:'Tally 2026',range:"'Tally 2026'!A1:L1000",target:'financeTallyTable',status:'financeTallyStatus',header:0,columns:12,editable:false},
+      tally:{sheet:'Tally 2026',range:"'Tally 2026'!A1:O1000",target:'financeTallyTable',status:'financeTallyStatus',header:0,columns:12,editable:false},
       transactionlist:{sheet:'Transaction List',range:"'Transaction List'!A1:J100",target:'financeTransactionListTable',status:'financeTransactionListStatus',header:0,columns:10,editable:true},
       expenses:{sheet:'Club Expenses',range:"'Club Expenses'!A1:X200",target:'financeExpensesTable',status:'financeExpensesStatus',header:0,columns:24,editable:true},
       events:{sheet:'Events & Fundraising',range:"'Events & Fundraising'!A1:O200",target:'financeEventsTable',status:'financeEventsStatus',header:0,columns:15,editable:true},
@@ -3843,6 +3854,93 @@
       return [values[0],values[3],values[8],Number(String(values[9] || '').replace(/[$,]/g,'')),values[16]].map(value => String(value || '').trim().toLowerCase()).join('\u001f');
     }
 
+    function tallyCardKey(row) {
+      return JSON.stringify([row[0],row[5],row[6],row[9]]);
+    }
+
+    function tallyCardTransactions(row,fee,net,payoutDate) {
+      const gross = tallyTransactionFromRow(row);
+      const payer = String(row[6] || '').trim() || 'Card payment';
+      gross[8] = 'PayPal';
+      gross[13] = 'PayPal';
+      const feeRow = [...gross];
+      feeRow[3] = 'PayPal Processing Fee – ' + payer;
+      feeRow[4] = 'Bank Fees';
+      feeRow[5] = 'Processing Fee';
+      feeRow[7] = 'Online';
+      feeRow[9] = -fee;
+      feeRow[12] = 'Expense';
+      feeRow[15] = false;
+      const transfer = [...gross];
+      const day = new Date(payoutDate + 'T12:00:00');
+      transfer[0] = (day.getMonth()+1) + '/' + day.getDate() + '/' + day.getFullYear();
+      transfer[1] = day.toLocaleString('en-US',{month:'long'});
+      transfer[2] = day.getFullYear();
+      transfer[3] = 'PayPal to Bank Transfer – ' + payer;
+      transfer[4] = 'Transfer';
+      transfer[5] = 'Internal Transfer';
+      transfer[7] = 'Online';
+      transfer[9] = net;
+      transfer[12] = 'Transfer In';
+      transfer[15] = false;
+      transfer[16] = 'PayPal bank transfer: ' + money(net) + ' | ' + gross[16];
+      return [gross,feeRow,transfer];
+    }
+
+    function collectTallyCardDetails(cards) {
+      return new Promise(resolve => {
+        const dialog = document.createElement('dialog');
+        dialog.className = 'receive-modal tally-payout-dialog';
+        const form = document.createElement('form');
+        form.innerHTML = '<h2>Card payout details</h2><p>Cash and check entries can transfer now. Include card payments only after PayPal shows the fee and net bank deposit.</p>';
+        cards.forEach((item,index) => {
+          const block = document.createElement('fieldset');
+          block.className = 'tally-payout-card';
+          block.dataset.index = index;
+          block.innerHTML = '<legend><label><input type="checkbox" data-include> Include this card payment</label></legend>' +
+            '<strong>' + esc(String(item.row[6] || 'Card payer')) + '</strong><small>' + esc(String(item.row[4] || 'Payment')) +
+            ' · Gross ' + esc(String(item.row[5] || '')) + ' · ' + esc(String(item.row[9] || 'No reference')) + '</small>' +
+            '<div class="tally-payout-fields"><label>Actual PayPal fee<input type="number" data-fee min="0" step="0.01" placeholder="0.00"></label>' +
+            '<label>Net bank deposit<input type="number" data-net min="0.01" step="0.01" placeholder="0.00"></label>' +
+            '<label>Deposit date<input type="date" data-date></label></div>';
+          form.appendChild(block);
+        });
+        const actions = document.createElement('div');
+        actions.className = 'receive-modal-actions';
+        actions.innerHTML = '<button type="button" data-close>Go Back</button><button type="button" data-cash>Send Cash / Check Only</button><button type="submit">Send Selected Payments</button>';
+        form.appendChild(actions);
+        dialog.appendChild(form);
+        document.body.appendChild(dialog);
+        let completed = false;
+        const finish = value => {completed = true;dialog.close();resolve(value);};
+        dialog.addEventListener('close',() => {dialog.remove();if (!completed) resolve(null);});
+        actions.querySelector('[data-close]').addEventListener('click',() => finish(null));
+        actions.querySelector('[data-cash]').addEventListener('click',() => finish(new Map()));
+        form.addEventListener('submit',event => {
+          event.preventDefault();
+          const selected = new Map();
+          for (const block of form.querySelectorAll('.tally-payout-card')) {
+            if (!block.querySelector('[data-include]').checked) continue;
+            const item = cards[Number(block.dataset.index)];
+            const feeInput = block.querySelector('[data-fee]');
+            const netInput = block.querySelector('[data-net]');
+            const dateInput = block.querySelector('[data-date]');
+            const gross = Number(String(item.row[5] || '').replace(/[$,]/g,''));
+            const fee = Number(feeInput.value), net = Number(netInput.value);
+            if (!feeInput.value || !netInput.value || !dateInput.value || !Number.isFinite(gross) || fee < 0 || net <= 0 || Math.abs(gross-fee-net) > .011) {
+              alert('Enter the actual fee, net deposit, and deposit date. Gross minus fee must equal the net deposit.');
+              (!feeInput.value ? feeInput : !netInput.value ? netInput : dateInput).focus();
+              return;
+            }
+            selected.set(tallyCardKey(item.row),{fee:Number(fee.toFixed(2)),net:Number(net.toFixed(2)),date:dateInput.value});
+          }
+          if (!selected.size) {alert('Select a card payment or choose Send Cash / Check Only.');return;}
+          finish(selected);
+        });
+        dialog.showModal();
+      });
+    }
+
     function renderFinanceTally(rows) {
       const pendingRows = rows.slice(1).filter(row => row.some(value => String(value || '').trim()) && !String(row[11] || '').trim());
       renderDataTable('financeTallyTable','financeTallyStatus',[rows[0],...pendingRows],0,12);
@@ -3874,22 +3972,41 @@
       summary.style.cssText = 'padding:16px 4px;font-size:1rem;font-weight:800;text-align:right';
       summary.textContent = `Pending total: ${money(pendingTotal)}`;
       target.appendChild(summary);
-      status.textContent = pending.length ? `${pending.length} Tally ${pending.length === 1 ? 'entry is' : 'entries are'} ready to send.` : 'All Tally entries have been sent to Transactions-2026. Pending total: $0.00.';
+      const waitingCards = pending.filter(item => /^(credit card|paypal)$/i.test(String(item.row[7] || '').trim())).length;
+      status.textContent = pending.length ? `${pending.length} pending Tally ${pending.length === 1 ? 'entry' : 'entries'}${waitingCards ? `; ${waitingCards} card ${waitingCards === 1 ? 'payment needs' : 'payments need'} PayPal fee and bank deposit details before transfer` : ''}.` : 'All Tally entries have been sent to Transactions-2026. Pending total: $0.00.';
       button.addEventListener('click', async () => {
-        if (!window.confirm(`Send all ${pending.length} pending Tally ${pending.length === 1 ? 'entry' : 'entries'} to Transactions-2026?`)) return;
+        const cards = pending.filter(item => /^(credit card|paypal)$/i.test(String(item.row[7] || '').trim()));
+        const cardDetails = cards.length ? await collectTallyCardDetails(cards) :
+          (window.confirm(`Send all ${pending.length} pending Tally ${pending.length === 1 ? 'entry' : 'entries'} to Transactions-2026?`) ? new Map() : null);
+        if (cardDetails === null) return;
         button.disabled = true;
         button.textContent = 'Checking entries…';
         try {
-          const latestTally = await getSheetValues("'Tally 2026'!A1:L1000",FINANCE_SPREADSHEET_ID);
+          const latestTally = await getSheetValues("'Tally 2026'!A1:O1000",FINANCE_SPREADSHEET_ID);
           const latestPending = latestTally.slice(1).map((row,index) => ({row,sourceRow:index + 2})).filter(item => item.row.some(value => String(value || '').trim()) && !String(item.row[11] || '').trim());
-          const prepared = latestPending.map(item => ({...item,transaction:tallyTransactionFromRow(item.row)}));
+          const prepared = latestPending.filter(item => !/^(credit card|paypal)$/i.test(String(item.row[7] || '').trim()) || cardDetails.has(tallyCardKey(item.row)))
+            .map(item => {
+              const details = cardDetails.get(tallyCardKey(item.row));
+              return {...item,details,transactions:details ? tallyCardTransactions(item.row,details.fee,details.net,details.date) : [tallyTransactionFromRow(item.row)]};
+            });
+          if (!prepared.length) throw new Error('No payments are ready. Enter card payout details when PayPal deposits the funds.');
+          const foundKeys = new Set(prepared.map(item => tallyCardKey(item.row)));
+          for (const key of cardDetails.keys()) if (!foundKeys.has(key)) throw new Error('A card entry changed. Refresh Tally and check it before sending.');
           const existing = await getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID);
           const existingKeys = new Set(existing.slice(1).map(tallyTransferKey));
-          const newTransactions = prepared.filter(item => !existingKeys.has(tallyTransferKey(item.transaction))).map(item => item.transaction);
+          const newTransactions = prepared.flatMap(item => item.transactions.filter(transaction => !existingKeys.has(tallyTransferKey(transaction))));
           button.textContent = newTransactions.length ? 'Sending…' : 'Finishing…';
           if (newTransactions.length) await appendSheetRows(FINANCE_SPREADSHEET_ID,'Transactions-2026',newTransactions);
           const sentStamp = `✓ Sent — ${new Date().toLocaleString('en-US',{timeZone:'America/New_York'})} ET`;
-          await updateSheetRanges(FINANCE_SPREADSHEET_ID,prepared.map(item => ({range:`'Tally 2026'!L${item.sourceRow}`,value:sentStamp})));
+          await updateSheetRanges(FINANCE_SPREADSHEET_ID,prepared.flatMap(item => {
+            const updates = [{range:`'Tally 2026'!L${item.sourceRow}`,value:sentStamp}];
+            if (item.details) updates.push(
+              {range:`'Tally 2026'!M${item.sourceRow}`,value:item.details.fee},
+              {range:`'Tally 2026'!N${item.sourceRow}`,value:item.details.net},
+              {range:`'Tally 2026'!O${item.sourceRow}`,value:item.details.date}
+            );
+            return updates;
+          }));
           ['tally','transactions2026','reconciliation','dashboard','control'].forEach(tab => loadedFinanceTabs.delete(tab));
           await loadFinanceTab('tally',true);
           refreshFinanceReconciliationCount();
