@@ -445,6 +445,13 @@
     .membership-tab-manager .finance-tab-admin-row { grid-template-columns:150px 150px minmax(260px,1fr) auto; gap:14px; }
     .membership-admin-check { display:flex; align-items:center; gap:8px; color:#20242a; font-weight:800; white-space:nowrap; }
     .membership-tab-manager .finance-tab-name { width:100%; min-width:0; }
+    .finance-filter-panel { margin:8px 0 16px; padding:12px 14px; border:1px solid #c9cdd2; border-radius:9px; background:#fafafa; }
+    .finance-filter-panel summary { cursor:pointer; font-weight:900; }
+    .finance-filter-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin:14px 0; }
+    .finance-filter-grid label { display:grid; gap:5px; font-size:.85rem; font-weight:800; }
+    .finance-filter-grid input,.finance-filter-grid select { width:100%; min-height:40px; padding:7px; border:1px solid #aeb2b8; border-radius:6px; background:#fff; color:#111; font:inherit; }
+    .finance-filter-note { font-size:.82rem; color:#555b63; }
+    .finance-filter-panel button { padding:9px 13px; border:1px solid #222; border-radius:7px; background:#fff; font-weight:800; cursor:pointer; }
     .table-search-wrap { position: relative; flex: 1 1 440px; max-width: 560px; }
     .table-search-wrap::before { content: '⌕'; position: absolute; left: 13px; top: 50%; transform: translateY(-52%); color: var(--muted); font-size: 1.25rem; pointer-events: none; }
     .table-search { width: 100%; min-height: 44px; padding: 10px 14px 10px 40px; border: 2px solid #bfc0c4; border-radius: 8px; color: var(--ink); background: white; font: inherit; }
@@ -2231,9 +2238,75 @@
         const item = indexedData.find(candidate => candidate.sourceIndex === Number(row.dataset.sourceIndex));
         if (item) openBftDonationEditForm(targetId,headers,item.row,Number(row.dataset.transactionRow),row);
       }));
+      if (isTransaction2026) {
+        const fields = [[4,'Category'],[5,'Subcategory'],[6,'Fund'],[7,'Activity'],[8,'Payee/Payer'],[12,'Type'],[13,'Payment method'],[14,'Cleared']];
+        const controls = document.createElement('div');
+        controls.className = 'finance-filter-panel';
+        controls.innerHTML = '<details><summary>Sort & filter transactions</summary><div class="finance-filter-grid">'
+          + fields.map(([column,label]) => {
+            const values = [...new Set(indexedData.map(item => String(item.row[column] || '').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b,undefined,{numeric:true}));
+            return '<label>'+esc(label)+'<select data-finance-filter="'+column+'"><option value="">All</option>'+values.map(value => '<option value="'+esc(value)+'">'+esc(value)+'</option>').join('')+'</select></label>';
+          }).join('')
+          + '<label>Description contains<input type="search" data-finance-description placeholder="Any description"></label>'
+          + '<label>Date from<input type="date" data-finance-date-from></label><label>Date through<input type="date" data-finance-date-to></label>'
+          + '<label>Amount at least<input type="number" step="0.01" data-finance-min placeholder="Any amount"></label>'
+          + '<label>Amount at most<input type="number" step="0.01" data-finance-max placeholder="Any amount"></label>'
+          + '<label>Sort by<select data-finance-sort><option value="row-desc">Newest entry</option><option value="row-asc">Oldest entry</option><option value="date-desc">Date: newest first</option><option value="date-asc">Date: oldest first</option><option value="amount-desc">Amount: high to low</option><option value="amount-asc">Amount: low to high</option>'
+          + [[4,'Category'],[5,'Subcategory'],[6,'Fund'],[7,'Activity'],[8,'Payee/Payer'],[3,'Description']].map(([column,label]) => '<option value="'+column+'-asc">'+label+': A to Z</option><option value="'+column+'-desc">'+label+': Z to A</option>').join('')
+          + '</select></label></div><p class="finance-filter-note">Filters work together with search. The ledger has a date but no separate transaction time column.</p><button type="button" data-finance-clear-filters>Clear filters</button></details>';
+        target.querySelector('.table-tools').after(controls);
+        const rowMap = new Map(indexedData.map(item => [item.sourceIndex,item.row]));
+        const numeric = value => Number(String(value || '').replace(/[^0-9.-]/g,'')) || 0;
+        const dateValue = value => { const date = new Date(String(value || '')); return Number.isFinite(date.getTime()) ? date.getTime() : 0; };
+        const isoDate = value => { const date = new Date(String(value || '')); return Number.isFinite(date.getTime()) ? [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-') : ''; };
+        const applyFilters = () => {
+          const q = target.querySelector('[data-table-search]').value.trim().toLowerCase();
+          const filters = [...controls.querySelectorAll('[data-finance-filter]')].map(element => [Number(element.dataset.financeFilter),element.value.trim().toLowerCase()]).filter(([,value]) => value);
+          const description = controls.querySelector('[data-finance-description]').value.trim().toLowerCase();
+          const from = controls.querySelector('[data-finance-date-from]').value;
+          const to = controls.querySelector('[data-finance-date-to]').value;
+          const minField = controls.querySelector('[data-finance-min]'), maxField = controls.querySelector('[data-finance-max]');
+          const min = minField.value === '' ? null : Number(minField.value), max = maxField.value === '' ? null : Number(maxField.value);
+          const [field,direction] = controls.querySelector('[data-finance-sort]').value.split('-');
+          const tbody = target.querySelector('.data-table tbody');
+          const displayed = [...tbody.querySelectorAll('tr[data-transaction-row]')];
+          displayed.sort((a,b) => {
+            const ra = rowMap.get(Number(a.dataset.sourceIndex)), rb = rowMap.get(Number(b.dataset.sourceIndex));
+            const comparison = field === 'row' ? Number(a.dataset.sourceIndex)-Number(b.dataset.sourceIndex)
+              : field === 'date' ? dateValue(ra[0])-dateValue(rb[0])
+              : field === 'amount' ? numeric(ra[9])-numeric(rb[9])
+              : String(ra[Number(field)] || '').localeCompare(String(rb[Number(field)] || ''),undefined,{numeric:true});
+            return (direction === 'desc' ? -comparison : comparison) || Number(b.dataset.sourceIndex)-Number(a.dataset.sourceIndex);
+          });
+          displayed.forEach(element => tbody.appendChild(element));
+          let visible = 0;
+          displayed.forEach(element => {
+            const row = rowMap.get(Number(element.dataset.sourceIndex));
+            const date = isoDate(row[0]), amount = numeric(row[9]);
+            const matches = (!q || element.textContent.toLowerCase().includes(q))
+              && filters.every(([column,value]) => String(row[column] || '').trim().toLowerCase() === value)
+              && (!description || String(row[3] || '').toLowerCase().includes(description))
+              && (!from || (date && date >= from)) && (!to || (date && date <= to))
+              && (min === null || amount >= min) && (max === null || amount <= max);
+            element.hidden = !matches;
+            if (matches) visible++;
+          });
+          target.querySelector('[data-search-count]').textContent = visible+' of '+displayed.length+' transactions shown';
+        };
+        controls.addEventListener('input',applyFilters);
+        controls.addEventListener('change',applyFilters);
+        controls.querySelector('[data-finance-clear-filters]').addEventListener('click',() => {
+          controls.querySelectorAll('select').forEach(select => { select.value = select.hasAttribute('data-finance-sort') ? 'row-desc' : ''; });
+          controls.querySelectorAll('input').forEach(input => { input.value = ''; });
+          target.querySelector('[data-table-search]').value = '';
+          applyFilters();
+        });
+        target.querySelector('[data-table-search]').addEventListener('input',applyFilters);
+        applyFilters();
+      }
       const searchInput = target.querySelector('[data-table-search]');
       const searchCount = target.querySelector('[data-search-count]');
-      if (searchInput) searchInput.addEventListener('input', () => {
+      if (searchInput && !isTransaction2026) searchInput.addEventListener('input', () => {
         const query = searchInput.value.trim().toLowerCase();
         const pipelineStage = targetId === 'marketOrdersTable' ? (target.dataset.marketPipelineStage || '') : '';
         const pipelineLabel = ({payment:'Awaiting Payment',unsent:'Not Yet Submitted',vendor:'With Manufacturer',pickup:'Ready for Pickup',complete:'Handed Out'})[pipelineStage] || '';
