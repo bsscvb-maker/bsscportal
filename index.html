@@ -360,7 +360,14 @@
     .tally-payout-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
     .tally-payout-fields label { font-size:.83rem; }
     .tally-payout-fields input { width:100%; min-height:42px; padding:8px; border:1px solid #abb1ba; border-radius:7px; font:inherit; box-sizing:border-box; }
+    .tally-edit-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; max-height:55vh; overflow:auto; padding:3px; }
+    .tally-edit-fields label { display:grid; gap:5px; font-size:.84rem; font-weight:700; }
+    .tally-edit-fields input { min-height:42px; padding:8px; border:1px solid #abb1ba; border-radius:7px; font:inherit; box-sizing:border-box; width:100%; }
+    .tally-row-actions { white-space:nowrap; }
+    .tally-row-actions button { border:1px solid #bfc0c4; border-radius:7px; background:#fff; color:#9e0d29; font:inherit; font-weight:800; padding:7px 10px; cursor:pointer; }
+    .tally-row-actions button:hover { background:#fff0f2; }
     @media (max-width:600px) { .tally-payout-fields { grid-template-columns:1fr; } }
+    @media (max-width:600px) { .tally-edit-fields { grid-template-columns:1fr; } }
     .transaction-entry-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:6px; }
     .transaction-entry-actions button { border:0; border-radius:8px; padding:10px 14px; font-weight:900; cursor:pointer; }
     .transaction-cancel { color:#202226; background:#e2e5e8; }
@@ -3947,12 +3954,85 @@
       enhanceFinanceTally(rows);
     }
 
+    function tallyRowsMatch(first,second) {
+      return JSON.stringify(Array.from({length:15},(_,i) => String(first[i] ?? '').trim())) ===
+        JSON.stringify(Array.from({length:15},(_,i) => String(second[i] ?? '').trim()));
+    }
+
+    async function updatePendingTallyEntry(item,changes) {
+      const latest = await getSheetValues(`'Tally 2026'!A${item.sourceRow}:O${item.sourceRow}`,FINANCE_SPREADSHEET_ID);
+      if (!latest[0] || !tallyRowsMatch(item.row,latest[0]) || String(latest[0][11] || '').trim()) {
+        throw new Error('This entry changed or was already sent. Refresh Tally before editing it.');
+      }
+      const range = changes ? `'Tally 2026'!B${item.sourceRow}:K${item.sourceRow}` : `'Tally 2026'!A${item.sourceRow}:O${item.sourceRow}`;
+      const values = changes || Array(15).fill('');
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${FINANCE_SPREADSHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
+      await writePortalSheetRequest(url,{
+        method:'PUT',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
+        body:JSON.stringify({range,majorDimension:'ROWS',values:[values]})
+      },changes ? 'Edited pending Tally entry' : 'Deleted pending Tally entry',range,1);
+      loadedFinanceTabs.delete('tally');
+      await loadFinanceTab('tally',true);
+    }
+
+    function openTallyEntryEditor(item) {
+      const dialog = document.createElement('dialog');
+      dialog.className = 'receive-modal tally-payout-dialog';
+      const fields = [
+        ['Event / Location','text',1],['Event Date','text',2],['Treasurer','text',3],
+        ['Money Type','text',4],['Amount','number',5],['Note / Given By','text',6],
+        ['Payment Method','text',7],['Check Number','text',8],
+        ['Card Details / Transaction Reference','text',9],['Entry Time (Eastern)','text',10]
+      ];
+      dialog.innerHTML = `<form><h2>Edit Tally entry</h2><p>Changes here apply only to this pending entry. Confirm the event, person, and amount before saving.</p><div class="tally-edit-fields">${fields.map(([label,type,index]) => `<label>${esc(label)}<input data-tally-field="${index}" type="${type}" ${type === 'number' ? 'min="0.01" step="0.01"' : ''} value="${esc(type === 'number' ? String(item.row[index] || '').replace(/[$,]/g,'') : String(item.row[index] || ''))}" ${[1,2,4,5,7].includes(index) ? 'required' : ''}></label>`).join('')}</div><div class="receive-modal-actions"><button type="button" data-cancel>Cancel</button><button type="button" data-delete>Delete entry</button><button type="submit" data-save>Save changes</button></div></form>`;
+      document.body.appendChild(dialog);
+      dialog.addEventListener('close',() => dialog.remove());
+      dialog.querySelector('[data-cancel]').addEventListener('click',() => dialog.close());
+      const setBusy = busy => dialog.querySelectorAll('button').forEach(button => {button.disabled = busy;});
+      dialog.querySelector('[data-delete]').addEventListener('click',async () => {
+        if (!confirm(`Delete this pending ${String(item.row[4] || 'Tally entry')} for ${String(item.row[6] || 'this person')} (${String(item.row[5] || '')})? This cannot be undone in the portal.`)) return;
+        setBusy(true);
+        try {await updatePendingTallyEntry(item,null);dialog.close();}
+        catch(error) {setBusy(false);alert(error.message || 'The entry could not be deleted.');}
+      });
+      dialog.querySelector('form').addEventListener('submit',async event => {
+        event.preventDefault();
+        const values = fields.map(([,type,index]) => {
+          const value = dialog.querySelector(`[data-tally-field="${index}"]`).value.trim();
+          return type === 'number' ? Number(value) : value;
+        });
+        if (!Number.isFinite(values[4]) || values[4] <= 0 || Number.isNaN(new Date(values[1] + ' 12:00:00').getTime())) {
+          alert('Enter a valid event date and a positive amount.');return;
+        }
+        setBusy(true);
+        try {await updatePendingTallyEntry(item,values);dialog.close();}
+        catch(error) {setBusy(false);alert(error.message || 'The entry could not be saved.');}
+      });
+      dialog.showModal();
+    }
+
     function enhanceFinanceTally(rows) {
       const target = document.getElementById('financeTallyTable');
       const status = document.getElementById('financeTallyStatus');
       const pending = rows.slice(1).map((row,index) => ({row,sourceRow:index + 2})).filter(item => item.row.some(value => String(value || '').trim()) && !String(item.row[11] || '').trim());
       const actionArea = target.querySelector('.table-tool-actions');
       if (!actionArea) return;
+      const table = target.querySelector('table');
+      if (table) {
+        table.querySelector('thead tr')?.insertAdjacentHTML('beforeend','<th>Actions</th>');
+        table.querySelectorAll('tbody tr').forEach((row,index) => {
+          const item = pending[index];
+          if (!item) return;
+          const cell = row.insertCell(-1);
+          cell.className = 'tally-row-actions';
+          const edit = document.createElement('button');
+          edit.type = 'button';
+          edit.textContent = 'Edit / Delete';
+          edit.setAttribute('aria-label',`Edit or delete ${String(item.row[4] || 'entry')} for ${String(item.row[6] || 'payer')}`);
+          edit.addEventListener('click',() => openTallyEntryEditor(item));
+          cell.appendChild(edit);
+        });
+      }
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'tally-send-btn';
