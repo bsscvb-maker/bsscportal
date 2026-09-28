@@ -3714,11 +3714,15 @@
       const impactPriorYear = numeric(at(25,4));
       const impactIncrease = impactYtd - impactPriorYear;
       const status = at(10,4);
+      const pendingPayPal = transactionRows.slice(1).reduce((total,row) => {
+        if (String(row[13] || '').trim() !== 'PayPal' || String(row[12] || '').trim() !== 'Transfer In' || String(row[14] || '').trim().toLowerCase() === 'yes') return total;
+        return total + (Number(String(row[9] || '').replace(/[$,]/g,'')) || 0);
+      },0);
       document.getElementById('financeControlTable').innerHTML = `<div class="control-title"><h2>${esc(at(0,0))}</h2><span class="live-eastern-time" data-live-eastern-clock="true"></span></div>
         <div class="control-action-bar"><button class="dashboard-edit-btn ${financeControlEditMode ? 'active' : ''}" id="financeControlEditToggle" aria-pressed="${financeControlEditMode}">${financeControlEditMode ? 'Done Editing' : 'Edit Bank Reconciliation'}</button></div>
         ${financeControlEditMode ? '<div class="control-edit-note">Enter the latest balances shown by Chase. Difference and Status calculate automatically.</div>' : ''}<div class="control-grid">
         ${section(at(3,0),[[at(5,0),at(5,1)],[at(7,0),at(7,1)],[at(8,0),at(8,1)]],'tone-green')}
-        ${section(at(3,3),[['Chase available balance',at(5,4),false,6],['General Fund',at(6,4),false,7],['Bikes for Tykes',at(7,4),false,8],['Difference',at(9,4)],['Status',status,/out of balance/i.test(status)]],/out of balance/i.test(status) ? 'tone-red' : (/pending/i.test(status) ? 'tone-yellow' : 'tone-green'))}
+        ${section(at(3,3),[['Chase available balance',at(5,4),false,6],['General Fund',at(6,4),false,7],['Bikes for Tykes',at(7,4),false,8],['PayPal transfers awaiting clearance',money(pendingPayPal)],['Difference',at(9,4)],['Status',status,/out of balance/i.test(status)]],/out of balance/i.test(status) ? 'tone-red' : (/pending/i.test(status) ? 'tone-yellow' : 'tone-green'))}
         ${monthSection('GENERAL FUND — CURRENT MONTH',at(5,1),generalMonth)}
         ${section(at(12,0),[[at(14,0),at(14,1)],[at(15,0),at(15,1)],[at(16,0),at(16,1)]],resultTone(at(16,1)))}
         ${monthSection('BIKES FOR TYKES — CURRENT MONTH',at(7,1),bftMonth)}
@@ -3871,6 +3875,18 @@
       const target = document.getElementById('financeReconciliationTable');
       const status = document.getElementById('financeReconciliationStatus');
       const uncleared = rows.slice(1).map((row,index) => ({row,sourceRow:index + 2})).filter(item => String(item.row[14] || '').trim().toLowerCase() === 'no');
+      const paypalBundles = new Map();
+      const paypalDetails = new Set();
+      for (let index=2; index<rows.length; index++) {
+        const [income,fee,transfer] = [rows[index-2],rows[index-1],rows[index]];
+        if (!income || !fee || !transfer ||
+            ![income,fee,transfer].every(row => String(row[13] || '').trim().toLowerCase() === 'paypal') ||
+            String(income[12] || '').trim() !== 'Income' || String(fee[12] || '').trim() !== 'Expense' ||
+            String(transfer[12] || '').trim() !== 'Transfer In' ||
+            !/^PayPal Processing Fee/i.test(String(fee[3] || '')) || !/^PayPal to Bank Transfer/i.test(String(transfer[3] || ''))) continue;
+        paypalBundles.set(index+1,[index-1,index,index+1]);
+        paypalDetails.add(index-1);paypalDetails.add(index);
+      }
       updateFinanceReconciliationCount(uncleared.length);
       if (!uncleared.length) {
         target.innerHTML = '<div class="reconciliation-empty">✓ Everything is cleared. There are no outstanding transactions to reconcile.</div>';
@@ -3878,7 +3894,7 @@
         return;
       }
       const columns = [[0,'Date'],[3,'Description'],[6,'Fund'],[7,'Activity'],[8,'Payee/Payer'],[9,'Amount'],[13,'Payment Method']];
-      target.innerHTML = `<div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search uncleared transactions</span><input class="table-search" type="search" id="reconciliationSearch" placeholder="Search uncleared transactions…" autocomplete="off"></label></div><div class="table-search-count" id="reconciliationSearchCount"></div><div class="table-wrap"><table class="data-table"><thead><tr>${columns.map(([,label]) => `<th>${esc(label)}</th>`).join('')}<th>Clear</th></tr></thead><tbody>${uncleared.map(item => `<tr>${columns.map(([column]) => `<td>${esc(item.row[column] || '')}</td>`).join('')}<td><label class="reconciliation-check"><input type="checkbox" data-clear-row="${item.sourceRow}"> Mark cleared</label></td></tr>`).join('')}</tbody></table></div>`;
+      target.innerHTML = `<p class="control-edit-note">PayPal: keep the gross payment and fee visible. When the net transfer appears at Chase, clear the transfer row; all three rows will be marked cleared together.</p><div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search uncleared transactions</span><input class="table-search" type="search" id="reconciliationSearch" placeholder="Search uncleared transactions…" autocomplete="off"></label></div><div class="table-search-count" id="reconciliationSearchCount"></div><div class="table-wrap"><table class="data-table"><thead><tr>${columns.map(([,label]) => `<th>${esc(label)}</th>`).join('')}<th>Clear</th></tr></thead><tbody>${uncleared.map(item => `<tr>${columns.map(([column]) => `<td>${esc(item.row[column] || '')}</td>`).join('')}<td>${paypalDetails.has(item.sourceRow) ? '<span class="reconciliation-linked">Clears with bank transfer</span>' : `<label class="reconciliation-check"><input type="checkbox" data-clear-row="${item.sourceRow}"> ${paypalBundles.has(item.sourceRow) ? 'Clear all 3 after Chase deposit' : 'Mark cleared'}</label>`}</td></tr>`).join('')}</tbody></table></div>`;
       status.textContent = `${uncleared.length} uncleared transaction${uncleared.length === 1 ? '' : 's'} require review.`;
       const search = document.getElementById('reconciliationSearch');
       search.addEventListener('input', () => {
@@ -3893,7 +3909,14 @@
         const label = checkbox.closest('label');
         label.lastChild.textContent = ' Saving…';
         try {
-          await updateSheetCell(FINANCE_SPREADSHEET_ID,'Transactions-2026',Number(checkbox.dataset.clearRow),14,'Yes');
+          const sourceRow = Number(checkbox.dataset.clearRow);
+          const bundle = paypalBundles.get(sourceRow);
+          if (bundle) {
+            if (!window.confirm(`Has the ${String(rows[sourceRow-1][9] || '')} PayPal bank transfer appeared in Chase? This will mark its payment, fee, and transfer cleared together.`)) {
+              checkbox.checked = false;checkbox.disabled = false;label.lastChild.textContent = ' Clear all 3 after Chase deposit';return;
+            }
+            await updateSheetRanges(FINANCE_SPREADSHEET_ID,bundle.map(n => ({range:`'Transactions-2026'!O${n}`,value:'Yes'})));
+          } else await updateSheetCell(FINANCE_SPREADSHEET_ID,'Transactions-2026',sourceRow,14,'Yes');
           loadedFinanceTabs.delete('transactions2026');
           loadedFinanceTabs.delete('control');
           loadedFinanceTabs.delete('dashboard');
