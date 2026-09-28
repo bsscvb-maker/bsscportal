@@ -702,6 +702,14 @@
     @media (max-width: 900px) { .market-metrics,.market-kpi-grid,.admin-overview,.finance-dashboard-grid,.bft-finance-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .market-dashboard-lower,.pricing-config,.market-subsummary,.admin-grid { grid-template-columns:1fr; } }
     @media (max-width: 950px) { .bft-dashboard-grid { grid-template-columns: 1fr; } }
     .edit-help { margin: -5px 0 14px; padding: 10px 12px; border-left: 4px solid var(--gold); background: #fff1f3; color: #6b0d1c; border-radius: 7px; font-size: .86rem; font-weight: 750; }
+    #bftDonationsTable .table-wrap { max-height:70vh; overflow:auto; }
+    #bftDonationsTable .tracking-table thead th { position:sticky; top:0; z-index:5; box-shadow:0 2px 0 var(--gold); }
+    #bftDonationsTable .tracking-table th:nth-child(1),#bftDonationsTable .tracking-table td:nth-child(1) { position:sticky; left:0; z-index:3; background:#fff; min-width:125px; width:125px; }
+    #bftDonationsTable .tracking-table th:nth-child(2),#bftDonationsTable .tracking-table td:nth-child(2) { position:sticky; left:125px; z-index:3; background:#fff; min-width:125px; width:125px; }
+    #bftDonationsTable .tracking-table th:nth-child(3),#bftDonationsTable .tracking-table td:nth-child(3) { position:sticky; left:250px; z-index:3; background:#fff; min-width:165px; width:165px; }
+    #bftDonationsTable .tracking-table th:nth-child(4),#bftDonationsTable .tracking-table td:nth-child(4) { position:sticky; left:415px; z-index:3; background:#fff; min-width:190px; width:190px; box-shadow:2px 0 0 #d8d8da; }
+    #bftDonationsTable .tracking-table thead th:nth-child(-n+4) { z-index:7; background:#111113; }
+    #bftDonationsTable .tracking-table .total-row td:nth-child(-n+4) { background:#f3f3f4; }
     .tracking-table { width: max-content; min-width: 2550px; table-layout: fixed; }
     .tracking-table th, .tracking-table td { min-width: 115px; white-space: normal; overflow-wrap: anywhere; }
     .tracking-table th:nth-child(1), .tracking-table td:nth-child(1) { min-width: 105px; width: 105px; }
@@ -1406,7 +1414,7 @@
       }
       for (const [key,config] of Object.entries(financeTabConfig)) add(FINANCE_SPREADSHEET_ID,'finance',key,`Finance · ${config.sheet}`,config.range,config.header);
       [["'Sponsors - Current'!A1:Z200",'current','Current Sponsors'],["'Sponsors - Prospective'!A1:Z200",'prospective','Prospective Sponsors']].forEach(([range,tab,label]) => add(SPREADSHEET_ID,'sponsors',tab,`Sponsorships · ${label}`,range));
-      [["'DashBoard'!A1:G40",'dashboard','Dashboard'],["'Ticket Control Ledger'!A1:M100",'tickets','Ticket Control Ledger'],["'Tracking Tab'!A1:V250",'donations','Tracking Tab'],["'Finance Sync'!A1:J250",'finance','Finance Sync'],["'Purchase Budget'!A1:E46",'budget','Purchase Budget']].forEach(([range,tab,label]) => add(BFT_SPREADSHEET_ID,'bft',tab,`Bikes for Tykes · ${label}`,range));
+      [["'DashBoard'!A1:G40",'dashboard','Dashboard'],["'Ticket Control Ledger'!A1:M100",'tickets','Ticket Control Ledger'],["'Tracking Tab'!A1:V1000",'donations','Tracking Tab'],["'Finance Sync'!A1:J250",'finance','Finance Sync'],["'Purchase Budget'!A1:E46",'budget','Purchase Budget']].forEach(([range,tab,label]) => add(BFT_SPREADSHEET_ID,'bft',tab,`Bikes for Tykes · ${label}`,range));
       [["'Dashboard'!A1:L54",'dashboard','Dashboard'],["'Club Scorecard'!A1:H220",'scorecard','Club Scorecard'],["'Raw Data - Bike Nights'!A1:H220",'raw','Raw Data']].forEach(([range,tab,label]) => add(BIKE_NIGHTS_SPREADSHEET_ID,'bikenights',tab,`Bike Nights · ${label}`,range));
       [["'Dashboard'!A1:V22",'dashboard','Dashboard'],["'Orders'!A1:T1000",'orders','Orders'],["'Fulfillment Tracker'!A1:L100",'fulfillment','Fulfillment Tracker'],["'Sales History'!A1:F1000",'history','Sales History'],["'Manufacturer Summary'!A1:F1000",'manufacturer','Manufacturer Summary'],["'Order Financials'!A1:M1000",'financials','Order Financials'],["'Pricing & Fees'!A1:J100",'pricing','Pricing & Fees'],["'Merchandise Pricing Reference'!A1:G100",'reference','Merchandise Pricing Reference']].forEach(([range,tab,label]) => add(MARKETPLACE_SPREADSHEET_ID,'marketplace',tab,`Marketplace · ${label}`,range));
       return sources;
@@ -2098,6 +2106,7 @@
         return;
       }
       const isTicketLedger = targetId === 'bftTicketsTable';
+      const isBftTracking = targetId === 'bftDonationsTable';
       const isTransaction2026 = targetId === 'financeTransactions2026Table';
       const headers = rows[headerRowIndex].slice(0, maxColumns);
       const ticketGroupStart = isTicketLedger ? headers.findIndex(value => String(value || '').trim().toLowerCase() === 'tickets on hold') : -1;
@@ -2107,12 +2116,17 @@
         headers[ticketGroupStart + 2] = 'Amount';
       }
       let indexedData = rows.map((row, index) => ({row, sourceIndex:index})).slice(headerRowIndex + 1).filter(item => item.row.some(value => String(value ?? '').trim()));
-      if (editOptions && editOptions.reverseRows) indexedData = indexedData.reverse();
+      if (isBftTracking) indexedData.sort((a,b) => {
+        const date = row => { const parsed = Date.parse(String(row[8] || '').trim()); return Number.isFinite(parsed) ? parsed : 0; };
+        return date(b.row) - date(a.row) || b.sourceIndex - a.sourceIndex;
+      });
+      else if (editOptions && editOptions.reverseRows) indexedData = indexedData.reverse();
       const width = Math.min(maxColumns, Math.max(headers.length, ...indexedData.map(item => item.row.length)));
-      const finalHeaders = Array.from({length: width}, (_, i) => headers[i] || '');
+      const displayColumns = isBftTracking ? [8,0,1,2,...Array.from({length:width},(_,i)=>i).filter(i=>![8,0,1,2].includes(i))] : Array.from({length:width},(_,i)=>i);
+      const finalHeaders = displayColumns.map(i => headers[i] || '');
       const editMode = Boolean(editOptions && tableEditModes[targetId]);
       const editButton = editOptions ? `<button class="dashboard-edit-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? (isTransaction2026 ? 'Close Editor' : 'Done Editing') : 'Edit Data'}</button>` : '';
-      const newTransactionButton = targetId === 'financeTransactions2026Table' ? `<button class="new-transaction-btn" data-new-transaction="true">＋ New Transaction</button>` : '';
+      const newTransactionButton = targetId === 'financeTransactions2026Table' ? `<button class="new-transaction-btn" data-new-transaction="true">＋ New Transaction</button>` : (isBftTracking ? `<button class="new-transaction-btn" data-new-bft-donation="true">＋ New Donation</button>` : '');
       const detailButton = isTransaction2026 ? '<button class="dashboard-edit-btn" type="button" data-transaction-details>Show month, year & notes</button>' : '';
       const toolbar = `<div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search this list</span><input class="table-search" type="search" data-table-search="${targetId}" placeholder="Search by name, order number, price, item, status, or date…" autocomplete="off"></label><div class="table-tool-actions">${detailButton}${newTransactionButton}${editButton}</div></div><div class="table-search-count" data-search-count="${targetId}"></div>${isTransaction2026 ? '<p class="transaction-balance-help"><strong>Chase balance</strong> includes transfers Chase shows as pending. <strong>With outstanding</strong> also includes money recorded here that has not reached Chase.</p>' : ''}`;
       const isBudgetTable = targetId === 'bftBudgetTable';
@@ -2152,9 +2166,10 @@
         const orderHandedOut = /^(true|yes|1)$/i.test(String(item.row[15] || '').trim());
         const orderStages = [paymentDue?'payment':'',(!sentToVendor&&!orderHandedOut)?'unsent':'',(sentToVendor&&!readyForPickup&&!orderHandedOut)?'vendor':'',(readyForPickup&&!orderHandedOut)?'pickup':'',orderHandedOut?'complete':''].filter(Boolean).join(' ');
         return `<tr class="${rowClasses}" ${isTransaction2026 ? `data-transaction-row="${sourceRowNumber}" data-source-index="${item.sourceIndex}"` : ''} ${isOrder ? `data-market-stages="${orderStages}" data-market-order-id="${esc(orderId)}"` : ''}>${isTransaction2026 && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-transaction aria-label="Edit row ${sourceRowNumber}: ${esc(String(item.row[headers.findIndex(header => /^description$/i.test(String(header || '').trim()))] || 'Transaction'))}"></td>` : ''}${isTransaction2026 ? `<td class="transaction-row-number" data-label="Row">${sourceRowNumber}</td>` : ''}${finalHeaders.map((_, columnIndex) => {
-          const formulaValue = editOptions && editOptions.formulaRows && editOptions.formulaRows[item.sourceIndex] ? String(editOptions.formulaRows[item.sourceIndex][columnIndex] || '') : '';
+          const sourceColumnIndex = displayColumns[columnIndex];
+          const formulaValue = editOptions && editOptions.formulaRows && editOptions.formulaRows[item.sourceIndex] ? String(editOptions.formulaRows[item.sourceIndex][sourceColumnIndex] || '') : '';
           const editable = editMode && !isTransaction2026 && !formulaValue.startsWith('=');
-          let shownValue = item.row[columnIndex] || '';
+          let shownValue = item.row[sourceColumnIndex] || '';
           if (isTicketLedger && columnIndex === ticketGroupStart + 2) {
             const quantity = Number(String(item.row[ticketGroupStart + 1] || '').replace(/[$,]/g, ''));
             if (Number.isFinite(quantity) && quantity > 0) shownValue = money(quantity * ticketPrice);
@@ -2163,7 +2178,7 @@
           const numericValue = Number(String(shownValue).replace(/[$,%(),]/g, '').replace(/\s/g, '')) * (String(shownValue).includes('(') ? -1 : 1);
           const varianceClass = targetId === 'financeBaselineTable' && headerName.includes('variance') && Number.isFinite(numericValue) ? (numericValue < 0 ? 'variance-over' : 'variance-good') : '';
           const baseClass = editable ? 'editable-cell' : (editMode && formulaValue.startsWith('=') ? 'formula-cell' : '');
-          return `<td class="${[baseClass,varianceClass,isTransaction2026 && [1,2,16].includes(columnIndex) ? 'transaction-extra' : ''].filter(Boolean).join(' ')}" ${targetId === 'financeTallyTable' || isTransaction2026 ? `data-label="${esc(isTransaction2026 && columnIndex === 10 ? 'Chase balance' : isTransaction2026 && columnIndex === 11 ? 'With outstanding' : finalHeaders[columnIndex] || `Column ${columnIndex + 1}`)}"` : ''} ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${sourceRowNumber}" data-column="${columnIndex}" data-value="${esc(shownValue)}"` : ''}>${esc(shownValue)}</td>`;
+          return `<td class="${[baseClass,varianceClass,isTransaction2026 && [1,2,16].includes(columnIndex) ? 'transaction-extra' : ''].filter(Boolean).join(' ')}" ${targetId === 'financeTallyTable' || isTransaction2026 ? `data-label="${esc(isTransaction2026 && columnIndex === 10 ? 'Chase balance' : isTransaction2026 && columnIndex === 11 ? 'With outstanding' : finalHeaders[columnIndex] || `Column ${columnIndex + 1}`)}"` : ''} ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${sourceRowNumber}" data-column="${sourceColumnIndex}" data-value="${esc(shownValue)}"` : ''}>${esc(shownValue)}</td>`;
         }).join('')}</tr>`;
       }).join('')}</tbody></table></div>`;
       status.textContent = `${indexedData.length} row${indexedData.length === 1 ? '' : 's'} loaded from Google Sheets${editOptions ? (editMode ? ' — edit mode is on.' : ' — view mode.') : '.'}`;
@@ -2176,6 +2191,8 @@
       if (toggleButton) toggleButton.addEventListener('click', () => isTransaction2026 ? toggleTransactionVerticalEditing(targetId) : toggleTableEditing(targetId, toggleButton));
       const newTransaction = target.querySelector('[data-new-transaction="true"]');
       if (newTransaction) newTransaction.addEventListener('click', () => openNewTransactionForm(targetId, finalHeaders));
+      const newDonation = target.querySelector('[data-new-bft-donation]');
+      if (newDonation) newDonation.addEventListener('click', () => openNewBftDonationForm(targetId, headers, rows));
       if (isTransaction2026 && editMode) target.querySelectorAll('[data-pick-transaction]').forEach(checkbox => checkbox.addEventListener('change', () => {
         const row = checkbox.closest('[data-transaction-row]');
         if (!checkbox.checked) {
@@ -2226,6 +2243,77 @@
         target.querySelectorAll('td[data-edit-cell="true"]').forEach(cell => recalculateTicketRow(targetId, cell));
       });
       if (targetId === 'marketOrdersTable' && target.dataset.marketPipelineStage) applyMarketplaceOrdersPipelineFilter(target.dataset.marketPipelineStage);
+    }
+
+    function openNewBftDonationForm(targetId, headers, rows) {
+      const target = document.getElementById(targetId);
+      const existing = target.querySelector('.transaction-entry');
+      if (existing) { existing.remove(); return; }
+      const panel = document.createElement('section');
+      panel.className = 'transaction-entry';
+      const today = new Date();
+      const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0,10);
+      const fields = [
+        ['Date Received','date',true],['Donor Name','text',true],['Donor Contact Info','text',false],
+        ['Email','email',false],['Donation Item / Description','text',true],
+        ['Donation Type','select',true],['Estimated Value ($)','number',false],
+        ['Amount ($)','number',false],['Donation Category','text',false],['Notes','text',false],
+        ['Coordinators Name','text',false],['Receipt Requested (Yes/No)','select',false],['Message','text',false]
+      ];
+      panel.innerHTML = `<div class="transaction-entry-head"><h3>Add New Donation or Prize</h3><button class="transaction-entry-close" type="button" aria-label="Close donation form">✕ Close</button></div>
+        <form class="transaction-entry-form">
+          ${fields.map(([label,type,required],index) => `<div class="transaction-field"><label for="bftDonationField${index}">${esc(label)}</label>${type === 'select' ? `<select id="bftDonationField${index}" data-bft-field="${esc(label)}" ${required ? 'required' : ''}>${label === 'Donation Type' ? '<option value="In-Kind">In-Kind item</option><option value="Cash">Cash</option><option value="PayPal">PayPal</option><option value="Other">Other</option>' : '<option value="No">No</option><option value="Yes">Yes</option>'}</select>` : `<input id="bftDonationField${index}" data-bft-field="${esc(label)}" type="${type}" ${type === 'number' ? 'step="0.01" min="0"' : ''} ${required ? 'required' : ''} value="${type === 'date' ? localDate : ''}" autocomplete="off">`}</div>`).join('')}
+          <p class="bft-donation-help">For donated gift cards and raffle prizes, use In-Kind, enter the estimated value, and leave Amount blank. They will not count as cash raised.</p>
+          <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Add Donation</button></div>
+        </form>`;
+      target.querySelector('.table-tools').insertAdjacentElement('afterend',panel);
+      const close = () => panel.remove();
+      panel.querySelector('.transaction-entry-close').addEventListener('click',close);
+      panel.querySelector('.transaction-cancel').addEventListener('click',close);
+      const control = label => [...panel.querySelectorAll('[data-bft-field]')].find(input => input.dataset.bftField === label);
+      const type = control('Donation Type');
+      const category = control('Donation Category');
+      const updateType = () => {
+        if (type.value === 'In-Kind') {
+          if (!category.value || category.value === 'Donation') category.value = 'In-Kind';
+          control('Amount ($)').value = '';
+        } else if (category.value === 'In-Kind') category.value = 'Donation';
+      };
+      type.addEventListener('change',updateType);
+      updateType();
+      panel.querySelector('form').addEventListener('submit',async event => {
+        event.preventDefault();
+        const amount = control('Amount ($)').value.trim();
+        const estimate = control('Estimated Value ($)').value.trim();
+        if (type.value === 'In-Kind' && amount) { alert('An in-kind prize is not cash. Leave Amount blank and use Estimated Value.'); control('Amount ($)').focus(); return; }
+        if (type.value === 'In-Kind' && !estimate) { alert('Enter the estimated value, or enter 0 and explain in Notes.'); control('Estimated Value ($)').focus(); return; }
+        if (type.value !== 'In-Kind' && !amount) { alert('Enter the amount received.'); control('Amount ($)').focus(); return; }
+        const ids = rows.slice(3).map(row => Number(String(row[0] || '').match(/^BFTCC-(\d+)$/)?.[1] || 0));
+        const nextId = 'BFTCC-' + String(Math.max(0,...ids) + 1).padStart(4,'0');
+        const values = Array.from({length:22},() => '');
+        values[0] = nextId;
+        const columnByHeader = Object.fromEntries(headers.map((header,index) => [String(header || '').trim(),index]));
+        fields.forEach(([label]) => { if (columnByHeader[label] !== undefined) values[columnByHeader[label]] = control(label).value.trim(); });
+        const save = panel.querySelector('.transaction-save');
+        save.disabled = true;
+        save.textContent = 'Saving…';
+        try {
+          const range = "'Tracking Tab'!A:V";
+          const url = `https://sheets.googleapis.com/v4/spreadsheets/${BFT_SPREADSHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+          await writePortalSheetRequest(url,{
+            method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
+            body:JSON.stringify({range,majorDimension:'ROWS',values:[values]})
+          },'Added a Bikes for Tykes donation','Tracking Tab',1);
+          close();
+          await loadBftData();
+          document.getElementById('bftDonationsStatus').textContent = `${nextId} added successfully.`;
+        } catch(error) {
+          save.disabled = false;
+          save.textContent = 'Add Donation';
+          alert(`The donation could not be saved. Your entries are still here. ${error.message || 'Please try again.'}`);
+        }
+      });
+      panel.scrollIntoView({behavior:'smooth',block:'start'});
     }
 
     function openNewTransactionForm(targetId, headers) {
@@ -2639,7 +2727,7 @@
       const results = await Promise.allSettled([
           getSheetValues("'DashBoard'!A1:G40", BFT_SPREADSHEET_ID),
           getSheetValues("'Ticket Control Ledger'!A1:M100", BFT_SPREADSHEET_ID),
-          getSheetValues("'Tracking Tab'!A1:V250", BFT_SPREADSHEET_ID),
+          getSheetValues("'Tracking Tab'!A1:V1000", BFT_SPREADSHEET_ID),
           getSheetValues("'Finance Sync'!A1:J250", BFT_SPREADSHEET_ID),
           getSheetValues("'Purchase Budget'!A1:E46", BFT_SPREADSHEET_ID),
           getSheetValues("'Instructions & Legend'!A1:C100", BFT_SPREADSHEET_ID)
