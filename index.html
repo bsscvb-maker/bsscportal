@@ -3874,7 +3874,7 @@
     function renderFinanceReconciliation(rows) {
       const target = document.getElementById('financeReconciliationTable');
       const status = document.getElementById('financeReconciliationStatus');
-      const uncleared = rows.slice(1).map((row,index) => ({row,sourceRow:index + 2})).filter(item => String(item.row[14] || '').trim().toLowerCase() === 'no');
+      const uncleared = rows.slice(1).map((row,index) => ({row,sourceRow:index + 2})).filter(item => ['no','pending at chase'].includes(String(item.row[14] || '').trim().toLowerCase()));
       const paypalBundles = new Map();
       const paypalDetails = new Set();
       for (let index=2; index<rows.length; index++) {
@@ -3894,7 +3894,7 @@
         return;
       }
       const columns = [[0,'Date'],[3,'Description'],[6,'Fund'],[7,'Activity'],[8,'Payee/Payer'],[9,'Amount'],[13,'Payment Method']];
-      target.innerHTML = `<p class="control-edit-note">PayPal: keep the gross payment and fee visible. When the net transfer appears at Chase, clear the transfer row; all three rows will be marked cleared together.</p><div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search uncleared transactions</span><input class="table-search" type="search" id="reconciliationSearch" placeholder="Search uncleared transactions…" autocomplete="off"></label></div><div class="table-search-count" id="reconciliationSearchCount"></div><div class="table-wrap"><table class="data-table"><thead><tr>${columns.map(([,label]) => `<th>${esc(label)}</th>`).join('')}<th>Clear</th></tr></thead><tbody>${uncleared.map(item => `<tr>${columns.map(([column]) => `<td>${esc(item.row[column] || '')}</td>`).join('')}<td>${paypalDetails.has(item.sourceRow) ? '<span class="reconciliation-linked">Clears with bank transfer</span>' : `<label class="reconciliation-check"><input type="checkbox" data-clear-row="${item.sourceRow}"> ${paypalBundles.has(item.sourceRow) ? 'Clear all 3 after Chase deposit' : 'Mark cleared'}</label>`}</td></tr>`).join('')}</tbody></table></div>`;
+      target.innerHTML = `<p class="control-edit-note">PayPal: the full payment and fee stay visible. Mark the net transfer Pending at Chase when Chase lists it as pending. Once it posts, clear all three rows together.</p><div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search uncleared transactions</span><input class="table-search" type="search" id="reconciliationSearch" placeholder="Search uncleared transactions…" autocomplete="off"></label></div><div class="table-search-count" id="reconciliationSearchCount"></div><div class="table-wrap"><table class="data-table"><thead><tr>${columns.map(([,label]) => `<th>${esc(label)}</th>`).join('')}<th>Bank status / clear</th></tr></thead><tbody>${uncleared.map(item => `<tr>${columns.map(([column]) => `<td>${esc(item.row[column] || '')}</td>`).join('')}<td>${paypalDetails.has(item.sourceRow) ? '<span class="reconciliation-linked">Clears with bank transfer</span>' : `${paypalBundles.has(item.sourceRow) && String(item.row[14] || '').trim().toLowerCase() !== 'pending at chase' ? `<button type="button" class="dashboard-edit-btn" data-pending-row="${item.sourceRow}">Pending at Chase</button>` : ''}${String(item.row[14] || '').trim().toLowerCase() === 'pending at chase' ? '<strong>Pending at Chase · </strong>' : ''}<label class="reconciliation-check"><input type="checkbox" data-clear-row="${item.sourceRow}"> ${paypalBundles.has(item.sourceRow) ? 'Clear all 3 after posting' : 'Mark cleared'}</label>`}</td></tr>`).join('')}</tbody></table></div>`;
       status.textContent = `${uncleared.length} uncleared transaction${uncleared.length === 1 ? '' : 's'} require review.`;
       const search = document.getElementById('reconciliationSearch');
       search.addEventListener('input', () => {
@@ -3903,6 +3903,16 @@
         target.querySelectorAll('tbody tr').forEach(row => { const match = !query || row.textContent.toLowerCase().includes(query); row.hidden = !match; if (match) visible += 1; });
         document.getElementById('reconciliationSearchCount').textContent = query ? `${visible} matching transaction${visible === 1 ? '' : 's'} shown` : '';
       });
+      target.querySelectorAll('[data-pending-row]').forEach(button => button.addEventListener('click',async () => {
+        const sourceRow = Number(button.dataset.pendingRow);
+        if (!window.confirm(`Does Chase show the ${String(rows[sourceRow-1][9] || '')} transfer as pending? It will count in Chase's available balance but the three rows will stay uncleared.`)) return;
+        button.disabled = true;button.textContent = 'Saving…';
+        try {
+          await updateSheetCell(FINANCE_SPREADSHEET_ID,'Transactions-2026',sourceRow,14,'Pending at Chase');
+          ['transactions2026','control','dashboard'].forEach(tab => loadedFinanceTabs.delete(tab));
+          await loadFinanceReconciliation();
+        } catch(error) {button.disabled = false;button.textContent = 'Pending at Chase';status.textContent = 'Could not save the pending bank status. Try again.';}
+      }));
       target.querySelectorAll('[data-clear-row]').forEach(checkbox => checkbox.addEventListener('change',async () => {
         if (!checkbox.checked) return;
         checkbox.disabled = true;
@@ -3912,8 +3922,8 @@
           const sourceRow = Number(checkbox.dataset.clearRow);
           const bundle = paypalBundles.get(sourceRow);
           if (bundle) {
-            if (!window.confirm(`Has the ${String(rows[sourceRow-1][9] || '')} PayPal bank transfer appeared in Chase? This will mark its payment, fee, and transfer cleared together.`)) {
-              checkbox.checked = false;checkbox.disabled = false;label.lastChild.textContent = ' Clear all 3 after Chase deposit';return;
+            if (!window.confirm(`Has the ${String(rows[sourceRow-1][9] || '')} PayPal bank transfer fully posted in Chase? This will mark its payment, fee, and transfer cleared together.`)) {
+              checkbox.checked = false;checkbox.disabled = false;label.lastChild.textContent = ' Clear all 3 after posting';return;
             }
             await updateSheetRanges(FINANCE_SPREADSHEET_ID,bundle.map(n => ({range:`'Transactions-2026'!O${n}`,value:'Yes'})));
           } else await updateSheetCell(FINANCE_SPREADSHEET_ID,'Transactions-2026',sourceRow,14,'Yes');
@@ -5317,7 +5327,7 @@
     async function refreshFinanceReconciliationCount() {
       try {
         const rows = await getSheetValues("'Transactions-2026'!O2:O",FINANCE_SPREADSHEET_ID);
-        const count = rows.filter(row => String(row[0] || '').trim().toLowerCase() === 'no').length;
+        const count = rows.filter(row => ['no','pending at chase'].includes(String(row[0] || '').trim().toLowerCase())).length;
         updateFinanceReconciliationCount(count);
       } catch (error) {
         // Keep the normal title if the workbook is temporarily unavailable.
