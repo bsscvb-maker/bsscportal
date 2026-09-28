@@ -463,6 +463,9 @@
     .dashboard-edit-btn.active { color: #111113; background: white; border-color: #111113; box-shadow: 0 4px 12px rgba(0,0,0,.16); }
     .dashboard-edit-btn.active::before { content: '✓'; color: #16845b; }
     .dashboard-edit-btn:disabled { opacity: .65; cursor: wait; transform: none; }
+    .export-data-btn { display: inline-flex; align-items: center; gap: 8px; min-width: 142px; justify-content: center; padding: 11px 16px; border: 2px solid #111113; border-radius: 8px; color: #111113; background: white; box-shadow: 0 3px 9px rgba(0,0,0,.12); font: inherit; font-weight: 900; cursor: pointer; }
+    .export-data-btn::before { content: '⇩'; font-size: 1.2rem; line-height: 1; }
+    .export-data-btn:hover { color: white; background: #111113; transform: translateY(-1px); }
     .finance-row.emphasis { font-weight: 900; }
     .finance-spacer { height: 10px; }
     .goal-status { padding: 4px 10px; color: #a85f00; background: #fff7dc; font-weight: 900; text-transform: capitalize; }
@@ -2163,6 +2166,30 @@
       }
     }
 
+    function exportVisibleTable(targetId) {
+      const target = document.getElementById(targetId);
+      const table = target?.querySelector('table');
+      if (!table) return;
+      const headerCells = [...table.querySelectorAll('thead tr:last-child th')];
+      const excluded = headerCells.map(cell => /^(edit)$/i.test(cell.textContent.trim()));
+      const csvEscape = value => `"${String(value ?? '').replace(/"/g,'""').replace(/\r?\n/g,' ')}"`;
+      const lines = [headerCells.filter((_,index) => !excluded[index]).map(cell => csvEscape(cell.textContent.trim())).join(',')];
+      [...table.querySelectorAll('tbody tr')].filter(row => !row.hidden).forEach(row => {
+        const values = [...row.children].filter((_,index) => !excluded[index]).map(cell => cell.textContent.trim());
+        lines.push(values.map(csvEscape).join(','));
+      });
+      const stamp = new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});
+      const filename = `BSSC_${targetId.replace(/Table$/,'').replace(/([a-z])([A-Z])/g,'$1-$2')}_${stamp}.csv`;
+      const url = URL.createObjectURL(new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
+      const download = document.createElement('a');
+      download.href = url;
+      download.download = filename;
+      document.body.appendChild(download);
+      download.click();
+      download.remove();
+      URL.revokeObjectURL(url);
+    }
+
     function renderDataTable(targetId, statusId, rows, headerRowIndex = 0, maxColumns = 16, editOptions = null) {
       const target = document.getElementById(targetId);
       const status = document.getElementById(statusId);
@@ -2206,9 +2233,10 @@
       const finalHeaders = displayColumns.map(i => headers[i] || '');
       const editMode = Boolean(editOptions && tableEditModes[targetId]);
       const editButton = editOptions ? `<button class="dashboard-edit-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? (isTransaction2026 || isBftTracking ? 'Close Editor' : 'Done Editing') : 'Edit Data'}</button>` : '';
+      const exportButton = `<button class="export-data-btn" type="button" data-export-table="${targetId}">Export Data</button>`;
       const newTransactionButton = targetId === 'financeTransactions2026Table' ? `<button class="new-transaction-btn" data-new-transaction="true">＋ New Transaction</button>` : (isBftTracking ? `<button class="new-transaction-btn" data-new-bft-donation="true">＋ New Donation</button>` : '');
       const detailButton = isTransaction2026 ? '<button class="dashboard-edit-btn" type="button" data-transaction-details>Show month, year & notes</button>' : '';
-      const toolbar = `<div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search this list</span><input class="table-search" type="search" data-table-search="${targetId}" placeholder="Search by name, order number, price, item, status, or date…" autocomplete="off"></label><div class="table-tool-actions">${detailButton}${newTransactionButton}${editButton}</div></div><div class="table-search-count" data-search-count="${targetId}"></div>${isTransaction2026 ? '<p class="transaction-balance-help"><strong>Chase balance</strong> includes transfers Chase shows as pending. <strong>With outstanding</strong> also includes money recorded here that has not reached Chase.</p>' : ''}`;
+      const toolbar = `<div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search this list</span><input class="table-search" type="search" data-table-search="${targetId}" placeholder="Search by name, order number, price, item, status, or date…" autocomplete="off"></label><div class="table-tool-actions">${exportButton}${detailButton}${newTransactionButton}${editButton}</div></div><div class="table-search-count" data-search-count="${targetId}"></div>${isTransaction2026 ? '<p class="transaction-balance-help"><strong>Chase balance</strong> includes transfers Chase shows as pending. <strong>With outstanding</strong> also includes money recorded here that has not reached Chase.</p>' : ''}`;
       const isBudgetTable = targetId === 'bftBudgetTable';
       const isMarketplaceTable = targetId.startsWith('market');
       const tableClass = targetId === 'bftDonationsTable' ? 'data-table tracking-table' : (isTicketLedger ? 'data-table ticket-ledger-table' : (isBudgetTable ? 'data-table budget-table' : (isMarketplaceTable ? 'data-table marketplace-table' : 'data-table')));
@@ -2263,6 +2291,7 @@
       }).join('')}</tbody></table></div>`;
       status.textContent = `${indexedData.length} row${indexedData.length === 1 ? '' : 's'} loaded from Google Sheets${editOptions ? (editMode ? ' — edit mode is on.' : ' — view mode.') : '.'}`;
       const toggleButton = target.querySelector('[data-toggle-edit]');
+      target.querySelector('[data-export-table]')?.addEventListener('click', () => exportVisibleTable(targetId));
       const detailToggle = target.querySelector('[data-transaction-details]');
       if (detailToggle) detailToggle.addEventListener('click', () => {
         const showing = target.querySelector('.data-table').classList.toggle('show-transaction-details');
