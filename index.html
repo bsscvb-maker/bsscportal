@@ -356,6 +356,11 @@
     .tally-send-btn:hover { background:#e21640; }
     .tally-send-btn:disabled { color:#6d7177; background:#dfe2e5; box-shadow:none; cursor:not-allowed; }
     .transaction-entry { margin:4px 0 16px; padding:18px; border:2px solid #111113; border-top:5px solid var(--gold); border-radius:12px; background:#f8f9fa; }
+    .bft-receipt-panel { margin-top:14px; padding:16px; border:1px solid #cfd4da; border-left:5px solid #c8102e; border-radius:9px; background:#fff; }
+    .bft-receipt-panel h4 { margin:0 0 8px; font-size:1rem; }
+    .bft-receipt-panel p,.bft-receipt-note { color:#4d5560; line-height:1.45; }
+    .bft-receipt-panel .transaction-field { margin:10px 0; }
+    .bft-receipt-panel .transaction-entry-actions { flex-wrap:wrap; justify-content:flex-start; }
     .transaction-entry-head { display:flex; align-items:center; justify-content:space-between; gap:15px; margin-bottom:15px; }
     .transaction-entry-head h3 { margin:0; color:#111113; font-size:1.15rem; }
     .transaction-entry-close { border:0; background:transparent; color:#6b6f75; font-weight:900; cursor:pointer; }
@@ -2290,12 +2295,79 @@
             const control = selectOptions.length ? `<select id="editBftField${field.column}" name="column${field.column}" data-original="${esc(value)}">${selectOptions.map(option=>`<option value="${esc(option)}" ${option===value?'selected':''}>${esc(option || '—')}</option>`).join('')}</select>` : `<input id="editBftField${field.column}" name="column${field.column}" type="${isDate?'date':'text'}" value="${esc(value)}" data-original="${esc(value)}" autocomplete="off">`;
             return `<div class="transaction-field"><label for="editBftField${field.column}">${esc(field.header)}</label>${control}</div>`;
           }).join('')}
+          ${String(rowValues[11] || '').trim().toLowerCase() === 'yes' ? `<section class="bft-receipt-panel"><h4>Receipt request</h4><p>Prepare the acknowledgment, print or save it as a PDF, then mark it sent after delivery. Save any edits above before preparing it.</p><div class="transaction-field"><label for="bftGoodsProvided">Goods or services provided to the donor?</label><select id="bftGoodsProvided"><option value="">Choose one…</option><option value="no">No</option><option value="yes">Yes</option></select></div><div class="transaction-field"><label for="bftGoodsDescription">If yes, describe them</label><input id="bftGoodsDescription" type="text"></div><div class="transaction-field"><label for="bftGoodsValue">If yes, estimated value ($)</label><input id="bftGoodsValue" type="number" min="0" step="0.01"></div><div class="transaction-entry-actions"><button class="dashboard-edit-btn" type="button" data-prepare-bft-receipt>Prepare / Print Receipt</button><button class="dashboard-edit-btn" type="button" data-mark-bft-receipt-sent>Mark Sent</button></div></section>` : '<p class="bft-receipt-note">To prepare a receipt, set “Receipt Requested” to Yes, save, then select this row again.</p>'}
           <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Save Changes</button></div>
         </form>`;
       target.querySelector('.table-tools').insertAdjacentElement('afterend',panel);
       const close = () => {panel.remove();selectedRow.classList.remove('transaction-selected');selectedRow.querySelector('[data-pick-bft-row]').checked=false;};
       panel.querySelector('.transaction-entry-close').addEventListener('click',close);
       panel.querySelector('.transaction-cancel').addEventListener('click',close);
+      const changedFields = () => fields.some(field => {
+        const input=panel.querySelector(`[name="column${field.column}"]`);
+        return input && input.value.trim() !== input.dataset.original;
+      });
+      panel.querySelector('[data-prepare-bft-receipt]')?.addEventListener('click',async () => {
+        if (changedFields()) { alert('Save the donation changes first, then reopen this row to prepare the receipt.'); return; }
+        const goods=panel.querySelector('#bftGoodsProvided').value;
+        const description=panel.querySelector('#bftGoodsDescription').value.trim();
+        const goodsValue=panel.querySelector('#bftGoodsValue').value.trim();
+        if (!goods) { alert('Choose whether the donor received goods or services in return.'); return; }
+        if (goods === 'yes' && (!description || goodsValue === '' || !Number.isFinite(Number(goodsValue)))) { alert('Enter a description and estimated value of the goods or services received.'); return; }
+        const amount=Number(String(rowValues[5] || '').replace(/[$,]/g,''));
+        const isCash=Number.isFinite(amount) && amount > 0 && String(rowValues[19] || '').trim() !== 'In-Kind';
+        const donatedItem=String(rowValues[4] || '').trim();
+        if (!isCash && !donatedItem) { alert('Enter a description of the donated item before preparing the receipt.'); return; }
+        const receiptNumber=String(rowValues[14] || id).trim();
+        const donor=String(rowValues[1] || '').trim();
+        const date=String(rowValues[8] || '').trim();
+        if (!donor || !date) { alert('The donor name and date received are required.'); return; }
+        const popup=window.open('','_blank');
+        if (!popup) { alert('Allow pop-ups for this page to open the printable receipt.'); return; }
+        const button=panel.querySelector('[data-prepare-bft-receipt]');
+        button.disabled=true;button.textContent='Preparing…';
+        try {
+          const identity=await getSheetValues(`'Tracking Tab'!A${rowNumber}:A${rowNumber}`,BFT_SPREADSHEET_ID);
+          if (String(identity[0]?.[0] || '').trim() !== id) throw new Error('This row changed. Refresh and try again.');
+          await updateSheetRanges(BFT_SPREADSHEET_ID,[
+            {range:`'Tracking Tab'!M${rowNumber}`,value:'Yes'},
+            {range:`'Tracking Tab'!N${rowNumber}`,value:'Prepared'},
+            {range:`'Tracking Tab'!O${rowNumber}`,value:receiptNumber}
+          ]);
+          const goodsStatement=goods === 'no' ? 'No goods or services were provided in exchange for this contribution.' : `Goods or services provided in exchange: ${esc(description)}. Good faith estimated value: ${money(Number(goodsValue))}.`;
+          const contribution=isCash ? `Cash contribution: <strong>${money(amount)}</strong>` : `Noncash contribution: <strong>${esc(donatedItem)}</strong>. No value is assigned to this item in this acknowledgment.`;
+          popup.document.write(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Receipt ${esc(receiptNumber)}</title><style>body{font:16px/1.55 Arial,sans-serif;max-width:720px;margin:50px auto;color:#171717;padding:0 24px}header{border-bottom:4px solid #c8102e;padding-bottom:14px}h1{font-size:26px;margin:0}h2{font-size:20px;margin:28px 0 12px}dl{display:grid;grid-template-columns:160px 1fr;gap:8px 14px}dt{font-weight:bold}dd{margin:0}.print{margin:25px 0;padding:10px 16px;background:#c8102e;color:#fff;border:0;border-radius:6px;font-weight:bold;cursor:pointer}@media print{.print{display:none}body{margin:20px auto}}</style></head><body><header><h1>BoneShakers Social Club</h1><div>Bikes for Tykes Charity Concert</div></header><h2>Contribution acknowledgment</h2><dl><dt>Receipt number</dt><dd>${esc(receiptNumber)}</dd><dt>Donor</dt><dd>${esc(donor)}</dd><dt>Date received</dt><dd>${esc(date)}</dd><dt>Date prepared</dt><dd>${esc(new Date().toLocaleDateString('en-US'))}</dd></dl><p>${contribution}</p><p>${goodsStatement}</p><p>Thank you for supporting Bikes for Tykes.</p><button class="print" onclick="window.print()">Print or save as PDF</button></body></html>`);
+          popup.document.close();
+          panel.querySelector('[name="column13"]').value='Prepared';
+          panel.querySelector('[name="column14"]').value=receiptNumber;
+          panel.querySelector('[name="column12"]').value='Yes';
+          panel.querySelectorAll('[name="column12"],[name="column13"],[name="column14"]').forEach(input=>input.dataset.original=input.value);
+          button.textContent='Prepare / Print Receipt';
+          button.disabled=false;
+        } catch(error) {
+          popup.close();
+          button.textContent='Prepare / Print Receipt';button.disabled=false;
+          alert(`Receipt could not be prepared. ${error.message || 'Please try again.'}`);
+        }
+      });
+      panel.querySelector('[data-mark-bft-receipt-sent]')?.addEventListener('click',async () => {
+        if (changedFields()) { alert('Save the donation changes first, then reopen this row.'); return; }
+        if (!String(rowValues[14] || panel.querySelector('[name="column14"]')?.value || '').trim()) { alert('Prepare the receipt before marking it sent.'); return; }
+        if (!window.confirm('Mark this receipt sent only after you have delivered it to the donor. Continue?')) return;
+        const button=panel.querySelector('[data-mark-bft-receipt-sent]');
+        button.disabled=true;
+        try {
+          const identity=await getSheetValues(`'Tracking Tab'!A${rowNumber}:A${rowNumber}`,BFT_SPREADSHEET_ID);
+          if (String(identity[0]?.[0] || '').trim() !== id) throw new Error('This row changed. Refresh and try again.');
+          const timestamp=new Date().toLocaleString('en-US',{timeZone:'America/New_York'});
+          await updateSheetRanges(BFT_SPREADSHEET_ID,[
+            {range:`'Tracking Tab'!N${rowNumber}`,value:'Sent'},
+            {range:`'Tracking Tab'!P${rowNumber}`,value:timestamp}
+          ]);
+          tableEditModes[targetId]=false;
+          await loadBftData();
+          document.getElementById('bftDonationsStatus').textContent=`${id} receipt marked sent.`;
+        } catch(error) {button.disabled=false;alert(`Could not mark the receipt sent. ${error.message || 'Please try again.'}`);}
+      });
       panel.querySelector('form').addEventListener('submit',async event => {
         event.preventDefault();
         const updates = fields.map(field => {
@@ -2304,6 +2376,12 @@
           if (value === input.dataset.original) return null;
           return {range:`'Tracking Tab'!${columnNumberToLetters(field.column+1)}${rowNumber}`,value,column:field.column};
         }).filter(Boolean);
+        const requested=panel.querySelector('[name="column11"]')?.value.trim().toLowerCase() === 'yes';
+        if (requested && !String(rowValues[13] || '').trim()) {
+          if (!updates.some(update=>update.column===12)) updates.push({range:`'Tracking Tab'!M${rowNumber}`,value:'Yes',column:12});
+          if (!updates.some(update=>update.column===13)) updates.push({range:`'Tracking Tab'!N${rowNumber}`,value:'Pending',column:13});
+          if (!updates.some(update=>update.column===14)) updates.push({range:`'Tracking Tab'!O${rowNumber}`,value:id,column:14});
+        }
         if (!updates.length) { close(); return; }
         const save=panel.querySelector('.transaction-save');
         save.disabled=true;save.textContent='Saving…';
@@ -2344,13 +2422,13 @@
         ['Date Received','date',true],['Donor Name','text',true],['Donor Contact Info','text',false],
         ['Email','email',false],['Donation Item / Description','text',true],
         ['Donation Type','select',true],['Estimated Value ($)','number',false],
-        ['Amount ($)','number',false],['Donation Category','text',false],['Notes','text',false],
+        ['Amount ($)','number',false],['Donation Category','select',true],['Notes','text',false],
         ['Coordinators Name','text',false],['Receipt Requested (Yes/No)','select',false],['Message','text',false]
       ];
       panel.innerHTML = `<div class="transaction-entry-head"><h3>Add New Donation or Prize</h3><button class="transaction-entry-close" type="button" aria-label="Close donation form">✕ Close</button></div>
         <form class="transaction-entry-form">
-          ${fields.map(([label,type,required],index) => `<div class="transaction-field"><label for="bftDonationField${index}">${esc(label)}</label>${type === 'select' ? `<select id="bftDonationField${index}" data-bft-field="${esc(label)}" ${required ? 'required' : ''}>${label === 'Donation Type' ? '<option value="In-Kind">In-Kind item</option><option value="Cash">Cash</option><option value="PayPal">PayPal</option><option value="Other">Other</option>' : '<option value="No">No</option><option value="Yes">Yes</option>'}</select>` : `<input id="bftDonationField${index}" data-bft-field="${esc(label)}" type="${type}" ${type === 'number' ? 'step="0.01" min="0"' : ''} ${required ? 'required' : ''} value="${type === 'date' ? localDate : ''}" autocomplete="off">`}</div>`).join('')}
-          <p class="bft-donation-help">For donated gift cards and raffle prizes, use In-Kind, enter the estimated value, and leave Amount blank. They will not count as cash raised.</p>
+          ${fields.map(([label,type,required],index) => `<div class="transaction-field"><label for="bftDonationField${index}">${esc(label)}</label>${type === 'select' ? `<select id="bftDonationField${index}" data-bft-field="${esc(label)}" ${required ? 'required' : ''}>${label === 'Donation Type' ? '<option value="In-Kind">In-Kind item</option><option value="Cash">Cash</option><option value="PayPal">PayPal</option><option value="Check">Check</option>' : label === 'Donation Category' ? '<option value="Gift Card">Gift Card</option><option value="Service">Service</option><option value="Merchandise">Merchandise</option><option value="Cash">Cash</option><option value="Auction Proceeds">Auction Proceeds</option><option value="Ticket Sales">Ticket Sales</option><option value="Inventory Advance">Inventory Advance</option><option value="Reimbursement">Reimbursement</option><option value="Payout">Payout</option>' : '<option value="No">No</option><option value="Yes">Yes</option>'}</select>` : `<input id="bftDonationField${index}" data-bft-field="${esc(label)}" type="${type}" ${type === 'number' ? 'step="0.01" min="0"' : ''} ${required ? 'required' : ''} value="${type === 'date' ? localDate : ''}" autocomplete="off">`}</div>`).join('')}
+          <p class="bft-donation-help">For donated gift cards and raffle prizes, use In-Kind, enter the estimated value, and leave Amount blank. They will not count as cash raised. If a cash gift already appears through Finance Sync, edit that existing entry instead of adding it again.</p>
           <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Add Donation</button></div>
         </form>`;
       target.querySelector('.table-tools').insertAdjacentElement('afterend',panel);
@@ -2362,9 +2440,9 @@
       const category = control('Donation Category');
       const updateType = () => {
         if (type.value === 'In-Kind') {
-          if (!category.value || category.value === 'Donation') category.value = 'In-Kind';
+          if (category.value === 'Cash') category.value = 'Gift Card';
           control('Amount ($)').value = '';
-        } else if (category.value === 'In-Kind') category.value = 'Donation';
+        } else if (category.value === 'Gift Card') category.value = 'Cash';
       };
       type.addEventListener('change',updateType);
       updateType();
@@ -2375,12 +2453,13 @@
         if (type.value === 'In-Kind' && amount) { alert('An in-kind prize is not cash. Leave Amount blank and use Estimated Value.'); control('Amount ($)').focus(); return; }
         if (type.value === 'In-Kind' && !estimate) { alert('Enter the estimated value, or enter 0 and explain in Notes.'); control('Estimated Value ($)').focus(); return; }
         if (type.value !== 'In-Kind' && !amount) { alert('Enter the amount received.'); control('Amount ($)').focus(); return; }
-        const ids = rows.slice(3).map(row => Number(String(row[0] || '').match(/^BFTCC-(\d+)$/)?.[1] || 0));
-        const nextId = 'BFTCC-' + String(Math.max(0,...ids) + 1).padStart(4,'0');
+        const ids = rows.slice(3).map(row => Number(String(row[0] || '').match(/^BFTM-(\d+)$/)?.[1] || 0));
+        const nextId = 'BFTM-' + String(Math.max(0,...ids) + 1).padStart(4,'0');
         const values = Array.from({length:22},() => '');
         values[0] = nextId;
         const columnByHeader = Object.fromEntries(headers.map((header,index) => [String(header || '').trim(),index]));
         fields.forEach(([label]) => { if (columnByHeader[label] !== undefined) values[columnByHeader[label]] = control(label).value.trim(); });
+        if (values[11] === 'Yes') { values[12]='Yes'; values[13]='Pending'; values[14]=nextId; }
         const save = panel.querySelector('.transaction-save');
         save.disabled = true;
         save.textContent = 'Saving…';
