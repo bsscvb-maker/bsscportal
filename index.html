@@ -503,7 +503,7 @@
     .marketplace-table tr.market-paid td { background:#e5f6e9 !important; }
     .marketplace-table tr.market-pending td { background:#fff0f2 !important; }
     .marketplace-table tr.market-ready td { box-shadow:inset 4px 0 #e7a600; }
-    .receive-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:16px 0; }
+    .receive-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(145px,1fr)); gap:10px; margin:16px 0; }
     .receive-summary div,.receive-order { border:1px solid var(--line); border-radius:10px; padding:13px; background:#fff; }
     .receive-summary strong { display:block; font-size:1.5rem; color:#c8102e; }
     .receive-tools { display:flex; gap:10px; flex-wrap:wrap; margin:16px 0; }
@@ -522,7 +522,8 @@
     .receive-modal { width:min(650px,calc(100vw - 24px)); max-height:90vh; overflow:auto; border:0; border-radius:15px; padding:24px; box-shadow:0 20px 70px #0008; }
     .receive-modal::backdrop { background:#0009; }
     .receive-modal label { display:block; font-weight:750; margin:12px 0; }
-    .receive-modal select,.receive-modal input[type="number"] { width:100%; min-height:42px; padding:8px; border:1px solid #abb1ba; border-radius:7px; font:inherit; }
+    .receive-modal label[hidden] { display:none; }
+    .receive-modal select,.receive-modal input[type="number"],.receive-modal input[type="text"] { width:100%; min-height:42px; padding:8px; border:1px solid #abb1ba; border-radius:7px; font:inherit; }
     .receive-colors { display:flex; gap:9px; flex-wrap:wrap; margin:10px 0; }
     .receive-colors label { margin:0; padding:9px 12px; border:1px solid #bbb; border-radius:20px; cursor:pointer; }
     .receive-preview { padding:12px; border-radius:8px; background:#f3f4f6; margin:12px 0; }
@@ -1074,12 +1075,19 @@
               <button class="sponsor-tab" data-market-tab="reference">Merchandise Pricing Reference</button>
             </div>
             <section class="sponsor-panel active" data-market-panel="dashboard"><div class="data-status" id="marketDashboardStatus">Sign in to load Marketplace performance.</div><div id="marketDashboard"></div></section>
-            <section class="sponsor-panel" data-market-panel="fulfillment"><div class="coming-soon"><h2>Receive &amp; Fulfill Merchandise</h2><p>Record each item as it arrives, then hand out completed orders.</p><div class="data-status" id="marketFulfillmentStatus">Sign in to load fulfillment records.</div><div id="marketReceiving"></div><details><summary>View original Fulfillment Tracker</summary><div id="marketFulfillmentTable"></div></details></div></section>
+            <section class="sponsor-panel" data-market-panel="fulfillment"><div class="coming-soon"><h2>Marketplace Order Management</h2><p>Receive items, hand out orders, and record cancellations, refunds, or damaged merchandise.</p><div class="data-status" id="marketFulfillmentStatus">Sign in to load fulfillment records.</div><div id="marketReceiving"></div><details><summary>View original Fulfillment Tracker</summary><div id="marketFulfillmentTable"></div></details></div></section>
             <dialog class="receive-modal" id="receiveOrderDialog" aria-labelledby="receiveOrderTitle"><h2 id="receiveOrderTitle">Receive Merchandise</h2><p>Choose what arrived. Matching pieces go to the oldest unfilled orders first.</p>
               <form id="receiveOrderForm"><label>Item<select id="receiveProduct" required></select></label><label>Size<select id="receiveSize" required></select></label>
               <fieldset><legend>Color</legend><div class="receive-colors" id="receiveColors"></div></fieldset>
               <label>Quantity received<input id="receiveQuantity" type="number" min="1" step="1" required></label>
               <div class="receive-preview" id="receiveAllocationPreview"></div><div class="receive-modal-actions"><button type="button" id="receiveCancel">Cancel</button><button type="submit" id="receiveStockPrint" data-mode="stock">Assign Existing Stock</button><button type="submit" id="receiveSavePrint">Receive &amp; Print Tickets</button></div></form></dialog>
+            <dialog class="receive-modal" id="orderActionDialog" aria-labelledby="orderActionTitle"><h2 id="orderActionTitle">Update Order</h2><p id="orderActionContext"></p>
+              <form id="orderActionForm"><label>Action<select id="orderActionType" required><option value="Cancelled">Cancel order</option><option value="Refunded">Record refund issued</option><option value="Damaged">Report damaged item</option><option value="Deleted">Remove mistaken order</option></select></label>
+              <label id="orderActionItemLabel">Item<select id="orderActionItem"></select></label>
+              <label id="orderActionQtyLabel">Damaged quantity<input id="orderActionQty" type="number" min="1" step="1" value="1"></label>
+              <label id="orderActionAmountLabel">Refund amount ($)<input id="orderActionAmount" type="number" min="0.01" step="0.01" placeholder="0.00"></label>
+              <label>Reason / reference<input id="orderActionReason" maxlength="200" required placeholder="Why, or refund transaction reference"></label>
+              <div class="receive-modal-actions"><button type="button" id="orderActionClose">Go Back</button><button type="submit" id="orderActionSave">Save Action</button></div></form></dialog>
             <section class="sponsor-panel" data-market-panel="manufacturer"><div class="coming-soon"><h2>Manufacturer Summary</h2><div class="data-status" id="marketManufacturerStatus">Sign in to load manufacturer totals.</div><div id="marketManufacturerSummary"></div><div id="marketManufacturerTable"></div></div></section>
             <section class="sponsor-panel" data-market-panel="financials"><div class="coming-soon"><h2>Order Financials</h2><div class="data-status" id="marketFinancialsStatus">Sign in to load order financials.</div><div id="marketFinancialsSummary"></div><div id="marketFinancialsTable"></div></div></section>
             <section class="sponsor-panel" data-market-panel="orders"><div class="coming-soon"><h2>Orders</h2><div class="data-status" id="marketOrdersStatus">Sign in to load orders.</div><div id="marketOrdersTable"></div></div></section>
@@ -2897,12 +2905,23 @@
       return {product:merchandiseProductName(match[1]),size:parts[0] || 'One Size',color:parts.slice(1).join(', ')};
     }
 
+    function merchandiseOrderClosed(order) {
+      const id = String(order[1] || '');
+      return /^(Cancelled|Deleted)$/i.test(String(order[19] || '')) ||
+        merchandiseEvents.some(event => String(event[2]) === id && ['Cancelled','Deleted'].includes(String(event[1])));
+    }
+
+    function merchandiseOrderRefunds(id) {
+      return merchandiseEvents.filter(event => String(event[2]) === id && event[1] === 'Refunded')
+        .reduce((total,event) => total + (Number(event[4]) || 0),0);
+    }
+
     function pendingMerchandiseMatches(product,size,color) {
       const allocation = [];
       merchandiseOrders.slice(1).map((order,index) => ({order,index}))
         .sort((a,b) => (Date.parse(a.order[0]) || 0)-(Date.parse(b.order[0]) || 0) || a.index-b.index)
         .forEach(({order,index}) => {
-        if (!order[1] || /^(true|yes|1)$/i.test(String(order[15] || ''))) return;
+        if (!order[1] || /^(true|yes|1)$/i.test(String(order[15] || '')) || merchandiseOrderClosed(order)) return;
         const state = merchandiseState(order,merchandiseLines,merchandiseEvents);
         state.items.forEach(line => {
           const variant = merchandiseVariant(line.item);
@@ -3057,9 +3076,9 @@
 
     function merchandiseState(order, lines, events) {
       const items = lines.filter(line => line.orderId === order[1]).map(line => {
-        const received = events.filter(event => event[2] === line.orderId && event[3] === line.item && event[1] === 'Received')
-          .reduce((total,event) => total + (Number(event[4]) || 0), 0);
-        return {...line, received:Math.min(line.quantity,received)};
+        const received = events.filter(event => event[2] === line.orderId && event[3] === line.item && ['Received','Damaged'].includes(event[1]))
+          .reduce((total,event) => total + (event[1] === 'Damaged' ? -1 : 1) * (Number(event[4]) || 0), 0);
+        return {...line, received:Math.max(0,Math.min(line.quantity,received))};
       });
       const complete = items.length > 0 && items.every(item => item.received >= item.quantity);
       const partial = items.some(item => item.received > 0) && !complete;
@@ -3074,30 +3093,32 @@
       const orders = merchandiseOrders.slice(1).filter(row => row[1] && row[4]);
       const states = orders.map(row => ({row,state:merchandiseState(row,merchandiseLines,merchandiseEvents)}));
       const counts = {
-        waiting:states.filter(x => !x.state.handed && !x.state.partial && !x.state.complete && !x.state.ready).length,
-        partial:states.filter(x => !x.state.handed && x.state.partial).length,
-        ready:states.filter(x => !x.state.handed && (x.state.complete || x.state.ready)).length,
-        handed:states.filter(x => x.state.handed).length
+        waiting:states.filter(x => !merchandiseOrderClosed(x.row) && !x.state.handed && !x.state.partial && !x.state.complete && !x.state.ready).length,
+        partial:states.filter(x => !merchandiseOrderClosed(x.row) && !x.state.handed && x.state.partial).length,
+        ready:states.filter(x => !merchandiseOrderClosed(x.row) && !x.state.handed && (x.state.complete || x.state.ready)).length,
+        handed:states.filter(x => !merchandiseOrderClosed(x.row) && x.state.handed).length,
+        cancelled:states.filter(x => merchandiseOrderClosed(x.row)).length
       };
       const shown = states.filter(({row,state}) => {
         const match = (String(row[1])+' '+String(row[4])+' '+String(row[8])).toLowerCase().includes(search.toLowerCase());
-        return match && (filter === 'all' || (filter === 'open' && !state.handed) || (filter === 'ready' && !state.handed && (state.complete || state.ready)) || (filter === 'handed' && state.handed));
+        return match && (filter === 'all' || (filter === 'open' && !state.handed && !merchandiseOrderClosed(row)) || (filter === 'ready' && !state.handed && !merchandiseOrderClosed(row) && (state.complete || state.ready)) || (filter === 'handed' && state.handed) || (filter === 'cancelled' && merchandiseOrderClosed(row)));
       });
       target.innerHTML = `<div class="receive-summary">
         <div>Awaiting Delivery<strong>${counts.waiting}</strong></div><div>Partially Received<strong>${counts.partial}</strong></div>
-        <div>Ready for Pickup<strong>${counts.ready}</strong></div><div>Handed Out<strong>${counts.handed}</strong></div></div>
+        <div>Ready for Pickup<strong>${counts.ready}</strong></div><div>Handed Out<strong>${counts.handed}</strong></div><div>Cancelled<strong>${counts.cancelled}</strong></div></div>
         <div class="receive-tools"><button type="button" data-receive-order>＋ Receive Order</button>${lastMerchandiseTickets.length ? '<button type="button" data-reprint-tickets>Reprint Last Tickets</button>' : ''}<input data-receive-search type="search" value="${esc(search)}" placeholder="Search customer, order, or item" aria-label="Search merchandise orders">
-        <select data-receive-filter aria-label="Filter orders"><option value="open">Open orders</option><option value="ready">Ready for pickup</option><option value="handed">Handed out</option><option value="all">All orders</option></select>
+        <select data-receive-filter aria-label="Filter orders"><option value="open">Open orders</option><option value="ready">Ready for pickup</option><option value="handed">Handed out</option><option value="cancelled">Cancelled / removed</option><option value="all">All orders</option></select>
         <button type="button" data-receive-refresh>Refresh</button></div>
         <div class="receive-message" data-receive-message hidden></div>
         ${shown.length ? shown.map(({row,state}) => {
           const id = String(row[1]), due = /pending|cash due/i.test(String(row[12] || ''));
-          const label = state.handed ? 'Handed Out' : (state.complete || state.ready ? 'Ready for Pickup' : state.partial ? 'Partially Received' : 'Awaiting Delivery');
+          const label = merchandiseEvents.some(event => event[2] === id && event[1] === 'Deleted') ? 'Removed' : merchandiseOrderClosed(row) ? 'Cancelled' : state.handed ? 'Handed Out' : (state.complete || state.ready ? 'Ready for Pickup' : state.partial ? 'Partially Received' : 'Awaiting Delivery');
           return `<article class="receive-order"><header><div><h3>${esc(row[4])}</h3><small>${esc(id)} · ${esc(row[12] || 'Payment unknown')}</small></div><strong>${label}</strong></header>
           ${state.items.length ? state.items.map(item => `<div class="receive-line"><span>${esc(item.item)}<br><small>Received ${item.received} of ${item.quantity}</small></span>
-          ${!state.handed && item.received < item.quantity ? `<label>Qty <input type="number" min="1" max="${item.quantity-item.received}" value="${item.quantity-item.received}" data-receive-qty></label><button type="button" data-receive-item data-order="${esc(id)}" data-item="${esc(item.item)}">Receive</button>` : ''}</div>`).join('') : '<p>Item details unavailable. Check Sales History before receiving this order.</p>'}
-          ${!state.handed && (state.complete || state.ready) ? `<button type="button" data-handout-order data-order="${esc(id)}" ${due ? 'disabled title="Record payment first"' : ''}>Mark Handed Out</button>` : ''}
-          ${due ? '<small>Payment is due before handout.</small>' : ''}</article>`;
+          ${!merchandiseOrderClosed(row) && !state.handed && item.received < item.quantity ? `<label>Qty <input type="number" min="1" max="${item.quantity-item.received}" value="${item.quantity-item.received}" data-receive-qty></label><button type="button" data-receive-item data-order="${esc(id)}" data-item="${esc(item.item)}">Receive</button>` : ''}</div>`).join('') : '<p>Item details unavailable. Check Sales History before receiving this order.</p>'}
+          ${!merchandiseOrderClosed(row) && !state.handed && (state.complete || state.ready) ? `<button type="button" data-handout-order data-order="${esc(id)}" ${due ? 'disabled title="Record payment first"' : ''}>Mark Handed Out</button>` : ''}
+          ${due && !merchandiseOrderClosed(row) ? '<small>Payment is due before handout.</small>' : ''}
+          <div class="receive-order-actions"><button type="button" data-manage-order data-order="${esc(id)}">Manage Order</button>${merchandiseOrderRefunds(id) ? `<small>Refund recorded: $${merchandiseOrderRefunds(id).toFixed(2)}</small>` : ''}</div></article>`;
         }).join('') : '<p>No orders match this view.</p>'}`;
       target.querySelector('[data-receive-filter]').value = filter;
       target.querySelector('[data-receive-search]').addEventListener('input',event => {
@@ -3117,6 +3138,7 @@
       target.querySelector('[data-receive-refresh]').addEventListener('click',loadMarketplaceData);
       target.querySelectorAll('[data-receive-item]').forEach(button => button.addEventListener('click',() => receiveMerchandiseItem(button)));
       target.querySelectorAll('[data-handout-order]').forEach(button => button.addEventListener('click',() => handOutMerchandiseOrder(button)));
+      target.querySelectorAll('[data-manage-order]').forEach(button => button.addEventListener('click',() => openOrderAction(button.dataset.order)));
     }
 
     async function refreshMerchandiseState() {
@@ -3147,7 +3169,7 @@
         await refreshMerchandiseState();
         const id = button.dataset.order, item = button.dataset.item;
         const order = merchandiseOrders.find(row => row[1] === id);
-        if (!order || /^(true|yes|1)$/i.test(String(order[15] || ''))) throw new Error('This order is already handed out or no longer exists.');
+        if (!order || merchandiseOrderClosed(order) || /^(true|yes|1)$/i.test(String(order[15] || ''))) throw new Error('This order is already handed out or no longer exists.');
         const state = merchandiseState(order,merchandiseLines,merchandiseEvents);
         const line = state.items.find(entry => entry.item === item);
         const qty = Number(button.closest('.receive-line').querySelector('[data-receive-qty]').value);
@@ -3180,7 +3202,7 @@
         const order = merchandiseOrders[rowNumber-1];
         if (rowNumber < 2 || !order) throw new Error('Order not found.');
         const state = merchandiseState(order,merchandiseLines,merchandiseEvents);
-        if (state.handed || (!state.complete && !state.ready)) throw new Error('This order is not ready for pickup.');
+        if (merchandiseOrderClosed(order) || state.handed || (!state.complete && !state.ready)) throw new Error('This order is not ready for pickup.');
         if (/pending|cash due/i.test(String(order[12] || ''))) throw new Error('Record the payment on the Orders tab first.');
         if (!confirm('Confirm merchandise was handed to '+order[4]+'?')) return;
         await updateSheetRanges(MARKETPLACE_SPREADSHEET_ID,[
@@ -3194,6 +3216,82 @@
         alert('Handout could not finish: '+error.message+' Refresh and check the order before trying again.');
       } finally { merchandiseBusy = false; }
     }
+
+    let managedOrderId = '';
+    function openOrderAction(id) {
+      const order = merchandiseOrders.find(row => String(row[1]) === id);
+      if (!order) return;
+      managedOrderId = id;
+      document.getElementById('orderActionContext').textContent = `${order[4]} · ${id}`;
+      const select = document.getElementById('orderActionItem');
+      select.innerHTML = merchandiseState(order,merchandiseLines,merchandiseEvents).items.map(line => `<option value="${esc(line.item)}">${esc(line.item)} · ${line.received} received</option>`).join('');
+      document.getElementById('orderActionType').value = merchandiseOrderClosed(order) ? 'Refunded' : 'Cancelled';
+      document.getElementById('orderActionReason').value = '';
+      document.getElementById('orderActionAmount').value = '';
+      updateOrderActionFields();
+      document.getElementById('orderActionDialog').showModal();
+    }
+    function updateOrderActionFields() {
+      const type = document.getElementById('orderActionType').value;
+      document.getElementById('orderActionItemLabel').hidden = type !== 'Damaged';
+      document.getElementById('orderActionQtyLabel').hidden = type !== 'Damaged';
+      document.getElementById('orderActionAmountLabel').hidden = type !== 'Refunded';
+      document.getElementById('orderActionAmount').required = type === 'Refunded';
+      document.getElementById('orderActionQty').required = type === 'Damaged';
+      const order = merchandiseOrders.find(row => String(row[1]) === managedOrderId);
+      const closed = order && merchandiseOrderClosed(order);
+      document.getElementById('orderActionType').querySelector('[value="Cancelled"]').disabled = Boolean(closed);
+      document.getElementById('orderActionType').querySelector('[value="Damaged"]').disabled = Boolean(closed);
+      document.getElementById('orderActionType').querySelector('[value="Deleted"]').disabled = Boolean(closed) || merchandiseOrderRefunds(managedOrderId) > 0 || Boolean(order && /^(true|yes|1)$/i.test(String(order[15] || '')));
+    }
+    document.getElementById('orderActionType').addEventListener('change',updateOrderActionFields);
+    document.getElementById('orderActionClose').addEventListener('click',() => document.getElementById('orderActionDialog').close());
+    document.getElementById('orderActionForm').addEventListener('submit',async event => {
+      event.preventDefault();
+      if (merchandiseBusy) return;
+      merchandiseBusy = true;
+      const save = document.getElementById('orderActionSave'); save.disabled = true;
+      let saved = false;
+      try {
+        await refreshMerchandiseState();
+        const id = managedOrderId, orderIndex = merchandiseOrders.findIndex(row => String(row[1]) === id);
+        if (orderIndex < 1) throw new Error('Order not found. Refresh and check its status.');
+        const order = merchandiseOrders[orderIndex];
+        const type = document.getElementById('orderActionType').value;
+        const reason = document.getElementById('orderActionReason').value.trim();
+        const item = type === 'Damaged' ? document.getElementById('orderActionItem').value : '';
+        const quantity = Number(document.getElementById('orderActionQty').value);
+        const amount = Number(document.getElementById('orderActionAmount').value);
+        if (!reason) throw new Error('Enter a reason or reference.');
+        if (type !== 'Refunded' && merchandiseOrderClosed(order)) throw new Error('This order is already cancelled.');
+        if (type === 'Damaged') {
+          const line = merchandiseState(order,merchandiseLines,merchandiseEvents).items.find(line => line.item === item);
+          if (!line || !Number.isInteger(quantity) || quantity < 1 || quantity > line.received) throw new Error('Damaged quantity must be no greater than received quantity.');
+          if (/^(true|yes|1)$/i.test(String(order[15] || ''))) throw new Error('A handed out order cannot be returned to the receiving queue here.');
+        }
+        if (type === 'Refunded' && (!Number.isFinite(amount) || amount <= 0)) throw new Error('Enter the actual amount refunded.');
+        if (type === 'Deleted' && (merchandiseOrderRefunds(id) || /^(true|yes|1)$/i.test(String(order[15] || '')))) throw new Error('Refunded or handed out orders must remain in the record.');
+        const message = type === 'Deleted' ? `Remove ${order[4]}'s mistaken order from active portal views? The original sheet row remains for audit and workbook reconciliation.` : type === 'Cancelled' ? `Cancel ${order[4]}'s order? It will leave open fulfillment. This does not send a refund.` : type === 'Refunded' ? `Confirm $${amount.toFixed(2)} has already been refunded outside this portal? This records the refund; it does not send money.` : `Record ${quantity} damaged ${item} and return them to the needs-replacement list?`;
+        if (!confirm(message)) return;
+        const stamp = new Date().toISOString(), actor = await getPortalAuditActor();
+        const entries = [[stamp,type,id,item,type === 'Refunded' ? amount : type === 'Damaged' ? quantity : 0,actor,reason]];
+        if (type === 'Cancelled' || type === 'Deleted') {
+          const state = merchandiseState(order,merchandiseLines,merchandiseEvents);
+          state.items.filter(line => line.received > 0).forEach(line => entries.push([stamp,'Stock Received','',line.item,line.received,actor,`Released from cancelled order ${id}`]));
+        }
+        await appendSheetRows(MARKETPLACE_SPREADSHEET_ID,MERCH_ACTIVITY_SHEET,entries);
+        saved = true;
+        if (type === 'Cancelled' || type === 'Deleted') await updateSheetRanges(MARKETPLACE_SPREADSHEET_ID,[{range:`'Orders'!T${orderIndex+1}`,value:type}]);
+        if (type === 'Damaged') await updateSheetRanges(MARKETPLACE_SPREADSHEET_ID,[{range:`'Orders'!O${orderIndex+1}`,value:false},{range:`'Orders'!Q${orderIndex+1}`,value:''},{range:`'Orders'!T${orderIndex+1}`,value:'Awaiting Replacement'}]);
+        document.getElementById('orderActionDialog').close();
+        await loadMarketplaceData();
+        if (type === 'Refunded') alert('Refund recorded. Reconcile the actual payment and financial workbook separately.');
+        if (type === 'Deleted') alert('Mistaken order removed from active portal views. Its source sheet row remains for audit; reconcile any workbook totals separately.');
+        if (type === 'Cancelled') alert('Order cancelled and removed from open fulfillment. Review the financial workbook for any refund or accounting adjustment.');
+      } catch (error) {
+        alert(saved ? 'Action recorded, but the order display could not fully update: '+error.message+' Refresh before doing anything else.' : 'Action was not saved: '+error.message);
+      } finally { merchandiseBusy = false; save.disabled = false; }
+    });
 
     async function loadMarketplaceData() {
       const statusIds = ['marketDashboardStatus','marketFulfillmentStatus','marketManufacturerStatus','marketFinancialsStatus','marketOrdersStatus','marketPricingStatus','marketHistoryStatus','marketReferenceStatus'];
@@ -3235,7 +3333,7 @@
         ]);
         renderDataTable('marketFinancialsTable','marketFinancialsStatus',rows,4,13);
       } else document.getElementById('marketFinancialsStatus').textContent = 'Order Financials could not be loaded from Google Sheets.';
-      if (ordersResult.status === 'fulfilled') renderDataTable('marketOrdersTable','marketOrdersStatus',ordersResult.value,0,20,{sheetName:'Orders',spreadsheetId:MARKETPLACE_SPREADSHEET_ID});
+      if (ordersResult.status === 'fulfilled') renderDataTable('marketOrdersTable','marketOrdersStatus',ordersResult.value.filter((row,index) => index === 0 || !/^(Deleted)$/i.test(String(row[19] || ''))),0,20,{sheetName:'Orders',spreadsheetId:MARKETPLACE_SPREADSHEET_ID});
       else document.getElementById('marketOrdersStatus').textContent = 'Orders could not be loaded from Google Sheets.';
       if (pricingResult.status === 'fulfilled') {
         renderPricingConfig(pricingResult.value);
@@ -3246,13 +3344,14 @@
         renderSalesHistoryHeading(rows);
         const orderRows = ordersResult.status === 'fulfilled' ? ordersResult.value : [];
         const customerByOrderId = new Map(orderRows.slice(1).map(row => [String(row[1] || '').trim(), String(row[4] || '').trim()]));
+        const removedIds = new Set(orderRows.slice(1).filter(row => /^(Deleted)$/i.test(String(row[19] || ''))).map(row => String(row[1] || '').trim()));
         const historyRows = rows.map((row, index) => {
           if (index < 5) return row;
           if (index === 5) return ['Order Date','Order ID','Customer Name','Item Ordered','Qty','Payment Status'];
           const orderId = String(row[1] || '').trim();
           return [row[0] || '', orderId, customerByOrderId.get(orderId) || '', row[2] || '', row[3] || '', row[4] || ''];
         });
-        renderDataTable('marketHistoryTable','marketHistoryStatus',historyRows,5,6);
+        renderDataTable('marketHistoryTable','marketHistoryStatus',historyRows.filter((row,index) => index < 6 || !removedIds.has(String(row[1] || '').trim())),5,6);
       } else document.getElementById('marketHistoryStatus').textContent = 'Sales History could not be loaded from Google Sheets.';
       if (referenceResult.status === 'fulfilled') {
         const rows = referenceResult.value;
