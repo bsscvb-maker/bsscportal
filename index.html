@@ -2086,7 +2086,16 @@
 
     const tableEditModes = {};
     const tableRenderCache = {};
-    const financeTransactionViewState = {values:{},open:false};
+    const FINANCE_TRANSACTION_FILTER_KEY = 'bssc-finance-transaction-filters-v1';
+    const financeTransactionViewState = (() => {
+      try {
+        const saved = JSON.parse(localStorage.getItem(FINANCE_TRANSACTION_FILTER_KEY) || 'null');
+        return saved && typeof saved.values === 'object' ? {values:saved.values,open:Boolean(saved.open)} : {values:{},open:false};
+      } catch (error) { return {values:{},open:false}; }
+    })();
+    function saveFinanceTransactionViewState() {
+      try { localStorage.setItem(FINANCE_TRANSACTION_FILTER_KEY,JSON.stringify(financeTransactionViewState)); } catch (error) {}
+    }
     const tablePendingEdits = {};
     let financeTransactionOptions = {};
     let financePayeeHistory = new Map();
@@ -2306,7 +2315,17 @@
             if (matches) visible++;
           });
           target.querySelector('[data-search-count]').textContent = visible+' of '+displayed.length+' transactions shown';
+          financeTransactionViewState.values = Object.fromEntries(
+            [...target.querySelectorAll('[data-table-search], .finance-filter-panel input, .finance-filter-panel select')]
+              .map(element => [element.dataset.financeFilter ? 'filter:'+element.dataset.financeFilter
+                : element.dataset.tableSearch ? 'search' : element.dataset.financeDescription !== undefined ? 'description'
+                : element.dataset.financeDateFrom !== undefined ? 'dateFrom' : element.dataset.financeDateTo !== undefined ? 'dateTo'
+                : element.dataset.financeMin !== undefined ? 'min' : element.dataset.financeMax !== undefined ? 'max' : 'sort', element.value])
+          );
+          financeTransactionViewState.open = controls.querySelector('details').open;
+          saveFinanceTransactionViewState();
         };
+        controls.querySelector('details').addEventListener('toggle',() => { financeTransactionViewState.open = controls.querySelector('details').open; saveFinanceTransactionViewState(); });
         controls.addEventListener('input',applyFilters);
         controls.addEventListener('change',applyFilters);
         controls.querySelector('[data-finance-clear-filters]').addEventListener('click',() => {
