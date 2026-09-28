@@ -263,6 +263,12 @@
     .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 11px; scrollbar-color: var(--gold) #e7e7e9; scrollbar-width: auto; }
     #financeTransactions2026Table .table-wrap { max-height:68vh; overflow:auto; }
     #financeTransactions2026Table .data-table thead th { position:sticky; top:0; z-index:5; box-shadow:0 2px 0 var(--gold); }
+    #financeTransactions2026Table .data-table { min-width:0; table-layout:fixed; font-size:.72rem; }
+    #financeTransactions2026Table .data-table th, #financeTransactions2026Table .data-table td { padding:8px 4px; overflow-wrap:anywhere; line-height:1.3; }
+    #financeTransactions2026Table .data-table:not(.show-transaction-details) .transaction-extra { display:none; }
+    #financeTransactions2026Table .data-table th:nth-child(5), #financeTransactions2026Table .data-table td:nth-child(5) { width:13%; }
+    #financeTransactions2026Table .data-table th:nth-child(10), #financeTransactions2026Table .data-table td:nth-child(10) { width:10%; }
+    #financeTransactions2026Table .transaction-balance-help { margin:8px 0 12px; font-size:.82rem; color:#555b63; }
     #financeTransactions2026Table .transaction-row-number { position:sticky; left:0; z-index:3; min-width:58px; width:58px; color:#555b63; background:#eef0f2 !important; border-right:2px solid #c9cdd2; text-align:center; font-weight:900; }
     #financeTransactions2026Table thead .transaction-row-number { z-index:7; color:#fff; background:#303238 !important; }
     #financeTransactions2026Table .transaction-picking .transaction-pick-cell { position:sticky; left:0; z-index:4; min-width:52px; width:52px; background:#fff; text-align:center; border-right:1px solid #c9cdd2; }
@@ -1786,22 +1792,38 @@
     async function appendSheetRow(spreadsheetId, sheetName, values) {
       const range = `'${sheetName.replace(/'/g, "''")}'!A:Q`;
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-      return writePortalSheetRequest(url,{
+      const result = await writePortalSheetRequest(url,{
         method:'POST',
         headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
         body:JSON.stringify({range,majorDimension:'ROWS',values:[values]})
       },'Added a workbook row',sheetName,1);
+      if (spreadsheetId === FINANCE_SPREADSHEET_ID && sheetName === 'Transactions-2026') await restoreAppendedTransactionBalances(result);
+      return result;
     }
 
     async function appendSheetRows(spreadsheetId, sheetName, values) {
       if (!values.length) return null;
       const range = `'${sheetName.replace(/'/g, "''")}'!A:Q`;
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-      return writePortalSheetRequest(url,{
+      const result = await writePortalSheetRequest(url,{
         method:'POST',
         headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
         body:JSON.stringify({range,majorDimension:'ROWS',values})
       },'Added workbook rows',sheetName,values.length);
+      if (spreadsheetId === FINANCE_SPREADSHEET_ID && sheetName === 'Transactions-2026') await restoreAppendedTransactionBalances(result);
+      return result;
+    }
+
+    async function restoreAppendedTransactionBalances(result) {
+      const updated = result?.updates?.updatedRange || '';
+      const match = updated.match(/!A(\d+):[A-Z]+(\d+)$/);
+      if (!match) throw new Error('Could not identify newly added transaction rows.');
+      const updates = [];
+      for (let row = Number(match[1]); row <= Number(match[2]); row += 1) {
+        updates.push({range:`'Transactions-2026'!K${row}`,value:`=IF($A${row}="","",'Control-2026'!$E$30+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"<>PayPal")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer Out")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Pending at Chase",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Pending at Chase",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer Out"))`});
+        updates.push({range:`'Transactions-2026'!L${row}`,value:`=IF($A${row}="","",K${row}+SUMIFS($J$322:$J${row},$O$322:$O${row},"No",$N$322:$N${row},"<>PayPal")+SUMIFS($J$322:$J${row},$O$322:$O${row},"No",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"No",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer Out"))`});
+      }
+      await updateSheetRanges(FINANCE_SPREADSHEET_ID,updates);
     }
 
     async function updateSheetRanges(spreadsheetId, updates) {
@@ -2078,7 +2100,8 @@
       const editMode = Boolean(editOptions && tableEditModes[targetId]);
       const editButton = editOptions ? `<button class="dashboard-edit-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? (isTransaction2026 ? 'Close Editor' : 'Done Editing') : 'Edit Data'}</button>` : '';
       const newTransactionButton = targetId === 'financeTransactions2026Table' ? `<button class="new-transaction-btn" data-new-transaction="true">＋ New Transaction</button>` : '';
-      const toolbar = `<div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search this list</span><input class="table-search" type="search" data-table-search="${targetId}" placeholder="Search by name, order number, price, item, status, or date…" autocomplete="off"></label><div class="table-tool-actions">${newTransactionButton}${editButton}</div></div><div class="table-search-count" data-search-count="${targetId}"></div>`;
+      const detailButton = isTransaction2026 ? '<button class="dashboard-edit-btn" type="button" data-transaction-details>Show month, year & notes</button>' : '';
+      const toolbar = `<div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search this list</span><input class="table-search" type="search" data-table-search="${targetId}" placeholder="Search by name, order number, price, item, status, or date…" autocomplete="off"></label><div class="table-tool-actions">${detailButton}${newTransactionButton}${editButton}</div></div><div class="table-search-count" data-search-count="${targetId}"></div>${isTransaction2026 ? '<p class="transaction-balance-help"><strong>Chase balance</strong> includes transfers Chase shows as pending. <strong>With outstanding</strong> also includes money recorded here that has not reached Chase.</p>' : ''}`;
       const isBudgetTable = targetId === 'bftBudgetTable';
       const isMarketplaceTable = targetId.startsWith('market');
       const tableClass = targetId === 'bftDonationsTable' ? 'data-table tracking-table' : (isTicketLedger ? 'data-table ticket-ledger-table' : (isBudgetTable ? 'data-table budget-table' : (isMarketplaceTable ? 'data-table marketplace-table' : 'data-table')));
@@ -2094,7 +2117,7 @@
       if (!Number.isFinite(ticketPrice) || ticketPrice <= 0) ticketPrice = 20;
       const ticketPriceBar = isTicketLedger ? `<div class="ticket-price-bar"><strong>Ticket Cost</strong><span class="ticket-price-value" data-ticket-price="true" data-value="${ticketPrice}" ${editMode ? 'contenteditable="true" spellcheck="false"' : ''}>${money(ticketPrice)}</span></div>` : '';
       const editHelp = editMode ? (isTransaction2026 ? '<div class="edit-help" role="status"><strong>Check the box next to the row you want to edit.</strong> Only the checked transaction will open. Confirm its row number and description before saving.</div>' : '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>') : '';
-      target.innerHTML = `${toolbar}${editHelp}${ticketPriceBar}<div class="table-wrap"><table class="${tableClass}${isTransaction2026 && editMode ? ' transaction-picking' : ''}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${isTransaction2026 && editMode ? '<th class="transaction-pick-cell">Edit</th>' : ''}${isTransaction2026 ? '<th class="transaction-row-number">Row</th>' : ''}${finalHeaders.map(header => `<th>${esc(header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
+      target.innerHTML = `${toolbar}${editHelp}${ticketPriceBar}<div class="table-wrap"><table class="${tableClass}${isTransaction2026 && editMode ? ' transaction-picking' : ''}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${isTransaction2026 && editMode ? '<th class="transaction-pick-cell">Edit</th>' : ''}${isTransaction2026 ? '<th class="transaction-row-number">Row</th>' : ''}${finalHeaders.map((header,index) => `<th class="${isTransaction2026 && [1,2,16].includes(index) ? 'transaction-extra' : ''}">${esc(isTransaction2026 && index === 10 ? 'Chase balance' : isTransaction2026 && index === 11 ? 'With outstanding' : header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
         const labels = item.row.map(value => String(value).trim().toLowerCase());
         const isSubtotal = labels.some(value => value.includes('subtotal'));
         const isTotal = !isSubtotal && labels.some(value => value === 'total' || value.endsWith(' total') || value.includes('total with locks'));
@@ -2127,11 +2150,16 @@
           const numericValue = Number(String(shownValue).replace(/[$,%(),]/g, '').replace(/\s/g, '')) * (String(shownValue).includes('(') ? -1 : 1);
           const varianceClass = targetId === 'financeBaselineTable' && headerName.includes('variance') && Number.isFinite(numericValue) ? (numericValue < 0 ? 'variance-over' : 'variance-good') : '';
           const baseClass = editable ? 'editable-cell' : (editMode && formulaValue.startsWith('=') ? 'formula-cell' : '');
-          return `<td class="${[baseClass,varianceClass].filter(Boolean).join(' ')}" ${targetId === 'financeTallyTable' ? `data-label="${esc(finalHeaders[columnIndex] || `Column ${columnIndex + 1}`)}"` : ''} ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${sourceRowNumber}" data-column="${columnIndex}" data-value="${esc(shownValue)}"` : ''}>${esc(shownValue)}</td>`;
+          return `<td class="${[baseClass,varianceClass,isTransaction2026 && [1,2,16].includes(columnIndex) ? 'transaction-extra' : ''].filter(Boolean).join(' ')}" ${targetId === 'financeTallyTable' ? `data-label="${esc(finalHeaders[columnIndex] || `Column ${columnIndex + 1}`)}"` : ''} ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${sourceRowNumber}" data-column="${columnIndex}" data-value="${esc(shownValue)}"` : ''}>${esc(shownValue)}</td>`;
         }).join('')}</tr>`;
       }).join('')}</tbody></table></div>`;
       status.textContent = `${indexedData.length} row${indexedData.length === 1 ? '' : 's'} loaded from Google Sheets${editOptions ? (editMode ? ' — edit mode is on.' : ' — view mode.') : '.'}`;
       const toggleButton = target.querySelector('[data-toggle-edit]');
+      const detailToggle = target.querySelector('[data-transaction-details]');
+      if (detailToggle) detailToggle.addEventListener('click', () => {
+        const showing = target.querySelector('.data-table').classList.toggle('show-transaction-details');
+        detailToggle.textContent = showing ? 'Hide month, year & notes' : 'Show month, year & notes';
+      });
       if (toggleButton) toggleButton.addEventListener('click', () => isTransaction2026 ? toggleTransactionVerticalEditing(targetId) : toggleTableEditing(targetId, toggleButton));
       const newTransaction = target.querySelector('[data-new-transaction="true"]');
       if (newTransaction) newTransaction.addEventListener('click', () => openNewTransactionForm(targetId, finalHeaders));
