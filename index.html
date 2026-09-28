@@ -1954,8 +1954,33 @@
       return Number.isFinite(number) ? number.toLocaleString('en-US', {style:'currency', currency:'USD'}) : value || '—';
     }
 
-    function renderBftDashboard(rows) {
+    function summarizeBftInKind(rows) {
+      const normalize = value => String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+      const headerRowIndex = rows.findIndex(row => row.some(value => normalize(value) === 'donation type'));
+      if (headerRowIndex < 0) return null;
+      const headers = rows[headerRowIndex].map(normalize);
+      const typeIndex = headers.indexOf('donation type');
+      const estimateIndex = headers.indexOf('estimated value ($)');
+      const quantityIndex = headers.findIndex(header => ['qty','quantity','number of items','item quantity'].includes(header));
+      if (typeIndex < 0 || estimateIndex < 0) return null;
+      let totalValue = 0;
+      let totalItems = 0;
+      let records = 0;
+      rows.slice(headerRowIndex + 1).forEach(row => {
+        if (!row.some(value => String(value || '').trim())) return;
+        if (!/^in[ -]?kind(?: item)?$/i.test(String(row[typeIndex] || '').trim())) return;
+        const estimatedValue = Number(String(row[estimateIndex] || '').replace(/[$,]/g, ''));
+        const quantity = quantityIndex < 0 ? 1 : Number(String(row[quantityIndex] || '').replace(/,/g, ''));
+        totalValue += Number.isFinite(estimatedValue) ? estimatedValue : 0;
+        totalItems += Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
+        records += 1;
+      });
+      return { totalValue, totalItems, records };
+    }
+
+    function renderBftDashboard(rows, donationRows = bftDonationRows) {
       bftDashboardRows = rows;
+      bftDonationRows = donationRows || [];
       const get = label => {
         const wanted = label.replace(/\s+/g, ' ').trim().toLowerCase();
         for (const sourceRow of rows) {
@@ -1980,12 +2005,18 @@
       };
       const progressTowardGoal = get('Progress Toward Goal:');
       const ticketsSoldPercent = get('% of Tickets Sold:');
+      const inKind = summarizeBftInKind(bftDonationRows);
+      const inKindValue = inKind ? money(inKind.totalValue) : get('Total Estimated Value:');
+      const inKindItems = inKind ? String(inKind.totalItems) : get('Total Number of Donated Items:');
+      const inKindNote = inKind
+        ? `Live from Tracking Tab · ${inKind.records} in-kind record${inKind.records === 1 ? '' : 's'} · excluded from cash raised.`
+        : 'Tracking Tab totals are unavailable; showing the workbook summary.';
       document.getElementById('bftMetrics').innerHTML = '';
       document.getElementById('bftDashboardTable').innerHTML = `
         <div class="dashboard-action-bar"><button class="dashboard-edit-btn ${bftDashboardEditMode ? 'active' : ''}" id="bftDashboardEditToggle" aria-pressed="${bftDashboardEditMode}">${bftDashboardEditMode ? 'Done Editing' : 'Edit Dashboard'}</button></div>
         ${bftDashboardEditMode ? '<div class="edit-help">Edit mode is on. Manual-entry fields can be changed here. Calculated fields update from the Ticket Control Ledger and Tracking Tab.</div>' : ''}
         <div class="bft-dashboard">
-          <h2 class="bft-dashboard-title">Bikes for Tykes Charity Concert — Financial Dashboard</h2>
+          <h2 class="bft-dashboard-title">Bikes for Tykes Charity Concert — Cash &amp; In-Kind Dashboard</h2>
           <div class="bft-dashboard-grid">
             <div class="bft-dashboard-column">
               <section class="finance-box"><h3>Projected Payout</h3><div class="finance-box-body">
@@ -1996,19 +2027,20 @@
               </div></section>
               <section class="finance-box"><h3>Progress Toward Goal</h3><div class="finance-box-body">
                 ${row('Goal Amount:', get('Goal Amount:'), false, {row:10,column:2})}
-                ${row('Total Raised So Far:', get('Total Raised So Far:'))}
+                ${row('Cash Raised So Far:', get('Total Raised So Far:'))}
                 ${row('Remaining to Goal:', get('Remaining to Goal:'))}
                 ${row('Progress Toward Goal:', progressTowardGoal, true)}
                 <div class="dashboard-progress"><span style="width:${percent(progressTowardGoal)}%"></span></div>
                 ${row('Goal Status:', get('Goal Status:'), true)}
               </div></section>
               <section class="finance-box"><h3>In-Kind Support</h3><div class="finance-box-body">
-                ${row('Total Estimated Value:', get('Total Estimated Value:'))}
+                ${row('Total Estimated Value:', inKindValue)}
                 <div class="finance-spacer"></div>
-                ${row('Total Number of Donated Items:', get('Total Number of Donated Items:'))}
+                ${row('Total Number of Donated Items:', inKindItems)}
                 <div class="finance-spacer"></div>
                 ${row('Receipts Issued (Yes):', get('Receipts Issued (Yes):'))}
                 ${row('Receipts Pending:', get('Receipts Pending:'))}
+                <p class="bft-donation-help" style="margin:12px 0 0">${esc(inKindNote)}</p>
               </div></section>
               <section class="finance-box"><h3>Official Payout Record</h3><div class="finance-box-body">
                 ${row('Final Bikes for Tykes Payout Amount:', get('Final Bikes for Tykes Payout Amount:'), true)}
@@ -2021,12 +2053,13 @@
               </div></section>
             </div>
             <div class="bft-dashboard-column">
-              <section class="finance-box"><h3>Funds Raised Overview</h3><div class="finance-box-body">
+              <section class="finance-box"><h3>Cash Raised Overview</h3><div class="finance-box-body">
                 ${row('Ticket Sales (Gross):', get('Ticket Sales (Gross):'))}
                 ${row('Donations (Net of Processing Fees):', get('Donations (Net of Processing Fees):'))}
                 ${row('Total Raised (Ticket Sales + Donations):', get('Total Raised (Ticket Sales + Donations):'))}
                 ${row('Less Fees & Expenses:', get('Less Fees & Expenses:'))}
                 ${row('Available for Bikes for Tykes Today:', get('Available for Bikes for Tykes Today:'), true)}
+                <p class="bft-donation-help" style="margin:12px 0 0">Cash only — donated products, services, and gift cards are tracked separately under In-Kind Support.</p>
               </div></section>
               <section class="finance-box"><h3>Ticket Sales Performance</h3><div class="finance-box-body">
                 ${row('Max Tickets Available:', get('Max Tickets Available:'), false, {row:13,column:5})}
@@ -2066,7 +2099,7 @@
       if (!bftDashboardEditMode) {
         bftDashboardEditMode = true;
         bftDashboardPendingEdits.clear();
-        renderBftDashboard(bftDashboardRows);
+        renderBftDashboard(bftDashboardRows, bftDonationRows);
         return;
       }
       const button = document.getElementById('bftDashboardEditToggle');
@@ -2102,6 +2135,7 @@
     let financeReconciliationCount = null;
     let bftDashboardEditMode = false;
     let bftDashboardRows = [];
+    let bftDonationRows = [];
     const bftDashboardPendingEdits = new Map();
 
     function applyMarketplaceOrdersPipelineFilter(stage) {
@@ -3056,10 +3090,11 @@
           getSheetValues("'Instructions & Legend'!A1:C100", BFT_SPREADSHEET_ID)
       ]);
       const [dashboardResult, ticketResult, donationResult, financeResult, budgetResult, instructionResult] = results;
+      const donationRows = donationResult.status === 'fulfilled' ? donationResult.value : [];
       if (dashboardResult.status === 'fulfilled') {
         const dashboardRows = dashboardResult.value;
-        renderBftDashboard(dashboardRows);
-        document.getElementById('bftDashboardStatus').textContent = 'Financial dashboard connected to Google Sheets.';
+        renderBftDashboard(dashboardRows, donationRows);
+        document.getElementById('bftDashboardStatus').textContent = 'Cash and in-kind dashboard connected to Google Sheets.';
       } else {
         document.getElementById('bftDashboardStatus').textContent = 'DashBoard could not be loaded from Google Sheets.';
       }
