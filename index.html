@@ -2290,7 +2290,7 @@
             const isDate = field.header === 'Date Received';
             const isMoney = /^(Amount \(\$\)|Estimated Value \(\$\)|Gross Amount|Fee|Net Amount)$/.test(field.header);
             const value = isDate ? transactionDateForInput(original) : isMoney ? original.replace(/[$,]/g,'').replace(/^\((.*)\)$/,'-$1') : original;
-            const selectOptions = /^(Receipt Requested \(Yes\/No\)|Send Receipt \(YES\))$/.test(field.header) ? ['','Yes','No'] : field.header === 'Donation Type' ? ['','In-Kind','Cash','PayPal','Other'] : [];
+            const selectOptions = /^(Receipt Requested \(Yes\/No\)|Send Receipt \(YES\))$/.test(field.header) ? ['','Yes','No'] : field.header === 'Donation Type' ? ['','In-Kind','Cash','PayPal','Check'] : [];
             if (original && selectOptions.length && !selectOptions.includes(original)) selectOptions.push(original);
             const control = selectOptions.length ? `<select id="editBftField${field.column}" name="column${field.column}" data-original="${esc(value)}">${selectOptions.map(option=>`<option value="${esc(option)}" ${option===value?'selected':''}>${esc(option || '—')}</option>`).join('')}</select>` : `<input id="editBftField${field.column}" name="column${field.column}" type="${isDate?'date':'text'}" value="${esc(value)}" data-original="${esc(value)}" autocomplete="off">`;
             return `<div class="transaction-field"><label for="editBftField${field.column}">${esc(field.header)}</label>${control}</div>`;
