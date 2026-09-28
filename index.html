@@ -710,6 +710,14 @@
     #bftDonationsTable .tracking-table th:nth-child(4),#bftDonationsTable .tracking-table td:nth-child(4) { position:sticky; left:415px; z-index:3; background:#fff; min-width:190px; width:190px; box-shadow:2px 0 0 #d8d8da; }
     #bftDonationsTable .tracking-table thead th:nth-child(-n+4) { z-index:7; background:#111113; }
     #bftDonationsTable .tracking-table .total-row td:nth-child(-n+4) { background:#f3f3f4; }
+    #bftDonationsTable .tracking-table.tracking-picking th:nth-child(1),#bftDonationsTable .tracking-table.tracking-picking td:nth-child(1) { position:sticky; left:0; z-index:4; min-width:52px; width:52px; background:#fff; text-align:center; }
+    #bftDonationsTable .tracking-table.tracking-picking th:nth-child(2),#bftDonationsTable .tracking-table.tracking-picking td:nth-child(2) { position:sticky; left:52px; z-index:3; min-width:125px; width:125px; background:#fff; }
+    #bftDonationsTable .tracking-table.tracking-picking th:nth-child(3),#bftDonationsTable .tracking-table.tracking-picking td:nth-child(3) { position:sticky; left:177px; z-index:3; min-width:125px; width:125px; background:#fff; }
+    #bftDonationsTable .tracking-table.tracking-picking th:nth-child(4),#bftDonationsTable .tracking-table.tracking-picking td:nth-child(4) { position:sticky; left:302px; z-index:3; min-width:165px; width:165px; background:#fff; }
+    #bftDonationsTable .tracking-table.tracking-picking th:nth-child(5),#bftDonationsTable .tracking-table.tracking-picking td:nth-child(5) { position:sticky; left:467px; z-index:3; min-width:190px; width:190px; background:#fff; box-shadow:2px 0 0 #d8d8da; }
+    #bftDonationsTable .tracking-table.tracking-picking thead th:nth-child(-n+5) { z-index:8; background:#111113; }
+    #bftDonationsTable .tracking-table.tracking-picking .transaction-selected td:nth-child(-n+5) { background:#fff1f3; }
+    #bftDonationsTable .tracking-table.tracking-picking input[type="checkbox"] { width:20px; height:20px; accent-color:#c8102e; cursor:pointer; }
     .tracking-table { width: max-content; min-width: 2550px; table-layout: fixed; }
     .tracking-table th, .tracking-table td { min-width: 115px; white-space: normal; overflow-wrap: anywhere; }
     .tracking-table th:nth-child(1), .tracking-table td:nth-child(1) { min-width: 105px; width: 105px; }
@@ -2125,7 +2133,7 @@
       const displayColumns = isBftTracking ? [8,0,1,2,...Array.from({length:width},(_,i)=>i).filter(i=>![8,0,1,2].includes(i))] : Array.from({length:width},(_,i)=>i);
       const finalHeaders = displayColumns.map(i => headers[i] || '');
       const editMode = Boolean(editOptions && tableEditModes[targetId]);
-      const editButton = editOptions ? `<button class="dashboard-edit-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? (isTransaction2026 ? 'Close Editor' : 'Done Editing') : 'Edit Data'}</button>` : '';
+      const editButton = editOptions ? `<button class="dashboard-edit-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? (isTransaction2026 || isBftTracking ? 'Close Editor' : 'Done Editing') : 'Edit Data'}</button>` : '';
       const newTransactionButton = targetId === 'financeTransactions2026Table' ? `<button class="new-transaction-btn" data-new-transaction="true">＋ New Transaction</button>` : (isBftTracking ? `<button class="new-transaction-btn" data-new-bft-donation="true">＋ New Donation</button>` : '');
       const detailButton = isTransaction2026 ? '<button class="dashboard-edit-btn" type="button" data-transaction-details>Show month, year & notes</button>' : '';
       const toolbar = `<div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search this list</span><input class="table-search" type="search" data-table-search="${targetId}" placeholder="Search by name, order number, price, item, status, or date…" autocomplete="off"></label><div class="table-tool-actions">${detailButton}${newTransactionButton}${editButton}</div></div><div class="table-search-count" data-search-count="${targetId}"></div>${isTransaction2026 ? '<p class="transaction-balance-help"><strong>Chase balance</strong> includes transfers Chase shows as pending. <strong>With outstanding</strong> also includes money recorded here that has not reached Chase.</p>' : ''}`;
@@ -2143,8 +2151,8 @@
       }
       if (!Number.isFinite(ticketPrice) || ticketPrice <= 0) ticketPrice = 20;
       const ticketPriceBar = isTicketLedger ? `<div class="ticket-price-bar"><strong>Ticket Cost</strong><span class="ticket-price-value" data-ticket-price="true" data-value="${ticketPrice}" ${editMode ? 'contenteditable="true" spellcheck="false"' : ''}>${money(ticketPrice)}</span></div>` : '';
-      const editHelp = editMode ? (isTransaction2026 ? '<div class="edit-help" role="status"><strong>Check the box next to the row you want to edit.</strong> Only the checked transaction will open. Confirm its row number and description before saving.</div>' : '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>') : '';
-      target.innerHTML = `${toolbar}${editHelp}${ticketPriceBar}<div class="table-wrap"><table class="${tableClass}${isTransaction2026 && editMode ? ' transaction-picking' : ''}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${isTransaction2026 && editMode ? '<th class="transaction-pick-cell">Edit</th>' : ''}${isTransaction2026 ? '<th class="transaction-row-number">Row</th>' : ''}${finalHeaders.map((header,index) => `<th class="${isTransaction2026 && [1,2,16].includes(index) ? 'transaction-extra' : ''}">${esc(isTransaction2026 && index === 10 ? 'Chase balance' : isTransaction2026 && index === 11 ? 'With outstanding' : header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
+      const editHelp = editMode ? (isTransaction2026 || isBftTracking ? '<div class="edit-help" role="status"><strong>Check the box next to the row you want to edit.</strong> Only the checked row will open. Confirm its Donation ID and donor before saving.</div>' : '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>') : '';
+      target.innerHTML = `${toolbar}${editHelp}${ticketPriceBar}<div class="table-wrap"><table class="${tableClass}${isTransaction2026 && editMode ? ' transaction-picking' : isBftTracking && editMode ? ' tracking-picking' : ''}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${(isTransaction2026 || isBftTracking) && editMode ? '<th class="transaction-pick-cell">Edit</th>' : ''}${isTransaction2026 ? '<th class="transaction-row-number">Row</th>' : ''}${finalHeaders.map((header,index) => `<th class="${isTransaction2026 && [1,2,16].includes(index) ? 'transaction-extra' : ''}">${esc(isTransaction2026 && index === 10 ? 'Chase balance' : isTransaction2026 && index === 11 ? 'With outstanding' : header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
         const labels = item.row.map(value => String(value).trim().toLowerCase());
         const isSubtotal = labels.some(value => value.includes('subtotal'));
         const isTotal = !isSubtotal && labels.some(value => value === 'total' || value.endsWith(' total') || value.includes('total with locks'));
@@ -2157,7 +2165,7 @@
         const isMarketPending = isMarketplaceTable && labels.some(value => value.includes('pending') || value.includes('cash due'));
         const isMarketReady = isMarketplaceTable && labels.some(value => value === 'ready' || value === 'yes');
         const sourceRowNumber = item.sourceIndex + 1 + Number((editOptions && editOptions.rowOffset) || 0);
-        const rowClasses = [isTotal ? 'total-row' : '', isSubtotal ? 'subtotal-row' : '', isBudgetSection ? 'budget-section-row' : '', isBudgetSubhead ? 'budget-subhead-row' : '', isGrandTotal ? 'grand-total-row' : '', isNeverVisited ? 'never-visited' : '', isPlanned ? 'planned-row' : '', isMarketPaid ? 'market-paid' : '', isMarketPending ? 'market-pending' : '', isMarketReady ? 'market-ready' : '', isTransaction2026 && editMode ? 'transaction-selectable' : ''].filter(Boolean).join(' ');
+        const rowClasses = [isTotal ? 'total-row' : '', isSubtotal ? 'subtotal-row' : '', isBudgetSection ? 'budget-section-row' : '', isBudgetSubhead ? 'budget-subhead-row' : '', isGrandTotal ? 'grand-total-row' : '', isNeverVisited ? 'never-visited' : '', isPlanned ? 'planned-row' : '', isMarketPaid ? 'market-paid' : '', isMarketPending ? 'market-pending' : '', isMarketReady ? 'market-ready' : '', (isTransaction2026 || isBftTracking) && editMode ? 'transaction-selectable' : ''].filter(Boolean).join(' ');
         const orderId = targetId === 'marketOrdersTable' ? String(item.row[1] || '') : '';
         const isOrder = targetId === 'marketOrdersTable';
         const paymentDue = /pending|cash due/i.test(String(item.row[12] || ''));
@@ -2165,10 +2173,10 @@
         const readyForPickup = /^(true|yes|1)$/i.test(String(item.row[14] || '').trim());
         const orderHandedOut = /^(true|yes|1)$/i.test(String(item.row[15] || '').trim());
         const orderStages = [paymentDue?'payment':'',(!sentToVendor&&!orderHandedOut)?'unsent':'',(sentToVendor&&!readyForPickup&&!orderHandedOut)?'vendor':'',(readyForPickup&&!orderHandedOut)?'pickup':'',orderHandedOut?'complete':''].filter(Boolean).join(' ');
-        return `<tr class="${rowClasses}" ${isTransaction2026 ? `data-transaction-row="${sourceRowNumber}" data-source-index="${item.sourceIndex}"` : ''} ${isOrder ? `data-market-stages="${orderStages}" data-market-order-id="${esc(orderId)}"` : ''}>${isTransaction2026 && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-transaction aria-label="Edit row ${sourceRowNumber}: ${esc(String(item.row[headers.findIndex(header => /^description$/i.test(String(header || '').trim()))] || 'Transaction'))}"></td>` : ''}${isTransaction2026 ? `<td class="transaction-row-number" data-label="Row">${sourceRowNumber}</td>` : ''}${finalHeaders.map((_, columnIndex) => {
+        return `<tr class="${rowClasses}" ${isTransaction2026 || isBftTracking ? `data-transaction-row="${sourceRowNumber}" data-source-index="${item.sourceIndex}"` : ''} ${isOrder ? `data-market-stages="${orderStages}" data-market-order-id="${esc(orderId)}"` : ''}>${isTransaction2026 && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-transaction aria-label="Edit row ${sourceRowNumber}: ${esc(String(item.row[headers.findIndex(header => /^description$/i.test(String(header || '').trim()))] || 'Transaction'))}"></td>` : ''}${isBftTracking && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-bft-row aria-label="Edit ${esc(String(item.row[0] || `row ${sourceRowNumber}`))}: ${esc(String(item.row[1] || 'Donation'))}"></td>` : ''}${isTransaction2026 ? `<td class="transaction-row-number" data-label="Row">${sourceRowNumber}</td>` : ''}${finalHeaders.map((_, columnIndex) => {
           const sourceColumnIndex = displayColumns[columnIndex];
           const formulaValue = editOptions && editOptions.formulaRows && editOptions.formulaRows[item.sourceIndex] ? String(editOptions.formulaRows[item.sourceIndex][sourceColumnIndex] || '') : '';
-          const editable = editMode && !isTransaction2026 && !formulaValue.startsWith('=');
+          const editable = editMode && !isTransaction2026 && !isBftTracking && !formulaValue.startsWith('=');
           let shownValue = item.row[sourceColumnIndex] || '';
           if (isTicketLedger && columnIndex === ticketGroupStart + 2) {
             const quantity = Number(String(item.row[ticketGroupStart + 1] || '').replace(/[$,]/g, ''));
@@ -2188,7 +2196,7 @@
         const showing = target.querySelector('.data-table').classList.toggle('show-transaction-details');
         detailToggle.textContent = showing ? 'Hide month, year & notes' : 'Show month, year & notes';
       });
-      if (toggleButton) toggleButton.addEventListener('click', () => isTransaction2026 ? toggleTransactionVerticalEditing(targetId) : toggleTableEditing(targetId, toggleButton));
+      if (toggleButton) toggleButton.addEventListener('click', () => isTransaction2026 || isBftTracking ? toggleTransactionVerticalEditing(targetId) : toggleTableEditing(targetId, toggleButton));
       const newTransaction = target.querySelector('[data-new-transaction="true"]');
       if (newTransaction) newTransaction.addEventListener('click', () => openNewTransactionForm(targetId, finalHeaders));
       const newDonation = target.querySelector('[data-new-bft-donation]');
@@ -2203,6 +2211,17 @@
         target.querySelectorAll('[data-pick-transaction]').forEach(other => { if (other !== checkbox) other.checked = false; });
         const item = indexedData.find(candidate => candidate.sourceIndex === Number(row.dataset.sourceIndex));
         if (item) openTransactionEditForm(targetId,finalHeaders,item.row,Number(row.dataset.transactionRow),row);
+      }));
+      if (isBftTracking && editMode) target.querySelectorAll('[data-pick-bft-row]').forEach(checkbox => checkbox.addEventListener('change', () => {
+        const row = checkbox.closest('[data-transaction-row]');
+        if (!checkbox.checked) {
+          target.querySelector('.transaction-edit-entry')?.remove();
+          row.classList.remove('transaction-selected');
+          return;
+        }
+        target.querySelectorAll('[data-pick-bft-row]').forEach(other => { if (other !== checkbox) other.checked = false; });
+        const item = indexedData.find(candidate => candidate.sourceIndex === Number(row.dataset.sourceIndex));
+        if (item) openBftDonationEditForm(targetId,headers,item.row,Number(row.dataset.transactionRow),row);
       }));
       const searchInput = target.querySelector('[data-table-search]');
       const searchCount = target.querySelector('[data-search-count]');
@@ -2243,6 +2262,74 @@
         target.querySelectorAll('td[data-edit-cell="true"]').forEach(cell => recalculateTicketRow(targetId, cell));
       });
       if (targetId === 'marketOrdersTable' && target.dataset.marketPipelineStage) applyMarketplaceOrdersPipelineFilter(target.dataset.marketPipelineStage);
+    }
+
+    function openBftDonationEditForm(targetId,headers,rowValues,rowNumber,selectedRow) {
+      const target = document.getElementById(targetId);
+      target.querySelector('.transaction-entry:not(.transaction-edit-entry)')?.remove();
+      target.querySelector('.transaction-edit-entry')?.remove();
+      target.querySelectorAll('.transaction-selected').forEach(row => row.classList.remove('transaction-selected'));
+      selectedRow.classList.add('transaction-selected');
+      const id = String(rowValues[0] || '').trim();
+      const order = ['Date Received','Donor Name','Donor Contact Info','Email','Donation Item / Description','Donation Type','Amount ($)','Estimated Value ($)','Donation Category','Notes','Coordinators Name','Receipt Requested (Yes/No)','Send Receipt (YES)','Receipt Status','Receipt Number','Receipt Sent Date & Time','Gross Amount','Fee','Net Amount','Message'];
+      const fields = headers.map((header,column) => ({header:String(header || '').trim(),column})).filter(field => field.header && field.column !== 0).sort((a,b) => {
+        const ai=order.indexOf(a.header),bi=order.indexOf(b.header);
+        return (ai<0?999:ai)-(bi<0?999:bi);
+      });
+      const panel = document.createElement('section');
+      panel.className = 'transaction-entry transaction-edit-entry';
+      panel.innerHTML = `<div class="transaction-entry-head"><div><h3>Edit ${esc(id || 'Donation')} · ${esc(String(rowValues[1] || 'Unknown donor'))}</h3><small>Sheet row ${rowNumber}. Only the fields you change will be saved.</small></div><button class="transaction-entry-close" type="button" aria-label="Close donation editor">✕ Close</button></div>
+        <form class="transaction-entry-form">
+          ${fields.map(field => {
+            const original = String(rowValues[field.column] ?? '');
+            const isDate = field.header === 'Date Received';
+            const isMoney = /^(Amount \(\$\)|Estimated Value \(\$\)|Gross Amount|Fee|Net Amount)$/.test(field.header);
+            const value = isDate ? transactionDateForInput(original) : isMoney ? original.replace(/[$,]/g,'').replace(/^\((.*)\)$/,'-$1') : original;
+            const selectOptions = /^(Receipt Requested \(Yes\/No\)|Send Receipt \(YES\))$/.test(field.header) ? ['','Yes','No'] : field.header === 'Donation Type' ? ['','In-Kind','Cash','PayPal','Other'] : [];
+            if (original && selectOptions.length && !selectOptions.includes(original)) selectOptions.push(original);
+            const control = selectOptions.length ? `<select id="editBftField${field.column}" name="column${field.column}" data-original="${esc(value)}">${selectOptions.map(option=>`<option value="${esc(option)}" ${option===value?'selected':''}>${esc(option || '—')}</option>`).join('')}</select>` : `<input id="editBftField${field.column}" name="column${field.column}" type="${isDate?'date':'text'}" value="${esc(value)}" data-original="${esc(value)}" autocomplete="off">`;
+            return `<div class="transaction-field"><label for="editBftField${field.column}">${esc(field.header)}</label>${control}</div>`;
+          }).join('')}
+          <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Save Changes</button></div>
+        </form>`;
+      target.querySelector('.table-tools').insertAdjacentElement('afterend',panel);
+      const close = () => {panel.remove();selectedRow.classList.remove('transaction-selected');selectedRow.querySelector('[data-pick-bft-row]').checked=false;};
+      panel.querySelector('.transaction-entry-close').addEventListener('click',close);
+      panel.querySelector('.transaction-cancel').addEventListener('click',close);
+      panel.querySelector('form').addEventListener('submit',async event => {
+        event.preventDefault();
+        const updates = fields.map(field => {
+          const input=panel.querySelector(`[name="column${field.column}"]`);
+          const value=input.value.trim();
+          if (value === input.dataset.original) return null;
+          return {range:`'Tracking Tab'!${columnNumberToLetters(field.column+1)}${rowNumber}`,value,column:field.column};
+        }).filter(Boolean);
+        if (!updates.length) { close(); return; }
+        const save=panel.querySelector('.transaction-save');
+        save.disabled=true;save.textContent='Saving…';
+        try {
+          const identity=await getSheetValues(`'Tracking Tab'!A${rowNumber}:A${rowNumber}`,BFT_SPREADSHEET_ID);
+          if (String(identity[0]?.[0] || '').trim() !== id) throw new Error('This row moved or changed. Refresh the Tracking Tab and select it again.');
+          await updateSheetRanges(BFT_SPREADSHEET_ID,updates);
+          const first=Math.min(...updates.map(update => update.column));
+          const last=Math.max(...updates.map(update => update.column));
+          const saved=await getSheetValues(`'Tracking Tab'!${columnNumberToLetters(first+1)}${rowNumber}:${columnNumberToLetters(last+1)}${rowNumber}`,BFT_SPREADSHEET_ID);
+          if (!saved.length || updates.some(update => {
+            const actual=String(saved[0][update.column-first] ?? '').trim();
+            const expected=String(update.value).trim();
+            if (actual===expected) return false;
+            if (/^-?[\d,.]+$/.test(expected) && Number(actual.replace(/[$,]/g,''))===Number(expected.replace(/,/g,''))) return false;
+            return transactionDateForInput(actual)!==transactionDateForInput(expected);
+          })) throw new Error('The saved values did not match. Refresh the tab to check before trying again.');
+          tableEditModes[targetId]=false;
+          await loadBftData();
+          document.getElementById('bftDonationsStatus').textContent=`${id} saved successfully.`;
+        } catch(error) {
+          save.disabled=false;save.textContent='Save Changes';
+          alert(`Changes could not be confirmed. Your entries are still in the form. ${error.message || 'Please try again.'}`);
+        }
+      });
+      panel.scrollIntoView({behavior:'smooth',block:'start'});
     }
 
     function openNewBftDonationForm(targetId, headers, rows) {
