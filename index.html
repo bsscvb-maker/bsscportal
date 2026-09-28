@@ -1182,7 +1182,7 @@
             <div class="sponsor-tabs" aria-label="Finance sections">
               <button class="sponsor-tab active" data-finance-tab="dashboard">Dashboard</button>
               <button class="sponsor-tab" data-finance-tab="control">Control-2026</button>
-              <button class="sponsor-tab" data-finance-tab="activity">Activity Summary</button>
+              <button class="sponsor-tab" data-finance-tab="activity">Event Costs</button>
               <button class="sponsor-tab" data-finance-tab="operating">Operating Budget</button>
               <button class="sponsor-tab" data-finance-tab="bft">Bikes for Tykes (BFT)</button>
               <button class="sponsor-tab" data-finance-tab="lineitem">Line-Item Budget</button>
@@ -1199,7 +1199,7 @@
             </div>
             <section class="sponsor-panel active" data-finance-panel="dashboard"><div class="data-status" id="financeDashboardStatus">Loading financial dashboard…</div><div id="financeDashboard"></div></section>
             <section class="sponsor-panel" data-finance-panel="control"><div class="coming-soon"><h2>Control-2026</h2><div class="data-status" id="financeControlStatus">Open this tab to load the control snapshot.</div><div id="financeControlTable"></div></div></section>
-            <section class="sponsor-panel" data-finance-panel="activity"><div class="coming-soon"><h2>Activity Summary</h2><div class="data-status" id="financeActivityStatus">Open this tab to review spending for a particular activity.</div><div id="financeActivitySummary"></div></div></section>
+            <section class="sponsor-panel" data-finance-panel="activity"><div class="coming-soon"><h2>Event Costs</h2><div class="data-status" id="financeActivityStatus">Open this tab to review spending for a particular activity.</div><div id="financeActivitySummary"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="operating"><div class="coming-soon"><h2>Operating Budget</h2><div class="data-status" id="financeOperatingStatus">Open this tab to load the operating budget.</div><div id="financeOperatingTable"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="bft"><div class="coming-soon"><h2>Bikes for Tykes (BFT)</h2><div class="data-status" id="financeBftStatus">Open this tab to load Bikes for Tykes finance.</div><div id="financeBftTable"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="lineitem"><div class="coming-soon"><h2>Line-Item Budget</h2><div class="data-status" id="financeLineItemStatus">Open this tab to load the line-item budget.</div><div id="financeLineItemTable"></div></div></section>
@@ -4136,11 +4136,14 @@
       } finally { financeControlRefreshInFlight = false; }
     },4000);
 
-    function renderFinanceActivity(rows, activities) {
+    function renderFinanceActivity(rows, activities, transactionRows) {
       const at = (r,c) => String((rows[r] && rows[r][c]) || '—').trim();
       const year = at(4,7), activity = at(5,7), remaining = at(8,7);
       const amount = Number(remaining.replace(/[$,()]/g,'').trim()) * (remaining.includes('(') ? -1 : 1);
       const options = [...new Set([activity,...activities].filter(Boolean))];
+      const expenses = transactionRows.slice(1).map((row,index) => ({row,index:index+2})).filter(({row}) => String(row[7] || '').trim().toLowerCase() === activity.toLowerCase() && String(row[12] || '').trim().toLowerCase() === 'expense' && (year === 'All Years' || String(row[0] || '').includes(year)));
+      const money = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n);
+      const amountOf = row => Math.abs(Number(String(row[9] || '').replace(/[^0-9.-]/g,'')) || 0);
       document.getElementById('financeActivitySummary').innerHTML = `<div class="activity-summary-panel"><div class="activity-controls">
         <label for="financeActivityYear">Year</label><select id="financeActivityYear">${['2026','2025','All Years'].map(value => `<option ${value === year ? 'selected' : ''}>${esc(value)}</option>`).join('')}</select>
         <label for="financeActivityName">Activity</label><select id="financeActivityName">${options.map(value => `<option ${value === activity ? 'selected' : ''}>${esc(value)}</option>`).join('')}</select>
@@ -4148,7 +4151,12 @@
         <div class="activity-result"><label for="financeEventBudget"><span>${esc(at(6,6))}</span></label><input id="financeEventBudget" class="activity-budget-input" value="${esc(at(6,7) === '—' ? '' : at(6,7))}" inputmode="decimal" placeholder="$0.00"></div>
         <div class="activity-result"><span>${esc(at(7,6))}</span><strong>${esc(at(7,7))}</strong></div>
         <div class="activity-result ${Number.isFinite(amount) && amount < 0 ? 'bad' : 'good'}"><span>${esc(at(8,6))}</span><strong>${esc(remaining)}</strong></div>
-      </div><div class="activity-budget-actions"><button class="activity-save-btn" id="financeSaveEventBudget">Save Event Budget</button></div></div>`;
+      </div><div class="activity-result" style="margin-top:12px"><span>Selected event costs</span><strong id="selectedEventCost">${money(expenses.reduce((sum,item) => sum+amountOf(item.row),0))}</strong></div>
+      <details style="margin-top:16px"><summary style="cursor:pointer;font-weight:900">View ${expenses.length} expense items · choose what counts</summary><p>Uncheck an item to exclude it from the selected cost. The transaction and budget remain unchanged.</p>
+      ${expenses.map(item => `<label style="display:flex;gap:12px;align-items:center;padding:9px;border-bottom:1px solid #ddd"><input type="checkbox" class="event-cost-check" data-index="${item.index}" checked><span style="flex:1">${esc(item.row[0] || '')} · ${esc(item.row[3] || 'Expense')}<small style="display:block">${esc(item.row[6] || '')} · ${esc(item.row[8] || '')}</small></span><strong>${money(amountOf(item.row))}</strong></label>`).join('') || '<p>No expenses found for this event and year.</p>'}</details><div class="activity-budget-actions"><button class="activity-save-btn" id="financeSaveEventBudget">Save Event Budget</button></div></div>`;
+      document.querySelectorAll('.event-cost-check').forEach(box => box.addEventListener('change', () => {
+        document.getElementById('selectedEventCost').textContent = money(expenses.reduce((sum,item) => sum+(document.querySelector('.event-cost-check[data-index="'+item.index+'"]').checked ? amountOf(item.row) : 0),0));
+      }));
       const setDisabled = disabled => ['financeActivityYear','financeActivityName','financeEventBudget','financeSaveEventBudget'].forEach(id => document.getElementById(id).disabled = disabled);
       document.getElementById('financeActivityYear').addEventListener('change',async event => {
         setDisabled(true);
@@ -4179,11 +4187,11 @@
 
     async function loadFinanceActivity() {
       try {
-        const [rows,eventRows] = await Promise.all([getSheetValues("'Control-2026'!A1:H30",FINANCE_SPREADSHEET_ID),getSheetValues("'Event Budgets'!A1:F100",FINANCE_SPREADSHEET_ID)]);
+        const [rows,eventRows,transactionRows] = await Promise.all([getSheetValues("'Control-2026'!A1:H30",FINANCE_SPREADSHEET_ID),getSheetValues("'Event Budgets'!A1:F100",FINANCE_SPREADSHEET_ID),getSheetValues("'Transactions-2026'!A1:O3000",FINANCE_SPREADSHEET_ID)]);
         const activities = eventRows.slice(3).map(row => String(row[1] || row[0] || '').trim()).filter(Boolean);
-        renderFinanceActivity(rows,activities);
+        renderFinanceActivity(rows,activities,transactionRows);
         loadedFinanceTabs.add('activity');
-      } catch (error) { document.getElementById('financeActivityStatus').textContent = 'Activity Summary could not load from Google Sheets.'; }
+      } catch (error) { document.getElementById('financeActivityStatus').textContent = 'Event Costs could not load from Google Sheets.'; }
     }
 
     function renderFinanceBft(rows, formulas) {
