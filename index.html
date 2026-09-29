@@ -310,6 +310,10 @@
     .data-table tbody tr:hover td { background: #fff6f7; }
     .data-table tr:last-child td { border-bottom: 0; }
     .data-table tr.total-row td { font-weight: 900; border-top: 2px solid var(--gold); background: #f7f7f8; }
+    #membershipContent .lifer-row-number { width: 58px; min-width: 58px; text-align: center; color: #5b6069; font-variant-numeric: tabular-nums; }
+    #membershipStatus.lifer-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; margin: 8px 0 14px; color: #21242a; }
+    .lifer-summary-item { display: inline-flex; align-items: baseline; gap: 7px; padding: 6px 10px; background: #f5f6f7; border: 1px solid #e0e2e5; border-radius: 6px; }
+    .lifer-summary-item strong { font-size: 1rem; }
     .data-table td.editable-cell { cursor: pointer; background: #fff1f3; outline: 1px dashed var(--gold); outline-offset: -2px; }
     .data-table td.editable-cell:hover { outline: 2px solid var(--gold); outline-offset: -2px; background: #ffe2e7; }
     .data-table td[contenteditable="true"] { min-width: 90px; }
@@ -2215,6 +2219,7 @@
       const isTicketLedger = targetId === 'bftTicketsTable';
       const isBftTracking = targetId === 'bftDonationsTable';
       const isTransaction2026 = targetId === 'financeTransactions2026Table';
+      const isLifer = targetId === 'membershipContent' && currentMembershipSheet === 'Lifer';
       const headers = rows[headerRowIndex].slice(0, maxColumns);
       const ticketGroupStart = isTicketLedger ? headers.findIndex(value => String(value || '').trim().toLowerCase() === 'tickets on hold') : -1;
       if (isTicketLedger && ticketGroupStart >= 0 && rows[headerRowIndex + 1]) {
@@ -2252,7 +2257,7 @@
       if (!Number.isFinite(ticketPrice) || ticketPrice <= 0) ticketPrice = 20;
       const ticketPriceBar = isTicketLedger ? `<div class="ticket-price-bar"><strong>Ticket Cost</strong><span class="ticket-price-value" data-ticket-price="true" data-value="${ticketPrice}" ${editMode ? 'contenteditable="true" spellcheck="false"' : ''}>${money(ticketPrice)}</span></div>` : '';
       const editHelp = editMode ? (isTransaction2026 || isBftTracking ? '<div class="edit-help" role="status"><strong>Check the box next to the row you want to edit.</strong> Only the checked row will open. Confirm its row number and description before saving.</div>' : '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>') : '';
-      target.innerHTML = `${toolbar}${editHelp}${ticketPriceBar}<div class="table-wrap"><table class="${tableClass}${isTransaction2026 && editMode ? ' transaction-picking' : isBftTracking && editMode ? ' tracking-picking' : ''}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${(isTransaction2026 || isBftTracking) && editMode ? '<th class="transaction-pick-cell">Edit</th>' : ''}${isTransaction2026 ? '<th class="transaction-row-number">Row</th>' : ''}${finalHeaders.map((header,index) => `<th class="${isTransaction2026 && [1,2,16].includes(index) ? 'transaction-extra' : ''}">${esc(isTransaction2026 && index === 10 ? 'Chase balance' : isTransaction2026 && index === 11 ? 'With outstanding' : header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
+      target.innerHTML = `${toolbar}${editHelp}${ticketPriceBar}<div class="table-wrap"><table class="${tableClass}${isTransaction2026 && editMode ? ' transaction-picking' : isBftTracking && editMode ? ' tracking-picking' : ''}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${(isTransaction2026 || isBftTracking) && editMode ? '<th class="transaction-pick-cell">Edit</th>' : ''}${isTransaction2026 ? '<th class="transaction-row-number">Row</th>' : ''}${isLifer ? '<th class="lifer-row-number">Row</th>' : ''}${finalHeaders.map((header,index) => `<th class="${isTransaction2026 && [1,2,16].includes(index) ? 'transaction-extra' : ''}">${esc(isTransaction2026 && index === 10 ? 'Chase balance' : isTransaction2026 && index === 11 ? 'With outstanding' : header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map(item => {
         const labels = item.row.map(value => String(value).trim().toLowerCase());
         const isSubtotal = labels.some(value => value.includes('subtotal'));
         const isTotal = !isSubtotal && labels.some(value => value === 'total' || value.endsWith(' total') || value.includes('total with locks'));
@@ -2273,7 +2278,7 @@
         const readyForPickup = /^(true|yes|1)$/i.test(String(item.row[14] || '').trim());
         const orderHandedOut = /^(true|yes|1)$/i.test(String(item.row[15] || '').trim());
         const orderStages = [paymentDue?'payment':'',(!sentToVendor&&!orderHandedOut)?'unsent':'',(sentToVendor&&!readyForPickup&&!orderHandedOut)?'vendor':'',(readyForPickup&&!orderHandedOut)?'pickup':'',orderHandedOut?'complete':''].filter(Boolean).join(' ');
-        return `<tr class="${rowClasses}" ${isTransaction2026 || isBftTracking ? `data-transaction-row="${sourceRowNumber}" data-source-index="${item.sourceIndex}"` : ''} ${isOrder ? `data-market-stages="${orderStages}" data-market-order-id="${esc(orderId)}"` : ''}>${isTransaction2026 && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-transaction aria-label="Edit row ${sourceRowNumber}: ${esc(String(item.row[headers.findIndex(header => /^description$/i.test(String(header || '').trim()))] || 'Transaction'))}"></td>` : ''}${isBftTracking && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-bft-row aria-label="Edit ${esc(String(item.row[0] || `row ${sourceRowNumber}`))}: ${esc(String(item.row[1] || 'Donation'))}"></td>` : ''}${isTransaction2026 ? `<td class="transaction-row-number" data-label="Row">${sourceRowNumber}</td>` : ''}${finalHeaders.map((_, columnIndex) => {
+        return `<tr class="${rowClasses}" ${isTransaction2026 || isBftTracking ? `data-transaction-row="${sourceRowNumber}" data-source-index="${item.sourceIndex}"` : ''} ${isOrder ? `data-market-stages="${orderStages}" data-market-order-id="${esc(orderId)}"` : ''}>${isTransaction2026 && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-transaction aria-label="Edit row ${sourceRowNumber}: ${esc(String(item.row[headers.findIndex(header => /^description$/i.test(String(header || '').trim()))] || 'Transaction'))}"></td>` : ''}${isBftTracking && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-bft-row aria-label="Edit ${esc(String(item.row[0] || `row ${sourceRowNumber}`))}: ${esc(String(item.row[1] || 'Donation'))}"></td>` : ''}${isTransaction2026 ? `<td class="transaction-row-number" data-label="Row">${sourceRowNumber}</td>` : ''}${isLifer ? `<td class="lifer-row-number" data-label="Row">${sourceRowNumber}</td>` : ''}${finalHeaders.map((_, columnIndex) => {
           const sourceColumnIndex = displayColumns[columnIndex];
           const formulaValue = editOptions && editOptions.formulaRows && editOptions.formulaRows[item.sourceIndex] ? String(editOptions.formulaRows[item.sourceIndex][sourceColumnIndex] || '') : '';
           const editable = editMode && !isTransaction2026 && !isBftTracking && !formulaValue.startsWith('=');
@@ -2290,6 +2295,11 @@
         }).join('')}</tr>`;
       }).join('')}</tbody></table></div>`;
       status.textContent = `${indexedData.length} row${indexedData.length === 1 ? '' : 's'} loaded from Google Sheets${editOptions ? (editMode ? ' — edit mode is on.' : ' — view mode.') : '.'}`;
+      if (isLifer) {
+        const summary = rows.slice(1).filter(row => /^(Active|Deceased|Inactive Lifer|Grand Total)$/i.test(String(row[9] || '').trim()));
+        status.classList.add('lifer-summary');
+        status.innerHTML = summary.map(row => `<span class="lifer-summary-item"><span>${esc(row[9])}</span><strong>${esc(row[10] || '0')}</strong></span>`).join('');
+      }
       const toggleButton = target.querySelector('[data-toggle-edit]');
       target.querySelector('[data-export-table]')?.addEventListener('click', () => exportVisibleTable(targetId));
       const detailToggle = target.querySelector('[data-transaction-details]');
@@ -5174,6 +5184,7 @@
       currentMembershipSheet = sheetName;
       const status = document.getElementById('membershipStatus');
       const target = document.getElementById('membershipContent');
+      status.classList.remove('lifer-summary');
       status.textContent = `Loading ${sheetName} from Google Sheets…`;
       target.innerHTML = '<div class="empty-state">Loading membership records…</div>';
       try {
@@ -5192,7 +5203,7 @@
         }
         else {
           const editOptions = config.editable ? {sheetName,spreadsheetId:MEMBERSHIP_SPREADSHEET_ID,formulaRows:formulasOrRoster} : null;
-          renderDataTable('membershipContent','membershipStatus',rows,0,config.columns,editOptions);
+          renderDataTable('membershipContent','membershipStatus',rows,0,sheetName === 'Lifer' ? 8 : config.columns,editOptions);
           if (sheetName === '2026-Attendance') addAttendanceEntryLauncher(rows);
           if (!config.editable) {
             target.insertAdjacentHTML('afterbegin',`<div class="membership-system-note"><strong>Protected ${esc(config.group)} section.</strong> This view stays connected to Google Sheets, but portal editing is disabled to protect formulas, automation feeds, and historical records.</div>`);
