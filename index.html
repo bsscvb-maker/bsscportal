@@ -1380,7 +1380,7 @@
     document.getElementById('googleSignIn').addEventListener('click', () => {
       document.getElementById('authError').textContent = '';
       if (!tokenClient) return document.getElementById('authError').textContent = 'Google sign-in is still loading. Try again in a moment.';
-      tokenClient.requestAccessToken({prompt: ''});
+      tokenClient.requestAccessToken({prompt: 'consent'});
     });
 
     document.getElementById('signOut').addEventListener('click', () => {
