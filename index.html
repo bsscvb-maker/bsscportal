@@ -345,6 +345,19 @@
     .finance-box { border: 1px solid #2d2d30; background: white; }
     .finance-box h3 { margin: 0; padding: 7px 10px; color: white; background: #111113; border-bottom: 3px solid var(--gold); font-size: 1rem; }
     .finance-box-body { padding: 12px 10px; }
+    .bft-expense-toggle { margin:10px 0 2px; border:1px solid #c8102e; border-radius:7px; background:#fff; color:#a90c26; padding:8px 12px; font-weight:800; cursor:pointer; }
+    .bft-expense-toggle:hover,.bft-expense-toggle:focus-visible { background:#fce8ec; }
+    .bft-expense-dialog { width:min(820px,calc(100vw - 24px)); max-height:85vh; overflow:auto; border:0; border-radius:14px; padding:22px; box-shadow:0 20px 70px #0008; }
+    .bft-expense-dialog::backdrop { background:#0009; }
+    .bft-expense-dialog-header { display:flex; align-items:start; justify-content:space-between; gap:16px; }
+    .bft-expense-dialog h3 { margin:0 0 5px; }
+    .bft-expense-dialog-header button { border:0; border-radius:7px; padding:7px 11px; background:#222; color:white; cursor:pointer; }
+    .bft-expense-dialog p { margin:0 0 15px; color:#555; }
+    .bft-expense-scroll { overflow-x:auto; }
+    .bft-expense-table { width:100%; border-collapse:collapse; min-width:580px; }
+    .bft-expense-table th,.bft-expense-table td { padding:9px 8px; border-bottom:1px solid #ddd; text-align:left; }
+    .bft-expense-table th:last-child,.bft-expense-table td:last-child { text-align:right; white-space:nowrap; }
+    .bft-expense-table tfoot th { border-top:2px solid #222; font-size:1.05rem; }
     .finance-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: baseline; min-height: 25px; }
     .finance-row span:first-child { min-width: 0; }
     .finance-row strong { white-space: nowrap; text-align: right; }
@@ -2099,10 +2112,12 @@
                 ${row('Merchandise / Event Costs:', get('Merchandise / Event Costs:'))}
                 <div class="finance-spacer"></div>
                 ${row('Event Expenses:', get('Event Expenses:'), true)}
+                <button type="button" class="bft-expense-toggle" id="bftExpenseDetailsButton" aria-haspopup="dialog">View expense details ▾</button>
               </div></section>
             </div>
           </div>
         </div>`;
+      document.getElementById('bftExpenseDetailsButton').addEventListener('click', showBftExpenseDetails);
       document.getElementById('bftDashboardEditToggle').addEventListener('click', toggleBftDashboardEditing);
       document.querySelectorAll('[data-dashboard-edit="true"]').forEach(field => field.addEventListener('input', () => {
         const key = `${field.dataset.row}:${field.dataset.column}`;
@@ -2115,6 +2130,24 @@
           field.classList.add('pending-change');
         }
       }));
+    }
+
+    function showBftExpenseDetails() {
+      const expenses = bftDonationRows.slice(3).filter(row => String(row[7] || '').trim().toLowerCase() === 'event expenses');
+      const amount = row => Math.abs(Number(String(row[5] || '').replace(/[$,\\s]/g, '')) || 0);
+      const total = expenses.reduce((sum, item) => sum + amount(item), 0);
+      const listed = expenses.length
+        ? `<div class="bft-expense-scroll"><table class="bft-expense-table"><thead><tr><th>Date</th><th>Expense</th><th>Vendor</th><th>Amount</th></tr></thead><tbody>${expenses.map(item => `<tr><td>${esc(item[8] || '—')}</td><td>${esc(item[4] || '—')}</td><td>${esc(item[1] || '—')}</td><td>${esc(money(amount(item)))}</td></tr>`).join('')}</tbody><tfoot><tr><th colspan="3">Total event expenses</th><th>${esc(money(total))}</th></tr></tfoot></table></div>`
+        : '<p>No Event Expenses entries were found in the Tracking Tab.</p>';
+      const dialog = document.createElement('dialog');
+      dialog.className = 'bft-expense-dialog';
+      dialog.setAttribute('aria-label', 'Bikes for Tykes expense details');
+      dialog.innerHTML = `<div class="bft-expense-dialog-header"><div><h3>Expenses &amp; Fees details</h3><p>Event expense entries from the Tracking Tab that make up the dashboard total.</p></div><button type="button" aria-label="Close expense details">Close</button></div>${listed}`;
+      document.body.appendChild(dialog);
+      dialog.querySelector('button').addEventListener('click', () => dialog.close());
+      dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
+      dialog.addEventListener('close', () => dialog.remove(), {once:true});
+      dialog.showModal();
     }
 
     async function toggleBftDashboardEditing() {
