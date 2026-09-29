@@ -2134,7 +2134,7 @@
 
     function showBftExpenseDetails() {
       const expenses = bftDonationRows.slice(3).filter(row => String(row[7] || '').trim().toLowerCase() === 'event expenses');
-      const amount = row => Math.abs(Number(String(row[5] || '').replace(/[$,\\s]/g, '')) || 0);
+      const amount = row => Math.abs(Number(String(row[5] || '').replace(/[$,\s]/g, '')) || 0);
       const total = expenses.reduce((sum, item) => sum + amount(item), 0);
       const listed = expenses.length
         ? `<div class="bft-expense-scroll"><table class="bft-expense-table"><thead><tr><th>Date</th><th>Expense</th><th>Vendor</th><th>Amount</th></tr></thead><tbody>${expenses.map(item => `<tr><td>${esc(item[8] || '—')}</td><td>${esc(item[4] || '—')}</td><td>${esc(item[1] || '—')}</td><td>${esc(money(amount(item)))}</td></tr>`).join('')}</tbody><tfoot><tr><th colspan="3">Total event expenses</th><th>${esc(money(total))}</th></tr></tfoot></table></div>`
