@@ -1420,7 +1420,14 @@
           document.getElementById('authError').textContent = 'Your Google access expired. Sign in again to reconnect the workbooks.';
           throw new Error('Google access expired (401). Sign in again.');
         }
-        if (response.status !== 429 || attempt === 3) throw new Error(`Google Sheets returned ${response.status}`);
+        if (response.status !== 429 || attempt === 3) {
+          let detail = '';
+          try {
+            const payload = await response.json();
+            detail = payload?.error?.message || payload?.error?.status || '';
+          } catch (error) {}
+          throw new Error(`Google Sheets returned ${response.status}${detail ? ': ' + detail : ''}`);
+        }
         const retrySeconds = Number(response.headers.get('Retry-After'));
         const delay = Number.isFinite(retrySeconds) && retrySeconds > 0
           ? Math.min(retrySeconds * 1000, 15000) : (1000 * 2 ** attempt + Math.random() * 400);
