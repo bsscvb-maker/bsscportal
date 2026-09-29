@@ -1302,6 +1302,7 @@
     let portalHealthTimer = null;
     let portalHealthCheckRunning = false;
     let portalConnectionStates = [];
+    let portalConnectionErrors = [];
     let portalHealthInitialCheckComplete = false;
     let portalHealthCursor = 0;
     let easternClockTimer = null;
@@ -1412,6 +1413,13 @@
       for (let attempt = 0; attempt < 4; attempt++) {
         const response = await fetch(url, {headers:{Authorization:`Bearer ${accessToken}`}});
         if (response.ok) return response.json();
+        if (response.status === 401) {
+          accessToken = '';
+          clearSession();
+          document.getElementById('authGate').classList.remove('hidden');
+          document.getElementById('authError').textContent = 'Your Google access expired. Sign in again to reconnect the workbooks.';
+          throw new Error('Google access expired (401). Sign in again.');
+        }
         if (response.status !== 429 || attempt === 3) throw new Error(`Google Sheets returned ${response.status}`);
         const retrySeconds = Number(response.headers.get('Retry-After'));
         const delay = Number.isFinite(retrySeconds) && retrySeconds > 0
@@ -5386,15 +5394,15 @@
           badge.setAttribute('aria-label', `${card.querySelector('h2')?.textContent || key}: ${label}`);
         }
         if (button) {
-          button.disabled = unavailable;
-          button.setAttribute('aria-disabled',String(unavailable));
-          button.textContent = unavailable ? 'Unavailable' : (key === 'admin' ? 'Open administration' : 'Open module');
+          button.disabled = false;
+          button.setAttribute('aria-disabled','false');
+          button.textContent = key === 'admin' ? 'Open administration' : 'Open module';
           button.title = ready ? 'Workbook connection verified' : (unavailable ? 'This module is unavailable until its workbook connection returns.' : 'Connection check in progress; you can still open the module.');
         }
         const nav = document.querySelector(`[data-module="${key}"]`);
         if (nav) {
-          nav.disabled = unavailable;
-          nav.setAttribute('aria-disabled',String(unavailable));
+          nav.disabled = false;
+          nav.setAttribute('aria-disabled','false');
           nav.title = ready ? `${card.querySelector('h2')?.textContent || key} is ready` : (unavailable ? `${card.querySelector('h2')?.textContent || key} is unavailable` : `${card.querySelector('h2')?.textContent || key} is being checked`);
         }
       });
@@ -5425,7 +5433,7 @@
           const state = portalConnectionStates[index];
           const connectedState = state === 'connected';
           const failedState = state === 'error';
-          const message = connectedState ? 'Google Sheets connection verified' : (failedState ? 'Connection unavailable · retrying automatically' : 'Connecting…');
+          const message = connectedState ? 'Google Sheets connection verified' : (failedState ? `${portalConnectionErrors[index] || 'Connection unavailable'} · retrying automatically` : 'Connecting…');
           const badgeClass = connectedState ? 'live' : (failedState ? 'error' : '');
           const badge = connectedState ? 'Connected' : (failedState ? 'Unavailable' : 'Checking');
           return `<div class="admin-row"><div><strong>${esc(name)}</strong><small>${esc(detail)} · ${message}</small></div><span class="admin-badge ${badgeClass}">${badge}</span></div>`;
@@ -5450,8 +5458,10 @@
           try {
             await getSheetValues(range,spreadsheetId);
             portalConnectionStates[index] = 'connected';
+            portalConnectionErrors[index] = '';
           } catch (error) {
             portalConnectionStates[index] = 'error';
+            portalConnectionErrors[index] = error.message || 'Connection unavailable';
           }
           renderProgress();
         }));
