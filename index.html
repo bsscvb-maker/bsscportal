@@ -2291,7 +2291,15 @@
       });
       else if (editOptions && editOptions.reverseRows) indexedData = indexedData.reverse();
       const width = Math.min(maxColumns, Math.max(headers.length, ...indexedData.map(item => item.row.length)));
-      const displayColumns = isBftTracking ? [8,0,1,2,...Array.from({length:width},(_,i)=>i).filter(i=>![8,0,1,2].includes(i))] : Array.from({length:width},(_,i)=>i);
+      const isRoster2027 = targetId === 'membershipContent' && currentMembershipSheet === '2027';
+      // Keep original sheet indexes so hiding display columns cannot shift edits.
+      const rosterHeader = index => String(headers[index] || '').toLowerCase().replace(/[^a-z0-9]/g,'');
+      const displayColumns = isBftTracking ? [8,0,1,2,...Array.from({length:width},(_,i)=>i).filter(i=>![8,0,1,2].includes(i))] : Array.from({length:width},(_,i)=>i).filter(index => {
+        if (!isRoster2027) return true;
+        const label = rosterHeader(index);
+        if (/^(?:codeofconduct|coc)(?:ref|reference)/.test(label)) return false;
+        return label !== '' || indexedData.some(item => String(item.row[index] ?? '').trim());
+      });
       const finalHeaders = displayColumns.map(i => headers[i] || '');
       const editMode = Boolean(editOptions && tableEditModes[targetId]);
       const editButton = editOptions ? `<button class="dashboard-edit-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? (isTransaction2026 || isBftTracking ? 'Close Editor' : 'Done Editing') : 'Edit Data'}</button>` : '';
