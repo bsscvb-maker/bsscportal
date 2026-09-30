@@ -1809,11 +1809,12 @@
       const status = document.getElementById('operationsOverviewStatus');
       const freshness = document.getElementById('operationsOverviewFreshness');
       if (!target) return;
-      const [finance,membership,bft,marketplace,roster] = results;
+      const [finance,membership,bft,marketplace,roster,control] = results;
       const card = (label,value,note = '') => `<article class="operations-kpi"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong>${note ? `<small>${esc(note)}</small>` : ''}</article>`;
       const fundBalance = value => String(value ?? '—').replace(/[▲▼△▽↑↓⬆⬇↗↘🔺🔻\uFE0E\uFE0F]/gu,'').trim() || '—';
       const rowsOrEmpty = item => item.status === 'fulfilled' ? item.value : [];
       const financeRows = rowsOrEmpty(finance);
+      const impactRows = control ? rowsOrEmpty(control) : [];
       const membershipRows = rowsOrEmpty(membership);
       const bftRows = rowsOrEmpty(bft);
       const marketRows = rowsOrEmpty(marketplace);
@@ -1832,7 +1833,7 @@
       const cards = [
         membershipCard,
         `<article class="operations-kpi"><span>Cash on Hand</span><strong>${esc(String(financeRows[6]?.[1] || '—'))}</strong><div class="operations-fund-breakdown"><div>Bikes for Tykes <b>${esc(fundBalance(financeRows[11]?.[5]))}</b></div><div>General Fund <b>${esc(fundBalance(financeRows[11]?.[1]))}</b></div></div></article>`,
-        card('Lifetime Community Impact',String(financeRows[6]?.[5] || '')),
+        `<article class="operations-kpi"><span>Lifetime Community Impact</span><strong>${esc(String(financeRows[6]?.[5] || '—'))}</strong><div class="operations-fund-breakdown"><div>2025 Full Year <b>${esc(fundBalance(impactRows[25]?.[4]))}</b></div><div>2026 Year to Date <b>${esc(fundBalance(impactRows[27]?.[1]))}</b></div></div></article>`,
         card('Bikes for Tykes Raised to Date · 2026',bftRaised,bftGoal ? `${bftProgress || 'Progress not shown'} of ${bftGoal} goal` : 'Bikes for Tykes · Dashboard'),
         card('Marketplace Cash to Collect',marketplaceDue || '$0.00')
       ];
@@ -1856,7 +1857,8 @@
           getSheetValues("'Dashboard 2026'!A1:Z80",MEMBERSHIP_SPREADSHEET_ID),
           getSheetValues("'DashBoard'!A1:G40",BFT_SPREADSHEET_ID),
           getSheetValues("'Dashboard'!A1:V22",MARKETPLACE_SPREADSHEET_ID),
-          getSheetValues("'2026'!A1:AH855",MEMBERSHIP_SPREADSHEET_ID)
+          getSheetValues("'2026'!A1:AH855",MEMBERSHIP_SPREADSHEET_ID),
+          getSheetValues("'Control-2026'!A1:H33",FINANCE_SPREADSHEET_ID)
         ]);
         renderOperationsOverview(results);
       } catch (error) {
