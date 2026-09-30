@@ -816,9 +816,11 @@
     .operations-kpi small { display:block; margin-top:5px; color:#68707a; font-size:.75rem; line-height:1.35; }
     .operations-membership-breakdown { display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:8px; color:#414a55; font-size:.85rem; line-height:1.35; }
     .operations-membership-breakdown b { color:#111113; font-size:1rem; }
-    #operationsOverviewCards .operations-kpi:nth-child(n+3) { text-align:center; }
+    #operationsOverviewCards .operations-kpi { text-align:center; }
+    .operations-membership-breakdown { justify-content:center; }
+    .operations-fund-breakdown div { justify-content:center; }
     .operations-fund-breakdown { display:grid; gap:6px; margin-top:10px; color:#414a55; font-size:.85rem; line-height:1.35; }
-    .operations-fund-breakdown div { display:flex; flex-wrap:wrap; justify-content:space-between; gap:3px 8px; }
+    .operations-fund-breakdown div { display:flex; flex-wrap:wrap; justify-content:center; gap:3px 8px; }
     .operations-fund-breakdown b { color:#111113; }
     .operations-membership-breakdown small { flex-basis:100%; margin-top:1px; }
     .operations-lower { display:block; margin-top:12px; }
@@ -1091,7 +1093,7 @@
               <article class="operations-kpi"><span>Membership</span><strong>—</strong><small>Sign in to load the latest count.</small></article>
               <article class="operations-kpi"><span>Cash on Hand</span><strong>—</strong></article>
               <article class="operations-kpi"><span>Lifetime Community Impact</span><strong>—</strong></article>
-              <article class="operations-kpi"><span>Bikes for Tykes</span><strong>—</strong><small>Fundraising progress</small></article>
+              <article class="operations-kpi"><span>Bikes for Tykes Raised to Date · 2026</span><strong>—</strong><small>Fundraising progress</small></article>
               <article class="operations-kpi"><span>Marketplace Cash to Collect</span><strong>—</strong></article>
             </div>
             <div class="operations-lower">
@@ -1831,7 +1833,7 @@
         membershipCard,
         `<article class="operations-kpi"><span>Cash on Hand</span><strong>${esc(String(financeRows[6]?.[1] || '—'))}</strong><div class="operations-fund-breakdown"><div>Bikes for Tykes <b>${esc(fundBalance(financeRows[11]?.[5]))}</b></div><div>General Fund <b>${esc(fundBalance(financeRows[11]?.[1]))}</b></div></div></article>`,
         card('Lifetime Community Impact',String(financeRows[6]?.[5] || '')),
-        card('Bikes for Tykes Raised',bftRaised,bftGoal ? `${bftProgress || 'Progress not shown'} of ${bftGoal} goal` : 'Bikes for Tykes · Dashboard'),
+        card('Bikes for Tykes Raised to Date · 2026',bftRaised,bftGoal ? `${bftProgress || 'Progress not shown'} of ${bftGoal} goal` : 'Bikes for Tykes · Dashboard'),
         card('Marketplace Cash to Collect',marketplaceDue || '$0.00')
       ];
       target.innerHTML = cards.join('');
