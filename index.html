@@ -1123,6 +1123,7 @@
             <div class="membership-tabs" aria-label="Membership sections">
               <button class="membership-tab" data-membership-sheet="Dashboard 2027">Dashboard 2027</button>
               <button class="membership-tab" data-membership-sheet="2027">2027 Roster</button>
+              <button class="membership-tab" data-membership-sheet="Dues Payments">Dues Payments</button>
               <button class="membership-tab" data-membership-sheet="2027-Attendance">2027 Attendance</button>
               <button class="membership-tab active" data-membership-sheet="Dashboard 2026">Dashboard 2026</button>
               <button class="membership-tab" data-membership-sheet="2026">2026 Roster</button>
@@ -4882,6 +4883,7 @@
       'Past Presidents':{range:"'Past Presidents'!A1:I1000",columns:9,editable:true,group:'Member Lists'},
       'Veterans':{range:"'Veterans'!A1:Z1000",columns:26,editable:true,group:'Member Lists'},
       'Honorary':{range:"'Honorary'!A1:V1000",columns:22,editable:true,group:'Member Lists'},
+      'Dues Payments':{range:"'Dues Payments'!A1:O1000",columns:15,group:'Member Lists'},
       'Future Shakers':{range:"'Future Shakers'!A1:AR600",columns:44,editable:true,group:'Member Lists'},
       'Year Count':{range:"'Year Count'!A1:Z1000",columns:26,editable:true,group:'Member Lists'},
       'Officer List':{range:"'Officer List'!A1:AZ1000",columns:52,editable:true,group:'Member Lists'},
@@ -5325,7 +5327,7 @@
     const MEMBERSHIP_HIDDEN_KEY = 'bssc_membership_hidden_sections';
     const MEMBERSHIP_PINNED_KEY = 'bssc_membership_pinned_sections';
     const MEMBERSHIP_NAMES_KEY = 'bssc_membership_section_names';
-    const defaultMembershipPinned = ['Dashboard 2027','2027','2027-Attendance','Dashboard 2026','2026 Attendance Summary','2026','2026-Attendance','2026 Attendance Dashboard','Officer List','Lifer'];
+    const defaultMembershipPinned = ['Dashboard 2027','2027','Dues Payments','2027-Attendance','Dashboard 2026','2026 Attendance Summary','2026','2026-Attendance','2026 Attendance Dashboard','Officer List','Lifer'];
     const defaultMembershipNames = {'Dashboard 2027':'Dashboard 2027','2027':'2027 Roster','2027-Attendance':'2027 Attendance','Dashboard 2026':'Dashboard 2026','2026 Attendance Summary':'Attendance Summary','2026':'2026 Roster','2026-Attendance':'2026 Attendance','2026 Attendance Dashboard':'2026 Attendance Dashboard','Officer List':'Officer List','Lifer':'Lifers'};
     function membershipSetting(key,fallback) { try { const value = JSON.parse(localStorage.getItem(key) || 'null'); return value ?? fallback; } catch (error) { return fallback; } }
     function membershipDisplayName(name) { return String(membershipSetting(MEMBERSHIP_NAMES_KEY,{})[name] || defaultMembershipNames[name] || name); }
