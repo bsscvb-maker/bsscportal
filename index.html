@@ -2808,6 +2808,48 @@
       panel.querySelector('.transaction-entry-close').addEventListener('click', () => panel.remove());
       panel.querySelector('.transaction-cancel').addEventListener('click', () => panel.remove());
       const fieldByName = Object.fromEntries(fields.map(field => [field.header.toLowerCase(),field]));
+
+      const activityField = fieldByName.activity;
+      if (activityField) {
+        const activityControl = panel.querySelector('[name="column'+activityField.column+'"]');
+        const editor = document.createElement('div');
+        editor.innerHTML = '<button type="button" class="dashboard-edit-btn" data-add-activity>+ Add Activity</button><div data-activity-editor hidden><label for="newFinanceActivity">New activity name</label><input id="newFinanceActivity" type="text" maxlength="150" autocomplete="off"><button type="button" class="dashboard-edit-btn" data-save-activity>Save Activity</button><button type="button" data-cancel-activity>Cancel</button><small data-activity-status role="status" aria-live="polite"></small></div>';
+        activityControl.insertAdjacentElement('afterend',editor);
+        const entry = editor.querySelector('[data-activity-editor]');
+        const input = editor.querySelector('input');
+        const saveActivity = editor.querySelector('[data-save-activity]');
+        const status = editor.querySelector('[data-activity-status]');
+        editor.querySelector('[data-add-activity]').addEventListener('click',() => { entry.hidden=false; input.focus(); });
+        editor.querySelector('[data-cancel-activity]').addEventListener('click',() => { entry.hidden=true; status.textContent=''; });
+        input.addEventListener('keydown',event => { if(event.key==='Enter') { event.preventDefault(); saveActivity.click(); } });
+        saveActivity.addEventListener('click',async () => {
+          const name = input.value.trim();
+          if (!name) { status.textContent='Enter an activity name.'; input.focus(); return; }
+          saveActivity.disabled=true;
+          editor.querySelector('[data-cancel-activity]').disabled=true;
+          status.textContent='Saving activity…';
+          try {
+            const rows = await getSheetValues("'Transaction List'!E1:E",FINANCE_SPREADSHEET_ID);
+            const duplicate = rows.slice(1).map(row => String(row[0] || '').trim()).find(value => value.toLowerCase() === name.toLowerCase());
+            const selected = duplicate || name;
+            if (!duplicate) await updateSheetCell(FINANCE_SPREADSHEET_ID,'Transaction List',Math.max(2,rows.length+1),4,name);
+            financeTransactionOptions.activity = [...new Set([...(financeTransactionOptions.activity || []),selected])].sort((a,b) => a.localeCompare(b));
+            if (activityControl.tagName === 'SELECT' && ![...activityControl.options].some(option => option.value === selected)) activityControl.add(new Option(selected,selected));
+            activityControl.value=selected;
+            activityControl.dispatchEvent(new Event('change',{bubbles:true}));
+            loadedFinanceTabs.delete('transactionlist');
+            loadedFinanceTabs.delete('activity');
+            entry.hidden=true;
+            input.value='';
+            status.textContent='';
+          } catch(error) {
+            status.textContent='Activity could not be saved. '+(error.message || 'Try again.');
+          } finally {
+            saveActivity.disabled=false;
+            editor.querySelector('[data-cancel-activity]').disabled=false;
+          }
+        });
+      }
       const guidedFields = ['fund','activity','category','subcategory'];
       const payeeField = fieldByName['payee/payer'];
       const paymentMethodField = fieldByName['payment method'];
