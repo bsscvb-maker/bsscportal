@@ -1304,6 +1304,7 @@
       </div>
     </main>
   </div>
+  <script src="dues-matching.js?v=1"></script>
   <script>
     const GOOGLE_CLIENT_ID = '881518334290-kimg628u5oriddlrqoq6vb619m8gn13s.apps.googleusercontent.com';
     const SPREADSHEET_ID = '14ZFdT1sA04z6Hp-iVaX2uRNjJq-JBoxmY1mvfL9X-Bk';
@@ -5325,6 +5326,7 @@
           const editOptions = config.editable ? {sheetName,spreadsheetId:MEMBERSHIP_SPREADSHEET_ID,formulaRows:formulasOrRoster} : null;
           renderDataTable('membershipContent','membershipStatus',rows,0,sheetName === 'Lifer' ? 8 : config.columns,editOptions);
           if (sheetName === '2026-Attendance') addAttendanceEntryLauncher(rows);
+          if (sheetName === '2027') await setup2027DuesReview(rows);
           if (!config.editable) {
             target.insertAdjacentHTML('afterbegin',`<div class="membership-system-note"><strong>Protected ${esc(config.group)} section.</strong> This view stays connected to Google Sheets, but portal editing is disabled to protect formulas, automation feeds, and historical records.</div>`);
           }
