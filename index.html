@@ -4913,7 +4913,7 @@
       'Waiver_Phone_Keys_2027':{range:"'Waiver_Phone_Keys_2027'!A1:Z1000",columns:26,group:'System & Automation'},
       'Anniversaries_2026':{range:"'Anniversaries_2026'!A1:Z1000",columns:26,group:'System & Automation'},
       'Anniversaries_2027':{range:"'Anniversaries_2027'!A1:Z1000",columns:26,group:'System & Automation'},
-      '2026 - Non Renewal':{range:"'2026 - Non Renewal'!A1:Z1000",columns:26,group:'System & Automation'},
+      '2026 - Non Renewal':{range:"'2026 - Non Renewal'!A1:AK1000",columns:37,group:'System & Automation'},
       '2025 - Non Renewal':{range:"'2025 - Non Renewal'!A1:Z1000",columns:26,group:'System & Automation'},
       ...Object.fromEntries(['2025','2024','2023','2022','2021','2020','2019','2018','2017','2016','2015','2014','2013','2012','2005'].map(year => [year,{range:`'${year}'!A1:Z1000`,columns:26,group:'Archives'}]))
     };
@@ -5327,6 +5327,9 @@
           renderDataTable('membershipContent','membershipStatus',rows,0,sheetName === 'Lifer' ? 8 : config.columns,editOptions);
           if (sheetName === '2026-Attendance') addAttendanceEntryLauncher(rows);
           if (sheetName === '2027') await setup2027DuesReview(rows);
+          if (sheetName === '2026 - Non Renewal') {
+            target.insertAdjacentHTML('afterbegin','<div class="membership-system-note"><strong>2027 renewal pending.</strong> This list includes people from the 2026 roster who do not yet appear on the 2027 roster. It updates automatically as renewals are submitted. Their existing status is preserved; dues payment is tracked separately.</div>');
+          }
           if (!config.editable) {
             target.insertAdjacentHTML('afterbegin',`<div class="membership-system-note"><strong>Protected ${esc(config.group)} section.</strong> This view stays connected to Google Sheets, but portal editing is disabled to protect formulas, automation feeds, and historical records.</div>`);
           }
