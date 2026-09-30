@@ -816,6 +816,7 @@
     .operations-kpi small { display:block; margin-top:5px; color:#68707a; font-size:.75rem; line-height:1.35; }
     .operations-membership-breakdown { display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:8px; color:#414a55; font-size:.85rem; line-height:1.35; }
     .operations-membership-breakdown b { color:#111113; font-size:1rem; }
+    #operationsOverviewCards .operations-kpi:nth-child(n+3) { text-align:center; }
     .operations-fund-breakdown { display:grid; gap:6px; margin-top:10px; color:#414a55; font-size:.85rem; line-height:1.35; }
     .operations-fund-breakdown div { display:flex; flex-wrap:wrap; justify-content:space-between; gap:3px 8px; }
     .operations-fund-breakdown b { color:#111113; }
@@ -1808,6 +1809,7 @@
       if (!target) return;
       const [finance,membership,bft,marketplace,roster] = results;
       const card = (label,value,note = '') => `<article class="operations-kpi"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong>${note ? `<small>${esc(note)}</small>` : ''}</article>`;
+      const fundBalance = value => String(value ?? '—').replace(/[▲▼△▽↑↓⬆⬇↗↘🔺🔻\uFE0E\uFE0F]/gu,'').trim() || '—';
       const rowsOrEmpty = item => item.status === 'fulfilled' ? item.value : [];
       const financeRows = rowsOrEmpty(finance);
       const membershipRows = rowsOrEmpty(membership);
@@ -1827,7 +1829,7 @@
       const marketplaceDue = String(marketRows[6]?.[16] || '').trim();
       const cards = [
         membershipCard,
-        `<article class="operations-kpi"><span>Cash on Hand</span><strong>${esc(String(financeRows[6]?.[1] || '—'))}</strong><div class="operations-fund-breakdown"><div>Bikes for Tykes <b>${esc(String(financeRows[11]?.[5] || '—'))}</b></div><div>General Fund <b>${esc(String(financeRows[11]?.[1] || '—'))}</b></div></div></article>`,
+        `<article class="operations-kpi"><span>Cash on Hand</span><strong>${esc(String(financeRows[6]?.[1] || '—'))}</strong><div class="operations-fund-breakdown"><div>Bikes for Tykes <b>${esc(fundBalance(financeRows[11]?.[5]))}</b></div><div>General Fund <b>${esc(fundBalance(financeRows[11]?.[1]))}</b></div></div></article>`,
         card('Lifetime Community Impact',String(financeRows[6]?.[5] || '')),
         card('Bikes for Tykes Raised',bftRaised,bftGoal ? `${bftProgress || 'Progress not shown'} of ${bftGoal} goal` : 'Bikes for Tykes · Dashboard'),
         card('Marketplace Cash to Collect',marketplaceDue || '$0.00')
