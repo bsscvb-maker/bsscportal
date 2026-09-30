@@ -4894,6 +4894,7 @@
       '2027 Attendance Summary':{range:"'Dashboard 2027'!A1:P80",columns:16,attendanceSummary:true,group:'Current'},
       '2026 Attendance Summary':{range:"'Dashboard 2026'!A1:P80",columns:16,attendanceSummary:true,group:'Current'},
       '2026-Attendance':{range:"'2026-Attendance'!A1:BM65",columns:65,editable:true,group:'Current'},
+      '2027 Attendance Dashboard':{range:"'2027-Attendance'!A1:BP103",columns:68,attendanceDashboard:true,group:'Current'},
       '2026 Attendance Dashboard':{range:"'2026-Attendance'!A1:BM103",columns:65,attendanceDashboard:true,group:'Current'},
       '2026':{range:"'2026'!A1:AH855",columns:34,editable:true,group:'Current'},
       '2025-A':{range:"'2025-A'!A1:Z1000",columns:26,group:'System & Automation'},
@@ -4904,6 +4905,7 @@
       'Waiver_Phone_Keys_2027':{range:"'Waiver_Phone_Keys_2027'!A1:Z1000",columns:26,group:'System & Automation'},
       'Anniversaries_2026':{range:"'Anniversaries_2026'!A1:Z1000",columns:26,group:'System & Automation'},
       'Anniversaries_2027':{range:"'Anniversaries_2027'!A1:Z1000",columns:26,group:'System & Automation'},
+      '2026 - Non Renewal':{range:"'2026 - Non Renewal'!A1:Z1000",columns:26,group:'System & Automation'},
       '2025 - Non Renewal':{range:"'2025 - Non Renewal'!A1:Z1000",columns:26,group:'System & Automation'},
       ...Object.fromEntries(['2025','2024','2023','2022','2021','2020','2019','2018','2017','2016','2015','2014','2013','2012','2005'].map(year => [year,{range:`'${year}'!A1:Z1000`,columns:26,group:'Archives'}]))
     };
@@ -5186,19 +5188,21 @@
     }
 
 
-    function renderMembershipAttendanceDashboard(rows) {
+    function renderMembershipAttendanceDashboard(rows, year = '2026') {
       const target=document.getElementById('membershipContent'),status=document.getElementById('membershipStatus');
-      const cell=(r,c)=>String((rows[r-1]&&rows[r-1][c-1])??'').trim();
+      const is2027 = year === '2027';
+      const rowMap = {68:64,69:65,70:66,71:67,72:68,73:69,74:70,75:72,76:72,77:73,78:74,80:76,81:77,82:78,83:79,85:81,86:82,95:91};
+      const cell=(r,c)=>{const row=is2027?(rowMap[r]||r):r;const column=is2027&&c===7?5:is2027&&c===10?8:c;return String((rows[row-1]&&rows[row-1][column-1])??'').trim();};
       const num=v=>{const n=Number(String(v||'').replace(/[$,%\s]/g,''));return Number.isFinite(n)?n:0;};
       const fmt=v=>v||'—';
       const events=[];
-      for(let col=10;col<=63;col++){
+      for(let col=is2027?8:10;col<=(is2027?61:63);col++){
         const raw=String((rows[0]||[])[col-1]||'');
         const parts=raw.split('\n').map(v=>v.trim()).filter(Boolean);
         const title=(parts.shift()||'').replaceAll('  ',' ').trim();
         if(!title)continue;
         const e={title,date:parts.join(' '),column:col};
-        [['membersYes',68],['membersNo',69],['attendance',70],['guestOriginal',75],['guests',76],['total',77],['guestExposure',78],['motorcycles',80],['guestMotorcycles',81],['vehicles',82],['guestVehicles',83],['motorcycleDensity',85],['vehicleShare',86]].forEach(item=>e[item[0]]=cell(item[1],col));
+        [['membersYes',68],['membersNo',69],['attendance',70],['guestOriginal',75],['guests',76],['total',77],['guestExposure',78],['motorcycles',80],['guestMotorcycles',81],['vehicles',82],['guestVehicles',83],['motorcycleDensity',85],['vehicleShare',86]].forEach(item=>e[item[0]]=String((rows[(is2027 ? rowMap[item[1]] : item[1])-1]||[])[col-1]??'').trim());
         e.recorded=Boolean(e.membersYes||e.membersNo||e.total);
         events.push(e);
       }
@@ -5207,17 +5211,17 @@
       const peak=[...recorded].sort((a,b)=>num(b.total)-num(a.total))[0];
       const guestPeak=[...recorded].sort((a,b)=>num(b.guests)-num(a.guests))[0];
       const ytd=cell(74,10)||'—',trend=cell(73,10)||'—',firstHalf=cell(71,10)||'—',recentHalf=cell(72,10)||'—';
-      const groups=[['Core',89,98,'#c8102e'],['Lifers',90,99,'#7954b8'],['Remote',91,100,'#287db1'],['Supporting',92,101,'#7b8b99'],['Medical',93,102,'#d27a3b'],['Do Not Contact',94,103,'#9a9da5']];
+      const groups=is2027 ? [['Core',84,93,'#c8102e'],['Legacy',85,94,'#7954b8'],['Low Attendance',86,95,'#d27a3b'],['Remote',87,96,'#287db1'],['Supporting',88,97,'#7b8b99'],['Medical',89,98,'#9a9da5'],['Inactive',90,99,'#555555']] : [['Core',89,98,'#c8102e'],['Lifers',90,99,'#7954b8'],['Remote',91,100,'#287db1'],['Supporting',92,101,'#7b8b99'],['Medical',93,102,'#d27a3b'],['Do Not Contact',94,103,'#9a9da5']];
       let offset=0;
-      const slices=groups.map(g=>{const value=num(cell(g[2],7));const from=offset;offset+=value;return g[3]+' '+from+'% '+offset+'%';}).join(',');
-      const memberLegend=groups.map(g=>'<li><i style="background:'+g[3]+'"></i><span>'+esc(g[0])+'</span><strong>'+esc(cell(g[1],7)||'0')+'</strong><small>'+esc(cell(g[2],7)||'0%')+'</small></li>').join('');
+      const slices=groups.map(g=>{const value=num(String((rows[g[2]-1]||[])[is2027?4:6]??''));const from=offset;offset+=value;return g[3]+' '+from+'% '+offset+'%';}).join(',');
+      const memberLegend=groups.map(g=>'<li><i style="background:'+g[3]+'"></i><span>'+esc(g[0])+'</span><strong>'+esc(String((rows[g[1]-1]||[])[is2027?4:6]??'')||'0')+'</strong><small>'+esc(String((rows[g[2]-1]||[])[is2027?4:6]??'')||'0%')+'</small></li>').join('');
       const trendEvents=recorded.filter(e=>e.attendance).slice(-12);
       const chartW=760,chartH=245,left=44,right=14,top=20,plotH=166,plotW=chartW-left-right;
       const points=trendEvents.map((e,i)=>{const x=left+(trendEvents.length<2?plotW/2:i*plotW/(trendEvents.length-1));const y=top+(100-num(e.attendance))*plotH/100;return {x,y,e};});
       const guides=[0,25,50,75,100].map(p=>{const y=top+(100-p)*plotH/100;return '<g><line x1="'+left+'" y1="'+y+'" x2="'+(chartW-right)+'" y2="'+y+'" stroke="#e8e9ed" stroke-width="1"/><text x="'+(left-9)+'" y="'+(y+4)+'" text-anchor="end" fill="#818796" font-size="11">'+p+'%</text></g>';}).join('');
       const line=points.map(p=>p.x+','+p.y).join(' ');
       const dots=points.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="4.5" fill="#c8102e" stroke="#fff" stroke-width="2"><title>'+esc(p.e.title+' · '+p.e.date+' · '+p.e.attendance)+'</title></circle>').join('');
-      const dates=points.map(p=>'<text x="'+p.x+'" y="211" text-anchor="middle" fill="#707887" font-size="10">'+esc(p.e.date.replace('/2026','').replace('-2026',''))+'</text>').join('');
+      const dates=points.map(p=>'<text x="'+p.x+'" y="211" text-anchor="middle" fill="#707887" font-size="10">'+esc(p.e.date.replace('/'+year,'').replace('-'+year,''))+'</text>').join('');
       const lineChart=points.length?'<svg class="att26-line-chart" viewBox="0 0 '+chartW+' '+chartH+'" role="img" aria-label="Core member attendance for the 12 latest recorded events">'+guides+'<polyline points="'+line+'" fill="none" stroke="#c8102e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>'+dots+dates+'</svg>':'<div class="att26-empty">Event attendance will appear here when recorded.</div>';
       const recentHighlights=recorded.slice(-4).reverse().map(e=>'<div class="att26-recent-item"><span><b>'+esc(e.title)+'</b><small>'+esc(e.date)+'</small></span><strong>'+esc(e.attendance||'—')+'</strong></div>').join('');
       const rideTotals=[['Member motorcycles',sum('motorcycles'),'#c8102e'],['Guest motorcycles',sum('guestMotorcycles'),'#e2a0ad'],['Member vehicles',sum('vehicles'),'#31333a'],['Guest vehicles',sum('guestVehicles'),'#9498a2']];
@@ -5230,7 +5234,7 @@
         if(!e)return '<div class="att26-empty">No event data available.</div>';
         return '<div class="att26-detail-title"><div><span class="att26-kicker">SELECTED EVENT</span><h3>'+esc(e.title)+'</h3><p>'+esc(e.date||'Date not listed')+'</p></div><span class="att26-log-pill '+(e.recorded?'logged':'not-logged')+'">'+(e.recorded?'Attendance logged':'No attendance entered')+'</span></div><div class="att26-detail-primary"><div><span>Core member attendance</span><strong>'+esc(e.attendance||'—')+'</strong></div><div><span>Members marked yes</span><strong>'+esc(e.membersYes||'—')+'</strong></div><div><span>Members marked no</span><strong>'+esc(e.membersNo||'—')+'</strong></div></div><div class="att26-detail-groups"><section><h4>Guests &amp; turnout</h4><div class="att26-detail-grid">'+metric('Guest entries',e.guestOriginal)+metric('Adjusted guests',e.guests)+metric('Total attendance',e.total)+metric('Guest exposure',e.guestExposure)+'</div></section><section><h4>Ride activity</h4><div class="att26-detail-grid">'+metric('Member motorcycles',e.motorcycles)+metric('Guest motorcycles',e.guestMotorcycles)+metric('Member vehicles',e.vehicles)+metric('Guest vehicles',e.guestVehicles)+metric('Motorcycle density',e.motorcycleDensity)+metric('Vehicle share',e.vehicleShare)+'</div></section></div>';
       };
-      target.innerHTML='<div class="att26-dashboard"><header class="att26-hero"><div class="att26-hero-copy"><div class="att26-brandline"><span class="att26-brand-dot"></span>BONESHAKERS SOCIAL CLUB <i>MEMBERSHIP</i></div><span class="att26-kicker">2026 MEMBERSHIP &amp; COMMUNITY ATTENDANCE</span><h2>Attendance, at a glance.</h2><p>Member turnout, guests, and ride activity—together in one clear view.</p></div><div class="att26-hero-score"><span>CORE MEMBER ATTENDANCE</span><strong>'+esc(ytd)+'</strong><div class="att26-trend-chip"><span>First half <b>'+esc(firstHalf)+'</b></span><i></i><span>Recent half <b>'+esc(recentHalf)+'</b></span><b class="att26-flat">'+esc(trend)+'</b></div><small>Workbook-calculated year-to-date average</small></div><div class="att26-calendar-progress"><span>EVENT CALENDAR</span><strong>'+recorded.length+' <small>/ '+events.length+'</small></strong><div><i style="width:'+(events.length?recorded.length/events.length*100:0)+'%"></i></div><small>events with attendance recorded</small></div></header>'+
+      target.innerHTML='<div class="att26-dashboard"><header class="att26-hero"><div class="att26-hero-copy"><div class="att26-brandline"><span class="att26-brand-dot"></span>BONESHAKERS SOCIAL CLUB <i>MEMBERSHIP</i></div><span class="att26-kicker">'+esc(year)+' MEMBERSHIP &amp; COMMUNITY ATTENDANCE</span><h2>Attendance, at a glance.</h2><p>Member turnout, guests, and ride activity—together in one clear view.</p></div><div class="att26-hero-score"><span>CORE MEMBER ATTENDANCE</span><strong>'+esc(ytd)+'</strong><div class="att26-trend-chip"><span>First half <b>'+esc(firstHalf)+'</b></span><i></i><span>Recent half <b>'+esc(recentHalf)+'</b></span><b class="att26-flat">'+esc(trend)+'</b></div><small>Workbook-calculated year-to-date average</small></div><div class="att26-calendar-progress"><span>EVENT CALENDAR</span><strong>'+recorded.length+' <small>/ '+events.length+'</small></strong><div><i style="width:'+(events.length?recorded.length/events.length*100:0)+'%"></i></div><small>events with attendance recorded</small></div></header>'+
         '<section class="att26-overview-grid"><article class="att26-stat-card"><span>Member check-ins</span><strong>'+sum('membersYes')+'</strong><small>Present marks across recorded events</small><i class="att26-card-accent red"></i></article><article class="att26-stat-card"><span>Attendance visits</span><strong>'+sum('total')+'</strong><small>Member and guest visits, not unique people</small><i class="att26-card-accent dark"></i></article><article class="att26-stat-card"><span>Adjusted guests</span><strong>'+sum('guests')+'</strong><small>'+sum('guestOriginal')+' original guest entries</small><i class="att26-card-accent purple"></i></article><article class="att26-stat-card att26-peak-card"><span>Biggest event</span><strong>'+(peak?esc(peak.total):'—')+'</strong><small>'+(peak?esc(peak.title+' · '+peak.date):'No event recorded yet')+'</small><i class="att26-card-accent gold"></i></article></section>'+
         '<div class="att26-main-grid"><section class="att26-panel att26-trend-panel"><div class="att26-panel-heading"><div><span class="att26-kicker">MEMBER PARTICIPATION</span><h3>Attendance rhythm</h3><p>Core attendance percentage · latest recorded events</p></div><div class="att26-halves"><span>First half <b>'+esc(firstHalf)+'</b></span><span>Recent half <b>'+esc(recentHalf)+'</b></span><strong>'+esc(trend)+'</strong></div></div>'+lineChart+'<div class="att26-chart-legend"><i></i> Core member attendance <span>Each point is one event</span></div></section>'+
         '<section class="att26-panel att26-members-panel"><div class="att26-panel-heading"><div><span class="att26-kicker">MEMBERSHIP PROFILE</span><h3>Who makes up the club</h3></div><strong class="att26-member-total">'+esc(cell(95,7)||'—')+'<small>members</small></strong></div><div class="att26-members-content"><div class="att26-donut" style="background:conic-gradient('+slices+')"><div><strong>'+esc(cell(95,7)||'—')+'</strong><small>members</small></div></div><ul class="att26-member-legend">'+memberLegend+'</ul></div></section></div>'+
@@ -5241,7 +5245,7 @@
       const renderDetail=e=>{document.getElementById('att26EventDetail').innerHTML=detailHTML(e);target.querySelectorAll('.att26-event-option').forEach(button=>button.classList.toggle('selected',Number(button.dataset.att26Event)===events.indexOf(e)));};
       target.querySelectorAll('[data-att26-event]').forEach(button=>button.addEventListener('click',()=>renderDetail(events[Number(button.dataset.att26Event)])));
       if(selected){const firstButton=target.querySelector('[data-att26-event="'+events.indexOf(selected)+'"]');if(firstButton)firstButton.classList.add('selected');}
-      status.textContent='2026 attendance dashboard loaded live from rows 66–103 of Google Sheets · '+recorded.length+' events with attendance recorded.';
+      status.textContent=year+' attendance dashboard loaded live from Google Sheets · '+recorded.length+' events with attendance recorded.';
     }
 
     async function addAttendanceEntryLauncher(rows) {
@@ -5304,7 +5308,7 @@
         const [rows,formulasOrRoster = [],officerRows = []] = await Promise.all(reads);
         if (config.dashboard) renderMembershipDashboard(rows,sheetName.replace('Dashboard ',''),formulasOrRoster,officerRows);
         else if (config.attendanceSummary) renderMembershipAttendanceSummary(rows);
-        else if (config.attendanceDashboard) renderMembershipAttendanceDashboard(rows);
+        else if (config.attendanceDashboard) renderMembershipAttendanceDashboard(rows,sheetName.startsWith('2027') ? '2027' : '2026');
         else if (sheetName === 'Officer List') {
           let officerUpdates=[];
           try { officerUpdates=await getSheetValues("'Officer Updates'!A1:E1000",MEMBERSHIP_SPREADSHEET_ID); } catch(error) { /* The updates sheet is created on the first save. */ }
