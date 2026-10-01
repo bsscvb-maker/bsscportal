@@ -1046,6 +1046,9 @@
     .year-count-member-date { color:#66666b; font-size:.78rem; font-variant-numeric:tabular-nums; white-space:nowrap; }
     .year-count-members-list li span { color:#66666b; }
     #membershipContent .year-count-wrap th, #membershipContent .year-count-wrap td { text-align:center; vertical-align:middle; }
+    .bft-finance-summary.bft-finance-simple { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .bft-finance-simple .finance-dashboard-card { text-align:center; }
+    @media(max-width:650px) { .bft-finance-summary.bft-finance-simple { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -4493,24 +4496,42 @@
       } catch (error) { document.getElementById('financeActivityStatus').textContent = 'Event Costs could not load from Google Sheets.'; }
     }
 
-    function renderFinanceBft(rows, formulas) {
-      const at = (r,c) => String((rows[r] && rows[r][c]) || '—').trim();
-      const summary = (label,value,cls='') => `<div class="finance-dashboard-card ${cls}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
+
+    function renderFinanceBft(budgetRows, budgetFormulas, controlRows, transactionRows) {
+      const control = (row,column) => String(controlRows[row - 1]?.[column - 1] ?? '—');
+      const summary = (label,value) => '<div class="finance-dashboard-card good"><span>' + esc(label) + '</span><strong>' + esc(value) + '</strong></div>';
+      const entries = transactionRows.slice(1).filter(row => String(row[6] || '').trim().toLowerCase() === 'bikes for tykes');
+      entries.sort((a,b) => (Date.parse(b[0]) || 0) - (Date.parse(a[0]) || 0));
+      const displayRows = [['Date','Description','Subcategory','Payee / Payer','Amount','Type','Payment Method','Bank Status'], ...entries.map(row => [row[0],row[3],row[5],row[8],row[9],row[12],row[13],String(row[14] || '').trim().toLowerCase() === 'yes' ? 'Cleared' : String(row[14] || '').trim().toLowerCase() === 'pending at chase' ? 'Pending at Chase' : 'Not cleared'])];
       const target = document.getElementById('financeBftTable');
-      target.innerHTML = `<div class="bft-finance-summary">${summary('Total Deposits',at(1,11),'good')}${summary('Total Expenses',at(2,11))}${summary('Net Activity',at(5,11),'good')}${summary('Current Balance',at(6,11),'good')}${summary('Monthly Deposits',at(3,14),'good')}${summary('Monthly Expenses',at(4,14))}${summary('Monthly Net',at(5,14),'good')}${summary('Reporting Period',`${at(2,14)} ${at(1,14)}`)}</div>
-        <section class="bft-finance-section"><h3>2026 Program Budget</h3><p>Budget categories, ownership, approvals, actuals, and variance.</p><div class="data-status" id="financeBftBudgetStatus"></div><div id="financeBftBudgetTable"></div></section>
-        <section class="bft-finance-section"><h3>Bikes for Tykes Transactions</h3><p>The detailed deposit and expense ledger with a running program balance.</p><div class="data-status" id="financeBftTransactionsStatus"></div><div id="financeBftTransactionsTable"></div></section>`;
-      renderDataTable('financeBftBudgetTable','financeBftBudgetStatus',rows.slice(0,21),0,9,{sheetName:'Bikes for Tykes (BFT)',spreadsheetId:FINANCE_SPREADSHEET_ID,formulaRows:formulas.slice(0,21),rowOffset:0});
-      renderDataTable('financeBftTransactionsTable','financeBftTransactionsStatus',rows.slice(21),0,12,{sheetName:'Bikes for Tykes (BFT)',spreadsheetId:FINANCE_SPREADSHEET_ID,formulaRows:formulas.slice(21),rowOffset:21});
-      document.getElementById('financeBftStatus').textContent = 'Bikes for Tykes finances are organized into program totals, budget, and transactions.';
+      target.innerHTML = '<div class="bft-finance-summary bft-finance-simple">' + summary('Current Balance',control(8,5)) + summary('2026 Income',control(21,2)) + summary('2026 Expenses',control(22,2)) + '</div><div class="control-action-bar"><button class="dashboard-edit-btn" type="button" id="bftViewBudget" aria-expanded="false" aria-controls="bftFinanceBudget">View Budget</button><button class="dashboard-edit-btn" type="button" id="bftManageTransactions">Manage Transactions</button></div><section class="bft-finance-section" id="bftFinanceBudget" hidden><h3>2026 Program Budget</h3><div class="data-status" id="financeBftBudgetStatus"></div><div id="financeBftBudgetTable"></div></section><section class="bft-finance-section"><h3>Bikes for Tykes Transactions</h3><div class="data-status" id="financeBftTransactionsStatus"></div><div id="financeBftTransactionsTable"></div></section>';
+      renderDataTable('financeBftTransactionsTable','financeBftTransactionsStatus',displayRows,0,8);
+      let budgetRendered = false;
+      target.querySelector('#bftViewBudget').addEventListener('click', event => {
+        const budget = target.querySelector('#bftFinanceBudget');
+        budget.hidden = !budget.hidden;
+        event.currentTarget.setAttribute('aria-expanded',String(!budget.hidden));
+        event.currentTarget.textContent = budget.hidden ? 'View Budget' : 'Hide Budget';
+        if (!budgetRendered && !budget.hidden) {
+          // Show planning columns only; financial totals and transactions come from the main ledger.
+          renderDataTable('financeBftBudgetTable','financeBftBudgetStatus',budgetRows.slice(0,21).map(row => row.slice(0,6)),0,6,{sheetName:'Bikes for Tykes (BFT)',spreadsheetId:FINANCE_SPREADSHEET_ID,formulaRows:budgetFormulas.slice(0,21),rowOffset:0});
+          budgetRendered = true;
+        }
+      });
+      target.querySelector('#bftManageTransactions').addEventListener('click', () => document.querySelector('[data-finance-tab="transactions2026"]')?.click());
+      document.getElementById('financeBftStatus').textContent = 'Balance and 2026 totals match Control-2026. Transactions are listed newest first.';
     }
 
     async function loadFinanceBft() {
       document.getElementById('financeBftStatus').textContent = 'Loading Bikes for Tykes finance…';
       try {
-        const range = "'Bikes for Tykes (BFT)'!A1:X1450";
-        const [rows,formulas] = await Promise.all([getSheetValues(range,FINANCE_SPREADSHEET_ID),getSheetValues(range,FINANCE_SPREADSHEET_ID,'FORMULA')]);
-        renderFinanceBft(rows,formulas);
+        const [budgetRows,budgetFormulas,controlRows,transactionRows] = await Promise.all([
+          getSheetValues("'Bikes for Tykes (BFT)'!A1:I21",FINANCE_SPREADSHEET_ID),
+          getSheetValues("'Bikes for Tykes (BFT)'!A1:I21",FINANCE_SPREADSHEET_ID,'FORMULA'),
+          getSheetValues("'Control-2026'!A1:E23",FINANCE_SPREADSHEET_ID),
+          getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID)
+        ]);
+        renderFinanceBft(budgetRows,budgetFormulas,controlRows,transactionRows);
         loadedFinanceTabs.add('bft');
       } catch (error) { document.getElementById('financeBftStatus').textContent = 'Bikes for Tykes finance could not load from Google Sheets.'; }
     }
