@@ -47,8 +47,9 @@ async function setup2027DuesReview(rows) {
     if (currentMembershipSheet!=='2027') return;
     const pending=duesPending(context.ledger);
     const panel=document.createElement('section');panel.className='membership-system-note';
-    panel.innerHTML='<strong>2027 Dues Review</strong><p>Exemptions and initial-payment coverage are shown separately from payments. Renewal, waiver and Code of Conduct are still required.</p><button type="button" class="dashboard-edit-btn">Review Payments ('+pending.length+')</button><span role="status" class="dues-review-status"></span>';
+    panel.innerHTML='<strong>2027 Dues Review</strong><p>Exemptions and initial-payment coverage are shown separately from payments. Renewal, waiver and Code of Conduct are still required.</p><button type="button" class="dashboard-edit-btn">Review Payments ('+pending.length+')</button> <button type="button" class="dashboard-edit-btn" data-print-unpaid-dues>Print Unpaid Dues List</button><span role="status" class="dues-review-status"></span>';
     target.prepend(panel);
+    panel.querySelector('[data-print-unpaid-dues]').addEventListener('click',()=>print2027UnpaidDues(context));
     const header=target.querySelector('table thead tr:last-child');
     if(header) { const th=document.createElement('th');th.textContent='2027 Dues Status';header.appendChild(th); }
     const bodyRows=[...target.querySelectorAll('table tbody tr')];
@@ -117,4 +118,14 @@ async function confirm2027PaymentMatch(payment,selected) {
   const verify=await getSheetValues("'Dues Payments'!A"+current.row+':O'+current.row,MEMBERSHIP_SPREADSHEET_ID);
   const paid=await getSheetValues("'2027'!"+columnNumberToLetters(person.cols['Dues Paid']+1)+person.row,MEMBERSHIP_SPREADSHEET_ID);
   if(verify[0]?.[col('Status')]!=='Reconciled'||paid[0]?.[0]!=='Yes')throw new Error('Save could not be verified. Refresh before retrying.');
+}
+
+function print2027UnpaidDues(context) {
+  const unpaid=context.people.filter(person=>person.status==='active' && !/^(yes|paid|exempt|waived)$/.test(duesNorm(person.values[person.cols['Dues Paid']])) && !duesExemption(person,context.previous,context.presidents)).sort((a,b)=>String(a.values[a.cols['Last Name']]).localeCompare(String(b.values[b.cols['Last Name']])) || a.name.localeCompare(b.name));
+  const printWindow=window.open('','_blank');
+  if(!printWindow){alert('Allow pop-ups for this portal to print the dues list.');return;}
+  const date=new Date().toLocaleDateString('en-US');
+  printWindow.document.write('<!doctype html><html><head><title>2027 Unpaid Dues Collection List</title><style>@page{size:letter;margin:.5in}body{font:12pt Arial,sans-serif;color:#111}h1{font-size:19pt;margin-bottom:8px}p{line-height:1.4}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #777;padding:12px 8px;text-align:left}th{background:#eee;font-size:10pt}td{height:42px}.print{padding:10px 16px}@media print{.print{display:none}}</style></head><body><button class="print" onclick="window.print()">Print List</button><h1>BoneShakers — 2027 Dues Collection</h1><p>Prepared '+esc(date)+' · '+unpaid.length+' unpaid members · $50 dues per member</p><p>Mark payments only after collection. Record the amount, date, and method, then return this sheet so Dues Paid can be updated to Yes. Signed waivers are tracked separately.</p><table><thead><tr><th>Member</th><th>Collected ✓</th><th>Amount</th><th>Date</th><th>Method / Notes</th></tr></thead><tbody>'+unpaid.map(person=>'<tr><td>'+esc(person.name)+'</td><td></td><td></td><td></td><td></td></tr>').join('')+'</tbody></table><p>Expected collection: '+esc(money(unpaid.length*50))+'. This lists all active unpaid members, regardless of their planned payment method.</p></body></html>');
+  printWindow.document.close();
+  printWindow.focus();
 }
