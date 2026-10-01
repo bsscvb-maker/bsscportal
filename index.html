@@ -1036,6 +1036,13 @@
     .auth-gate .auth-error { min-height:0; margin-top:0; }
     .auth-gate .auth-error:not(:empty) { margin-top:18px; }
     @media(max-width:520px){ .auth-gate .auth-card{padding:30px 26px 38px}.auth-gate .auth-logo{height:205px;width:205px} }
+    #membershipContent .year-count-member-link { appearance:none; border:0; border-radius:0; background:none; box-shadow:none; color:#a80d2a; font:inherit; font-weight:800; text-decoration:none; padding:0; margin:0; cursor:pointer; }
+    #membershipContent .year-count-member-link:hover { color:#c8102e; text-decoration:underline; text-underline-offset:3px; }
+    #membershipContent .year-count-member-link:focus-visible { outline:2px solid #c8102e; outline-offset:4px; }
+    .year-count-members-head { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .year-count-members-head h3 { margin:0; }
+    .year-count-members-list li { padding:9px 4px; border-bottom:1px solid #e1e3e7; }
+    .year-count-members-list li span { color:#66666b; }
 </style>
 </head>
 <body>
@@ -3775,12 +3782,6 @@
         .footer b{font-size:12pt}.print-only{display:none}
         @media screen{body{padding:15px}.print-only{display:block;margin-bottom:15px}.print-only button{padding:10px 15px}}
     
-    .year-count-member-link { border:0; background:transparent; color:#a80d2a; font:inherit; font-weight:850; text-decoration:underline; text-underline-offset:3px; padding:4px 10px; cursor:pointer; }
-    .year-count-member-link:focus-visible { outline:2px solid #c8102e; outline-offset:2px; border-radius:4px; }
-    .year-count-members-head { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-    .year-count-members-head h3 { margin:0; }
-    .year-count-members-list li { padding:9px 4px; border-bottom:1px solid #e1e3e7; }
-    .year-count-members-list li span { color:#66666b; }
   </style></head><body><div class="print-only"><button onclick="window.print()">Print pick tickets</button> · Cut along the dotted lines.</div><div class="sheet">${rows}</div></body></html>`);
       printWindow.document.close();
       printWindow.focus();
