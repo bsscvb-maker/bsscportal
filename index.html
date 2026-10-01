@@ -1041,7 +1041,9 @@
     #membershipContent .year-count-member-link:focus-visible { outline:2px solid #c8102e; outline-offset:4px; }
     .year-count-members-head { display:flex; align-items:center; justify-content:space-between; gap:16px; }
     .year-count-members-head h3 { margin:0; }
-    .year-count-members-list li { padding:9px 4px; border-bottom:1px solid #e1e3e7; }
+    .year-count-members-list ol { list-style:none; padding:0; margin:0; }
+    .year-count-members-list li { display:grid; grid-template-columns:90px minmax(0,1fr); align-items:baseline; gap:14px; padding:10px 4px; border-bottom:1px solid #e1e3e7; }
+    .year-count-member-date { color:#66666b; font-size:.78rem; font-variant-numeric:tabular-nums; white-space:nowrap; }
     .year-count-members-list li span { color:#66666b; }
 </style>
 </head>
@@ -4936,9 +4938,9 @@
       const column = name => headers.indexOf(name);
       const status = column('status'), start = column('start year');
       if (status < 0 || start < 0) throw new Error('The roster is missing Status or Start Year.');
-      const first = column('first name'), last = column('last name'), road = column('road name');
+      const first = column('first name'), last = column('last name'), road = column('road name'), date = column('start date');
       return rows.slice(1).filter(row => String(row[status] || '').trim().toLowerCase() === 'active' && Number(String(row[start] || '').trim()) === Number(year))
-        .map(row => ({first:String(row[first] || '').trim(), last:String(row[last] || '').trim(), road:String(row[road] || '').trim()}))
+        .map(row => ({first:String(row[first] || '').trim(), last:String(row[last] || '').trim(), road:String(row[road] || '').trim(), startDate:String(row[date] || '').trim()}))
         .sort((a,b) => a.last.localeCompare(b.last) || a.first.localeCompare(b.first));
     }
 
@@ -4960,7 +4962,7 @@
         if (!dialog.isConnected) return;
         const members = yearCountNewMemberNames(rows, year);
         list.innerHTML = members.length
-          ? '<p><strong>' + members.length + ' new member' + (members.length === 1 ? '' : 's') + '</strong></p><ol>' + members.map(member => '<li>' + esc([member.first,member.last].filter(Boolean).join(' ') || 'Name unavailable') + (member.road ? ' <span>“' + esc(member.road) + '”</span>' : '') + '</li>').join('') + '</ol>'
+          ? '<p><strong>' + members.length + ' new member' + (members.length === 1 ? '' : 's') + '</strong></p><ol>' + members.map(member => '<li><small class="year-count-member-date" aria-label="Start date">' + esc(member.startDate || '—') + '</small><div>' + esc([member.first,member.last].filter(Boolean).join(' ') || 'Name unavailable') + (member.road ? ' <span>“' + esc(member.road) + '”</span>' : '') + '</div></li>').join('') + '</ol>'
           : '<p>No active new members recorded for this year.</p>';
       } catch (error) {
         if (dialog.isConnected) list.textContent = 'Names could not be loaded. Close this window and try again.';
