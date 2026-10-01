@@ -2361,11 +2361,13 @@
             const quantity = Number(String(item.row[ticketGroupStart + 1] || '').replace(/[$,]/g, ''));
             if (Number.isFinite(quantity) && quantity > 0) shownValue = money(quantity * ticketPrice);
           }
+          const newMemberLink = isYearCount && sourceColumnIndex === 5 && String(item.row[sourceColumnIndex] ?? '').trim() !== '';
+          if (newMemberLink) shownValue = item.row[sourceColumnIndex];
           const headerName = String(finalHeaders[columnIndex] || '').trim().toLowerCase();
           const numericValue = Number(String(shownValue).replace(/[$,%(),]/g, '').replace(/\s/g, '')) * (String(shownValue).includes('(') ? -1 : 1);
           const varianceClass = targetId === 'financeBaselineTable' && headerName.includes('variance') && Number.isFinite(numericValue) ? (numericValue < 0 ? 'variance-over' : 'variance-good') : '';
           const baseClass = editable ? 'editable-cell' : (editMode && formulaValue.startsWith('=') ? 'formula-cell' : '');
-          return `<td class="${[baseClass,varianceClass,isTransaction2026 && [1,2,16].includes(columnIndex) ? 'transaction-extra' : ''].filter(Boolean).join(' ')}" ${targetId === 'financeTallyTable' || isTransaction2026 ? `data-label="${esc(isTransaction2026 && columnIndex === 10 ? 'Chase balance' : isTransaction2026 && columnIndex === 11 ? 'With outstanding' : finalHeaders[columnIndex] || `Column ${columnIndex + 1}`)}"` : ''} ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${sourceRowNumber}" data-column="${sourceColumnIndex}" data-value="${esc(shownValue)}"` : ''}>${esc(shownValue)}</td>`;
+          return `<td class="${[baseClass,varianceClass,isTransaction2026 && [1,2,16].includes(columnIndex) ? 'transaction-extra' : ''].filter(Boolean).join(' ')}" ${targetId === 'financeTallyTable' || isTransaction2026 ? `data-label="${esc(isTransaction2026 && columnIndex === 10 ? 'Chase balance' : isTransaction2026 && columnIndex === 11 ? 'With outstanding' : finalHeaders[columnIndex] || `Column ${columnIndex + 1}`)}"` : ''} ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${sourceRowNumber}" data-column="${sourceColumnIndex}" data-value="${esc(shownValue)}"` : ''}>${newMemberLink ? `<button class="year-count-member-link" type="button" data-new-members-year="${esc(item.row[0])}" aria-label="View ${esc(shownValue)} new members in ${esc(item.row[0])}">${esc(shownValue)}</button>` : esc(shownValue)}</td>`;
         }).join('')}</tr>`;
       }).join('')}</tbody></table></div>`;
       status.textContent = `${indexedData.length} row${indexedData.length === 1 ? '' : 's'} loaded from Google Sheets${editOptions ? (editMode ? ' — edit mode is on.' : ' — view mode.') : '.'}`;
@@ -2374,6 +2376,7 @@
         status.classList.add('lifer-summary');
         status.innerHTML = summary.map(row => `<span class="lifer-summary-item"><span>${esc(row[9])}</span><strong>${esc(row[10] || '0')}</strong></span>`).join('');
       }
+      target.querySelectorAll('[data-new-members-year]').forEach(button => button.addEventListener('click', () => showYearCountNewMembers(button.dataset.newMembersYear)));
       const toggleButton = target.querySelector('[data-toggle-edit]');
       target.querySelector('[data-export-table]')?.addEventListener('click', () => exportVisibleTable(targetId));
       const detailToggle = target.querySelector('[data-transaction-details]');
@@ -3771,7 +3774,14 @@
         .footer{margin-top:auto;display:flex;justify-content:space-between;gap:5px;font-size:8pt}
         .footer b{font-size:12pt}.print-only{display:none}
         @media screen{body{padding:15px}.print-only{display:block;margin-bottom:15px}.print-only button{padding:10px 15px}}
-      </style></head><body><div class="print-only"><button onclick="window.print()">Print pick tickets</button> · Cut along the dotted lines.</div><div class="sheet">${rows}</div></body></html>`);
+    
+    .year-count-member-link { border:0; background:transparent; color:#a80d2a; font:inherit; font-weight:850; text-decoration:underline; text-underline-offset:3px; padding:4px 10px; cursor:pointer; }
+    .year-count-member-link:focus-visible { outline:2px solid #c8102e; outline-offset:2px; border-radius:4px; }
+    .year-count-members-head { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .year-count-members-head h3 { margin:0; }
+    .year-count-members-list li { padding:9px 4px; border-bottom:1px solid #e1e3e7; }
+    .year-count-members-list li span { color:#66666b; }
+  </style></head><body><div class="print-only"><button onclick="window.print()">Print pick tickets</button> · Cut along the dotted lines.</div><div class="sheet">${rows}</div></body></html>`);
       printWindow.document.close();
       printWindow.focus();
       setTimeout(() => { if (!printWindow.closed) printWindow.print(); },350);
@@ -4918,6 +4928,43 @@
       ...Object.fromEntries(['2025','2024','2023','2022','2021','2020','2019','2018','2017','2016','2015','2014','2013','2012','2005'].map(year => [year,{range:`'${year}'!A1:Z1000`,columns:26,group:'Archives'}]))
     };
     let currentMembershipSheet = 'Dashboard 2026';
+
+
+    function yearCountNewMemberNames(rows, year) {
+      const headers = (rows[0] || []).map(value => String(value || '').trim().toLowerCase());
+      const column = name => headers.indexOf(name);
+      const status = column('status'), start = column('start year');
+      if (status < 0 || start < 0) throw new Error('The roster is missing Status or Start Year.');
+      const first = column('first name'), last = column('last name'), road = column('road name');
+      return rows.slice(1).filter(row => String(row[status] || '').trim().toLowerCase() === 'active' && Number(String(row[start] || '').trim()) === Number(year))
+        .map(row => ({first:String(row[first] || '').trim(), last:String(row[last] || '').trim(), road:String(row[road] || '').trim()}))
+        .sort((a,b) => a.last.localeCompare(b.last) || a.first.localeCompare(b.first));
+    }
+
+    async function showYearCountNewMembers(year) {
+      if (!/^\d{4}$/.test(String(year))) return;
+      const dialog = document.createElement('dialog');
+      dialog.className = 'receive-modal year-count-members-dialog';
+      dialog.setAttribute('aria-label', 'New members in ' + year);
+      dialog.innerHTML = '<div class="year-count-members-head"><h3>New Members — ' + esc(year) + '</h3><button type="button" aria-label="Close new members">Close</button></div><p>Active members whose Start Year is ' + esc(year) + '.</p><div class="year-count-members-list" aria-live="polite">Loading names…</div>';
+      document.body.appendChild(dialog);
+      dialog.querySelector('button').addEventListener('click', () => dialog.close());
+      dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
+      dialog.addEventListener('close', () => dialog.remove(), {once:true});
+      dialog.showModal();
+      const list = dialog.querySelector('.year-count-members-list');
+      try {
+        // Full columns mirror the Year Count formula and support future year tabs.
+        const rows = await getSheetValues("'" + year + "'!A1:Z", MEMBERSHIP_SPREADSHEET_ID);
+        if (!dialog.isConnected) return;
+        const members = yearCountNewMemberNames(rows, year);
+        list.innerHTML = members.length
+          ? '<p><strong>' + members.length + ' new member' + (members.length === 1 ? '' : 's') + '</strong></p><ol>' + members.map(member => '<li>' + esc([member.first,member.last].filter(Boolean).join(' ') || 'Name unavailable') + (member.road ? ' <span>“' + esc(member.road) + '”</span>' : '') + '</li>').join('') + '</ol>'
+          : '<p>No active new members recorded for this year.</p>';
+      } catch (error) {
+        if (dialog.isConnected) list.textContent = 'Names could not be loaded. Close this window and try again.';
+      }
+    }
 
     function membershipValue(rows, label) {
       const wanted = String(label).toLowerCase();
