@@ -71,9 +71,6 @@
     @media (min-width:1201px) {
       .module-grid { grid-template-columns:repeat(8,minmax(0,1fr)); }
       .module-grid .module { grid-column:span 2; }
-      .module-grid .module:nth-child(5) { grid-column:2 / span 2; }
-      .module-grid .module:nth-child(6) { grid-column:4 / span 2; }
-      .module-grid .module:nth-child(7) { grid-column:6 / span 2; }
     }
     .module { --accent:var(--gold) !important; --tint:var(--gold-soft) !important; border:1px solid #2b2b2e; background:var(--surface); border-radius:14px; padding:22px 22px 20px; min-height:218px; box-shadow:0 13px 28px rgba(0,0,0,.18); display:flex; flex-direction:column; position:relative; overflow:hidden; transition:transform .16s ease,box-shadow .16s ease; }
     .module:hover { transform:translateY(-3px); box-shadow:0 18px 34px rgba(0,0,0,.24); }
@@ -1087,6 +1084,21 @@
     .dues-manager-dialog button:disabled { opacity:.55; cursor:default; }
     [data-dues-online-panel] { margin-bottom:20px; }
     @media(max-width:600px) { .dues-manager-body { padding:16px; } .dues-manager-section,.dues-manager-footer { align-items:flex-start; flex-direction:column; } .dues-collection-table th,.dues-collection-table td { padding:9px 6px; } }
+
+    .club-workspace {display:none} .club-workspace.active {display:block}
+    .club-summary {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}
+    .club-summary strong {display:block;font-size:2rem;color:var(--navy);margin-top:8px}
+    .club-toolbar {display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+    .club-toolbar input,.club-toolbar select {padding:11px;border:1px solid var(--line);border-radius:8px;max-width:100%}
+    .club-toolbar input {flex:1;min-width:180px}
+    .club-table {max-height:65vh;overflow:auto}.club-table th {position:sticky;top:0;z-index:1;background:var(--navy);color:white}
+    .club-table td {white-space:normal;min-width:140px}.club-table td a {color:var(--navy);font-weight:700}
+    .club-dialog {border:0;border-radius:16px;padding:24px;width:min(720px,94vw);max-height:88vh;overflow:auto;color:var(--navy)}
+    .club-dialog::backdrop {background:rgba(0,0,0,.5)}
+    .club-form {display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}
+    .club-form label {display:flex;flex-direction:column;gap:6px;font-weight:700}
+    .club-form input,.club-form select,.club-form textarea {width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit}
+    @media(max-width:640px){.club-summary,.club-form {grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -1120,6 +1132,7 @@
         <button data-module="bikenights"><span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg></span>Bike Nights</button>
         <button data-module="marketplace"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 9l2-5h14l2 5"/><path d="M5 13v8h14v-8"/><path d="M9 21v-6h6v6"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/></svg></span>Marketplace</button>
         <button data-module="sponsors"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="m8 12 2.5 2.5a2.12 2.12 0 0 0 3 0L19 9"/><path d="m15 5 4-2 4 4-3 3M9 5 5 3 1 7l4 4"/><path d="m5 10 6.5 6.5a2.12 2.12 0 0 0 3 0l5.5-6.5"/></svg></span>Sponsorships</button>
+<button data-module="volunteers"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M8 3v3M16 3v3M3 10h18"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="m8 16 3 3 5-6"/></svg></span>Events &amp; Volunteers</button><button data-module="records"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg></span>Club Records</button>
       </nav>
       <div class="nav-label">System</div>
       <nav class="nav"><button data-module="admin"><span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6l-.04.08V22h-4v-1.92A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1l-.08-.04H2v-4h1.92A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6l.04-.08V2h4v1.92A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.12.38.34.72.6 1l.08.04H22v4h-1.92A1.7 1.7 0 0 0 19.4 15Z"/></svg></span>Administration</button></nav>
@@ -1160,6 +1173,8 @@
             <article class="module" data-module-card="bikenights" style="--accent:#cf1235;--tint:#fff0f3"><div class="module-top"><div class="module-identity"><div class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg></div><h2>Bike Nights</h2></div><div class="status live-status checking" data-module-status="true">Checking</div></div><p>Monthly visit planning, club scorecards, attendance history, and upcoming bike nights.</p><footer><button class="open-btn" data-open="bikenights">Open module</button></footer></article>
             <article class="module" data-module-card="marketplace" style="--accent:#8c5bb5;--tint:#f2eafb"><div class="module-top"><div class="module-identity"><div class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 9l2-5h14l2 5"/><path d="M5 13v8h14v-8"/><path d="M9 21v-6h6v6"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/></svg></div><h2>Marketplace</h2></div><div class="status live-status checking" data-module-status="true">Checking</div></div><p>Orders, fulfillment, pricing, fees, manufacturers, sales history, and merchandise reporting.</p><footer><button class="open-btn" data-open="marketplace">Open module</button></footer></article>
             <article class="module" data-module-card="sponsors" style="--accent:#b64e50;--tint:#fbeaec"><div class="module-top"><div class="module-identity"><div class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m8 12 2.5 2.5a2.12 2.12 0 0 0 3 0L19 9"/><path d="m15 5 4-2 4 4-3 3M9 5 5 3 1 7l4 4"/><path d="m5 10 6.5 6.5a2.12 2.12 0 0 0 3 0l5.5-6.5"/><path d="m7 14-2 2 3 3 2-2M11 18l-1 1 2 2 2-2"/></svg></div><h2>Sponsorships</h2></div><div class="status live-status checking" data-module-status="true">Checking</div></div><p>Current and prospective sponsors, follow-up status, documentation requests, and sponsor reporting.</p><footer><button class="open-btn" data-open="sponsors">Open module</button></footer></article>
+<article class="module" data-module-card="volunteers" style="--accent:#426d79;--tint:#edf5f6"><div class="module-top"><div class="module-identity"><div class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 3v3M16 3v3M3 10h18"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="m8 16 3 3 5-6"/></svg></div><h2>Events &amp; Volunteers</h2></div><div class="status live-status checking" data-module-status="true">Checking</div></div><p>Plan club events, assign volunteers and shifts, and track hours and event checklists.</p><footer><button class="open-btn" data-open="volunteers">Open module</button></footer></article>
+<article class="module" data-module-card="records" style="--accent:#426d79;--tint:#edf5f6"><div class="module-top"><div class="module-identity"><div class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg></div><h2>Club Records</h2></div><div class="status live-status checking" data-module-status="true">Checking</div></div><p>Bylaws, policies, meeting minutes, club decisions, and follow-up actions in one searchable library.</p><footer><button class="open-btn" data-open="records">Open module</button></footer></article>
             <article class="module" data-module-card="admin" style="--accent:#52606d;--tint:#edf1f4"><div class="module-top"><div class="module-identity"><div class="module-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6l-.04.08V22h-4v-1.92A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1l-.08-.04H2v-4h1.92A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6l.04-.08V2h4v1.92A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.12.38.34.72.6 1l.08.04H22v4h-1.92A1.7 1.7 0 0 0 19.4 15Z"/></svg></div><h2>Administration</h2></div><div class="status live-status checking" data-module-status="true">Checking</div></div><p>System health, spreadsheet connections, Google access, source workbooks, and portal configuration.</p><footer><button class="open-btn" data-open="admin">Open administration</button></footer></article>
           </div>
 
@@ -1300,12 +1315,12 @@
             <section class="sponsor-panel" data-finance-panel="events"><div class="coming-soon"><h2>Events &amp; Fundraising</h2><div class="data-status" id="financeEventsStatus">Open this tab to load events and fundraising.</div><div id="financeEventsTable"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="charities"><div class="coming-soon"><h2>Charities</h2><div class="data-status" id="financeCharitiesStatus">Open this tab to load charity reporting.</div><div id="financeCharitiesTable"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="eventbudgets"><div class="coming-soon"><h2>Event Budgets</h2><div class="data-status" id="financeEventBudgetsStatus">Open this tab to load event budgets.</div><div id="financeEventBudgetsTable"></div></div></section>
-          </div><div class="admin-workspace" id="adminWorkspace">
+          </div><div class="club-workspace" id="volunteersWorkspace"></div><div class="club-workspace" id="recordsWorkspace"></div><div class="admin-workspace" id="adminWorkspace">
             <div class="admin-overview">
-              <div class="admin-stat good"><span>Live Modules</span><strong>6</strong></div>
+              <div class="admin-stat good"><span>Live Modules</span><strong>8</strong></div>
               <div class="admin-stat"><span>Modules in Build</span><strong>0</strong></div>
               <div class="admin-stat good"><span>Google Access</span><strong>Authorized</strong></div>
-              <div class="admin-stat"><span>Portal Release</span><strong>09/23/2026</strong></div>
+              <div class="admin-stat"><span>Portal Release</span><strong>10/01/2026</strong></div>
             </div>
             <div class="admin-grid">
               <section class="admin-card"><h2>System &amp; Spreadsheet Status</h2><div class="admin-card-body" id="adminSystemStatus">
@@ -1323,7 +1338,7 @@
                 <div class="admin-row"><div><strong>Google Auth Settings</strong><small>Manage authorized audience and OAuth configuration</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://console.cloud.google.com/auth/overview?project=bssc-management-portal">Open</a></div>
               </div></section>
               <section class="admin-card"><h2>Source Workbooks</h2><div class="admin-card-body">
-                <div class="admin-row"><div><strong>Membership</strong><small>38 connected workbook sections</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/1G1GhywDG-FYEo00fY_FeWheScve333LIdBqZpqLbZZM/edit">Open Sheet</a></div>
+                <div class="admin-row"><div><strong>Membership</strong><small>Membership, events, volunteers, and club records</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/1G1GhywDG-FYEo00fY_FeWheScve333LIdBqZpqLbZZM/edit">Open Sheet</a></div>
                 <div class="admin-row"><div><strong>Finance</strong><small>14 connected workbook sections</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/1a6DfwnnNmy0ykQi7S8DKAt1RhauTh7ISwxSXm59b5NU/edit">Open Sheet</a></div>
                 <div class="admin-row"><div><strong>Bikes for Tykes</strong><small>6 connected workbook sections</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/1cFhb2-Um1rBKj81dFeNWLSfKxuNfc768AFLbcjXdudY/edit">Open Sheet</a></div>
                 <div class="admin-row"><div><strong>Bike Nights</strong><small>3 connected workbook sections</small></div><a class="admin-link" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/1rXMHIVq52X3kqj_ICz7g8oZoD_eXR_0qHP7bZ9jhU0k/edit">Open Sheet</a></div>
@@ -5706,7 +5721,7 @@
       if (!easternClockTimer) easternClockTimer = window.setInterval(update,1000);
     }
 
-    const moduleConnectionIndexes = {membership:0,finance:1,bft:2,bikenights:3,marketplace:4,sponsors:5};
+    const moduleConnectionIndexes = {membership:0,finance:1,bft:2,bikenights:3,marketplace:4,sponsors:5,volunteers:0,records:0};
 
     function renderModuleReadiness() {
       document.querySelectorAll('[data-module-card]').forEach(card => {
@@ -5744,7 +5759,7 @@
       const target = document.getElementById('adminSystemStatus');
       if (!target || portalHealthCheckRunning) return;
       const connections = [
-        ['Membership','38 connected workbook sections',MEMBERSHIP_SPREADSHEET_ID,"'Dashboard 2026'!A1:A1"],
+        ['Membership','Membership, events, volunteers, and club records',MEMBERSHIP_SPREADSHEET_ID,"'Dashboard 2026'!A1:A1"],
         ['Finance','14 connected workbook sections',FINANCE_SPREADSHEET_ID,"'Dashboard-2026'!A1:A1"],
         ['Bikes for Tykes','6 connected workbook sections',BFT_SPREADSHEET_ID,"'DashBoard'!A1:A1"],
         ['Bike Nights','3 connected workbook sections',BIKE_NIGHTS_SPREADSHEET_ID,"'Dashboard'!A1:A1"],
@@ -5947,7 +5962,83 @@
     renderPortalAudit();
 
     initializeGoogleAuth();
+    const clubFramework = {
+      records: {tabs:['Club Records','Club Decisions','Club Actions'], active:'Club Records'},
+      volunteers: {tabs:['Club Events','Volunteer Assignments','Event Checklist'], active:'Club Events'}
+    };
+    const clubSchemas = {
+      'Club Records':['Record ID','Title','Category','Record Date','Status','Owner','Source URL','Notes','Updated At'],
+      'Club Decisions':['Decision ID','Title','Meeting Date','Outcome','Owner','Source URL','Notes','Updated At'],
+      'Club Actions':['Action ID','Task','Owner','Due Date','Status','Source URL','Notes','Updated At'],
+      'Club Events':['Event ID','Event','Date','Location','Lead','Status','Notes','Updated At'],
+      'Volunteer Assignments':['Assignment ID','Event ID','Member','Role','Shift Start','Shift End','Status','Hours','Notes','Updated At'],
+      'Event Checklist':['Checklist ID','Event ID','Task','Owner','Due Date','Status','Notes','Updated At']
+    };
+    const clubCache = {};
+    const clubVersions = {};
+    function clubSafeLink(value) {
+      try { const url=new URL(value); return url.protocol==='https:' ? url.href : ''; } catch { return ''; }
+    }
+    async function loadClubFramework(key) {
+      const state=clubFramework[key], host=document.getElementById(key+'Workspace');
+      const version=(clubVersions[key]||0)+1; clubVersions[key]=version;
+      host.innerHTML='<div class="data-status" role="status">Loading shared club records…</div>';
+      try {
+        if (!accessToken) throw new Error('Sign in with Google to load these records.');
+        const results=await Promise.all(state.tabs.map(async tab=>[tab,await getSheetValues("'"+tab+"'!A1:"+columnNumberToLetters(clubSchemas[tab].length)+'2000',MEMBERSHIP_SPREADSHEET_ID)]));
+        if(clubVersions[key]!==version) return;
+        results.forEach(([tab,rows])=>{if(JSON.stringify(rows[0])!==JSON.stringify(clubSchemas[tab]))throw new Error('Unexpected column layout in '+tab);clubCache[tab]=rows;});
+        renderClubFramework(key);
+      } catch(error) { if(clubVersions[key]!==version)return;host.innerHTML='<div class="data-status" role="alert">'+esc(error.message)+'</div><button class="open-btn" data-club-retry>Retry</button>';host.querySelector('[data-club-retry]').onclick=()=>loadClubFramework(key); }
+    }
+    function renderClubFramework(key) {
+      const state=clubFramework[key],host=document.getElementById(key+'Workspace'),tab=state.active;
+      const labels={'Club Records':'Document library','Club Decisions':'Decisions & motions','Club Actions':'Action register','Club Events':'Events','Volunteer Assignments':'Volunteer assignments','Event Checklist':'Event checklist'};
+      const total=t=>(clubCache[t]||[]).slice(1).filter(r=>r[0]).length;
+      host.innerHTML='<div class="club-summary">'+state.tabs.map(t=>'<div class="workspace-card"><span>'+esc(labels[t])+'</span><strong>'+total(t)+'</strong></div>').join('')+'</div><div class="sponsor-tabs">'+state.tabs.map(t=>'<button class="sponsor-tab '+(t===tab?'active':'')+'" data-club-tab="'+esc(t)+'">'+esc(labels[t])+'</button>').join('')+'</div><section class="workspace-card"><div class="club-toolbar"><input type="search" data-club-search placeholder="Search '+esc(labels[tab].toLowerCase())+'" aria-label="Search records"><select data-club-filter aria-label="Filter records"><option value="">All '+(tab==='Club Records'?'categories':'statuses')+'</option></select><button class="open-btn" data-club-add>Add '+(tab==='Club Records'?'document':tab==='Club Events'?'event':'record')+'</button><button class="sponsor-tab" data-club-refresh>Refresh</button></div><div class="data-status" data-club-status role="status">Shared records saved in Google Sheets. Source documents open in Google Drive.</div><div data-club-table></div></section><div data-club-editor></div>';
+      host.querySelectorAll('[data-club-tab]').forEach(b=>b.onclick=()=>{state.active=b.dataset.clubTab;renderClubFramework(key);});
+      host.querySelector('[data-club-refresh]').onclick=()=>loadClubFramework(key);
+      host.querySelector('[data-club-add]').onclick=()=>editClubRecord(key);
+      const headers=clubSchemas[tab],filterIndex=tab==='Club Records'?2:headers.indexOf('Status');
+      const filter=host.querySelector('[data-club-filter]');
+      if(filterIndex<0)filter.hidden=true;
+      [...new Set((clubCache[tab]||[]).slice(1).map(r=>r[filterIndex]).filter(Boolean))].sort().forEach(v=>{const option=document.createElement('option');option.value=v;option.textContent=v;filter.appendChild(option);});
+      host.querySelector('[data-club-search]').oninput=()=>renderClubRows(key);
+      filter.onchange=()=>renderClubRows(key);
+      renderClubRows(key);
+    }
+    function renderClubRows(key) {
+      const host=document.getElementById(key+'Workspace'),tab=clubFramework[key].active,headers=clubSchemas[tab];
+      const query=host.querySelector('[data-club-search]').value.trim().toLowerCase(),filter=host.querySelector('[data-club-filter]').value;
+      const filterIndex=tab==='Club Records'?2:headers.indexOf('Status');
+      const rows=(clubCache[tab]||[]).slice(1).map((values,i)=>({values,row:i+2})).filter(({values:v})=>v[0]&&(!query||v.join(' ').toLowerCase().includes(query))&&(!filter||v[filterIndex]===filter));
+      const columns=headers.map((h,i)=>({h,i})).filter(({i,h})=>i>0&&h!=='Updated At');
+      host.querySelector('[data-club-table]').innerHTML=rows.length?'<div class="table-wrap club-table"><table class="data-table"><thead><tr>'+columns.map(({h})=>'<th>'+esc(h)+'</th>').join('')+'<th>Manage</th></tr></thead><tbody>'+rows.map(({values:v,row})=>'<tr>'+columns.map(({h,i})=>{const url=h==='Source URL'?clubSafeLink(v[i]):'';return '<td>'+(url?'<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">Open document ↗</a>':esc(v[i]||'—'))+'</td>';}).join('')+'<td><button class="sponsor-tab" data-club-edit="'+row+'">Edit</button></td></tr>').join('')+'</tbody></table></div>':'<div class="empty-state">'+(query||filter?'No matching records.':'No records yet. Add the first one above.')+'</div>';
+      host.querySelector('[data-club-status]').textContent=rows.length+' records shown · Shared Google Sheets data';
+      host.querySelectorAll('[data-club-edit]').forEach(b=>b.onclick=()=>editClubRecord(key,Number(b.dataset.clubEdit)));
+    }
+    function editClubRecord(key,rowNumber) {
+      const host=document.getElementById(key+'Workspace'),tab=clubFramework[key].active,headers=clubSchemas[tab],values=rowNumber?clubCache[tab][rowNumber-1]:[];
+      const editor=host.querySelector('[data-club-editor]');
+      const choices=(h)=> h==='Category'?['Bylaws','Policies & appendices','Code of conduct','Board meeting minutes','General meeting minutes','Committee records','Club history','Other']:h==='Status'?(tab==='Club Records'?['Needs review','Current','Approved','Draft','Archived']:tab==='Club Events'?['Planning','Scheduled','Completed','Cancelled']:tab==='Volunteer Assignments'?['Open','Assigned','Confirmed','Completed','Cancelled']:['Open','In progress','Completed','Cancelled']):h==='Event ID'&&tab!=='Club Events'?(clubCache['Club Events']||[]).slice(1).filter(r=>r[0]).map(r=>[r[0],r[1]+' · '+(r[2]||'Date TBD')]):null;
+      editor.innerHTML='<dialog class="club-dialog"><form><h2>'+(rowNumber?'Edit':'Add')+' '+esc(tab)+'</h2><div class="club-form">'+headers.map((h,i)=>{if(i===0||h==='Updated At')return '';const opts=choices(h);let field;if(opts){const options=[...(values[i]&&!opts.some(o=>(Array.isArray(o)?o[0]:o)===values[i])?[values[i]]:[]),...opts];field='<select name="c'+i+'" '+(h==='Event ID'?'required':'')+'><option value="">Choose…</option>'+options.map(o=>{let [v,l]=Array.isArray(o)?o:[o,o];return '<option value="'+esc(v)+'" '+(v===values[i]?'selected':'')+'>'+esc(l)+'</option>';}).join('')+'</select>';}else if(h==='Notes'){field='<textarea name="c'+i+'" rows="3">'+esc(values[i]||'')+'</textarea>';}else {const type=/Date$|^Date$/.test(h)?'date':h==='Source URL'?'url':h==='Hours'?'number':/^Shift/.test(h)?'datetime-local':'text';field='<input name="c'+i+'" type="'+type+'" '+(type==='number'?'min="0" step="0.25" ':'')+'value="'+esc(values[i]||'')+'" '+(i===1||h==='Member'?'required':'')+'>'; }return '<label>'+esc(h)+field+'</label>';}).join('')+'</div><p data-club-save-status role="status"></p><div class="club-toolbar"><button class="open-btn" type="submit">Save</button><button class="sponsor-tab" type="button" data-club-cancel>Cancel</button></div></form></dialog>';
+      const dialog=editor.querySelector('dialog'),form=dialog.querySelector('form');dialog.showModal();
+      dialog.querySelector('[data-club-cancel]').onclick=()=>dialog.close();
+      form.onsubmit=async event=>{event.preventDefault();const button=form.querySelector('[type=submit]'),message=form.querySelector('[data-club-save-status]');button.disabled=true;
+        try {const data=new FormData(form),row=headers.map((h,i)=>i===0?(values[0]||crypto.randomUUID()):h==='Updated At'?new Date().toISOString():String(data.get('c'+i)||'').trim());const urlIndex=headers.indexOf('Source URL');if(urlIndex>=0&&row[urlIndex]&&!clubSafeLink(row[urlIndex]))throw new Error('Use a secure https:// document link.');
+          const range="'"+tab+"'!A"+(rowNumber||1)+':'+columnNumberToLetters(headers.length)+(rowNumber||2000);
+          const live=await getSheetValues(range,MEMBERSHIP_SPREADSHEET_ID);
+          if(rowNumber&&JSON.stringify(live[0]||[])!==JSON.stringify(values))throw new Error('This record changed since you opened it. Cancel, refresh, and reopen it.');
+          const url='https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+'/values/'+encodeURIComponent(rowNumber?range:"'"+tab+"'!A:"+columnNumberToLetters(headers.length))+(rowNumber?'?valueInputOption=RAW':':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS');
+          await writePortalSheetRequest(url,{method:rowNumber?'PUT':'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({majorDimension:'ROWS',values:[row]}),signal:AbortSignal.timeout(15000)},rowNumber?'Updated club record':'Added club record',tab,1);
+          dialog.close();await loadClubFramework(key);
+        } catch(error){message.textContent='Unable to save: '+error.message;button.disabled=false;}
+      };
+    }
+
     const modules = {
+      volunteers:{title:'Events & Volunteers',description:'Plan events, assign shifts, and track volunteer participation and event tasks.',tasks:[]},
+      records:{title:'Club Records',description:'Find club documents, record decisions, and follow up on actions.',tasks:[]},
       membership: {title:'Membership', description:'The central record for members, history, participation, and annual requirements.', tasks:['Member directory','Renewals and dues','Attendance','Waivers and vetting','Officers and honors','History and anniversaries']},
       finance: {title:'Finance', description:'Club finances, transactions, budgets, reconciliations, and clear reporting.', tasks:['Transaction entry','Financial dashboard','Fund balances','Operating budget','Event budgets','Reports and exports']},
       bft: {title:'Bikes for Tykes', description:'Donation, ticket, sponsor, purchasing, and event financial management.', tasks:['Donation tracking','Ticket control','Sponsor records','Purchase budget','Event dashboard','Finance synchronization']},
@@ -6012,9 +6103,15 @@
       const marketplaceWorkspace = document.getElementById('marketplaceWorkspace');
       const financeWorkspace = document.getElementById('financeWorkspace');
       const adminWorkspace = document.getElementById('adminWorkspace');
+      const volunteersWorkspace=document.getElementById('volunteersWorkspace');
+      const recordsWorkspace=document.getElementById('recordsWorkspace');
       const taskGrid = document.getElementById('detailTasks');
-      [membershipWorkspace,sponsorWorkspace,bftWorkspace,bikeNightsWorkspace,marketplaceWorkspace,financeWorkspace,adminWorkspace].forEach(workspace => workspace.classList.remove('active'));
-      if (key === 'finance') {
+      [membershipWorkspace,sponsorWorkspace,bftWorkspace,bikeNightsWorkspace,marketplaceWorkspace,financeWorkspace,adminWorkspace,volunteersWorkspace,recordsWorkspace].forEach(workspace => workspace.classList.remove('active'));
+      if (key === 'records' || key === 'volunteers') {
+        taskGrid.innerHTML='';
+        document.getElementById(key+'Workspace').classList.add('active');
+        loadClubFramework(key);
+      } else if (key === 'finance') {
         taskGrid.innerHTML = '';
         financeWorkspace.classList.add('active');
         loadFinanceTab(document.querySelector('[data-finance-tab].active')?.dataset.financeTab || 'dashboard',true);
@@ -6203,3 +6300,4 @@
   </script>
 </body>
 </html>
+
