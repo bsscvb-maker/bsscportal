@@ -1370,7 +1370,7 @@
       </div>
     </main>
   </div>
-  <script src="dues-matching.js?v=5"></script>
+  <script src="dues-matching.js?v=6"></script>
   <script>
     const GOOGLE_CLIENT_ID = '881518334290-kimg628u5oriddlrqoq6vb619m8gn13s.apps.googleusercontent.com';
     const SPREADSHEET_ID = '14ZFdT1sA04z6Hp-iVaX2uRNjJq-JBoxmY1mvfL9X-Bk';
@@ -2349,6 +2349,7 @@
       const isYearCount = targetId === 'membershipContent' && currentMembershipSheet === 'Year Count';
       const isLifer = targetId === 'membershipContent' && currentMembershipSheet === 'Lifer';
       const isNumberedRoster = targetId === 'membershipContent' && ['2026','2027'].includes(currentMembershipSheet);
+      if (targetId === 'membershipContent' && currentMembershipSheet === '2027') maxColumns=rows[headerRowIndex].length;
       const headers = rows[headerRowIndex].slice(0, maxColumns);
       const ticketGroupStart = isTicketLedger ? headers.findIndex(value => String(value || '').trim().toLowerCase() === 'tickets on hold') : -1;
       if (isTicketLedger && ticketGroupStart >= 0 && rows[headerRowIndex + 1]) {
@@ -2368,6 +2369,10 @@
       else if (editOptions && editOptions.reverseRows) indexedData = indexedData.reverse();
       const width = Math.min(maxColumns, Math.max(headers.length, ...indexedData.map(item => item.row.length)));
       const isRoster2027 = targetId === 'membershipContent' && currentMembershipSheet === '2027';
+      if(isRoster2027) {
+        const last=headers.findIndex(h=>String(h).trim()==='Last Name'), first=headers.findIndex(h=>String(h).trim()==='First Name');
+        indexedData.sort((a,b)=>String(a.row[last]||'').localeCompare(String(b.row[last]||''),'en',{sensitivity:'base'}) || String(a.row[first]||'').localeCompare(String(b.row[first]||''),'en',{sensitivity:'base'}) || a.sourceIndex-b.sourceIndex);
+      }
       // Keep original sheet indexes so hiding display columns cannot shift edits.
       const rosterHeader = index => String(headers[index] || '').toLowerCase().replace(/[^a-z0-9]/g,'');
       const displayColumns = isBftTracking ? [8,0,1,2,...Array.from({length:width},(_,i)=>i).filter(i=>![8,0,1,2].includes(i))] : Array.from({length:width},(_,i)=>i).filter(index => {
@@ -2419,10 +2424,10 @@
         const readyForPickup = /^(true|yes|1)$/i.test(String(item.row[14] || '').trim());
         const orderHandedOut = /^(true|yes|1)$/i.test(String(item.row[15] || '').trim());
         const orderStages = [paymentDue?'payment':'',(!sentToVendor&&!orderHandedOut)?'unsent':'',(sentToVendor&&!readyForPickup&&!orderHandedOut)?'vendor':'',(readyForPickup&&!orderHandedOut)?'pickup':'',orderHandedOut?'complete':''].filter(Boolean).join(' ');
-        return `<tr class="${rowClasses}" ${isTransaction2026 || isBftTracking ? `data-transaction-row="${sourceRowNumber}" data-source-index="${item.sourceIndex}"` : ''} ${isOrder ? `data-market-stages="${orderStages}" data-market-order-id="${esc(orderId)}"` : ''}>${isTransaction2026 && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-transaction aria-label="Edit row ${sourceRowNumber}: ${esc(String(item.row[headers.findIndex(header => /^description$/i.test(String(header || '').trim()))] || 'Transaction'))}"></td>` : ''}${isBftTracking && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-bft-row aria-label="Edit ${esc(String(item.row[0] || `row ${sourceRowNumber}`))}: ${esc(String(item.row[1] || 'Donation'))}"></td>` : ''}${isTransaction2026 ? `<td class="transaction-row-number" data-label="Row">${sourceRowNumber}</td>` : ''}${isLifer ? `<td class="lifer-row-number" data-label="Row">${sourceRowNumber}</td>` : ''}${isNumberedRoster ? `<td class="lifer-row-number" data-label="#">${rosterIndex + 1}</td>` : ''}${finalHeaders.map((_, columnIndex) => {
+        return `<tr class="${rowClasses}" ${isRoster2027 ? `data-roster-source-row="${sourceRowNumber}"` : ''} ${isTransaction2026 || isBftTracking ? `data-transaction-row="${sourceRowNumber}" data-source-index="${item.sourceIndex}"` : ''} ${isOrder ? `data-market-stages="${orderStages}" data-market-order-id="${esc(orderId)}"` : ''}>${isTransaction2026 && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-transaction aria-label="Edit row ${sourceRowNumber}: ${esc(String(item.row[headers.findIndex(header => /^description$/i.test(String(header || '').trim()))] || 'Transaction'))}"></td>` : ''}${isBftTracking && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-bft-row aria-label="Edit ${esc(String(item.row[0] || `row ${sourceRowNumber}`))}: ${esc(String(item.row[1] || 'Donation'))}"></td>` : ''}${isTransaction2026 ? `<td class="transaction-row-number" data-label="Row">${sourceRowNumber}</td>` : ''}${isLifer ? `<td class="lifer-row-number" data-label="Row">${sourceRowNumber}</td>` : ''}${isNumberedRoster ? `<td class="lifer-row-number" data-label="#">${rosterIndex + 1}</td>` : ''}${finalHeaders.map((_, columnIndex) => {
           const sourceColumnIndex = displayColumns[columnIndex];
           const formulaValue = editOptions && editOptions.formulaRows && editOptions.formulaRows[item.sourceIndex] ? String(editOptions.formulaRows[item.sourceIndex][sourceColumnIndex] || '') : '';
-          const editable = editMode && !isTransaction2026 && !isBftTracking && !formulaValue.startsWith('=');
+          const editable = editMode && !isTransaction2026 && !isBftTracking && !formulaValue.startsWith('=') && !(isRoster2027 && ['renewedon','renewal'].includes(rosterHeader(sourceColumnIndex)));
           let shownValue = item.row[sourceColumnIndex] || '';
           if (isTicketLedger && columnIndex === ticketGroupStart + 2) {
             const quantity = Number(String(item.row[ticketGroupStart + 1] || '').replace(/[$,]/g, ''));
@@ -5479,19 +5484,24 @@
       const key = (row, hs) => ['Last Name','First Name'].map(label => norm(row[hs.findIndex(h => norm(h) === norm(label))])).join('|');
       const old = new Map();
       previousRows.slice(1).forEach(row => { const k=key(row,oldHeaders); if(k!=='|' && !old.has(k)) old.set(k,row); else if(old.has(k)) old.set(k,null); });
+      const firstRenewals = new Map();
       const latest = new Map(), jsonCol = rawHeaders.findIndex(h=>norm(h)==='rawjson');
       renewalRows.slice(1).forEach((row,index) => {
         try {
           const p=JSON.parse(row[jsonCol] || '{}'), k=norm(p.lastName)+'|'+norm(p.firstName);
-          const time=Date.parse(p.submittedAt || '') || index;
+          const submittedTime=Date.parse(p.submittedAt || '');
+          const time=Number.isFinite(submittedTime) ? submittedTime : index;
+          if(k!=='|' && Number.isFinite(submittedTime) && (!firstRenewals.has(k) || submittedTime<firstRenewals.get(k).time)) firstRenewals.set(k,{time:submittedTime,index});
           if(k!=='|' && (!latest.has(k) || time>=latest.get(k).time)) latest.set(k,{p,time});
         } catch(error) { /* Leave the live roster intact for malformed payloads. */ }
       });
+      const renewalOrder=new Map([...firstRenewals.entries()].sort((a,b)=>a[1].time-b[1].time || a[1].index-b[1].index).map(([k,v],i)=>[k,{...v,number:i+1}]));
+      const renewalDateFormat=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
       // Annual payment/signature fields must never be carried over from 2026.
       const historical = ['Road Name','Sex','Sponsor','Start Year','Start Date','Lifer Clock Start Year','Director Position','Sister Patch','Membership Type','Address','City','State','Zip','Phone','Email','Date of Birth','Member Classification'];
       const fields = {'Road Name':'roadName','Sex':'sex','Address':'address','City':'city','State':'state','Zip':'zip','Phone':'phone','Email':'email','Military Service':'militaryService','Military Branch':'militaryBranch','Years Served':'militaryYears'};
       return rows.map((original,index) => {
-        if(!index) return [...original];
+        if(!index) return [...original,'Renewed On','Renewal #'];
         const row=[...original], k=key(row,headers), prior=old.get(k), submission=latest.get(k)?.p;
         const blank = value => String(value ?? '').trim()==='' || /^#(NUM!|VALUE!|N\/A|REF!|ERROR!)/.test(String(value));
         if(prior) historical.forEach(label => {
@@ -5521,6 +5531,9 @@
           } else if(validYear) row[tenure]='Approximately '+(today.getFullYear()-startYear)+' years (start year only)';
         }
         if(start>=0 && blank(row[start]) && validYear) row[start]=String(startYear)+' (exact date not recorded)';
+        while(row.length<headers.length) row.push('');
+        const first=renewalOrder.get(k);
+        row.push(first ? renewalDateFormat.format(new Date(first.time)) : '', first ? first.number : '');
         return row;
       });
     }
