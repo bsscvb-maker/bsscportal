@@ -54,7 +54,7 @@ async function setup2027DuesReview(rows) {
     const bodyRows=[...target.querySelectorAll('table tbody tr')];
     context.people.forEach((p,i)=>{
       const tr=bodyRows[i];if(!tr)return;
-      const td=document.createElement('td');td.textContent=duesExemption(p,context.previous,context.presidents)||(/^(yes|paid)$/.test(duesNorm(p.values[p.cols['Dues Paid']]))?'Paid':'Payment Required');tr.appendChild(td);
+      const td=document.createElement('td');const contribution=context.ledger.slice(1).some(r=>duesNorm(r[duesHeader(context.ledger,'Status')])==='reconciled' && Number(r[duesHeader(context.ledger,'Membership Year')])===2027 && duesNorm(r[duesHeader(context.ledger,'Member Name')])===duesNorm(p.name) && String(r[duesHeader(context.ledger,'Notes')]||'').includes('[VOLUNTARY_CONTRIBUTION_RECEIVED]'));td.textContent=(duesExemption(p,context.previous,context.presidents)||(/^(yes|paid)$/.test(duesNorm(p.values[p.cols['Dues Paid']]))?'Paid':'Payment Required'))+(contribution?' · Voluntary contribution received':'');tr.appendChild(td);
     });
     const open=()=>open2027DuesManager(panel.querySelector('.dues-review-status'));
     panel.querySelector('button').addEventListener('click',open);
@@ -74,20 +74,23 @@ function open2027PaymentMatching(context,status,host=null) {
   const members=context.people.filter(p=>['active','prospect'].includes(p.status));
   for(const payment of pending){
     const row=payment.values,payer=String(row[col('Buyer Name')]||''),email=duesNorm(row[col('Buyer Email')]);
-    const eligible=members.filter(p=>!duesExemption(p,context.previous,context.presidents));
+    const eligible=members;
     const exact=eligible.filter(p=>p.email===email);
     const aliases=context.ledger.slice(1).filter(r=>duesNorm(r[col('Status')])==='reconciled' && duesNorm(r[col('Buyer Email')])===email).map(r=>duesMatchRecord(r[col('Notes')])).filter(Boolean);
     const remembered=eligible.filter(p=>aliases.some(a=>a.memberEmail===p.email && duesNorm(a.memberName)===duesNorm(p.name)));
     const suggested=exact.length===1?exact[0]:remembered.length===1?remembered[0]:null;
     const card=document.createElement('section');card.className='membership-system-note';
-    card.innerHTML='<h3>'+esc(money(Number(row[col('Gross Amount')])))+' from '+esc(payer)+'</h3><p>'+esc(email)+' · '+esc(row[col('Payment Date')])+'<br>Transaction: '+esc(row[col('Transaction ID')])+'</p><label>Whose 2027 renewal does this cover? <select style="display:block;width:100%;min-height:54px;margin-top:12px;padding:12px 16px;font-size:18px;background:#252527;color:#fff;border:2px solid #777;border-radius:8px;box-sizing:border-box" aria-label="Member for '+esc(payer)+'"><option value="">Choose a member…</option>'+eligible.map(p=>'<option value="'+p.row+'" '+(p===suggested?'selected':'')+'>'+esc(p.name)+' — '+esc(p.email)+'</option>').join('')+'</select></label><p>Exempt members and members with initial-payment coverage are excluded. If this payment belongs to one of them, leave it for review.</p><button type="button" class="dashboard-edit-btn">Confirm Match</button><p role="status" data-result></p>';
+    card.innerHTML='<h3>'+esc(money(Number(row[col('Gross Amount')])))+' from '+esc(payer)+'</h3><p>'+esc(email)+' · '+esc(row[col('Payment Date')])+'<br>Transaction: '+esc(row[col('Transaction ID')])+'</p><label>Whose 2027 renewal does this cover? <select style="display:block;width:100%;min-height:54px;margin-top:12px;padding:12px 16px;font-size:18px;background:#252527;color:#fff;border:2px solid #777;border-radius:8px;box-sizing:border-box" aria-label="Member for '+esc(payer)+'"><option value="">Choose a member…</option>'+eligible.map(p=>'<option value="'+p.row+'" '+(p===suggested?'selected':'')+'>'+esc(p.name)+' — '+esc(p.email)+(duesExemption(p,context.previous,context.presidents)?' — Exempt / covered':'')+'</option>').join('')+'</select></label><p>For exempt or covered members, confirm a voluntary contribution. Their existing dues exemption or coverage stays unchanged.</p><button type="button" class="dashboard-edit-btn">Confirm Match</button><p role="status" data-result></p>';
     dialog.querySelector('[data-payments]').appendChild(card);
     const button=card.querySelector('button'),select=card.querySelector('select'),result=card.querySelector('[data-result]');
+    const updateAction=()=>{const p=eligible.find(p=>p.row===Number(select.value));button.textContent=p&&duesExemption(p,context.previous,context.presidents)?'Confirm Voluntary Contribution':'Confirm Match';};
+    select.addEventListener('change',updateAction);updateAction();
     button.onclick=async()=>{
       const selected=eligible.find(p=>p.row===Number(select.value));if(!selected){result.textContent='Choose a member first.';return;}
-      if(!window.confirm('Confirm '+money(Number(row[col('Gross Amount')]))+' from '+payer+' is for '+selected.name+'’s 2027 renewal?'))return;
+      const voluntary=Boolean(duesExemption(selected,context.previous,context.presidents));
+      if(!window.confirm('Confirm '+money(Number(row[col('Gross Amount')]))+' from '+payer+' for '+selected.name+(voluntary?' as a voluntary contribution? Their dues exemption or coverage will stay unchanged.':'’s 2027 renewal?')))return;
       button.disabled=true;select.disabled=true;button.textContent='Processing…';button.style.cssText='background:#facc15;color:#1a1a1a;border-color:#facc15;opacity:1';card.style.border='2px solid #facc15';result.style.color='#854d0e';result.textContent='Processing — checking and saving this payment…';
-      try { await confirm2027PaymentMatch(payment,selected);result.textContent='✓ Matched to '+selected.name+'. Dues marked paid and alternate PayPal email saved. Select Done below to close and refresh the roster.';button.textContent='✓ Match Complete';button.style.cssText='background:#22c55e;color:#071b0d;border-color:#22c55e;opacity:1';card.style.border='2px solid #22c55e';result.style.color='#166534';status.textContent=' Payment matched successfully.';const done=dialog.querySelector('button[data-close].dashboard-edit-btn');done.textContent='Done — Close & Refresh Roster';done.onclick=async()=>{if(host)host.closest('dialog').remove();else close();if(currentMembershipSheet==='2027')await loadMembershipSheet('2027',true);}; }
+      try { const outcome=await confirm2027PaymentMatch(payment,selected);result.textContent=outcome.voluntary?'✓ Voluntary contribution received from '+selected.name+'. Existing dues exemption or coverage preserved. Select Done below to close and refresh the roster.':'✓ Matched to '+selected.name+'. Dues marked paid and alternate PayPal email saved. Select Done below to close and refresh the roster.';button.textContent=outcome.voluntary?'✓ Voluntary Contribution Received':'✓ Match Complete';button.style.cssText='background:#22c55e;color:#071b0d;border-color:#22c55e;opacity:1';card.style.border='2px solid #22c55e';result.style.color='#166534';status.textContent=' Payment matched successfully.';const done=dialog.querySelector('button[data-close].dashboard-edit-btn');done.textContent='Done — Close & Refresh Roster';done.onclick=async()=>{if(host)host.closest('dialog').remove();else close();if(currentMembershipSheet==='2027')await loadMembershipSheet('2027',true);}; }
       catch(error){result.textContent='Could not complete the match: '+error.message;result.style.color='#b91c1c';card.style.border='2px solid #f87171';button.textContent='Retry Match';button.style.cssText='';button.disabled=false;select.disabled=false;}
     };
   }
@@ -104,19 +107,20 @@ async function confirm2027PaymentMatch(payment,selected) {
   if(Number(current.values[col('Gross Amount')])!==52||duesNorm(current.values[col('Currency')])!=='usd')throw new Error('This is not a standard $52 USD renewal. Review it separately.');
   const people=context.people.filter(p=>duesSamePerson(p,selected));
   if(people.length!==1||!['active','prospect'].includes(people[0].status))throw new Error('Member identity changed or is ambiguous. Refresh the roster.');
-  const person=people[0];if(duesExemption(person,context.previous,context.presidents))throw new Error('This member is exempt or already covered. Leave the payment for review.');
-  if(/^(yes|paid)$/.test(duesNorm(person.values[person.cols['Dues Paid']])))throw new Error('This member is already paid. Review this possible duplicate payment.');
+  const person=people[0],voluntary=Boolean(duesExemption(person,context.previous,context.presidents));
+  if(!voluntary && /^(yes|paid)$/.test(duesNorm(person.values[person.cols['Dues Paid']])))throw new Error('This member is already paid. Review this possible duplicate payment.');
   const already=ledger.slice(1).some(r=>duesNorm(r[col('Status')])==='reconciled' && Number(r[col('Membership Year')])===2027 && duesNorm(r[col('Member Name')])===duesNorm(person.name) && Number(r[col('Dues Credit')])>0);
-  if(already)throw new Error('This member already has a credited renewal payment. Review before applying another payment.');
+  if(!voluntary && already)throw new Error('This member already has a credited renewal payment. Review before applying another payment.');
   const record={memberName:person.name,memberEmail:person.email,payerEmail:duesNorm(current.values[col('Buyer Email')])};
-  const note=String(current.values[col('Notes')]||'')+' | Confirmed in portal '+new Date().toISOString()+' [PAYMENT_MATCH:'+JSON.stringify(record)+']';
-  const updates=[['Member Name',person.name],['Dues Credit',50],['Status','Reconciled'],['Receipt Status','Pending'],['Notes',note]].map(([header,value])=>({range:"'Dues Payments'!"+columnNumberToLetters(col(header)+1)+current.row,majorDimension:'ROWS',values:[[value]]}));
-  updates.push({range:"'2027'!"+columnNumberToLetters(person.cols['Dues Paid']+1)+person.row,majorDimension:'ROWS',values:[['Yes']]});
+  const note=String(current.values[col('Notes')]||'')+' | Confirmed in portal '+new Date().toISOString()+' [PAYMENT_MATCH:'+JSON.stringify(record)+']'+(voluntary?' | Voluntary contribution received: $52 gross; $0 required dues credit; existing exemption or initial-payment coverage preserved. [VOLUNTARY_CONTRIBUTION_RECEIVED]':'');
+  const updates=[['Member Name',person.name],['Dues Credit',voluntary?0:50],['Status','Reconciled'],['Receipt Status','Pending'],['Notes',note]].map(([header,value])=>({range:"'Dues Payments'!"+columnNumberToLetters(col(header)+1)+current.row,majorDimension:'ROWS',values:[[value]]}));
+  if(!voluntary) updates.push({range:"'2027'!"+columnNumberToLetters(person.cols['Dues Paid']+1)+person.row,majorDimension:'ROWS',values:[['Yes']]});
   // RAW keeps payer names and email data from being interpreted as formulas.
   await writePortalSheetRequest('https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+'/values:batchUpdate',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({valueInputOption:'RAW',data:updates}),signal:AbortSignal.timeout(15000)},'Confirmed renewal payment','2027 / Dues Payments',updates.length);
   const verify=await getSheetValues("'Dues Payments'!A"+current.row+':O'+current.row,MEMBERSHIP_SPREADSHEET_ID);
   const paid=await getSheetValues("'2027'!"+columnNumberToLetters(person.cols['Dues Paid']+1)+person.row,MEMBERSHIP_SPREADSHEET_ID);
-  if(verify[0]?.[col('Status')]!=='Reconciled'||paid[0]?.[0]!=='Yes')throw new Error('Save could not be verified. Refresh before retrying.');
+  if(verify[0]?.[col('Status')]!=='Reconciled'||(voluntary?String(paid[0]?.[0]??'')!==String(person.values[person.cols['Dues Paid']]??''):paid[0]?.[0]!=='Yes'))throw new Error('Save could not be verified. Refresh before retrying.');
+  return {voluntary};
 }
 
 
