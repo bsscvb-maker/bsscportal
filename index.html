@@ -1055,6 +1055,36 @@
     .bft-finance-simple .finance-dashboard-card { text-align:center; }
     @media(max-width:650px) { .bft-finance-summary.bft-finance-simple { grid-template-columns:1fr; } }
     .data-table td.membership-dues-unpaid { background:#f8d7da !important; color:#9d1024 !important; font-weight:850; }
+
+    .dues-manager-launch { display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:15px 18px; margin:12px 0; border:1px solid #d9dce2; border-left:4px solid #cf1235; border-radius:9px; background:#fafafa; color:#17191d; }
+    .dues-manager-launch > div { flex:1; }
+    .dues-manager-launch strong,.dues-manager-launch span { display:block; }
+    .dues-manager-launch span { color:#636b76; font-size:.85rem; margin-top:3px; }
+    .dues-manager-dialog { width:min(900px,95vw); max-height:90vh; overflow:auto; padding:0; border:1px solid #ccc; border-radius:14px; color:#17191d; background:#fff; font:16px/1.45 Inter,system-ui,sans-serif; box-shadow:0 24px 70px rgba(0,0,0,.3); }
+    .dues-manager-dialog::backdrop { background:rgba(0,0,0,.6); }
+    .dues-manager-head { display:flex; justify-content:space-between; align-items:center; padding:20px 24px; background:#111113; color:#fff; border-bottom:4px solid #cf1235; }
+    .dues-manager-head small { color:#d8d8da; letter-spacing:.08em; font-size:.75rem; font-weight:800; }
+    .dues-manager-head h2 { color:#fff; margin:4px 0 0; font-size:1.5rem; }
+    .dues-manager-head button { background:transparent; border:0; color:#fff; font-size:28px; cursor:pointer; }
+    .dues-manager-body { padding:22px 24px; }
+    .dues-manager-actions { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:22px; }
+    .dues-manager-section { display:flex; gap:20px; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .dues-manager-section h3 { margin:0 0 4px; font-size:1.1rem; }
+    .dues-manager-section p { margin:0; color:#636b76; font-size:.88rem; }
+    .dues-manager-section label { font-size:.8rem; font-weight:800; }
+    .dues-manager-section input { display:block; margin-top:4px; padding:8px; border:1px solid #bfc5cd; border-radius:6px; font:inherit; }
+    .dues-collection-table { width:100%; border-collapse:collapse; font-size:.95rem; }
+    .dues-collection-table th { padding:10px 12px; text-align:left; background:#f1f2f4; color:#444c57; font-size:.78rem; text-transform:uppercase; }
+    .dues-collection-table td { padding:12px; border-bottom:1px solid #e5e7eb; }
+    .dues-collection-table input { width:19px; height:19px; accent-color:#cf1235; cursor:pointer; }
+    .dues-collection-table select { min-height:38px; padding:6px 10px; border:1px solid #bdc3cc; border-radius:6px; background:#fff; color:#17191d; font:inherit; }
+    .dues-manager-footer { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-top:20px; }
+    .dues-manager-note { color:#69717b; font-size:.8rem; margin-top:14px; }
+    .dues-manager-success { color:#17662b; font-weight:800; }
+    .dues-manager-error { color:#a80023; font-weight:750; }
+    .dues-manager-dialog button:disabled { opacity:.55; cursor:default; }
+    [data-dues-online-panel] { margin-bottom:20px; }
+    @media(max-width:600px) { .dues-manager-body { padding:16px; } .dues-manager-section,.dues-manager-footer { align-items:flex-start; flex-direction:column; } .dues-collection-table th,.dues-collection-table td { padding:9px 6px; } }
 </style>
 </head>
 <body>
@@ -1323,7 +1353,7 @@
       </div>
     </main>
   </div>
-  <script src="dues-matching.js?v=3"></script>
+  <script src="dues-matching.js?v=4"></script>
   <script>
     const GOOGLE_CLIENT_ID = '881518334290-kimg628u5oriddlrqoq6vb619m8gn13s.apps.googleusercontent.com';
     const SPREADSHEET_ID = '14ZFdT1sA04z6Hp-iVaX2uRNjJq-JBoxmY1mvfL9X-Bk';
