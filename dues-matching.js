@@ -50,11 +50,11 @@ async function setup2027DuesReview(rows) {
     panel.innerHTML='<div><strong>2027 Membership Dues</strong><span>'+unpaid2027Dues(context).length+' unpaid · '+pending.length+' online payments to review</span></div><button type="button" class="dashboard-edit-btn" data-manage-dues>Manage Dues</button><span role="status" class="dues-review-status"></span>';
     target.prepend(panel);
     const header=target.querySelector('table thead tr:last-child');
-    if(header) { const th=document.createElement('th');th.textContent='2027 Dues Status';header.appendChild(th); }
+    if(header) { const th=document.createElement('th');th.textContent='2027 Dues Status';const renewalHeader=[...header.children].find(cell=>cell.textContent==='Renewed On');header.insertBefore(th,renewalHeader||null); }
     const bodyRows=[...target.querySelectorAll('table tbody tr')];
     context.people.forEach((p,i)=>{
-      const tr=bodyRows[i];if(!tr)return;
-      const td=document.createElement('td');const contribution=context.ledger.slice(1).some(r=>duesNorm(r[duesHeader(context.ledger,'Status')])==='reconciled' && Number(r[duesHeader(context.ledger,'Membership Year')])===2027 && duesNorm(r[duesHeader(context.ledger,'Member Name')])===duesNorm(p.name) && String(r[duesHeader(context.ledger,'Notes')]||'').includes('[VOLUNTARY_CONTRIBUTION_RECEIVED]'));td.textContent=(duesExemption(p,context.previous,context.presidents)||(/^(yes|paid)$/.test(duesNorm(p.values[p.cols['Dues Paid']]))?'Paid':'Payment Required'))+(contribution?' · Voluntary contribution received':'');tr.appendChild(td);
+      const tr=bodyRows.find(row=>Number(row.dataset.rosterSourceRow)===p.row)||bodyRows[i];if(!tr)return;
+      const td=document.createElement('td');const contribution=context.ledger.slice(1).some(r=>duesNorm(r[duesHeader(context.ledger,'Status')])==='reconciled' && Number(r[duesHeader(context.ledger,'Membership Year')])===2027 && duesNorm(r[duesHeader(context.ledger,'Member Name')])===duesNorm(p.name) && String(r[duesHeader(context.ledger,'Notes')]||'').includes('[VOLUNTARY_CONTRIBUTION_RECEIVED]'));td.textContent=(duesExemption(p,context.previous,context.presidents)||(/^(yes|paid)$/.test(duesNorm(p.values[p.cols['Dues Paid']]))?'Paid':'Payment Required'))+(contribution?' · Voluntary contribution received':'');const renewedOnIndex=[...header.children].findIndex(cell=>cell.textContent==='Renewed On');tr.insertBefore(td,renewedOnIndex>=0?tr.children[renewedOnIndex-1]||null:null);
     });
     const open=()=>open2027DuesManager(panel.querySelector('.dues-review-status'));
     panel.querySelector('button').addEventListener('click',open);
