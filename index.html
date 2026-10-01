@@ -1205,21 +1205,19 @@
           </div><div class="sponsor-workspace" id="sponsorWorkspace">
             <div class="sponsor-tabs" aria-label="Sponsorship sections">
               <button class="sponsor-tab active" data-sponsor-tab="dashboard">Sponsor Dashboard</button>
-              <button class="sponsor-tab" data-sponsor-tab="current">Current Sponsors</button>
+              <button class="sponsor-tab" data-sponsor-tab="current">Previous Sponsor Register</button>
               <button class="sponsor-tab" data-sponsor-tab="prospective">Prospective Sponsors</button>
               <button class="sponsor-tab" data-sponsor-tab="history">Contact History</button>
               <button class="sponsor-tab" data-sponsor-tab="documents">Documents Requested</button>
               <button class="sponsor-tab" data-sponsor-tab="renewals">Renewal Reporting</button>
             </div>
-            <section class="sponsor-panel active" data-sponsor-panel="dashboard">
-              <div class="sponsor-summary"><div class="metric"><div class="metric-label">Active cash revenue</div><div class="metric-value">$1,100</div><div class="metric-note">Current workbook snapshot</div></div><div class="metric"><div class="metric-label">Active sponsors</div><div class="metric-value">2</div><div class="metric-note">Renewal eligible</div></div><div class="metric"><div class="metric-label">Renewal due</div><div class="metric-value">0</div><div class="metric-note">Current 30-day window</div></div><div class="metric"><div class="metric-label">Prospects</div><div class="metric-value">2</div><div class="metric-note">Currently recorded</div></div></div>
-              <div class="sponsor-panels"><section class="workspace-card"><h2>Sponsor overview</h2><div class="workspace-list"><div class="workspace-row"><span>Expired sponsors</span><strong>6</strong></div><div class="workspace-row"><span>Revenue at risk in 90 days</span><strong>$0</strong></div><div class="workspace-row"><span>Active in-kind value recorded</span><strong>$0</strong></div><div class="workspace-row"><span>Retention rate</span><strong>25%</strong></div></div></section><section class="workspace-card"><h2>Workbook sections</h2><div class="workspace-list"><div class="workspace-row"><span>Dashboard</span><strong>Ready</strong></div><div class="workspace-row"><span>Current sponsors</span><strong>Mapped</strong></div><div class="workspace-row"><span>Prospective sponsors</span><strong>Mapped</strong></div><div class="workspace-row"><span>Definitions</span><strong>Mapped</strong></div></div></section></div>
-            </section>
+            <div class="workspace-card"><div class="club-toolbar"><input id="sponsorSearch" type="search" placeholder="Search donor, item, or program" aria-label="Search sponsorships"><select id="sponsorYear" aria-label="Contribution year"><option value="">All years</option><option>2027</option><option selected>2026</option><option>2025</option></select><select id="sponsorKind" aria-label="Contribution type"><option value="">Money and in-kind</option><option value="Money">Money</option><option value="In-Kind">In-kind</option></select><button class="open-btn" id="sponsorAddGift">Add contribution</button><button class="sponsor-tab" id="sponsorRefresh">Refresh</button></div><div id="sponsorLogStatus" class="data-status" role="status">Sign in to load shared sponsorship records.</div></div>
+            <section class="sponsor-panel active" data-sponsor-panel="dashboard"><div class="sponsor-summary" id="sponsorLiveMetrics"></div><section class="workspace-card"><h2>Contribution history</h2><div id="sponsorGiftTable"></div></section></section>
             <section class="sponsor-panel" data-sponsor-panel="current"><div class="coming-soon"><h2>Current Sponsors</h2><div class="data-status" id="currentStatus">Sign in to load sponsor records.</div><div id="currentTable"></div></div></section>
             <section class="sponsor-panel" data-sponsor-panel="prospective"><div class="coming-soon"><h2>Prospective Sponsors</h2><div class="data-status" id="prospectiveStatus">Sign in to load prospective sponsor records.</div><div id="prospectiveTable"></div></div></section>
-            <section class="sponsor-panel" data-sponsor-panel="history"><div class="coming-soon"><h2>Contact History</h2><p>This section will show calls, emails, meetings, notes, and the next follow-up action for each sponsor.</p></div></section>
+            <section class="sponsor-panel" data-sponsor-panel="history"><section class="workspace-card"><h2>Contact history</h2><div id="sponsorContactTable"></div></section></section>
             <section class="sponsor-panel" data-sponsor-panel="documents"><div class="coming-soon"><h2>Documents Requested</h2><p>This section will track W-9s, sponsorship letters, receipts, logos, agreements, and other requested documents.</p></div></section>
-            <section class="sponsor-panel" data-sponsor-panel="renewals"><div class="coming-soon"><h2>Renewal Reporting</h2><p>This section will organize renewals due, contacted sponsors, commitments, expirations, and retained revenue.</p></div></section>
+            <section class="sponsor-panel" data-sponsor-panel="renewals"><section class="workspace-card"><div class="club-toolbar"><h2>Renewal follow-ups</h2><select id="sponsorRenewalFilter" aria-label="Renewal follow-up filter"><option value="2027">2027 asks</option><option value="due">Due / overdue</option><option value="all">All follow-ups</option><option value="missing">Missing follow-up date</option></select></div><p>Log each conversation, set the next follow-up, and record a new contribution when a sponsor renews. Pledges remain separate from money received.</p><div id="sponsorRenewalTable"></div></section></section><div id="sponsorEditor"></div>
           </div><div class="bft-workspace" id="bftWorkspace">
             <div class="sponsor-tabs" aria-label="Bikes for Tykes sections">
               <button class="sponsor-tab active" data-bft-tab="dashboard">DashBoard</button>
@@ -2029,6 +2027,7 @@
     }
 
     async function loadSponsorData() {
+      loadSponsorshipLog();
       document.getElementById('currentStatus').textContent = 'Loading current sponsors…';
       document.getElementById('prospectiveStatus').textContent = 'Loading prospective sponsors…';
       const [current, prospective] = await Promise.allSettled([
@@ -2045,6 +2044,78 @@
         document.getElementById('prospectiveTable').innerHTML = '';
         document.getElementById('prospectiveStatus').textContent = 'Prospective Sponsors could not load. Reopen this tab to retry.';
       }
+    }
+
+    const sponsorshipHeaders = ['Contribution ID','Donor','Contact Name','Email','Phone','Contribution Type','Payment Method','Date Received','Cash Amount','In-Kind Value','Quantity','Item / Description','Program','Next Ask Date','Renewal Status','Owner','Notes','Source Reference'];
+    let sponsorshipRows=[], sponsorshipContacts=[], sponsorshipLoadVersion=0;
+    const sponsorToday=()=>new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'});
+    const sponsorNumber=v=>Number(String(v||'').replace(/[$,]/g,''))||0;
+    const sponsorDue=r=>r[13]&&r[13]<=sponsorToday()&&!['Declined','Renewed'].includes(r[14]);
+    function sponsorNextAsk(date){if(!date)return '';const d=new Date(date+'T12:00:00Z');const month=d.getUTCMonth();d.setUTCFullYear(d.getUTCFullYear()+1);if(d.getUTCMonth()!==month)d.setUTCDate(0);d.setUTCDate(d.getUTCDate()-30);return d.toISOString().slice(0,10);}
+    async function loadSponsorshipLog(){
+      const version=++sponsorshipLoadVersion;
+      document.getElementById('sponsorLogStatus').textContent='Loading contribution and renewal history…';
+      try{
+        if(!accessToken)throw new Error('Sign in with Google to load shared sponsorship records.');
+        const [gifts,contacts]=await Promise.all([getSheetValues("'Sponsor Contributions'!A1:R2000"),getSheetValues("'Sponsor Contact Log'!A1:H2000")]);
+        if(version!==sponsorshipLoadVersion)return;
+        if(JSON.stringify(gifts[0])!==JSON.stringify(sponsorshipHeaders))throw new Error('Contribution columns do not match the expected layout.');
+        sponsorshipRows=gifts.slice(1).map((r,i)=>({values:r,row:i+2})).filter(x=>x.values[0]);sponsorshipContacts=contacts.slice(1).filter(r=>r[0]);
+        renderSponsorshipLog();
+        document.getElementById('sponsorLogStatus').textContent='Shared sponsorship records · Saved in Google Sheets';
+      }catch(error){document.getElementById('sponsorLogStatus').textContent=error.message;}
+    }
+    function sponsorActionButtons(id){return '<button class="sponsor-tab" data-gift-edit="'+esc(id)+'">Edit</button> <button class="sponsor-tab" data-gift-contact="'+esc(id)+'">Log contact</button> <button class="sponsor-tab" data-gift-renew="'+esc(id)+'">Record renewal</button>';}
+    function renderSponsorshipLog(){
+      const year=document.getElementById('sponsorYear').value,query=document.getElementById('sponsorSearch').value.trim().toLowerCase(),type=document.getElementById('sponsorKind').value;
+      const all=sponsorshipRows.map(x=>x.values),selected=all.filter(r=>(!year||r[7]?.startsWith(year))&&(!query||r.join(' ').toLowerCase().includes(query))&&(!type||r[5]===type));
+      const due=all.filter(sponsorDue),undated=all.filter(r=>!r[7]);
+      const cash=selected.filter(r=>r[5]==='Money').reduce((n,r)=>n+sponsorNumber(r[8]),0),kind=selected.filter(r=>r[5]==='In-Kind').reduce((n,r)=>n+sponsorNumber(r[9]),0);
+      document.getElementById('sponsorLiveMetrics').innerHTML=[['Money received',money(cash),'Gross contributions in selected view'],['In-kind value',money(kind),'Estimated value; separate from money'],['Donors',new Set(selected.map(r=>r[1].toLowerCase())).size,'In selected view'],['Follow-ups due',due.length,'All years · '+undated.length+' received dates unconfirmed']].map(([l,v,n])=>'<div class="metric"><div class="metric-label">'+l+'</div><div class="metric-value">'+v+'</div><div class="metric-note">'+n+'</div></div>').join('');
+      const table=(headers,rows)=>rows.length?'<div class="table-wrap"><table class="data-table"><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>':'<div class="empty-state">No matching records.</div>';
+      const cell=v=>'<td>'+esc(v??'—')+'</td>';
+      document.getElementById('sponsorGiftTable').innerHTML=table(['Donor','Received','Type / method','Cash','In-kind value','Item / program','Next ask','Status','Manage'],selected.slice().sort((a,b)=>(b[7]||'').localeCompare(a[7]||'')).map(r=>'<tr>'+cell(r[1])+cell(r[7]||'Unconfirmed')+cell(r[5]+' · '+r[6])+cell(r[5]==='Money'?money(r[8]):'—')+cell(r[5]==='In-Kind'?(r[9]===''||r[9]==null?'Unconfirmed':money(r[9])):'—')+cell(r[11]+' · '+r[12])+cell(r[13]||'Set follow-up')+cell(r[14])+'<td>'+sponsorActionButtons(r[0])+'</td></tr>'));
+      const renewalFilter=document.getElementById('sponsorRenewalFilter').value;
+      const renewals=all.filter(r=>(!query||r.join(' ').toLowerCase().includes(query))&&(renewalFilter==='all'||renewalFilter==='due'&&sponsorDue(r)||renewalFilter==='2027'&&r[13]?.startsWith('2027')||renewalFilter==='missing'&&!r[13]));
+      document.getElementById('sponsorRenewalTable').innerHTML=table(['Donor','Prior gift','Received','Next ask','Renewal status','Contact / owner','Manage'],renewals.slice().sort((a,b)=>(a[13]||'9999').localeCompare(b[13]||'9999')).map(r=>'<tr>'+cell(r[1])+cell(r[5]==='Money'?money(r[8]):r[11]+' · '+(r[9]?money(r[9]):'Value unconfirmed'))+cell(r[7]||'Unconfirmed')+cell(r[13]||'Missing date')+cell(sponsorDue(r)?r[14]+' · Due':r[14])+cell([r[2],r[3],r[4],r[15]].filter(Boolean).join(' · ')||'Contact details needed')+'<td>'+sponsorActionButtons(r[0])+'</td></tr>'));
+      document.getElementById('sponsorContactTable').innerHTML=table(['Donor','Date','Method','Outcome','Next follow-up','Contacted by','Notes'],sponsorshipContacts.slice().reverse().filter(r=>!query||r.join(' ').toLowerCase().includes(query)||(all.find(g=>g[0]===r[1])?.[1]||'').toLowerCase().includes(query)).map(r=>'<tr>'+cell(all.find(g=>g[0]===r[1])?.[1]||r[1])+r.slice(2).map(cell).join('')+'</tr>'));
+      document.querySelectorAll('[data-gift-edit]').forEach(b=>b.onclick=()=>editSponsorshipGift(b.dataset.giftEdit));
+      document.querySelectorAll('[data-gift-contact]').forEach(b=>b.onclick=()=>logSponsorshipContact(b.dataset.giftContact));
+      document.querySelectorAll('[data-gift-renew]').forEach(b=>b.onclick=()=>editSponsorshipGift(b.dataset.giftRenew,true));
+    }
+    async function sponsorWriteRow(tab,values,row){
+      const range="'"+tab+"'!A"+(row?row+':'+columnNumberToLetters(values.length)+row:':'+columnNumberToLetters(values.length));
+      const url='https://sheets.googleapis.com/v4/spreadsheets/'+SPREADSHEET_ID+'/values/'+encodeURIComponent(range)+(row?'?valueInputOption=RAW':':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS');
+      return writePortalSheetRequest(url,{method:row?'PUT':'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({range,majorDimension:'ROWS',values:[values]})},'Saved sponsorship record',tab,1);
+    }
+    function sponsorshipDialog(title,fields){
+      const host=document.getElementById('sponsorEditor');host.innerHTML='<dialog class="club-dialog"><form><h2>'+esc(title)+'</h2><div class="club-form">'+fields+'</div><p data-save-status role="status"></p><div class="club-toolbar"><button class="open-btn" type="submit">Save</button><button class="sponsor-tab" type="button" data-cancel>Cancel</button></div></form></dialog>';
+      const dialog=host.querySelector('dialog');dialog.showModal();host.querySelector('[data-cancel]').onclick=()=>dialog.close();return {dialog,form:host.querySelector('form'),status:host.querySelector('[data-save-status]')};
+    }
+    function sponsorField(name,label,value,type='text',options,required=false){return '<label>'+esc(label)+(options?'<select name="'+name+'">'+options.map(v=>'<option '+(v===value?'selected':'')+'>'+esc(v)+'</option>').join('')+'</select>':'<input name="'+name+'" type="'+type+'" value="'+esc(value??'')+'" '+(required?'required ':'')+(type==='number'?'min="0" step="0.01" ':'')+'>')+'</label>';}
+    function editSponsorshipGift(id,renew=false){
+      const original=sponsorshipRows.find(x=>x.values[0]===id),v=original?original.values.slice():[];
+      if(renew){v[7]=sponsorToday();v[13]=sponsorNextAsk(v[7]);v[14]='Not Contacted';v[16]='Renewal of '+id;v[17]='';}
+      const choices={5:['Money','In-Kind'],6:['Unconfirmed','Cash','Check','Credit Card','PayPal','Zelle','ACH','Other','N/A'],14:['Not Contacted','Contacted','Pledged','Declined','Renewed']};
+      const fields=sponsorshipHeaders.slice(1).map((h,j)=>{const i=j+1,t=[7,13].includes(i)?'date':[8,9,10].includes(i)?'number':i===3?'email':'text';return sponsorField('c'+i,h,v[i]??(i===5?'Money':i===6?'Unconfirmed':i===10?1:i===12?'Bikes for Tykes':i===14?'Not Contacted':''),t,choices[i],[1,5,11,12,13].includes(i));}).join('')+'<p>In-kind value is the total estimated value for this contribution. Leave the received date blank only if it is unconfirmed. New gifts default to an ask 30 days before the next anniversary. Sponsorship entries do not add a second finance transaction.</p>';
+      const {dialog,form,status}=sponsorshipDialog(renew?'Record renewal':id?'Edit contribution':'Add contribution',fields);
+      const kind=form.elements.c5,cash=form.elements.c8,value=form.elements.c9,method=form.elements.c6;
+      const sync=()=>{cash.disabled=kind.value==='In-Kind';cash.required=kind.value==='Money';value.disabled=kind.value==='Money';if(kind.value==='In-Kind')method.value='N/A';else if(method.value==='N/A')method.value='Unconfirmed';};kind.onchange=sync;sync();
+      form.elements.c7.onchange=()=>{if(!id||renew)form.elements.c13.value=sponsorNextAsk(form.elements.c7.value);};
+      form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('[type=submit]');button.disabled=true;status.textContent='Saving…';try{
+        const data=new FormData(form),values=[id&&!renew?id:'SC-'+crypto.randomUUID(),...sponsorshipHeaders.slice(1).map((h,j)=>data.get('c'+(j+1))||'')];
+        values[8]=values[5]==='Money'?Number(values[8]):0;values[9]=values[5]==='In-Kind'&&values[9]!==''?Number(values[9]):'';values[10]=Number(values[10]||1);
+        if(values[5]==='Money'&&values[8]<=0)throw new Error('Enter the money received.');if(!Number.isInteger(values[10])||values[10]<1)throw new Error('Quantity must be a positive whole number.');
+        if(original&&!renew){const live=(await getSheetValues("'Sponsor Contributions'!A"+original.row+':R'+original.row))[0]||[];if(JSON.stringify(live)!==JSON.stringify(original.values))throw new Error('This record changed. Refresh before editing.');}
+        await sponsorWriteRow('Sponsor Contributions',values,original&&!renew?original.row:undefined);
+        if(renew&&original){try{const live=await getSheetValues("'Sponsor Contributions'!A"+original.row+':A'+original.row);if(live[0]?.[0]!==id)throw new Error('Prior contribution moved.');await updateSheetCell(SPREADSHEET_ID,'Sponsor Contributions',original.row,14,'Renewed');}catch(error){status.textContent='New renewal saved. Prior status could not update: '+error.message;form.onsubmit=e=>e.preventDefault();button.hidden=true;await loadSponsorshipLog();return;}}
+        dialog.close();await loadSponsorshipLog();
+      }catch(error){status.textContent=error.message;}finally{button.disabled=false;}};
+    }
+    function logSponsorshipContact(id){
+      const gift=sponsorshipRows.find(x=>x.values[0]===id);if(!gift)return;
+      const {dialog,form,status}=sponsorshipDialog('Contact '+gift.values[1],sponsorField('date','Contact date',sponsorToday(),'date',null,true)+sponsorField('method','Method','Phone','text',['Phone','Email','Text','In person','Other'])+sponsorField('outcome','Outcome','Contacted','text',['Contacted','Pledged','Declined'])+sponsorField('next','Next follow-up',gift.values[13],'date')+sponsorField('owner','Contacted by',gift.values[15],'text',null,true)+sponsorField('notes','Notes','','text',null,true));
+      form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('[type=submit]');button.disabled=true;status.textContent='Saving contact…';let saved=false;try{const d=new FormData(form);const live=await getSheetValues("'Sponsor Contributions'!A"+gift.row+':R'+gift.row);if(JSON.stringify(live[0])!==JSON.stringify(gift.values))throw new Error('Contribution changed. Refresh before logging contact.');await sponsorWriteRow('Sponsor Contact Log',['SL-'+crypto.randomUUID(),id,d.get('date'),d.get('method'),d.get('outcome'),d.get('next'),d.get('owner'),d.get('notes')]);saved=true;await updateSheetRanges(SPREADSHEET_ID,[{range:"'Sponsor Contributions'!O"+gift.row,value:d.get('outcome')},...(d.get('next')?[{range:"'Sponsor Contributions'!N"+gift.row,value:d.get('next')}]:[])]);dialog.close();await loadSponsorshipLog();}catch(error){status.textContent=(saved?'Contact saved; renewal status needs review. ':'')+error.message;if(saved){button.hidden=true;await loadSponsorshipLog();}}finally{button.disabled=false;}};
     }
 
     function compactRows(rows) {
@@ -6170,6 +6241,9 @@
       loadMembershipSheet(event.target.value);
     });
     initializeMembershipPicker();
+    document.getElementById('sponsorAddGift').onclick=()=>editSponsorshipGift();
+    document.getElementById('sponsorRefresh').onclick=()=>loadSponsorshipLog();
+    ['sponsorSearch','sponsorYear','sponsorKind','sponsorRenewalFilter'].forEach(id=>document.getElementById(id).addEventListener(id==='sponsorSearch'?'input':'change',renderSponsorshipLog));
     document.querySelectorAll('[data-sponsor-tab]').forEach(button => button.addEventListener('click', () => {
       const selected = button.dataset.sponsorTab;
       document.querySelectorAll('[data-sponsor-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
@@ -6313,4 +6387,5 @@
   </script>
 </body>
 </html>
+
 
