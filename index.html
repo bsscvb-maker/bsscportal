@@ -2384,8 +2384,10 @@
           const headerName = String(finalHeaders[columnIndex] || '').trim().toLowerCase();
           const numericValue = Number(String(shownValue).replace(/[$,%(),]/g, '').replace(/\s/g, '')) * (String(shownValue).includes('(') ? -1 : 1);
           const varianceClass = targetId === 'financeBaselineTable' && headerName.includes('variance') && Number.isFinite(numericValue) ? (numericValue < 0 ? 'variance-over' : 'variance-good') : '';
+          const duesStatus = String(shownValue).trim().toLowerCase();
+          const duesClass = isRoster2027 && rosterHeader(sourceColumnIndex) === 'duespaid' && !['yes','paid','exempt','waived','true','1'].includes(duesStatus) ? 'membership-dues-unpaid' : '';
           const baseClass = editable ? 'editable-cell' : (editMode && formulaValue.startsWith('=') ? 'formula-cell' : '');
-          return `<td class="${[baseClass,varianceClass,isTransaction2026 && [1,2,16].includes(columnIndex) ? 'transaction-extra' : ''].filter(Boolean).join(' ')}" ${targetId === 'financeTallyTable' || isTransaction2026 ? `data-label="${esc(isTransaction2026 && columnIndex === 10 ? 'Chase balance' : isTransaction2026 && columnIndex === 11 ? 'With outstanding' : finalHeaders[columnIndex] || `Column ${columnIndex + 1}`)}"` : ''} ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${sourceRowNumber}" data-column="${sourceColumnIndex}" data-value="${esc(shownValue)}"` : ''}>${newMemberLink ? `<button class="year-count-member-link" type="button" data-new-members-year="${esc(item.row[0])}" aria-label="View ${esc(shownValue)} new members in ${esc(item.row[0])}">${esc(shownValue)}</button>` : esc(shownValue)}</td>`;
+          return `<td class="${[baseClass,varianceClass,duesClass,isTransaction2026 && [1,2,16].includes(columnIndex) ? 'transaction-extra' : ''].filter(Boolean).join(' ')}" ${targetId === 'financeTallyTable' || isTransaction2026 ? `data-label="${esc(isTransaction2026 && columnIndex === 10 ? 'Chase balance' : isTransaction2026 && columnIndex === 11 ? 'With outstanding' : finalHeaders[columnIndex] || `Column ${columnIndex + 1}`)}"` : ''} ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${sourceRowNumber}" data-column="${sourceColumnIndex}" data-value="${esc(shownValue)}"` : ''}>${newMemberLink ? `<button class="year-count-member-link" type="button" data-new-members-year="${esc(item.row[0])}" aria-label="View ${esc(shownValue)} new members in ${esc(item.row[0])}">${esc(shownValue)}</button>` : esc(shownValue)}</td>`;
         }).join('')}</tr>`;
       }).join('')}</tbody></table></div>`;
       status.textContent = `${indexedData.length} row${indexedData.length === 1 ? '' : 's'} loaded from Google Sheets${editOptions ? (editMode ? ' — edit mode is on.' : ' — view mode.') : '.'}`;
@@ -3793,6 +3795,7 @@
         .footer b{font-size:12pt}.print-only{display:none}
         @media screen{body{padding:15px}.print-only{display:block;margin-bottom:15px}.print-only button{padding:10px 15px}}
     
+    .data-table td.membership-dues-unpaid { background:#f8d7da !important; color:#9d1024 !important; font-weight:850; }
   </style></head><body><div class="print-only"><button onclick="window.print()">Print pick tickets</button> · Cut along the dotted lines.</div><div class="sheet">${rows}</div></body></html>`);
       printWindow.document.close();
       printWindow.focus();
