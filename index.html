@@ -1054,6 +1054,7 @@
     .bft-finance-summary.bft-finance-simple { grid-template-columns:repeat(3,minmax(0,1fr)); }
     .bft-finance-simple .finance-dashboard-card { text-align:center; }
     @media(max-width:650px) { .bft-finance-summary.bft-finance-simple { grid-template-columns:1fr; } }
+    .data-table td.membership-dues-unpaid { background:#f8d7da !important; color:#9d1024 !important; font-weight:850; }
 </style>
 </head>
 <body>
@@ -3795,7 +3796,6 @@
         .footer b{font-size:12pt}.print-only{display:none}
         @media screen{body{padding:15px}.print-only{display:block;margin-bottom:15px}.print-only button{padding:10px 15px}}
     
-    .data-table td.membership-dues-unpaid { background:#f8d7da !important; color:#9d1024 !important; font-weight:850; }
   </style></head><body><div class="print-only"><button onclick="window.print()">Print pick tickets</button> · Cut along the dotted lines.</div><div class="sheet">${rows}</div></body></html>`);
       printWindow.document.close();
       printWindow.focus();
