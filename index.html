@@ -4942,7 +4942,14 @@
       const first = column('first name'), last = column('last name'), road = column('road name'), date = column('start date');
       return rows.slice(1).filter(row => String(row[status] || '').trim().toLowerCase() === 'active' && Number(String(row[start] || '').trim()) === Number(year))
         .map(row => ({first:String(row[first] || '').trim(), last:String(row[last] || '').trim(), road:String(row[road] || '').trim(), startDate:String(row[date] || '').trim()}))
-        .sort((a,b) => a.last.localeCompare(b.last) || a.first.localeCompare(b.first));
+        .sort((a,b) => {
+          const dateOrder = value => {
+            const parsed = Date.parse(value);
+            return Number.isFinite(parsed) ? parsed : Infinity;
+          };
+          const firstDate = dateOrder(a.startDate), secondDate = dateOrder(b.startDate);
+          return (firstDate === secondDate ? 0 : firstDate < secondDate ? -1 : 1) || a.last.localeCompare(b.last) || a.first.localeCompare(b.first);
+        });
     }
 
     async function showYearCountNewMembers(year) {
