@@ -720,6 +720,11 @@
     .activity-summary-panel { max-width:760px; }
     .activity-controls { display:grid; grid-template-columns:160px minmax(0,1fr); gap:10px 14px; align-items:center; margin-bottom:16px; }
     .activity-controls label { font-weight:900; }
+    .activity-year-controls { display:flex; align-items:center; gap:10px; }
+    .activity-year-controls select { flex:1; min-width:0; }
+    .activity-clear-btn { min-height:44px; padding:9px 17px; border:1px solid #bfc0c4; border-radius:8px; background:#fff; color:#161616; font:inherit; font-weight:800; cursor:pointer; }
+    .activity-clear-btn:hover { background:#f1f2f4; }
+    .activity-clear-btn:disabled { opacity:.6; cursor:wait; }
     .activity-controls select { min-height:44px; padding:9px 11px; border:2px solid #bfc0c4; border-radius:8px; background:#fff; font:inherit; }
     .activity-results { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
     .activity-result { padding:16px; border:1px solid #d6d8dc; border-top:5px solid #111113; border-radius:10px; background:#fff; }
@@ -4440,7 +4445,7 @@
 
     function renderFinanceActivity(rows, activities, transactionRows) {
       const at = (r,c) => String((rows[r] && rows[r][c]) || '—').trim();
-      const year = at(4,7), activity = at(5,7);
+      const year = at(4,7), activity = String(rows[5]?.[7] || '').trim();
       const options = [...new Set([activity,...activities].filter(Boolean))];
       const expenses = transactionRows.slice(1).map((row,index) => ({row,index:index+2})).filter(({row}) => String(row[7] || '').trim().toLowerCase() === activity.toLowerCase() && String(row[12] || '').trim().toLowerCase() === 'expense' && (year === 'All Years' || String(row[2] || '').trim() === year || String(row[0] || '').includes(year)));
       const money = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n);
@@ -4451,8 +4456,8 @@
       const amount = budget - spent;
       const remaining = money(amount);
       document.getElementById('financeActivitySummary').innerHTML = `<div class="activity-summary-panel"><div class="activity-controls">
-        <label for="financeActivityYear">Year</label><select id="financeActivityYear">${['2026','2025','All Years'].map(value => `<option ${value === year ? 'selected' : ''}>${esc(value)}</option>`).join('')}</select>
-        <label for="financeActivityName">Activity</label><select id="financeActivityName">${options.map(value => `<option ${value === activity ? 'selected' : ''}>${esc(value)}</option>`).join('')}</select>
+        <label for="financeActivityYear">Year</label><div class="activity-year-controls"><select id="financeActivityYear">${['2026','2025','All Years'].map(value => `<option ${value === year ? 'selected' : ''}>${esc(value)}</option>`).join('')}</select><button type="button" class="activity-clear-btn" id="financeClearActivity">Clear</button></div>
+        <label for="financeActivityName">Activity</label><select id="financeActivityName"><option value="" ${activity ? '' : 'selected'}>Select an activity</option>${options.map(value => `<option ${value === activity ? 'selected' : ''}>${esc(value)}</option>`).join('')}</select>
       </div><div class="activity-results">
         <div class="activity-result"><label for="financeEventBudget"><span>${esc(at(6,6))}</span></label><input id="financeEventBudget" class="activity-budget-input" value="${esc(at(6,7) === '—' ? '' : at(6,7))}" inputmode="decimal" placeholder="$0.00"></div>
         <div class="activity-result"><span>${esc(at(7,6))}</span><strong>${money(spent)}</strong></div>
@@ -4463,7 +4468,21 @@
       document.querySelectorAll('.event-cost-check').forEach(box => box.addEventListener('change', () => {
         document.getElementById('selectedEventCost').textContent = money(expenses.reduce((sum,item) => sum+(document.querySelector('.event-cost-check[data-index="'+item.index+'"]').checked ? amountOf(item.row) : 0),0));
       }));
-      const setDisabled = disabled => ['financeActivityYear','financeActivityName','financeEventBudget','financeSaveEventBudget'].forEach(id => document.getElementById(id).disabled = disabled);
+      const setDisabled = disabled => ['financeActivityYear','financeActivityName','financeEventBudget','financeSaveEventBudget','financeClearActivity'].forEach(id => document.getElementById(id).disabled = disabled);
+      document.getElementById('financeClearActivity').addEventListener('click',async () => {
+        setDisabled(true);
+        document.getElementById('financeActivityStatus').textContent = 'Clearing event selection…';
+        try {
+          await updateSheetCell(FINANCE_SPREADSHEET_ID,'Control-2026',5,7,'2026');
+          await updateSheetCell(FINANCE_SPREADSHEET_ID,'Control-2026',6,7,'');
+          await updateSheetCell(FINANCE_SPREADSHEET_ID,'Control-2026',7,7,'');
+          loadedFinanceTabs.delete('control');
+          await loadFinanceActivity();
+        } catch (error) {
+          setDisabled(false);
+          document.getElementById('financeActivityStatus').textContent = 'The event selection could not be cleared. Try again.';
+        }
+      });
       document.getElementById('financeActivityYear').addEventListener('change',async event => {
         setDisabled(true);
         document.getElementById('financeActivityStatus').textContent = 'Updating activity year…';
