@@ -232,6 +232,31 @@ async function record2027MeetingDues(selected,date,method) {
 function print2027UnpaidDues(context) {
   const unpaid=unpaid2027Dues(context),printWindow=window.open('','_blank');
   if(!printWindow){alert('Allow pop-ups for this portal to print the collection list.');return;}
-  printWindow.document.write('<!doctype html><html><head><title>2027 Dues Collection</title><style>@page{size:letter;margin:.5in}body{font:10pt Arial,sans-serif;color:#111}h1{font-size:15pt;margin:0 0 5px}p{margin:5px 0;font-size:9pt}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border-bottom:1px solid #aaa;padding:7px 6px;text-align:left}th{background:#eee;font-size:9pt}tr{break-inside:avoid}.print{padding:8px 14px;margin-bottom:12px}@media print{.print{display:none}}</style></head><body><button class="print" onclick="window.print()">Print</button><h1>BoneShakers · 2027 Dues Collection</h1><p>'+esc(duesLocalDate())+' · '+unpaid.length+' members · Total owed '+esc(money(unpaid.length*50))+'</p><table><thead><tr><th>Member</th><th>Owes</th><th>Paid ✓</th><th>Date</th><th>Method / Notes</th></tr></thead><tbody>'+unpaid.map(p=>'<tr><td>'+esc(p.name)+'</td><td>$50.00</td><td>□</td><td></td><td></td></tr>').join('')+'</tbody></table><p>Return the completed checklist to record payments in Manage Dues.</p></body></html>');
+  const pages=[];
+  for(let i=0;i<unpaid.length;i+=7)pages.push(unpaid.slice(i,i+7));
+  if(!pages.length)pages.push([]);
+  const checkbox=label=>'<span class="method"><span class="box"></span>'+label+'</span>';
+  const sheets=pages.map((members,index)=>`<section class="sheet">
+    <header><div class="club">BONESHAKERS SOCIAL CLUB</div><h1>2027 Dues Collection</h1>
+      <p>${unpaid.length} members / $50 each / ${esc(money(unpaid.length*50))} total outstanding</p></header>
+    <div class="collection"><span>Collection date: <span class="write-line">${esc(duesLocalDate())}</span></span><span>Collected by: <span class="write-line"></span></span></div>
+    <p class="instruction">Check PAID only after receiving payment. Select the method used.</p>
+    <table><colgroup><col style="width:34.5%"><col style="width:10.5%"><col style="width:11%"><col style="width:27%"><col style="width:17%"></colgroup>
+      <thead><tr><th>Member</th><th>Due</th><th>Paid</th><th>Method</th><th>Date</th></tr></thead>
+      <tbody>${members.map(person=>`<tr><td class="name">${esc(person.name)}</td><td>$50</td><td class="paid"><span class="box"></span></td><td><div class="methods">${['Cash','Check','Card','Other'].map(checkbox).join('')}</div></td><td><span class="date-line"></span></td></tr>`).join('') || '<tr><td colspan="5">No outstanding dues.</td></tr>'}</tbody>
+    </table>
+    <div class="tally"><h2>End-of-night tally${pages.length>1?' - this page':''}</h2><div class="totals"><span>Cash: $ <i></i></span><span>Checks: $ <i></i></span><span>Card / other: $ <i></i></span></div><div class="totals two"><span>Total received: $ <i></i></span><span>Members paid: <i></i></span></div></div>
+    <div class="notes"><strong>Notes / check numbers:</strong><div></div><div></div></div>
+    <footer><span>Enter collected payments in Manage Dues after the event.</span><span>${index+1} of ${pages.length}</span></footer>
+  </section>`).join('');
+  printWindow.document.write(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2027 Dues Collection</title><style>
+    @page{size:letter portrait;margin:.5in}*{box-sizing:border-box}body{margin:0;background:#e9edf1;color:#111;font:11pt Arial,sans-serif}
+    .toolbar{padding:16px;text-align:center}.toolbar button{padding:12px 28px;font-size:16px;cursor:pointer}.sheet{width:7.5in;min-height:10in;margin:0 auto 24px;background:white;padding:0}
+    .club{font-size:11pt;font-weight:bold;letter-spacing:1px;padding-top:6px}h1{font-size:25pt;margin:16px 0 10px}header p{margin:0;font-size:11pt}
+    .collection{display:flex;justify-content:space-between;gap:24px;margin-top:25px;font-size:10pt;font-weight:bold}.collection>span{display:flex;align-items:end;flex:1;gap:8px;white-space:nowrap}.write-line{display:inline-block;flex:1;height:20px;border-bottom:1px solid #aaa;font-weight:normal}
+    .instruction{font-size:10pt;margin:22px 0 14px}table{width:100%;border-collapse:collapse;table-layout:fixed}thead{display:table-header-group}th{background:#edf0f3;text-transform:uppercase;font-size:9pt;letter-spacing:.5px;text-align:left;height:28px;padding:7px 8px}td{border:1px solid #b7bdc5;padding:8px;font-size:12pt;height:68px}tr{break-inside:avoid}.name{font-weight:bold;overflow-wrap:anywhere}.paid{text-align:center}.box{display:inline-block;width:15px;height:15px;border:1px solid #111;flex-shrink:0;vertical-align:middle}.paid .box{width:19px;height:19px}.methods{display:grid;grid-template-columns:1fr 1fr;gap:10px 8px}.method{display:flex;align-items:center;gap:6px;font-size:9pt;white-space:nowrap}.date-line{display:block;border-bottom:1px solid #aaa;height:24px}
+    h2{font-size:11pt;text-transform:uppercase;letter-spacing:.6px;margin:23px 0 16px}.totals{display:flex;gap:20px;margin-bottom:20px}.totals>span{display:flex;gap:6px;flex:1;white-space:nowrap;font-size:10pt}.totals i{flex:1;min-width:25px;border-bottom:1px solid #aaa}.two{gap:65px}.notes{font-size:10pt}.notes div{height:27px;border-bottom:1px solid #aaa}footer{display:flex;justify-content:space-between;gap:12px;font-size:9pt;margin-top:24px}
+    @media screen{.sheet{padding:24px;width:8.5in;max-width:100%}}@media print{body{background:white}.toolbar{display:none}.sheet{margin:0;width:100%;min-height:0;break-after:page}.sheet:last-child{break-after:auto}th{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+  </style></head><body><div class="toolbar"><button onclick="window.print()">Print collection sheet</button></div>${sheets}</body></html>`);
   printWindow.document.close();printWindow.focus();
 }
