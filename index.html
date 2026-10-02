@@ -309,6 +309,10 @@
     /* Let the 2027 roster follow the page instead of trapping vertical scrolling. */
     #membershipContent .membership-roster-2027 { max-height:none; overflow-x:auto; overflow-y:hidden; }
     #membershipContent .membership-roster-2027 thead th { position:static; box-shadow:none; }
+    .roster-floating-header { position:fixed; z-index:3; overflow:hidden; pointer-events:none; background:#111113; }
+    .roster-floating-header[hidden] { display:none; }
+    .roster-floating-header table { margin:0; table-layout:fixed; }
+    .roster-floating-header th { position:static; }
     .data-table th { position: sticky; top: 0; z-index: 2; padding: 12px 11px; text-align: left; line-height: 1.35; color: white; background: #111113; border-right: 1px solid #343438; border-bottom: 3px solid var(--gold); }
     #financeTransactions2026Table .data-table th { text-align:center; }
     .data-table td { padding: 12px 11px; border-right: 1px solid #ececef; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.45; }
@@ -1375,6 +1379,63 @@
   </div>
   <script src="dues-matching.js?v=6"></script>
   <script>
+    let rosterHeaderCleanup = null;
+    function setupRosterFloatingHeader(target) {
+      if (rosterHeaderCleanup) rosterHeaderCleanup();
+      rosterHeaderCleanup = null;
+      const wrap = target.querySelector('.membership-roster-2027');
+      const table = wrap?.querySelector('table');
+      const head = table?.querySelector('thead');
+      if (!head) return;
+      const floating = document.createElement('div');
+      floating.className = 'roster-floating-header';
+      floating.setAttribute('aria-hidden', 'true');
+      floating.hidden = true;
+      const copy = table.cloneNode(false);
+      copy.appendChild(head.cloneNode(true));
+      floating.appendChild(copy);
+      document.body.appendChild(floating);
+      let frame = 0;
+      const update = () => {
+        frame = 0;
+        const rect = wrap.getBoundingClientRect();
+        const headRect = head.getBoundingClientRect();
+        const bar = document.querySelector('.topbar');
+        const top = Math.max(0, bar?.getBoundingClientRect().bottom || 0);
+        const visible = rect.width > 0 && headRect.top < top && rect.bottom > top;
+        floating.hidden = !visible;
+        if (!visible) return;
+        floating.style.top = Math.min(top, rect.bottom - headRect.height) + 'px';
+        floating.style.left = rect.left + 'px';
+        floating.style.width = wrap.clientWidth + 'px';
+        floating.style.height = headRect.height + 'px';
+        copy.style.width = table.getBoundingClientRect().width + 'px';
+        copy.style.minWidth = copy.style.width;
+        copy.style.transform = 'translateX(' + (-wrap.scrollLeft) + 'px)';
+        const sourceCells = head.querySelectorAll('th');
+        copy.querySelectorAll('th').forEach((cell, i) => {
+          const width = sourceCells[i].getBoundingClientRect().width + 'px';
+          cell.style.width = width;
+          cell.style.minWidth = width;
+          cell.style.maxWidth = width;
+          cell.style.boxSizing = 'border-box';
+        });
+      };
+      const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
+      window.addEventListener('scroll', schedule, true);
+      window.addEventListener('resize', schedule);
+      const observer = new ResizeObserver(schedule);
+      observer.observe(table);
+      rosterHeaderCleanup = () => {
+        window.removeEventListener('scroll', schedule, true);
+        window.removeEventListener('resize', schedule);
+        observer.disconnect();
+        cancelAnimationFrame(frame);
+        floating.remove();
+      };
+      update();
+    }
+
     const GOOGLE_CLIENT_ID = '881518334290-kimg628u5oriddlrqoq6vb619m8gn13s.apps.googleusercontent.com';
     const SPREADSHEET_ID = '14ZFdT1sA04z6Hp-iVaX2uRNjJq-JBoxmY1mvfL9X-Bk';
     const BFT_SPREADSHEET_ID = '1cFhb2-Um1rBKj81dFeNWLSfKxuNfc768AFLbcjXdudY';
@@ -2525,6 +2586,7 @@
           return `<td class="${[baseClass,varianceClass,duesClass,isTransaction2026 && [1,2,16].includes(columnIndex) ? 'transaction-extra' : ''].filter(Boolean).join(' ')}" ${targetId === 'financeTallyTable' || isTransaction2026 ? `data-label="${esc(isTransaction2026 && columnIndex === 10 ? 'Chase balance' : isTransaction2026 && columnIndex === 11 ? 'With outstanding' : finalHeaders[columnIndex] || `Column ${columnIndex + 1}`)}"` : ''} ${editable ? `contenteditable="true" spellcheck="false" data-edit-cell="true" data-sheet="${esc(editOptions.sheetName)}" data-row="${sourceRowNumber}" data-column="${sourceColumnIndex}" data-value="${esc(shownValue)}"` : ''}>${newMemberLink ? `<button class="year-count-member-link" type="button" data-new-members-year="${esc(item.row[0])}" aria-label="View ${esc(shownValue)} new members in ${esc(item.row[0])}">${esc(shownValue)}</button>` : esc(shownValue)}</td>`;
         }).join('')}</tr>`;
       }).join('')}</tbody></table></div>`;
+      if (targetId === 'membershipContent') setupRosterFloatingHeader(target);
       status.textContent = `${indexedData.length} row${indexedData.length === 1 ? '' : 's'} loaded from Google Sheets${editOptions ? (editMode ? ' — edit mode is on.' : ' — view mode.') : '.'}`;
       if (isLifer) {
         const summary = rows.slice(1).filter(row => /^(Active|Deceased|Inactive Lifer|Grand Total)$/i.test(String(row[9] || '').trim()));
