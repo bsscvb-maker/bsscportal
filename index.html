@@ -4635,7 +4635,8 @@
         ['Pending PayPal deposits',money(pending.paypal)],
         ['Deposits awaiting availability',money(pending.otherDeposits)],
         ['Pending outgoing payments',money(-pending.outgoing)],
-        ['CASH AVAILABLE RIGHT NOW',money(available)]
+        ['CASH AVAILABLE RIGHT NOW',money(available)],
+        ['Status',status,/out of balance/i.test(status)]
       ],tone);
       document.getElementById('financeControlTable').innerHTML = `<div class="control-title"><h2>${esc(at(0,0))}</h2><span class="live-eastern-time" data-live-eastern-clock="true"></span></div>
         <div class="control-action-bar"><button class="dashboard-edit-btn ${financeControlEditMode ? 'active' : ''}" id="financeControlEditToggle" aria-pressed="${financeControlEditMode}">${financeControlEditMode ? 'Done Editing' : 'Edit Bank Reconciliation'}</button></div>
