@@ -1139,6 +1139,14 @@
     #financeDashboard .finance-dashboard-card.fund-bft strong { color:#123a53; }
     #financeDashboard .finance-dashboard-card.community-impact { background:#f4edfc; border-color:#c1a5df; border-top-color:#8b5fb5; }
     #financeDashboard .finance-dashboard-card.community-impact strong { color:#65408c; }
+    #financeDashboard .finance-dashboard-card.cash-total { background:#f1f3f5; border-color:#aab2bb; border-top-color:#56616e; }
+    #financeDashboard .finance-dashboard-card.cash-total strong { color:#263442; }
+    #financeControlTable .control-card.tone-cash-total { background:#f1f3f5; border-color:#aab2bb; }
+    #financeControlTable .control-card.tone-cash-total h3 { background:#dce2e8; color:#263442; border-color:#56616e; }
+    #financeControlTable .control-card.tone-community { background:#f4edfc; border-color:#c1a5df; }
+    #financeControlTable .control-card.tone-community h3 { background:#dfccef; color:#65408c; border-color:#8b5fb5; }
+    #financeControlTable .fund-status-error .control-row:last-child { background:#fce3e5; color:#a51d2c; padding:9px 8px; }
+    #financeControlTable .fund-status-balanced .control-row:last-child { background:#e1f4e7; color:#176b3a; padding:9px 8px; }
 </style>
 </head>
 <body>
@@ -4606,7 +4614,7 @@
       document.getElementById('financeDashboard').innerHTML = `<section class="finance-dashboard-hero">
         <div class="finance-dashboard-heading"><div><h2>${esc(at(1,1))}</h2><p>Board-level view of liquidity, financial performance, community impact, and financial control.</p></div><span class="finance-dashboard-asof live-eastern-time" data-live-eastern-clock="true"></span></div>
         <section class="finance-dashboard-section"><h3>Cash Position</h3><div class="finance-dashboard-grid">
-          ${card('Cash Available Right Now',money(cash.generalAvailable+cash.bftAvailable),'good')}
+          ${card('Cash Available Right Now',money(cash.generalAvailable+cash.bftAvailable),'cash-total')}
           ${card('General Fund Available',money(cash.generalAvailable),'fund-general')}
           ${card('Bikes for Tykes Available',money(cash.bftAvailable),'fund-bft')}
         </div></section>
@@ -4650,7 +4658,7 @@
         if (type === 'expense') totals.expenses += Math.abs(amount);
         return totals;
       },{income:0,expenses:0});
-      const monthSection = (title,balance,totals) => section(title,[['Current Fund Balance',balance],['Current Month Income',money(totals.income)],['Current Month Expenses',money(totals.expenses)],['Net This Month',money(totals.income-totals.expenses)]],resultTone(totals.income-totals.expenses));
+      const monthSection = (title,balance,totals) => section(title,[['Current Fund Balance',balance],['Current Month Income',money(totals.income)],['Current Month Expenses',money(totals.expenses)],['Net This Month',money(totals.income-totals.expenses)]],/BIKES FOR TYKES/i.test(title)?'tone-baby-blue':'tone-green');
       const generalMonth = monthlyTotals('General Fund');
       const bftMonth = monthlyTotals('Bikes for Tykes');
       const impactYtd = numeric(at(27,1));
@@ -4669,18 +4677,18 @@
         <div class="control-action-bar"><button class="dashboard-edit-btn ${financeControlEditMode ? 'active' : ''}" id="financeControlEditToggle" aria-pressed="${financeControlEditMode}">${financeControlEditMode ? 'Done Editing' : 'Edit Bank Reconciliation'}</button></div>
         ${financeControlEditMode ? '<div class="control-edit-note">Enter Chase’s Total available balance, General Fund available balance, and Bikes for Tykes available balance. Use the amounts labeled Available balance on Chase. Cleared Yes/No in Transactions-2026 controls the ledger and pending breakdown.</div>' : ''}<div class="control-grid">
         <div style="grid-column:1/-1;display:grid;gap:14px">
-        ${section('FUND BALANCES',[['CASH AVAILABLE RIGHT NOW',money(generalAvailable+bftAvailable)],['General Fund available',money(generalAvailable)],['Bikes for Tykes available',money(bftAvailable)],['Chase total available balance',at(5,4),false,6],['Chase General Fund available balance',at(6,4),false,7],['Chase Bikes for Tykes available balance',at(7,4),false,8],['Status',status,/out of balance/i.test(status)]],bankSplitMismatch?'tone-red':(hasPending(generalPending)||hasPending(bftPending)?'tone-yellow':'tone-green'))}
+        ${section('FUND BALANCES',[['CASH AVAILABLE RIGHT NOW',money(generalAvailable+bftAvailable)],['General Fund available',money(generalAvailable)],['Bikes for Tykes available',money(bftAvailable)],['Chase total available balance',at(5,4),false,6],['Chase General Fund available balance',at(6,4),false,7],['Chase Bikes for Tykes available balance',at(7,4),false,8],['Status',status,/out of balance/i.test(status)]],'tone-cash-total '+(bankSplitMismatch?'fund-status-error':(hasPending(generalPending)||hasPending(bftPending)?'fund-awaiting-clearance':'fund-status-balanced')))}
         <div class="control-fund-details">
         ${fundDetail('GENERAL FUND',generalBank,generalPending,generalAvailable)}
         ${fundDetail('BIKES FOR TYKES',bftBank,bftPending,bftAvailable,'tone-baby-blue')}
         </div>
         </div>
         ${monthSection('GENERAL FUND — CURRENT MONTH',at(5,1),generalMonth)}
-        ${section(at(12,0),[[at(14,0),at(14,1)],[at(15,0),at(15,1)],[at(16,0),at(16,1)]],resultTone(at(16,1)))}
+        ${section(at(12,0),[[at(14,0),at(14,1)],[at(15,0),at(15,1)],[at(16,0),at(16,1)]],'tone-green')}
         ${monthSection('BIKES FOR TYKES — CURRENT MONTH',at(7,1),bftMonth)}
-        ${section(at(19,0),[[at(20,0),at(20,1)],[at(21,0),at(21,1)],[at(22,0),at(22,1)]],resultTone(at(22,1)))}
-        ${section(at(22,3),[['Lifetime Giving Since 2005',at(22,4)],[at(26,3),at(26,4)]],'tone-blue')}
-        ${section(at(25,0),[['2026 Community Impact — YTD',at(27,1)],['2025 Community Impact — Full Year',at(25,4)],['Increase Over 2025 Full Year',money(impactIncrease)]],'tone-blue')}
+        ${section(at(19,0),[[at(20,0),at(20,1)],[at(21,0),at(21,1)],[at(22,0),at(22,1)]],'tone-baby-blue')}
+        ${section(at(22,3),[['Lifetime Giving Since 2005',at(22,4)],[at(26,3),at(26,4)]],'tone-community')}
+        ${section(at(25,0),[['2026 Community Impact — YTD',at(27,1)],['2025 Community Impact — Full Year',at(25,4)],['Increase Over 2025 Full Year',money(impactIncrease)]],'tone-community')}
       </div>`;
       document.getElementById('financeControlEditToggle').addEventListener('click',saveFinanceControlEdits);
       startEasternClock();
