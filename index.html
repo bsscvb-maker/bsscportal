@@ -4604,15 +4604,16 @@
         if(cleared!=='no' || (method==='paypal' && !['transfer in','transfer out'].includes(type))) return totals;
         const amount=numeric(row[9]||0);
         if(!Number.isFinite(amount)) return totals;
-        if(amount>0) totals.incoming+=amount;
+        if(amount>0) { totals.incoming+=amount; if(method==='paypal') totals.paypal+=amount; else totals.otherDeposits+=amount; }
         if(amount<0) totals.outgoing+=Math.abs(amount);
         return totals;
-      },{incoming:0,outgoing:0});
+      },{incoming:0,outgoing:0,paypal:0,otherDeposits:0});
       document.getElementById('financeControlTable').innerHTML = `<div class="control-title"><h2>${esc(at(0,0))}</h2><span class="live-eastern-time" data-live-eastern-clock="true"></span></div>
         <div class="control-action-bar"><button class="dashboard-edit-btn ${financeControlEditMode ? 'active' : ''}" id="financeControlEditToggle" aria-pressed="${financeControlEditMode}">${financeControlEditMode ? 'Done Editing' : 'Edit Bank Reconciliation'}</button></div>
         ${financeControlEditMode ? '<div class="control-edit-note">Enter the latest balances shown by Chase. Difference and Status calculate automatically.</div>' : ''}<div class="control-grid">
         ${section(at(3,0),[[at(5,0),at(5,1)],[at(7,0),at(7,1)],[at(8,0),at(8,1)]],'tone-green')}
-        ${section(at(3,3),[['Chase available balance',at(5,4),false,6],['General Fund',at(6,4),false,7],['Bikes for Tykes',at(7,4),false,8],['Pending deposits — all payment methods',money(pendingMoney.incoming)],['Pending outgoing payments',money(pendingMoney.outgoing)],['Difference — net pending money',at(9,4)],['Status',status,/out of balance/i.test(status)]],/out of balance/i.test(status) ? 'tone-red' : (/pending/i.test(status) ? 'tone-yellow' : 'tone-green'))}
+        ${section(at(3,3),[['Chase available balance',at(5,4),false,6],['General Fund',at(6,4),false,7],['Bikes for Tykes',at(7,4),false,8],['Pending deposits — excluding PayPal',money(pendingMoney.otherDeposits)],['Pending outgoing payments',money(pendingMoney.outgoing)],['Net change after clearance',at(9,4)],['Status',status,/out of balance/i.test(status)]],/out of balance/i.test(status) ? 'tone-red' : (/pending/i.test(status) ? 'tone-yellow' : 'tone-green'))}
+        ${section('PAYPAL',[['Pending net deposits',money(pendingMoney.paypal)],['Availability',pendingMoney.paypal > 0 ? 'Awaiting clearance — not available in Chase' : 'No pending deposits']],pendingMoney.paypal > 0 ? 'tone-yellow' : 'tone-green')}
         ${monthSection('GENERAL FUND — CURRENT MONTH',at(5,1),generalMonth)}
         ${section(at(12,0),[[at(14,0),at(14,1)],[at(15,0),at(15,1)],[at(16,0),at(16,1)]],resultTone(at(16,1)))}
         ${monthSection('BIKES FOR TYKES — CURRENT MONTH',at(7,1),bftMonth)}
