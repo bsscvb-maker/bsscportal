@@ -1133,6 +1133,12 @@
     #financeControlTable .fund-awaiting-clearance .control-row:last-child { background:#fff2cc; color:#725500; border-radius:5px; padding:9px 8px; }
     .finance-dashboard-card.pending { background:#fff2cc; border-color:#d6b347; color:#725500; }
     .finance-dashboard-card.pending strong { color:#725500; }
+    #financeDashboard .finance-dashboard-card.fund-general { background:#edf8f1; border-color:#80bd97; border-top-color:#249653; }
+    #financeDashboard .finance-dashboard-card.fund-general strong { color:#176b3a; }
+    #financeDashboard .finance-dashboard-card.fund-bft { background:#edf8ff; border-color:#9bcce9; border-top-color:#78b7df; }
+    #financeDashboard .finance-dashboard-card.fund-bft strong { color:#123a53; }
+    #financeDashboard .finance-dashboard-card.community-impact { background:#f4edfc; border-color:#c1a5df; border-top-color:#8b5fb5; }
+    #financeDashboard .finance-dashboard-card.community-impact strong { color:#65408c; }
 </style>
 </head>
 <body>
@@ -4601,8 +4607,8 @@
         <div class="finance-dashboard-heading"><div><h2>${esc(at(1,1))}</h2><p>Board-level view of liquidity, financial performance, community impact, and financial control.</p></div><span class="finance-dashboard-asof live-eastern-time" data-live-eastern-clock="true"></span></div>
         <section class="finance-dashboard-section"><h3>Cash Position</h3><div class="finance-dashboard-grid">
           ${card('Cash Available Right Now',money(cash.generalAvailable+cash.bftAvailable),'good')}
-          ${card('General Fund Available',money(cash.generalAvailable),'good')}
-          ${card('Bikes for Tykes Available',money(cash.bftAvailable),'blue')}
+          ${card('General Fund Available',money(cash.generalAvailable),'fund-general')}
+          ${card('Bikes for Tykes Available',money(cash.bftAvailable),'fund-bft')}
         </div></section>
         <section class="finance-dashboard-section"><h3>Pending Transactions</h3><div class="finance-dashboard-grid">
           ${card('Pending PayPal Deposits',money(cash.generalPending.paypal+cash.bftPending.paypal),'pending')}
@@ -4611,12 +4617,12 @@
         </div></section>
         <section class="finance-dashboard-section"><h3>Financial Performance</h3><div class="finance-dashboard-grid">
           ${card('Net This Month',at(16,1),metricClass('Net This Month',at(16,1)))}
-          ${card('General Fund Year to Date Net',at(6,9),metricClass('General Fund Year to Date Net',at(6,9)))}
-          ${card('Bikes for Tykes Year to Date Net',at(11,9),metricClass('Bikes for Tykes Year to Date Net',at(11,9)))}
+          ${card('General Fund Year to Date Net',at(6,9),'fund-general')}
+          ${card('Bikes for Tykes Year to Date Net',at(11,9),'fund-bft')}
         </div></section>
         <section class="finance-dashboard-section"><h3>Community Impact &amp; Financial Control</h3><div class="finance-dashboard-grid">
-          ${card('Charitable Spend Year to Date',at(16,5),'blue')}
-          ${card('Lifetime Community Impact',at(6,5),'blue')}
+          ${card('Charitable Spend Year to Date',at(16,5),'community-impact')}
+          ${card('Lifetime Community Impact',at(6,5),'community-impact')}
           ${card('Bank Reconciliation Status',reconciliation,metricClass('Bank Reconciliation Status',reconciliation))}
         </div></section>
       </section>`;
