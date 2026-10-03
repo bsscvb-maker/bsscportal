@@ -1147,6 +1147,11 @@
     #financeControlTable .control-card.tone-community h3 { background:#dfccef; color:#65408c; border-color:#8b5fb5; }
     #financeControlTable .fund-status-error .control-row:last-child { background:#fce3e5; color:#a51d2c; padding:9px 8px; }
     #financeControlTable .fund-status-balanced .control-row:last-child { background:#e1f4e7; color:#176b3a; padding:9px 8px; }
+    #financeDashboard .finance-dashboard-card.cash-total { background:#007f86; border-color:#006c73; border-top-color:#00d7cf; box-shadow:0 5px 16px rgba(0,127,134,.25); }
+    #financeDashboard .finance-dashboard-card.cash-total span,
+    #financeDashboard .finance-dashboard-card.cash-total strong { color:#ffffff; }
+    #financeDashboard .finance-dashboard-card.financial-performance { background:#fff0df; border-color:#edb36e; border-top-color:#e57819; }
+    #financeDashboard .finance-dashboard-card.financial-performance strong { color:#984509; }
 </style>
 </head>
 <body>
@@ -4624,7 +4629,7 @@
           ${card('Pending Outgoing Payments',money(-cash.generalPending.outgoing-cash.bftPending.outgoing),'pending')}
         </div></section>
         <section class="finance-dashboard-section"><h3>Financial Performance</h3><div class="finance-dashboard-grid">
-          ${card('Net This Month',at(16,1),metricClass('Net This Month',at(16,1)))}
+          ${card('Net This Month',at(16,1),'financial-performance')}
           ${card('General Fund Year to Date Net',at(6,9),'fund-general')}
           ${card('Bikes for Tykes Year to Date Net',at(11,9),'fund-bft')}
         </div></section>
