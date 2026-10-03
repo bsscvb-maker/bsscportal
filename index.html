@@ -1152,6 +1152,14 @@
     #financeDashboard .finance-dashboard-card.cash-total strong { color:#ffffff; }
     #financeDashboard .finance-dashboard-card.financial-performance { background:#fff0df; border-color:#edb36e; border-top-color:#e57819; }
     #financeDashboard .finance-dashboard-card.financial-performance strong { color:#984509; }
+    #financeControlTable .control-card.tone-cash-total { background:#007f86; border-color:#006c73; color:#ffffff; box-shadow:0 5px 16px rgba(0,127,134,.25); }
+    #financeControlTable .control-card.tone-cash-total h3 { background:#006c73; color:#ffffff; border-color:#00d7cf; }
+    #financeControlTable .control-card.tone-cash-total .control-row { border-bottom-color:rgba(255,255,255,.25); }
+    #financeControlTable .control-card.tone-cash-total .control-row span,
+    #financeControlTable .control-card.tone-cash-total .control-row strong { color:#ffffff; }
+    #financeControlTable .control-card.tone-cash-total .control-row:last-child span,
+    #financeControlTable .control-card.tone-cash-total .control-row:last-child strong { color:inherit; }
+    #financeControlTable .control-month-performance { background:#fff0df; color:#984509; border-radius:5px; padding:9px 8px; }
 </style>
 </head>
 <body>
@@ -4663,7 +4671,7 @@
         if (type === 'expense') totals.expenses += Math.abs(amount);
         return totals;
       },{income:0,expenses:0});
-      const monthSection = (title,balance,totals) => section(title,[['Current Fund Balance',balance],['Current Month Income',money(totals.income)],['Current Month Expenses',money(totals.expenses)],['Net This Month',money(totals.income-totals.expenses)]],/BIKES FOR TYKES/i.test(title)?'tone-baby-blue':'tone-green');
+      const monthSection = (title,balance,totals) => section(title,[['Current Fund Balance',balance],['Current Month Income',money(totals.income)],['Current Month Expenses',money(totals.expenses)],['Net This Month',money(totals.income-totals.expenses)]],/BIKES FOR TYKES/i.test(title)?'tone-baby-blue':'tone-green').replace('<span>Net This Month</span>','<span class="control-month-performance">Net This Month</span>');
       const generalMonth = monthlyTotals('General Fund');
       const bftMonth = monthlyTotals('Bikes for Tykes');
       const impactYtd = numeric(at(27,1));
