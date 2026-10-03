@@ -4616,10 +4616,10 @@
         return totals;
       },{outgoing:0,paypal:0,otherDeposits:0});
       const generalPending=pendingForFund('General Fund'),bftPending=pendingForFund('Bikes for Tykes');
-      // Reconciled fund balances through transaction row 356 (September 30).
+      // Reconciled fund balances through transaction row 357 (September 30).
       // Subsequent bank movement counts only Cleared Yes; PayPal gross/fee rows
       // remain accounting entries and the net transfer alone changes bank cash.
-      const clearedFundBalance = (fundName,opening) => transactionRows.slice(356).reduce((balance,row) => {
+      const clearedFundBalance = (fundName,opening) => transactionRows.slice(357).reduce((balance,row) => {
         const fund=String(row[6]||'').trim().toLowerCase();
         const cleared=String(row[14]||'').trim().toLowerCase();
         const method=String(row[13]||'').trim().toLowerCase();
