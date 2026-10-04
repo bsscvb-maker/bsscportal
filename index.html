@@ -4218,6 +4218,25 @@
         .footer b{font-size:12pt}.print-only{display:none}
         @media screen{body{padding:15px}.print-only{display:block;margin-bottom:15px}.print-only button{padding:10px 15px}}
     
+
+    /* Softer surfaces only within Storage Inventory. */
+    #storageWorkspace { --line:#b7bdc2; }
+    #storageWorkspace .workspace-card,
+    #storageWorkspace .club-dialog { background:#d8dde1; color:#161616; }
+    #storageWorkspace .storage-item,
+    #storageWorkspace .storage-category { background:#e1e5e8; border-color:#b7bdc2; }
+    #storageWorkspace .storage-category:hover,
+    #storageWorkspace .storage-category.selected { background:#e9ced4; border-color:var(--gold); }
+    #storageWorkspace .storage-search input,
+    #storageWorkspace .storage-filters select,
+    #storageWorkspace .club-form input,
+    #storageWorkspace .club-form select,
+    #storageWorkspace .club-form textarea,
+    #storageWorkspace .sponsor-tab { background:#e7eaed; color:#222; }
+    #storageWorkspace .storage-answer,
+    #storageWorkspace .storage-photo,
+    #storageWorkspace .storage-badge { background:#cbd2d8; }
+    #storageWorkspace .storage-remove .storage-badge { background:#edcbd0; color:#862525; }
   </style></head><body><div class="print-only"><button onclick="window.print()">Print pick tickets</button> · Cut along the dotted lines.</div><div class="sheet">${rows}</div></body></html>`);
       printWindow.document.close();
       printWindow.focus();
