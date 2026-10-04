@@ -2576,6 +2576,38 @@
       }
     }
 
+    function nonRenewalNames(headers, rows) {
+      const labels = headers.map(value => String(value ?? '').toLowerCase().replace(/[^a-z]/g,''));
+      const first = labels.indexOf('firstname'), last = labels.indexOf('lastname');
+      const full = labels.findIndex(label => ['name','fullname','membername'].includes(label));
+      if (first < 0 && last < 0 && full < 0) return null;
+      return rows.map(row => first >= 0 || last >= 0
+        ? [first >= 0 ? row[first] : '', last >= 0 ? row[last] : ''].map(value => String(value ?? '').trim()).filter(Boolean).join(' ')
+        : String(row[full] ?? '').trim()).filter(Boolean);
+    }
+
+    function downloadNonRenewalNames() {
+      if (currentMembershipSheet !== '2026 - Non Renewal') return;
+      const table = document.querySelector('#membershipContent table');
+      if (!table) return;
+      const headers = [...table.querySelectorAll('thead tr:last-child th')].map(cell => cell.textContent.trim());
+      const rows = [...table.querySelectorAll('tbody tr')].filter(row => !row.hidden)
+        .map(row => [...row.children].map(cell => cell.textContent.trim()));
+      const names = nonRenewalNames(headers, rows);
+      if (!names || !names.length) {
+        alert(names ? 'No names match the current search.' : 'Name columns could not be found in this list.');
+        return;
+      }
+      const url = URL.createObjectURL(new Blob([names.join('\r\n') + '\r\n'], {type:'text/plain;charset=utf-8'}));
+      const download = document.createElement('a');
+      download.href = url;
+      download.download = 'BSSC_2026_Non_Renewal_Names.txt';
+      document.body.appendChild(download);
+      download.click();
+      download.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
     function exportVisibleTable(targetId) {
       const target = document.getElementById(targetId);
       const table = target?.querySelector('table');
@@ -2665,10 +2697,11 @@
       const editMode = Boolean(editOptions && tableEditModes[targetId]);
       const editButton = editOptions ? `<button class="dashboard-edit-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? (isTransaction2026 || isBftTracking || isHonorary ? 'Close Editor' : 'Done Editing') : 'Edit Data'}</button>` : '';
       const exportButton = `<button class="export-data-btn" type="button" data-export-table="${targetId}">Export Data</button>`;
+      const namesOnlyButton = targetId === 'membershipContent' && currentMembershipSheet === '2026 - Non Renewal' ? '<button class="export-data-btn" type="button" data-download-non-renewal-names>Download Names Only</button>' : '';
       const newTransactionButton = targetId === 'financeTransactions2026Table' ? `<button class="new-transaction-btn" data-new-transaction="true">＋ New Transaction</button>` : (isBftTracking ? `<button class="new-transaction-btn" data-new-bft-donation="true">＋ New Donation</button>` : '');
       const honoraryAddButton = isHonorary && editMode ? '<button class="new-transaction-btn" type="button" data-add-honorary>＋ Add Person</button>' : '';
       const detailButton = isTransaction2026 ? '<button class="dashboard-edit-btn" type="button" data-transaction-details>Show month, year & notes</button>' : '';
-      const toolbar = `<div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search this list</span><input class="table-search" type="search" data-table-search="${targetId}" placeholder="Search by name, order number, price, item, status, or date…" autocomplete="off"></label><div class="table-tool-actions">${exportButton}${detailButton}${newTransactionButton}${honoraryAddButton}${editButton}</div></div><div class="table-search-count" data-search-count="${targetId}"></div>${isTransaction2026 ? '<p class="transaction-balance-help"><strong>Chase balance</strong> includes transfers Chase shows as pending. <strong>With outstanding</strong> also includes money recorded here that has not reached Chase.</p>' : ''}`;
+      const toolbar = `<div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search this list</span><input class="table-search" type="search" data-table-search="${targetId}" placeholder="Search by name, order number, price, item, status, or date…" autocomplete="off"></label><div class="table-tool-actions">${exportButton}${namesOnlyButton}${detailButton}${newTransactionButton}${honoraryAddButton}${editButton}</div></div><div class="table-search-count" data-search-count="${targetId}"></div>${isTransaction2026 ? '<p class="transaction-balance-help"><strong>Chase balance</strong> includes transfers Chase shows as pending. <strong>With outstanding</strong> also includes money recorded here that has not reached Chase.</p>' : ''}`;
       const isBudgetTable = targetId === 'bftBudgetTable';
       const isMarketplaceTable = targetId.startsWith('market');
       const tableClass = targetId === 'bftDonationsTable' ? 'data-table tracking-table' : (isTicketLedger ? 'data-table ticket-ledger-table' : (isBudgetTable ? 'data-table budget-table' : (isMarketplaceTable ? 'data-table marketplace-table' : 'data-table')));
@@ -2737,6 +2770,7 @@
       target.querySelectorAll('[data-new-members-year]').forEach(button => button.addEventListener('click', () => showYearCountNewMembers(button.dataset.newMembersYear)));
       const toggleButton = target.querySelector('[data-toggle-edit]');
       target.querySelector('[data-export-table]')?.addEventListener('click', () => exportVisibleTable(targetId));
+      target.querySelector('[data-download-non-renewal-names]')?.addEventListener('click', downloadNonRenewalNames);
       const detailToggle = target.querySelector('[data-transaction-details]');
       if (detailToggle) detailToggle.addEventListener('click', () => {
         const showing = target.querySelector('.data-table').classList.toggle('show-transaction-details');
