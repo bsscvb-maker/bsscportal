@@ -1109,6 +1109,11 @@
     .club-form input,.club-form select,.club-form textarea {width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit}
     @media(max-width:640px){.club-summary,.club-form {grid-template-columns:1fr}}
 
+    .honorary-person-dialog {width:min(600px,calc(100vw - 24px));max-height:85vh;overflow:auto}
+    .honorary-person-fields {display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin:20px 0}
+    .honorary-person-fields label {display:grid;gap:6px;font-weight:750;overflow-wrap:anywhere}
+    .honorary-person-fields input {width:100%;min-width:0;padding:12px;border:1px solid #bfc3ca;border-radius:8px;font:inherit;font-weight:400}
+    #membershipContent .transaction-pick-cell input {width:22px;height:22px;accent-color:#c8102e;cursor:pointer}
     .storage-categories {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px;margin:16px 0 24px}
     .storage-category {min-height:100px;padding:18px;text-align:left;border:2px solid #ddd;border-radius:12px;background:#f8f8fa;color:#161616;cursor:pointer}
     .storage-category strong,.storage-category span {display:block}.storage-category strong {font-size:1.1rem}.storage-category span {margin-top:8px;color:#555}
@@ -2619,6 +2624,7 @@
       const isBftTracking = targetId === 'bftDonationsTable';
       const isTransaction2026 = targetId === 'financeTransactions2026Table';
       const isYearCount = targetId === 'membershipContent' && currentMembershipSheet === 'Year Count';
+      const isHonorary = targetId === 'membershipContent' && currentMembershipSheet === 'Honorary';
       const isLifer = targetId === 'membershipContent' && currentMembershipSheet === 'Lifer';
       const isNumberedRoster = targetId === 'membershipContent' && ['2026','2027'].includes(currentMembershipSheet);
       if (targetId === 'membershipContent' && currentMembershipSheet === '2027') maxColumns=rows[headerRowIndex].length;
@@ -2655,11 +2661,12 @@
       });
       const finalHeaders = displayColumns.map(i => headers[i] || '');
       const editMode = Boolean(editOptions && tableEditModes[targetId]);
-      const editButton = editOptions ? `<button class="dashboard-edit-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? (isTransaction2026 || isBftTracking ? 'Close Editor' : 'Done Editing') : 'Edit Data'}</button>` : '';
+      const editButton = editOptions ? `<button class="dashboard-edit-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? (isTransaction2026 || isBftTracking || isHonorary ? 'Close Editor' : 'Done Editing') : 'Edit Data'}</button>` : '';
       const exportButton = `<button class="export-data-btn" type="button" data-export-table="${targetId}">Export Data</button>`;
       const newTransactionButton = targetId === 'financeTransactions2026Table' ? `<button class="new-transaction-btn" data-new-transaction="true">＋ New Transaction</button>` : (isBftTracking ? `<button class="new-transaction-btn" data-new-bft-donation="true">＋ New Donation</button>` : '');
+      const honoraryAddButton = isHonorary && editMode ? '<button class="new-transaction-btn" type="button" data-add-honorary>＋ Add Person</button>' : '';
       const detailButton = isTransaction2026 ? '<button class="dashboard-edit-btn" type="button" data-transaction-details>Show month, year & notes</button>' : '';
-      const toolbar = `<div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search this list</span><input class="table-search" type="search" data-table-search="${targetId}" placeholder="Search by name, order number, price, item, status, or date…" autocomplete="off"></label><div class="table-tool-actions">${exportButton}${detailButton}${newTransactionButton}${editButton}</div></div><div class="table-search-count" data-search-count="${targetId}"></div>${isTransaction2026 ? '<p class="transaction-balance-help"><strong>Chase balance</strong> includes transfers Chase shows as pending. <strong>With outstanding</strong> also includes money recorded here that has not reached Chase.</p>' : ''}`;
+      const toolbar = `<div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search this list</span><input class="table-search" type="search" data-table-search="${targetId}" placeholder="Search by name, order number, price, item, status, or date…" autocomplete="off"></label><div class="table-tool-actions">${exportButton}${detailButton}${newTransactionButton}${honoraryAddButton}${editButton}</div></div><div class="table-search-count" data-search-count="${targetId}"></div>${isTransaction2026 ? '<p class="transaction-balance-help"><strong>Chase balance</strong> includes transfers Chase shows as pending. <strong>With outstanding</strong> also includes money recorded here that has not reached Chase.</p>' : ''}`;
       const isBudgetTable = targetId === 'bftBudgetTable';
       const isMarketplaceTable = targetId.startsWith('market');
       const tableClass = targetId === 'bftDonationsTable' ? 'data-table tracking-table' : (isTicketLedger ? 'data-table ticket-ledger-table' : (isBudgetTable ? 'data-table budget-table' : (isMarketplaceTable ? 'data-table marketplace-table' : 'data-table')));
@@ -2674,8 +2681,8 @@
       }
       if (!Number.isFinite(ticketPrice) || ticketPrice <= 0) ticketPrice = 20;
       const ticketPriceBar = isTicketLedger ? `<div class="ticket-price-bar"><strong>Ticket Cost</strong><span class="ticket-price-value" data-ticket-price="true" data-value="${ticketPrice}" ${editMode ? 'contenteditable="true" spellcheck="false"' : ''}>${money(ticketPrice)}</span></div>` : '';
-      const editHelp = editMode ? (isTransaction2026 || isBftTracking ? '<div class="edit-help" role="status"><strong>Check the box next to the row you want to edit.</strong> Only the checked row will open. Confirm its row number and description before saving.</div>' : '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>') : '';
-      target.innerHTML = `${toolbar}${editHelp}${ticketPriceBar}<div class="table-wrap${isYearCount ? ' year-count-wrap' : isNumberedRoster ? ` membership-roster-wrap${isRoster2027 ? ' membership-roster-2027' : ''}` : ''}"><table class="${tableClass}${isTransaction2026 && editMode ? ' transaction-picking' : isBftTracking && editMode ? ' tracking-picking' : ''}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${(isTransaction2026 || isBftTracking) && editMode ? '<th class="transaction-pick-cell">Edit</th>' : ''}${isTransaction2026 ? '<th class="transaction-row-number">Row</th>' : ''}${isLifer ? '<th class="lifer-row-number">Row</th>' : ''}${isNumberedRoster ? '<th class="lifer-row-number">#</th>' : ''}${finalHeaders.map((header,index) => `<th class="${isTransaction2026 && [1,2,16].includes(index) ? 'transaction-extra' : ''}">${esc(isTransaction2026 && index === 10 ? 'Chase balance' : isTransaction2026 && index === 11 ? 'With outstanding' : header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map((item, rosterIndex) => {
+      const editHelp = editMode ? (isTransaction2026 || isBftTracking || isHonorary ? '<div class="edit-help" role="status"><strong>Check the box next to the row you want to edit.</strong> Only the checked row will open. Review the fields before saving.</div>' : '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>') : '';
+      target.innerHTML = `${toolbar}${editHelp}${ticketPriceBar}<div class="table-wrap${isYearCount ? ' year-count-wrap' : isNumberedRoster ? ` membership-roster-wrap${isRoster2027 ? ' membership-roster-2027' : ''}` : ''}"><table class="${tableClass}${isTransaction2026 && editMode ? ' transaction-picking' : isBftTracking && editMode ? ' tracking-picking' : ''}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${(isTransaction2026 || isBftTracking || isHonorary) && editMode ? '<th class="transaction-pick-cell">Edit</th>' : ''}${isTransaction2026 ? '<th class="transaction-row-number">Row</th>' : ''}${isLifer ? '<th class="lifer-row-number">Row</th>' : ''}${isNumberedRoster ? '<th class="lifer-row-number">#</th>' : ''}${finalHeaders.map((header,index) => `<th class="${isTransaction2026 && [1,2,16].includes(index) ? 'transaction-extra' : ''}">${esc(isTransaction2026 && index === 10 ? 'Chase balance' : isTransaction2026 && index === 11 ? 'With outstanding' : header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map((item, rosterIndex) => {
         const labels = item.row.map(value => String(value).trim().toLowerCase());
         const isSubtotal = labels.some(value => value.includes('subtotal'));
         const isTotal = !isSubtotal && labels.some(value => value === 'total' || value.endsWith(' total') || value.includes('total with locks'));
@@ -2690,7 +2697,7 @@
         const sourceRowNumber = item.sourceIndex + 1 + Number((editOptions && editOptions.rowOffset) || 0);
         const renewalTime = isRoster2027 ? item.row.renewalSubmittedAt : null;
         const newRenewal = isRecentRenewal(renewalTime);
-        const rowClasses = [newRenewal ? 'new-renewal' : '', isTotal ? 'total-row' : '', isSubtotal ? 'subtotal-row' : '', isBudgetSection ? 'budget-section-row' : '', isBudgetSubhead ? 'budget-subhead-row' : '', isGrandTotal ? 'grand-total-row' : '', isNeverVisited ? 'never-visited' : '', isPlanned ? 'planned-row' : '', isMarketPaid ? 'market-paid' : '', isMarketPending ? 'market-pending' : '', isMarketReady ? 'market-ready' : '', (isTransaction2026 || isBftTracking) && editMode ? 'transaction-selectable' : ''].filter(Boolean).join(' ');
+        const rowClasses = [newRenewal ? 'new-renewal' : '', isTotal ? 'total-row' : '', isSubtotal ? 'subtotal-row' : '', isBudgetSection ? 'budget-section-row' : '', isBudgetSubhead ? 'budget-subhead-row' : '', isGrandTotal ? 'grand-total-row' : '', isNeverVisited ? 'never-visited' : '', isPlanned ? 'planned-row' : '', isMarketPaid ? 'market-paid' : '', isMarketPending ? 'market-pending' : '', isMarketReady ? 'market-ready' : '', (isTransaction2026 || isBftTracking || isHonorary) && editMode ? 'transaction-selectable' : ''].filter(Boolean).join(' ');
         const orderId = targetId === 'marketOrdersTable' ? String(item.row[1] || '') : '';
         const isOrder = targetId === 'marketOrdersTable';
         const paymentDue = /pending|cash due/i.test(String(item.row[12] || ''));
@@ -2698,10 +2705,10 @@
         const readyForPickup = /^(true|yes|1)$/i.test(String(item.row[14] || '').trim());
         const orderHandedOut = /^(true|yes|1)$/i.test(String(item.row[15] || '').trim());
         const orderStages = [paymentDue?'payment':'',(!sentToVendor&&!orderHandedOut)?'unsent':'',(sentToVendor&&!readyForPickup&&!orderHandedOut)?'vendor':'',(readyForPickup&&!orderHandedOut)?'pickup':'',orderHandedOut?'complete':''].filter(Boolean).join(' ');
-        return `<tr class="${rowClasses}" ${isRoster2027 ? `data-roster-source-row="${sourceRowNumber}" ${newRenewal ? `data-renewal-expires="${renewalTime + 86400000}"` : ''}` : ''} ${isTransaction2026 || isBftTracking ? `data-transaction-row="${sourceRowNumber}" data-source-index="${item.sourceIndex}"` : ''} ${isOrder ? `data-market-stages="${orderStages}" data-market-order-id="${esc(orderId)}"` : ''}>${isTransaction2026 && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-transaction aria-label="Edit row ${sourceRowNumber}: ${esc(String(item.row[headers.findIndex(header => /^description$/i.test(String(header || '').trim()))] || 'Transaction'))}"></td>` : ''}${isBftTracking && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-bft-row aria-label="Edit ${esc(String(item.row[0] || `row ${sourceRowNumber}`))}: ${esc(String(item.row[1] || 'Donation'))}"></td>` : ''}${isTransaction2026 ? `<td class="transaction-row-number" data-label="Row">${sourceRowNumber}</td>` : ''}${isLifer ? `<td class="lifer-row-number" data-label="Row">${sourceRowNumber}</td>` : ''}${isNumberedRoster ? `<td class="lifer-row-number" data-label="#">${rosterIndex + 1}${newRenewal ? '<span class="new-renewal-badge" title="Submitted within the last 24 hours">New renewal</span>' : ''}</td>` : ''}${finalHeaders.map((_, columnIndex) => {
+        return `<tr class="${rowClasses}" ${isRoster2027 ? `data-roster-source-row="${sourceRowNumber}" ${newRenewal ? `data-renewal-expires="${renewalTime + 86400000}"` : ''}` : ''} ${isTransaction2026 || isBftTracking || isHonorary ? `data-transaction-row="${sourceRowNumber}" data-source-index="${item.sourceIndex}"` : ''} ${isOrder ? `data-market-stages="${orderStages}" data-market-order-id="${esc(orderId)}"` : ''}>${isHonorary && editMode ? `<td class="transaction-pick-cell"><input type="checkbox" data-pick-honorary aria-label="Edit honorary member row ${sourceRowNumber}"></td>` : ''}${isTransaction2026 && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-transaction aria-label="Edit row ${sourceRowNumber}: ${esc(String(item.row[headers.findIndex(header => /^description$/i.test(String(header || '').trim()))] || 'Transaction'))}"></td>` : ''}${isBftTracking && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-bft-row aria-label="Edit ${esc(String(item.row[0] || `row ${sourceRowNumber}`))}: ${esc(String(item.row[1] || 'Donation'))}"></td>` : ''}${isTransaction2026 ? `<td class="transaction-row-number" data-label="Row">${sourceRowNumber}</td>` : ''}${isLifer ? `<td class="lifer-row-number" data-label="Row">${sourceRowNumber}</td>` : ''}${isNumberedRoster ? `<td class="lifer-row-number" data-label="#">${rosterIndex + 1}${newRenewal ? '<span class="new-renewal-badge" title="Submitted within the last 24 hours">New renewal</span>' : ''}</td>` : ''}${finalHeaders.map((_, columnIndex) => {
           const sourceColumnIndex = displayColumns[columnIndex];
           const formulaValue = editOptions && editOptions.formulaRows && editOptions.formulaRows[item.sourceIndex] ? String(editOptions.formulaRows[item.sourceIndex][sourceColumnIndex] || '') : '';
-          const editable = editMode && !isTransaction2026 && !isBftTracking && !formulaValue.startsWith('=') && !(isRoster2027 && ['renewedon','renewal'].includes(rosterHeader(sourceColumnIndex)));
+          const editable = editMode && !isTransaction2026 && !isBftTracking && !isHonorary && !formulaValue.startsWith('=') && !(isRoster2027 && ['renewedon','renewal'].includes(rosterHeader(sourceColumnIndex)));
           let shownValue = item.row[sourceColumnIndex] || '';
           if (isTicketLedger && columnIndex === ticketGroupStart + 2) {
             const quantity = Number(String(item.row[ticketGroupStart + 1] || '').replace(/[$,]/g, ''));
@@ -2733,7 +2740,17 @@
         const showing = target.querySelector('.data-table').classList.toggle('show-transaction-details');
         detailToggle.textContent = showing ? 'Hide month, year & notes' : 'Show month, year & notes';
       });
-      if (toggleButton) toggleButton.addEventListener('click', () => isTransaction2026 || isBftTracking ? toggleTransactionVerticalEditing(targetId) : toggleTableEditing(targetId, toggleButton));
+      if (toggleButton) toggleButton.addEventListener('click', () => isTransaction2026 || isBftTracking || isHonorary ? toggleTransactionVerticalEditing(targetId) : toggleTableEditing(targetId, toggleButton));
+      if (isHonorary && editMode) {
+        target.querySelector('[data-add-honorary]')?.addEventListener('click',()=>openHonoraryPersonForm(headers,[],null,editOptions));
+        target.querySelectorAll('[data-pick-honorary]').forEach(checkbox=>checkbox.addEventListener('change',()=>{
+          if(!checkbox.checked)return;
+          target.querySelectorAll('[data-pick-honorary]').forEach(other=>{if(other!==checkbox)other.checked=false;});
+          const row=checkbox.closest('[data-transaction-row]');
+          const item=indexedData.find(candidate=>candidate.sourceIndex===Number(row.dataset.sourceIndex));
+          if(item)openHonoraryPersonForm(headers,item.row,Number(row.dataset.transactionRow),editOptions,checkbox,item.sourceIndex);
+        }));
+      }
       const newTransaction = target.querySelector('[data-new-transaction="true"]');
       if (newTransaction) newTransaction.addEventListener('click', () => openNewTransactionForm(targetId, finalHeaders));
       const newDonation = target.querySelector('[data-new-bft-donation]');
@@ -2884,6 +2901,47 @@
         target.querySelectorAll('td[data-edit-cell="true"]').forEach(cell => recalculateTicketRow(targetId, cell));
       });
       if (targetId === 'marketOrdersTable' && target.dataset.marketPipelineStage) applyMarketplaceOrdersPipelineFilter(target.dataset.marketPipelineStage);
+    }
+
+    function openHonoraryPersonForm(headers,original,rowNumber,options,checkbox,sourceIndex){
+      const sheet="'Honorary'",spreadsheetId=options.spreadsheetId;
+      const formulas=sourceIndex===undefined?[]:(options.formulaRows?.[sourceIndex]||[]);
+      const width=Math.max(headers.length,original.length);
+      const dialog=document.createElement('dialog');
+      dialog.className='club-dialog honorary-person-dialog';
+      dialog.innerHTML='<form><h2>'+ (rowNumber?'Edit honorary member':'Add honorary member')+'</h2><div class="honorary-person-fields">'+Array.from({length:width},(_,column)=>{
+        const label=headers[column]||'Column '+columnNumberToLetters(column+1);
+        const calculated=String(formulas[column]||'').startsWith('=');
+        return '<label>'+esc(label)+(calculated?' <small>(calculated)</small>':'')+'<input type="text" name="field'+column+'" value="'+esc(original[column]??'')+'" '+(calculated?'disabled':'')+'></label>';
+      }).join('')+'</div><p data-honorary-status role="status"></p><div class="club-toolbar"><button class="open-btn" type="submit">'+(rowNumber?'Save Changes':'Add Person')+'</button><button class="sponsor-tab" type="button" data-cancel>Cancel</button></div></form>';
+      document.body.appendChild(dialog);dialog.showModal();
+      dialog.addEventListener('close',()=>{if(checkbox)checkbox.checked=false;dialog.remove();});
+      dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();
+      const form=dialog.querySelector('form');
+      let saving=false;
+      dialog.addEventListener('cancel',event=>{if(saving)event.preventDefault();});
+      form.onsubmit=async event=>{
+        event.preventDefault();if(saving)return;saving=true;
+        const save=form.querySelector('[type=submit]'),cancel=form.querySelector('[data-cancel]');save.disabled=true;cancel.disabled=true;
+        const values=Array.from({length:width},(_,column)=>String(form.elements['field'+column].value).trim());
+        try{
+          if(!accessToken)throw new Error('Sign in before saving.');
+          if(!values.some(Boolean))throw new Error('Enter the person’s information first.');
+          if(rowNumber){
+            const range=sheet+'!A'+rowNumber+':'+columnNumberToLetters(width)+rowNumber;
+            const live=(await getSheetValues(range,spreadsheetId))[0]||[];
+            if(Array.from({length:width},(_,i)=>String(live[i]??'')).some((value,i)=>value!==String(original[i]??'')))throw new Error('This person was updated by someone else. Cancel, refresh the list, and select them again.');
+            const liveFormulas=(await getSheetValues(range,spreadsheetId,'FORMULA'))[0]||[];
+            const updates=values.map((value,column)=>({value,column})).filter(({value,column})=>!String(liveFormulas[column]||'').startsWith('=')&&value!==String(original[column]??''));
+            await updateSheetRanges(spreadsheetId,updates.map(({value,column})=>({range:sheet+'!'+columnNumberToLetters(column+1)+rowNumber,value})));
+          }else{
+            const range=sheet+'!A:'+columnNumberToLetters(width);
+            await writePortalSheetRequest('https://sheets.googleapis.com/v4/spreadsheets/'+spreadsheetId+'/values/'+encodeURIComponent(range)+':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:[values]}),signal:AbortSignal.timeout(15000)},'Added honorary member','Honorary',1);
+          }
+          dialog.close();await loadMembershipSheet('Honorary',true);
+        }catch(error){form.querySelector('[data-honorary-status]').textContent='Unable to save: '+error.message;}
+        finally{saving=false;save.disabled=false;cancel.disabled=false;}
+      };
     }
 
     function openBftDonationEditForm(targetId,headers,rowValues,rowNumber,selectedRow) {
