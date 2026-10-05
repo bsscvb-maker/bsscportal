@@ -6818,34 +6818,48 @@
       if(typeof window.jspdf?.jsPDF==='function')return Promise.resolve();
       if(storagePdfLibraryPromise)return storagePdfLibraryPromise;
       storagePdfLibraryPromise=new Promise((resolve,reject)=>{
-        const script=document.createElement('script');
-        script.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js';
-        script.onload=()=>typeof window.jspdf?.jsPDF==='function'?resolve():reject(new Error('PDF library did not initialize.'));
-        script.onerror=()=>{script.remove();storagePdfLibraryPromise=null;reject(new Error('PDF tools could not load. Check your connection and try again.'));};
-        document.head.appendChild(script);
+        const urls=['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js','https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js'];
+        let attempt=0;
+        function next(){
+          if(attempt>=urls.length){storagePdfLibraryPromise=null;reject(new Error('PDF tools could not load. Please try again.'));return;}
+          const script=document.createElement('script');
+          const timer=setTimeout(failed,12000);
+          function failed(){clearTimeout(timer);script.onload=script.onerror=null;script.remove();next();}
+          script.src=urls[attempt++];script.onerror=failed;
+          script.onload=()=>{clearTimeout(timer);if(typeof window.jspdf?.jsPDF==='function')resolve();else failed();};
+          document.head.appendChild(script);
+        }
+        next();
       });
       return storagePdfLibraryPromise;
     }
 
+    let storageCatalogUrl='';
     async function downloadStorageCatalog() {
       const button=document.getElementById('storageCatalog');
-      const status=document.getElementById('storageMessage');
-      if(!accessToken||!storageShared){status.textContent='Sign in and load shared inventory first.';return;}
-      button.disabled=true;status.textContent='Preparing the complete catalog…';
+      const setStatus=(message)=>{const el=document.getElementById('storageMessage');if(el)el.textContent=message;};
+      if(!accessToken||!storageShared){setStatus('Sign in and load shared inventory first.');return;}
+      button.disabled=true;button.textContent='Preparing PDF…';setStatus('Preparing the complete catalog…');
       try {
-        const data=await getSheetValues("'Storage Inventory'!A1:K10000",MEMBERSHIP_SPREADSHEET_ID);
-        if(!data.length||data[0][0]!=='Item ID'||data[0][1]!=='Item')throw new Error('Inventory headers could not be verified.');
-        const rows=data.slice(1).filter(row=>row[0]&&row[1]);
+        const rows=storageRows.filter(row=>row[0]&&row[1]).map(row=>row.slice());
         if(!rows.length)throw new Error('No storage items are available to export.');
         const now=new Date();
         await loadStoragePdfLibrary();
         const pdf=createStorageCatalogPdf(rows,now.toLocaleString('en-US',{timeZone:'America/New_York',timeZoneName:'short'}),window.jspdf.jsPDF);
         const fileName='BoneShakers Storage Catalog '+now.toLocaleDateString('en-CA',{timeZone:'America/New_York'})+'.pdf';
-        pdf.save(fileName);
-        status.textContent='PDF catalog downloaded with '+rows.length+' inventory entries.';
-
-      } catch(error) {status.textContent='Catalog could not be downloaded: '+error.message;}
-      finally {button.disabled=false;}
+        const blob=pdf.output('blob');
+        if(!blob||blob.size<100)throw new Error('The PDF could not be created.');
+        if(storageCatalogUrl)URL.revokeObjectURL(storageCatalogUrl);
+        storageCatalogUrl=URL.createObjectURL(blob);
+        const status=document.getElementById('storageMessage');
+        if(status){
+          status.replaceChildren(document.createTextNode('Your PDF is ready ('+rows.length+' inventory entries). '));
+          const link=document.createElement('a');link.href=storageCatalogUrl;link.download=fileName;link.textContent='Click here to download the PDF';link.style.cssText='color:#c8102e;font-weight:700;text-decoration:underline';
+          status.appendChild(link);
+          link.click();
+        }
+      } catch(error) {setStatus('Catalog could not be downloaded: '+error.message);}
+      finally {const current=document.getElementById('storageCatalog');if(current){current.disabled=false;current.textContent='Download PDF Catalog';}}
     }
 
     function renderStorage(){
