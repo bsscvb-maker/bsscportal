@@ -6762,14 +6762,65 @@
       return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoneShakers Storage Catalog</title><style>@page{size:letter;margin:.55in}*{box-sizing:border-box}body{font:14px/1.45 Arial,sans-serif;color:#171717;background:#fff;max-width:1000px;margin:24px auto;padding:0 20px}header{border-bottom:4px solid #c8102e;padding-bottom:16px}h1{margin:0;font-size:28px}header p{margin:8px 0}h2{font-size:20px;border-bottom:2px solid #333;padding:8px 0;break-after:avoid}h3{font-size:17px;margin:0 0 8px}article{display:grid;grid-template-columns:150px 1fr;gap:18px;border-bottom:1px solid #ccc;padding:16px 0;break-inside:avoid;page-break-inside:avoid}img{width:150px;height:150px;object-fit:contain}.no-photo{width:150px;height:100px;background:#eee;display:flex;align-items:center;justify-content:center;color:#666}dl{display:grid;grid-template-columns:100px 1fr;gap:3px 12px;margin:0}dt{font-weight:bold}dd{margin:0;overflow-wrap:anywhere}.notes{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0 0}button{padding:11px 18px;background:#171717;color:#fff;border:0;border-radius:6px;font-size:15px;cursor:pointer}.actions{margin:18px 0}.actions p{color:#555}@media print{body{margin:0;padding:0;max-width:none;font-size:11px}.actions{display:none}h1{font-size:24px}h3{font-size:14px}article{grid-template-columns:110px 1fr;gap:14px;padding:12px 0}img{width:110px;height:110px}.no-photo{width:110px;height:80px}}@media(max-width:500px){article{grid-template-columns:90px 1fr}img,.no-photo{width:90px;height:90px}}</style></head><body><header><h1>BoneShakers Social Club</h1><p><strong>Storage Catalog · '+esc(STORAGE_DEFAULT_LOCATION)+'</strong></p><p>'+items.length+' inventory entries · Prepared '+esc(generatedAt)+'</p></header><div class="actions"><button type="button" onclick="window.print()">Print / Save as PDF</button><p>For a PDF copy, choose “Save as PDF” in the print window. This catalog includes all inventory entries and their recorded status.</p></div>'+sections+'</body></html>';
     }
 
+
+    function createStorageCatalogPdf(rows,generatedAt,PdfClass){
+      const pdf=new PdfClass({unit:'mm',format:'letter',orientation:'portrait',compress:true});
+      const width=215.9,height=279.4,left=14,right=201.9,bottom=height-17,textX=64,textWidth=right-textX;
+      let y=0;
+      const clean=v=>String(v||'').replace(/[\u2013\u2014]/g,'-').replace(/\u2022/g,'-').replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"');
+      function header(first){
+        pdf.setTextColor(23,23,23);pdf.setFont('helvetica','bold');pdf.setFontSize(first?20:13);
+        pdf.text('BoneShakers Social Club',left,18);
+        pdf.setFont('helvetica','normal');pdf.setFontSize(10);
+        pdf.text('Storage Catalog - '+clean(STORAGE_DEFAULT_LOCATION),left,25);
+        if(first){pdf.setFontSize(9);pdf.text(rows.length+' inventory entries | Prepared '+clean(generatedAt),left,31);}
+        pdf.setDrawColor(200,16,46);pdf.setLineWidth(0.7);pdf.line(left,first?35:29,right,first?35:29);y=first?43:37;
+      }
+      const page=()=>{pdf.addPage();header(false);};
+      const line=(text,x,w,size=10,bold=false)=>{
+        pdf.setFont('helvetica',bold?'bold':'normal');pdf.setFontSize(size);
+        const lines=pdf.splitTextToSize(clean(text),w);
+        for(const t of lines){if(y+5>bottom)page();pdf.setFont('helvetica',bold?'bold':'normal');pdf.setFontSize(size);pdf.setTextColor(23,23,23);pdf.text(t,x,y);y+=5;}
+      };
+      const items=rows.filter(r=>r[0]&&r[1]).slice().sort((a,b)=>String(a[2]||'Uncategorized').localeCompare(String(b[2]||'Uncategorized'))||String(a[1]).localeCompare(String(b[1])));
+      header(true);
+      let category='';
+      for(const r of items){
+        const group=r[2]||'Uncategorized';
+        const title=clean(r[1]),notes=clean(storageCleanNotes(r[7]));
+        const details=[['Quantity',r[3]||'Not recorded'],['Location',storageLocation(r[5])],['Status',r[6]||'Not recorded'],...(r[4]?[['Color',r[4]]]:[]),['Last checked',r[8]||'Not recorded']];
+        pdf.setFont('helvetica','bold');pdf.setFontSize(12);
+        const titleHeight=pdf.splitTextToSize(title,textWidth).length*5;
+        pdf.setFont('helvetica','normal');pdf.setFontSize(10);
+        const detailHeight=details.reduce((sum,[label,v])=>sum+pdf.splitTextToSize(clean(label+': '+v),textWidth).length*5,0);
+        const noteHeight=notes?pdf.splitTextToSize(notes,textWidth).length*5+3:0;
+        const itemHeight=Math.max(43,titleHeight+detailHeight+noteHeight)+10;
+        const newGroup=group!==category;
+        if(y+Math.min(itemHeight,180)+(newGroup?13:0)>bottom)page();
+        if(newGroup){line(storageCategoryLabels[group]||group,left,right-left,14,true);pdf.setDrawColor(80,80,80);pdf.setLineWidth(0.3);pdf.line(left,y,right,y);y+=7;category=group;}
+        const top=y;
+        if(/^data:image\/(jpeg|png|webp);base64,/i.test(String(r[10]||''))){
+          try{const prop=pdf.getImageProperties(r[10]);const ratio=Math.min(42/prop.width,42/prop.height);const iw=prop.width*ratio,ih=prop.height*ratio;pdf.addImage(r[10],prop.fileType,left+(42-iw)/2,top,iw,ih,undefined,'FAST');}
+          catch(error){pdf.setFontSize(8);pdf.text('Photo unavailable',left,top+10);}
+        }else{pdf.setTextColor(110,110,110);pdf.setFontSize(8);pdf.text('No photo recorded',left,top+10);}
+        line(title,textX,textWidth,12,true);
+        for(const [label,v]of details)line(label+': '+v,textX,textWidth);
+        if(notes){y+=3;line(notes,textX,textWidth,9);}
+        y=Math.max(y,top+43);if(y+7>bottom)page();else{y+=4;pdf.setDrawColor(210,210,210);pdf.setLineWidth(0.2);pdf.line(left,y,right,y);y+=6;}
+      }
+      const pages=pdf.getNumberOfPages();
+      for(let i=1;i<=pages;i++){pdf.setPage(i);pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(100,100,100);pdf.text('BoneShakers Storage Catalog',left,height-9);pdf.text('Page '+i+' of '+pages,right,height-9,{align:'right'});}
+      return pdf;
+    }
+
     let storagePdfLibraryPromise;
     function loadStoragePdfLibrary(){
-      if(typeof window.html2pdf==='function')return Promise.resolve();
+      if(typeof window.jspdf?.jsPDF==='function')return Promise.resolve();
       if(storagePdfLibraryPromise)return storagePdfLibraryPromise;
       storagePdfLibraryPromise=new Promise((resolve,reject)=>{
         const script=document.createElement('script');
-        script.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-        script.onload=()=>typeof window.html2pdf==='function'?resolve():reject(new Error('PDF library did not initialize.'));
+        script.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js';
+        script.onload=()=>typeof window.jspdf?.jsPDF==='function'?resolve():reject(new Error('PDF library did not initialize.'));
         script.onerror=()=>{script.remove();storagePdfLibraryPromise=null;reject(new Error('PDF tools could not load. Check your connection and try again.'));};
         document.head.appendChild(script);
       });
@@ -6787,21 +6838,10 @@
         const rows=data.slice(1).filter(row=>row[0]&&row[1]);
         if(!rows.length)throw new Error('No storage items are available to export.');
         const now=new Date();
-        const html=buildStorageCatalog(rows,now.toLocaleString('en-US',{timeZone:'America/New_York',timeZoneName:'short'}));
         await loadStoragePdfLibrary();
-        const container=document.createElement('div');
-        const parsed=new DOMParser().parseFromString(html,'text/html');
-        const catalogStyle=parsed.querySelector('style').textContent;
-        // Scope the printable catalog styles so the portal is unaffected.
-        const styles='.storage-pdf-document{font:14px/1.45 Arial,sans-serif;color:#171717;background:#fff}.storage-pdf-document *{box-sizing:border-box}.storage-pdf-document header{border-bottom:4px solid #c8102e;padding-bottom:16px}.storage-pdf-document h1{margin:0;font-size:28px;color:#171717}.storage-pdf-document header p{margin:8px 0}.storage-pdf-document h2{font-size:20px;border-bottom:2px solid #333;padding:8px 0;break-after:avoid;color:#171717}.storage-pdf-document h3{font-size:17px;margin:0 0 8px;color:#171717}.storage-pdf-document article{display:grid;grid-template-columns:150px 1fr;gap:18px;border-bottom:1px solid #ccc;padding:16px 0;break-inside:avoid}.storage-pdf-document img{width:150px;height:150px;object-fit:contain}.storage-pdf-document .no-photo{width:150px;height:100px;background:#eee;display:flex;align-items:center;justify-content:center;color:#666}.storage-pdf-document dl{display:grid;grid-template-columns:100px 1fr;gap:3px 12px;margin:0}.storage-pdf-document dt{font-weight:bold}.storage-pdf-document dd{margin:0;overflow-wrap:anywhere}.storage-pdf-document .notes{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0 0}';
-        container.className='storage-pdf-document';
-        container.innerHTML='<style>'+styles+'</style>'+parsed.body.innerHTML;
-        container.querySelector('.actions')?.remove();
-        container.style.width='700px';container.style.maxWidth='700px';container.style.background='#fff';container.style.margin='0';container.style.padding='0 20px';
-        const images=[...container.querySelectorAll('img')];
-        await Promise.all(images.map(img=>img.decode().catch(()=>{})));
+        const pdf=createStorageCatalogPdf(rows,now.toLocaleString('en-US',{timeZone:'America/New_York',timeZoneName:'short'}),window.jspdf.jsPDF);
         const fileName='BoneShakers Storage Catalog '+now.toLocaleDateString('en-CA',{timeZone:'America/New_York'})+'.pdf';
-        await window.html2pdf().set({margin:[14,12,14,12],filename:fileName,image:{type:'jpeg',quality:0.95},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',windowWidth:1000},jsPDF:{unit:'mm',format:'letter',orientation:'portrait'},pagebreak:{mode:['css','legacy'],avoid:['article','h2']}}).from(container).save();
+        pdf.save(fileName);
         status.textContent='PDF catalog downloaded with '+rows.length+' inventory entries.';
 
       } catch(error) {status.textContent='Catalog could not be downloaded: '+error.message;}
