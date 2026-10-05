@@ -6851,13 +6851,9 @@
         if(!blob||blob.size<100)throw new Error('The PDF could not be created.');
         if(storageCatalogUrl)URL.revokeObjectURL(storageCatalogUrl);
         storageCatalogUrl=URL.createObjectURL(blob);
-        const status=document.getElementById('storageMessage');
-        if(status){
-          status.replaceChildren(document.createTextNode('Your PDF is ready ('+rows.length+' inventory entries). '));
-          const link=document.createElement('a');link.href=storageCatalogUrl;link.download=fileName;link.textContent='Click here to download the PDF';link.style.cssText='color:#c8102e;font-weight:700;text-decoration:underline';
-          status.appendChild(link);
-          link.click();
-        }
+        const link=document.createElement('a');link.href=storageCatalogUrl;link.download=fileName;link.hidden=true;
+        document.body.appendChild(link);link.click();link.remove();
+        setStatus('');
       } catch(error) {setStatus('Catalog could not be downloaded: '+error.message);}
       finally {const current=document.getElementById('storageCatalog');if(current){current.disabled=false;current.textContent='Download PDF Catalog';}}
     }
@@ -6878,7 +6874,7 @@
       categoryHost.innerHTML=categories.map(category=>'<button class="storage-category '+(storageState.category===category?'selected':'')+'" data-storage-section="'+esc(category)+'" aria-pressed="'+(storageState.category===category)+'"><strong>'+esc(storageCategoryLabels[category]||category)+'</strong><span>'+storageRows.filter(r=>r[0]&&(r[2]||'Uncategorized')===category).length+' item types</span></button>').join('')+'<button class="storage-category '+(storageBrowseAll&&!storageState.category?'selected':'')+'" data-storage-all><strong>All Supplies</strong><span>'+storageRows.filter(r=>r[0]).length+' item types</span></button>';
       categoryHost.querySelectorAll('[data-storage-section]').forEach(button=>button.onclick=()=>{storageState.category=button.dataset.storageSection;storageState.query='';storageState.status='';storageState.color='';storagePage=1;renderStorage();});
       categoryHost.querySelector('[data-storage-all]').onclick=()=>{Object.keys(storageState).forEach(k=>storageState[k]='');storageBrowseAll=true;storagePage=1;renderStorage();};
-      if(!storageBrowseAll&&!Object.values(storageState).some(Boolean)){document.getElementById('storageAnswer').innerHTML='<p class="storage-help">Choose a section above or search to find supplies.</p>';document.getElementById('storageResults').innerHTML='';document.getElementById('storagePagination').innerHTML='';return;}
+      if(!storageBrowseAll&&!Object.values(storageState).some(Boolean)){document.getElementById('storageAnswer').innerHTML='<p class="storage-help"></p>';document.getElementById('storageResults').innerHTML='';document.getElementById('storagePagination').innerHTML='';return;}
 
       const found=storageRows.map((r,i)=>({r,row:i+2})).filter(({r})=>r[0]&&storageMatches(r,storageState.query)&&(!storageState.category||(r[2]||'Uncategorized')===storageState.category)&&(!storageState.color||r[4]===storageState.color)&&(!storageState.status||r[6]===storageState.status)).sort((a,b)=>a.r[1].localeCompare(b.r[1]));
       storagePage=Math.min(storagePage,Math.max(1,Math.ceil(found.length/12)));
