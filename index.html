@@ -1373,7 +1373,8 @@
             <div id="membershipContent"></div>
           </div><div class="sponsor-workspace" id="sponsorWorkspace">
             <div class="sponsor-tabs" aria-label="Sponsorship sections">
-              <button class="sponsor-tab active" data-sponsor-tab="dashboard">Sponsor Relationships</button>
+              <button class="sponsor-tab active" data-sponsor-tab="dashboard">Dashboard</button>
+<button class="sponsor-tab" data-sponsor-tab="relationships">Sponsor Relationships</button>
               <button class="sponsor-tab" data-sponsor-tab="current">Legacy Sponsor Register</button>
               <button class="sponsor-tab" data-sponsor-tab="prospective">Prospective Sponsors</button>
               <button class="sponsor-tab" data-sponsor-tab="history">Contact History</button>
@@ -1381,7 +1382,7 @@
               <button class="sponsor-tab" data-sponsor-tab="renewals">Renewal Pipeline</button>
             </div>
             <div class="workspace-card"><div class="club-toolbar"><input id="sponsorSearch" type="search" placeholder="Search sponsor, contact, program, or owner" aria-label="Search sponsor relationships"><select id="sponsorYear" aria-label="Sponsorship year"><option value="">All years</option><option>2027</option><option>2026</option><option>2025</option></select><select id="sponsorKind" aria-label="Sponsor relationship filter"><option value="">All sponsor relationships</option><option value="renewed">Renewed</option><option value="due">Ask due</option><option value="contacted">Contacted / pledged</option></select><button class="open-btn" id="sponsorAddGift">Add sponsor gift</button><button class="sponsor-tab" id="sponsorRefresh">Refresh</button></div><div id="sponsorLogStatus" class="data-status" role="status">Sign in to load shared sponsorship records.</div><div class="pilot-note"><strong>Sponsorships are relationship-based.</strong> This workspace is for repeatable cash sponsors and renewal follow-up. Gift cards, merchandise, raffle items, and other one-off in-kind donations stay in the Bikes for Tykes Tracking Tab and do not enter the sponsor renewal pipeline.</div></div>
-            <section class="sponsor-panel active" data-sponsor-panel="dashboard"><div class="sponsor-summary" id="sponsorLiveMetrics"></div><section class="workspace-card"><h2>Master sponsor relationships</h2><p class="data-status">One line per sponsor. Cash gifts are rolled up across years so you can see who gave, how much they have given, and who needs the next ask.</p><div id="sponsorGiftTable"></div></section></section>
+            <section class="sponsor-panel active" data-sponsor-panel="dashboard"><h2>Sponsorship Dashboard</h2><div class="sponsor-summary" id="sponsorLiveMetrics" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))"></div><section class="workspace-card"><h2>Cash received by year</h2><div id="sponsorYearTotals"></div></section></section><section class="sponsor-panel" data-sponsor-panel="relationships"><section class="workspace-card"><h2>Master sponsor relationships</h2><p class="data-status">One line per sponsor. Cash gifts are rolled up across years so you can see who gave, how much they have given, and who needs the next ask.</p><div id="sponsorGiftTable"></div></section></section>
             <section class="sponsor-panel" data-sponsor-panel="current"><div class="coming-soon"><h2>Legacy Sponsor Register</h2><p class="data-status">Historical sponsor records are preserved here while the relationship-based register becomes the working renewal system.</p><div class="data-status" id="currentStatus">Sign in to load sponsor records.</div><div id="currentTable"></div></div></section>
             <section class="sponsor-panel" data-sponsor-panel="prospective"><div class="coming-soon"><h2>Prospective Sponsors</h2><div class="data-status" id="prospectiveStatus">Sign in to load prospective sponsor records.</div><div id="prospectiveTable"></div></div></section>
             <section class="sponsor-panel" data-sponsor-panel="history"><section class="workspace-card"><h2>Contact history</h2><div id="sponsorContactTable"></div></section></section>
@@ -2350,6 +2351,23 @@
       }catch(error){document.getElementById('sponsorLogStatus').textContent=error.message;}
     }
     function sponsorActionButtons(id){return '<button class="sponsor-tab" data-gift-edit="'+esc(id)+'">Edit</button> <button class="sponsor-tab" data-gift-contact="'+esc(id)+'">Log contact</button> <button class="sponsor-tab" data-gift-renew="'+esc(id)+'">Record renewal</button>';}
+
+    function calculateSponsorDashboard(rows,today){
+      const cashRows=rows.filter(r=>r[5]==='Money'&&sponsorNumber(r[8])>0);
+      const grouped=new Map();
+      cashRows.forEach(r=>{const key=String(r[1]||'Unknown sponsor').trim().toLowerCase();if(!grouped.has(key))grouped.set(key,[]);grouped.get(key).push(r);});
+      const currentYear=today.slice(0,4),nextYear=String(Number(currentYear)+1);
+      const years=[...new Set([currentYear,nextYear,...cashRows.map(r=>String(r[7]||'').slice(0,4)).filter(y=>/^\d{4}$/.test(y))])].sort().reverse().map(year=>{
+        const gifts=cashRows.filter(r=>String(r[7]||'').startsWith(year));
+        const sponsors=new Set(gifts.map(r=>String(r[1]||'Unknown sponsor').trim().toLowerCase()));
+        const renewed=[...sponsors].filter(key=>grouped.get(key).some(r=>String(r[7]||'').slice(0,4)<year&&/^\d{4}/.test(r[7]||''))).length;
+        return {year,cash:gifts.reduce((n,r)=>n+sponsorNumber(r[8]),0),sponsors:sponsors.size,renewed};
+      });
+      const latest=[...grouped.values()].map(gifts=>gifts.slice().sort((a,b)=>String(b[7]||'').localeCompare(String(a[7]||'')))[0]);
+      const current=years.find(y=>y.year===currentYear),next=years.find(y=>y.year===nextYear);
+      return {years,currentYear,nextYear,sponsors:grouped.size,lifetime:cashRows.reduce((n,r)=>n+sponsorNumber(r[8]),0),currentCash:current.cash,nextCash:next.cash,currentSponsors:current.sponsors,nextSponsors:next.sponsors,currentRenewed:current.renewed,nextRenewed:next.renewed,due:latest.filter(r=>r[13]&&r[13]<=today&&!['Declined','Renewed'].includes(r[14])).length,nextAsks:latest.filter(r=>String(r[13]||'').startsWith(nextYear)&&!['Declined','Renewed'].includes(r[14])).length};
+    }
+
     function renderSponsorshipLog(){
       const year=document.getElementById('sponsorYear').value,query=document.getElementById('sponsorSearch').value.trim().toLowerCase(),relationshipFilter=document.getElementById('sponsorKind').value;
       const all=sponsorshipRows.map(x=>x.values);
@@ -2374,17 +2392,32 @@
         s.renewedNext=s.years.has(nextYear);
         // A sponsor who has already given in the current year is current. Their next ask
         // cannot become due until the follow-up date attached to that latest gift.
-        s.due=!!s.nextAsk&&s.nextAsk<=sponsorToday()&&!s.current&&s.status!=='Declined';
+        s.due=!!s.nextAsk&&s.nextAsk<=sponsorToday()&&s.status!=='Declined'&&s.status!=='Renewed';
         return s;
       });
       relationships=relationships.filter(s=>(!query||[s.name,s.contact,s.owner,...s.rows.flat()].join(' ').toLowerCase().includes(query))&&(!year||s.years.has(year))&&(!relationshipFilter||relationshipFilter==='renewed'&&s.renewedNext||relationshipFilter==='due'&&s.due||relationshipFilter==='contacted'&&['Contacted','Pledged'].includes(s.status)));
       const nextYear=String(Number(sponsorToday().slice(0,4))+1),renewed=relationships.filter(s=>s.years.has(nextYear)),due=relationships.filter(s=>s.due),lifetime=relationships.reduce((n,s)=>n+s.cash,0);
-      document.getElementById('sponsorLiveMetrics').innerHTML=[['Sponsor relationships',relationships.length,'Repeatable cash sponsors in selected view'],['Lifetime sponsor cash',money(lifetime),'Cash sponsorship only · in-kind excluded'],[nextYear+' renewed',renewed.length,renewed.reduce((n,s)=>n+sponsorNumber(s.rows.find(r=>(r[7]||'').startsWith(nextYear))?.[8]),0)?money(renewed.reduce((n,s)=>n+s.rows.filter(r=>(r[7]||'').startsWith(nextYear)).reduce((m,r)=>m+sponsorNumber(r[8]),0),0))+' secured':'No renewals recorded yet'],['Asks due',due.length,'Relationships needing follow-up now']].map(([l,v,n])=>'<div class="metric"><div class="metric-label">'+l+'</div><div class="metric-value">'+v+'</div><div class="metric-note">'+n+'</div></div>').join('');
+
+      const dashboardRelationships=[...relationshipMap.values()];
+      const dashboardStats=calculateSponsorDashboard(moneyRows,sponsorToday());
+      const cards=[
+        ['Sponsor relationships',dashboardStats.sponsors,'Unique cash sponsors across recorded years'],
+        ['Lifetime sponsor cash',money(dashboardStats.lifetime),'All recorded cash contributions'],
+        [dashboardStats.currentYear+' cash received',money(dashboardStats.currentCash),dashboardStats.currentSponsors+' cash sponsors'],
+        [dashboardStats.nextYear+' cash received',money(dashboardStats.nextCash),dashboardStats.nextSponsors+' cash sponsors'],
+        [dashboardStats.currentYear+' renewed',dashboardStats.currentRenewed,'Returning sponsors with cash received this year'],
+        [dashboardStats.nextYear+' renewed',dashboardStats.nextRenewed,'Returning sponsors with cash received next year'],
+        ['Follow-ups due now',dashboardStats.due,'Latest sponsor follow-up dated today or earlier'],
+        [dashboardStats.nextYear+' follow-ups',dashboardStats.nextAsks,'Sponsors with their next ask scheduled in '+dashboardStats.nextYear]
+      ];
+      document.getElementById('sponsorLiveMetrics').innerHTML=cards.map(([l,v,n])=>'<div class="metric"><div class="metric-label">'+esc(l)+'</div><div class="metric-value">'+esc(v)+'</div><div class="metric-note">'+esc(n)+'</div></div>').join('');
+      document.getElementById('sponsorYearTotals').innerHTML='<div class="table-wrap"><table class="data-table"><thead><tr><th>Year</th><th>Cash received</th><th>Cash sponsors</th><th>Returning sponsors renewed</th></tr></thead><tbody>'+dashboardStats.years.map(y=>'<tr><td>'+esc(y.year)+'</td><td>'+money(y.cash)+'</td><td>'+y.sponsors+'</td><td>'+y.renewed+'</td></tr>').join('')+'</tbody></table></div>';
+
       const table=(headers,rows)=>rows.length?'<div class="table-wrap"><table class="data-table"><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>':'<div class="empty-state">No matching sponsor relationships.</div>';
       const cell=v=>'<td>'+esc(v??'—')+'</td>';
       document.getElementById('sponsorGiftTable').innerHTML=table(['Sponsor','Years','Lifetime cash','Latest gift','Next ask','Relationship status','Contact / owner','Manage'],relationships.slice().sort((a,b)=>(a.nextAsk||'9999').localeCompare(b.nextAsk||'9999')||b.cash-a.cash).map(s=>'<tr>'+cell(s.name)+cell([...s.years].sort().join(', '))+cell(money(s.cash))+cell(s.latest?money(sponsorNumber(s.latestGift[8]))+' · '+s.latest:'Unconfirmed')+cell(s.nextAsk||'Set follow-up')+cell(s.renewedNext?'Renewed for '+nextYear:s.current?'Current · next ask '+(s.nextAsk||'not set'):s.due?'Ask due':s.status)+cell([s.contact,s.owner].filter(Boolean).join(' · ')||'Contact details needed')+'<td>'+sponsorActionButtons(s.latestId)+'</td></tr>'));
       const renewalFilter=document.getElementById('sponsorRenewalFilter').value;
-      const renewals=moneyRows.filter(r=>(!query||r.join(' ').toLowerCase().includes(query))&&(renewalFilter==='all'||renewalFilter==='due'&&sponsorDue(r)||renewalFilter==='2027'&&r[13]?.startsWith('2027')||renewalFilter==='missing'&&!r[13]));
+      const renewals=dashboardRelationships.map(s=>s.rows.slice().sort((a,b)=>(b[7]||'').localeCompare(a[7]||''))[0]).filter(r=>(!query||r.join(' ').toLowerCase().includes(query))&&(renewalFilter==='all'||renewalFilter==='due'&&sponsorDue(r)||renewalFilter==='2027'&&r[13]?.startsWith('2027')||renewalFilter==='missing'&&!r[13]));
       document.getElementById('sponsorRenewalTable').innerHTML=table(['Sponsor','Prior cash gift','Received','Next ask','Renewal status','Contact / owner','Manage'],renewals.slice().sort((a,b)=>(a[13]||'9999').localeCompare(b[13]||'9999')).map(r=>'<tr>'+cell(r[1])+cell(money(r[8]))+cell(r[7]||'Unconfirmed')+cell(r[13]||'Missing date')+cell(sponsorDue(r)?r[14]+' · Due':r[14])+cell([r[2],r[3],r[4],r[15]].filter(Boolean).join(' · ')||'Contact details needed')+'<td>'+sponsorActionButtons(r[0])+'</td></tr>'));
       document.getElementById('sponsorContactTable').innerHTML=table(['Sponsor','Date','Method','Outcome','Next follow-up','Contacted by','Notes'],sponsorshipContacts.slice().reverse().filter(r=>!query||r.join(' ').toLowerCase().includes(query)||(all.find(g=>g[0]===r[1])?.[1]||'').toLowerCase().includes(query)).map(r=>'<tr>'+cell(all.find(g=>g[0]===r[1])?.[1]||r[1])+r.slice(2).map(cell).join('')+'</tr>'));
       document.querySelectorAll('[data-gift-edit]').forEach(b=>b.onclick=()=>editSponsorshipGift(b.dataset.giftEdit));
@@ -6728,6 +6761,21 @@
       const sections=groups.map(group=>'<section><h2>'+esc(storageCategoryLabels[group]||group)+'</h2>'+items.filter(row=>(row[2]||'Uncategorized')===group).map(row=>'<article>'+photo(row[10])+'<div><h3>'+esc(row[1])+'</h3><dl><dt>Quantity</dt><dd>'+esc(row[3]||'Not recorded')+'</dd><dt>Location</dt><dd>'+esc(storageLocation(row[5]))+'</dd><dt>Status</dt><dd>'+esc(row[6]||'Not recorded')+'</dd>'+(row[4]?'<dt>Color</dt><dd>'+esc(row[4])+'</dd>':'')+'<dt>Last checked</dt><dd>'+esc(row[8]||'Not recorded')+'</dd></dl>'+(storageCleanNotes(row[7])?'<p class="notes">'+esc(storageCleanNotes(row[7]))+'</p>':'')+'</div></article>').join('')+'</section>').join('');
       return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoneShakers Storage Catalog</title><style>@page{size:letter;margin:.55in}*{box-sizing:border-box}body{font:14px/1.45 Arial,sans-serif;color:#171717;background:#fff;max-width:1000px;margin:24px auto;padding:0 20px}header{border-bottom:4px solid #c8102e;padding-bottom:16px}h1{margin:0;font-size:28px}header p{margin:8px 0}h2{font-size:20px;border-bottom:2px solid #333;padding:8px 0;break-after:avoid}h3{font-size:17px;margin:0 0 8px}article{display:grid;grid-template-columns:150px 1fr;gap:18px;border-bottom:1px solid #ccc;padding:16px 0;break-inside:avoid;page-break-inside:avoid}img{width:150px;height:150px;object-fit:contain}.no-photo{width:150px;height:100px;background:#eee;display:flex;align-items:center;justify-content:center;color:#666}dl{display:grid;grid-template-columns:100px 1fr;gap:3px 12px;margin:0}dt{font-weight:bold}dd{margin:0;overflow-wrap:anywhere}.notes{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0 0}button{padding:11px 18px;background:#171717;color:#fff;border:0;border-radius:6px;font-size:15px;cursor:pointer}.actions{margin:18px 0}.actions p{color:#555}@media print{body{margin:0;padding:0;max-width:none;font-size:11px}.actions{display:none}h1{font-size:24px}h3{font-size:14px}article{grid-template-columns:110px 1fr;gap:14px;padding:12px 0}img{width:110px;height:110px}.no-photo{width:110px;height:80px}}@media(max-width:500px){article{grid-template-columns:90px 1fr}img,.no-photo{width:90px;height:90px}}</style></head><body><header><h1>BoneShakers Social Club</h1><p><strong>Storage Catalog · '+esc(STORAGE_DEFAULT_LOCATION)+'</strong></p><p>'+items.length+' inventory entries · Prepared '+esc(generatedAt)+'</p></header><div class="actions"><button type="button" onclick="window.print()">Print / Save as PDF</button><p>For a PDF copy, choose “Save as PDF” in the print window. This catalog includes all inventory entries and their recorded status.</p></div>'+sections+'</body></html>';
     }
+
+    let storagePdfLibraryPromise;
+    function loadStoragePdfLibrary(){
+      if(typeof window.html2pdf==='function')return Promise.resolve();
+      if(storagePdfLibraryPromise)return storagePdfLibraryPromise;
+      storagePdfLibraryPromise=new Promise((resolve,reject)=>{
+        const script=document.createElement('script');
+        script.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+        script.onload=()=>typeof window.html2pdf==='function'?resolve():reject(new Error('PDF library did not initialize.'));
+        script.onerror=()=>{script.remove();storagePdfLibraryPromise=null;reject(new Error('PDF tools could not load. Check your connection and try again.'));};
+        document.head.appendChild(script);
+      });
+      return storagePdfLibraryPromise;
+    }
+
     async function downloadStorageCatalog() {
       const button=document.getElementById('storageCatalog');
       const status=document.getElementById('storageMessage');
@@ -6740,9 +6788,22 @@
         if(!rows.length)throw new Error('No storage items are available to export.');
         const now=new Date();
         const html=buildStorageCatalog(rows,now.toLocaleString('en-US',{timeZone:'America/New_York',timeZoneName:'short'}));
-        const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
-        const link=document.createElement('a');link.href=url;link.download='BoneShakers Storage Catalog '+now.toLocaleDateString('en-CA',{timeZone:'America/New_York'})+'.html';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
-        status.textContent='Catalog downloaded with '+rows.length+' inventory entries. Open the file to view it or select Print / Save as PDF.';
+        await loadStoragePdfLibrary();
+        const container=document.createElement('div');
+        const parsed=new DOMParser().parseFromString(html,'text/html');
+        const catalogStyle=parsed.querySelector('style').textContent;
+        // Scope the printable catalog styles so the portal is unaffected.
+        const styles='.storage-pdf-document{font:14px/1.45 Arial,sans-serif;color:#171717;background:#fff}.storage-pdf-document *{box-sizing:border-box}.storage-pdf-document header{border-bottom:4px solid #c8102e;padding-bottom:16px}.storage-pdf-document h1{margin:0;font-size:28px;color:#171717}.storage-pdf-document header p{margin:8px 0}.storage-pdf-document h2{font-size:20px;border-bottom:2px solid #333;padding:8px 0;break-after:avoid;color:#171717}.storage-pdf-document h3{font-size:17px;margin:0 0 8px;color:#171717}.storage-pdf-document article{display:grid;grid-template-columns:150px 1fr;gap:18px;border-bottom:1px solid #ccc;padding:16px 0;break-inside:avoid}.storage-pdf-document img{width:150px;height:150px;object-fit:contain}.storage-pdf-document .no-photo{width:150px;height:100px;background:#eee;display:flex;align-items:center;justify-content:center;color:#666}.storage-pdf-document dl{display:grid;grid-template-columns:100px 1fr;gap:3px 12px;margin:0}.storage-pdf-document dt{font-weight:bold}.storage-pdf-document dd{margin:0;overflow-wrap:anywhere}.storage-pdf-document .notes{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0 0}';
+        container.className='storage-pdf-document';
+        container.innerHTML='<style>'+styles+'</style>'+parsed.body.innerHTML;
+        container.querySelector('.actions')?.remove();
+        container.style.width='700px';container.style.maxWidth='700px';container.style.background='#fff';container.style.margin='0';container.style.padding='0 20px';
+        const images=[...container.querySelectorAll('img')];
+        await Promise.all(images.map(img=>img.decode().catch(()=>{})));
+        const fileName='BoneShakers Storage Catalog '+now.toLocaleDateString('en-CA',{timeZone:'America/New_York'})+'.pdf';
+        await window.html2pdf().set({margin:[14,12,14,12],filename:fileName,image:{type:'jpeg',quality:0.95},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',windowWidth:1000},jsPDF:{unit:'mm',format:'letter',orientation:'portrait'},pagebreak:{mode:['css','legacy'],avoid:['article','h2']}}).from(container).save();
+        status.textContent='PDF catalog downloaded with '+rows.length+' inventory entries.';
+
       } catch(error) {status.textContent='Catalog could not be downloaded: '+error.message;}
       finally {button.disabled=false;}
     }
@@ -6750,7 +6811,7 @@
     function renderStorage(){
       const host=document.getElementById('storageWorkspace');
       const options=(i,label)=>'<option value="">'+label+'</option>'+(i===2?storageCategoryNames():[...new Set(storageRows.filter(r=>r[0]).map(r=>r[i]).filter(Boolean))].sort()).map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
-      host.innerHTML='<section class="workspace-card"><div class="storage-toolbar"><label class="storage-search">Search all supplies<input id="storageSearch" type="search" placeholder="Search items, colors, or locations…" value="'+esc(storageState.query)+'"></label><button class="open-btn" id="storageAdd" '+(!storageShared?'disabled':'')+'>Add item</button><button class="open-btn" id="storageCatalog" '+(!storageShared||storageLoading?'disabled':'')+'>Download Catalog</button><button class="sponsor-tab" id="storageRefresh" '+(storageLoading?'disabled':'')+'>Refresh</button></div><div class="storage-toolbar"><h2>Choose a section</h2><button class="sponsor-tab" id="storageAddSection" '+(!storageShared?'disabled':'')+'>Add New Section</button></div><div class="storage-categories" id="storageCategories"></div><div class="storage-filters"><label>Category<select id="storageCategory">'+options(2,'All categories')+'</select></label><label>Color<select id="storageColor">'+options(4,'All colors')+'</select></label><label>Status<select id="storageStatus">'+options(6,'All statuses')+'</select></label><button class="sponsor-tab" id="storageClear">Clear filters</button></div><p id="storageMessage" role="status">'+(storageLoading?'Loading shared inventory…':storageShared?'':'PDF inventory · Shared records have not loaded.')+'</p><div id="storageAnswer" aria-live="polite"></div><div class="storage-grid" id="storageResults"></div><div class="storage-pagination" id="storagePagination"></div></section><div id="storageEditor"></div>';
+      host.innerHTML='<section class="workspace-card"><div class="storage-toolbar"><label class="storage-search">Search all supplies<input id="storageSearch" type="search" placeholder="Search items, colors, or locations…" value="'+esc(storageState.query)+'"></label><button class="open-btn" id="storageAdd" '+(!storageShared?'disabled':'')+'>Add item</button><button class="open-btn" id="storageCatalog" style="background:#c8102e;border-color:#c8102e" '+(!storageShared||storageLoading?'disabled':'')+'>Download PDF Catalog</button><button class="sponsor-tab" id="storageRefresh" '+(storageLoading?'disabled':'')+'>Refresh</button></div><div class="storage-toolbar"><h2>Choose a section</h2><button class="sponsor-tab" id="storageAddSection" '+(!storageShared?'disabled':'')+'>Add New Section</button></div><div class="storage-categories" id="storageCategories"></div><div class="storage-filters"><label>Category<select id="storageCategory">'+options(2,'All categories')+'</select></label><label>Color<select id="storageColor">'+options(4,'All colors')+'</select></label><label>Status<select id="storageStatus">'+options(6,'All statuses')+'</select></label><button class="sponsor-tab" id="storageClear">Clear filters</button></div><p id="storageMessage" role="status">'+(storageLoading?'Loading shared inventory…':storageShared?'':'PDF inventory · Shared records have not loaded.')+'</p><div id="storageAnswer" aria-live="polite"></div><div class="storage-grid" id="storageResults"></div><div class="storage-pagination" id="storagePagination"></div></section><div id="storageEditor"></div>';
       for(const [id,key] of [['storageSearch','query'],['storageCategory','category'],['storageColor','color'],['storageStatus','status']]){const el=document.getElementById(id);el.value=storageState[key];el.addEventListener(key==='query'?'input':'change',()=>{storageState[key]=el.value;storagePage=1;if(key==='query'){storageState.category='';document.getElementById('storageCategory').value='';}renderStorageResults();});}
       document.getElementById('storageCatalog').onclick=downloadStorageCatalog;document.getElementById('storageAddSection').onclick=addStorageSection;document.getElementById('storageRefresh').onclick=loadStorage;document.getElementById('storageAdd').onclick=()=>editStorage();
       document.getElementById('storageClear').onclick=()=>{Object.keys(storageState).forEach(k=>storageState[k]='');storageBrowseAll=false;storagePage=1;renderStorage();};
