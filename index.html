@@ -1267,6 +1267,7 @@
     select, textarea { background-color:#e7eaed; color:#222; }
 
     .non-renewal-people-count { color:#c8102e; font-size:1.35rem; font-weight:900; white-space:nowrap; flex:0 0 auto; }
+.bft-checklist-task{padding:16px 0;border-bottom:1px solid #bfc5ca}.bft-checklist-task:last-child{border-bottom:0}.bft-checklist-fields{display:grid;grid-template-columns:minmax(140px,1fr) minmax(200px,2fr);gap:14px;margin:12px 0 0 34px}.bft-checklist-fields label{font-size:.85rem;font-weight:700}.bft-checklist-fields input,.bft-checklist-fields textarea{display:block;width:100%;margin-top:5px;padding:9px;border:1px solid #aeb5bb;border-radius:7px;background:#edf0f2;color:#161616;font:inherit}@media(max-width:650px){.bft-checklist-fields{grid-template-columns:1fr;margin-left:0}}
 </style>
 </head>
 <body>
@@ -1394,6 +1395,7 @@
               <button class="sponsor-tab" data-bft-tab="instructions">Instructions &amp; Legend</button>
               <button class="sponsor-tab" data-bft-tab="finance">Finance Sync</button>
               <button class="sponsor-tab" data-bft-tab="budget">Purchase Budget</button>
+<button class="sponsor-tab" data-bft-tab="checklist">Working Checklist</button>
             </div>
             <section class="sponsor-panel active" data-bft-panel="dashboard">
               <div class="data-status" id="bftDashboardStatus">Sign in to load the Bikes for Tykes dashboard.</div>
@@ -1404,7 +1406,8 @@
             <section class="sponsor-panel" data-bft-panel="donations"><div class="coming-soon"><h2>Tracking Tab</h2><div class="data-status" id="bftDonationsStatus">Sign in to load donation records.</div><div id="bftDonationsTable"></div></div></section>
             <section class="sponsor-panel" data-bft-panel="instructions"><div class="coming-soon"><h2>Instructions &amp; Legend</h2><div class="data-status" id="bftInstructionsStatus">Sign in to load workbook instructions.</div><div id="bftInstructionsTable"></div></div></section>
             <section class="sponsor-panel" data-bft-panel="finance"><div class="coming-soon"><h2>Finance Sync</h2><div class="data-status" id="bftFinanceStatus">Sign in to load synchronized transactions.</div><div id="bftFinanceTable"></div></div></section>
-            <section class="sponsor-panel" data-bft-panel="budget"><div class="coming-soon"><h2>Purchase Budget</h2><div class="data-status" id="bftBudgetStatus">Sign in to load the purchase budget.</div><div id="bftBudgetTable"></div></div></section>
+            <section class="sponsor-panel" data-bft-panel="checklist"><div class="coming-soon"><h2>Working Checklist</h2><p>October 2026 · Event planning, assignments, setup and cleanup.</p><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:18px"><strong id="bftChecklistProgress">57 tasks</strong><label><input type="checkbox" id="bftChecklistHideDone"> Hide completed</label><button type="button" class="open-btn" id="bftChecklistRefresh">Refresh</button></div><div class="data-status" id="bftChecklistStatus" role="status">Open this tab to load the shared checklist.</div><div id="bftChecklistItems"></div></div></section>
+<section class="sponsor-panel" data-bft-panel="budget"><div class="coming-soon"><h2>Purchase Budget</h2><div class="data-status" id="bftBudgetStatus">Sign in to load the purchase budget.</div><div id="bftBudgetTable"></div></div></section>
           </div><div class="bft-workspace" id="bikeNightsWorkspace">
             <div class="sponsor-tabs" aria-label="Bike Night List sections">
               <button class="sponsor-tab active" data-bike-tab="dashboard">Dashboard</button>
@@ -1609,6 +1612,61 @@
     const IDLE_TIMEOUT_MS = 60 * 60 * 1000;
     let tokenClient;
     let accessToken = '';
+
+    let bftChecklistRows = [];
+    let bftChecklistLoading = false;
+    async function loadBftChecklist() {
+      const status = document.getElementById('bftChecklistStatus');
+      if (bftChecklistLoading) return;
+      if (!accessToken) { status.textContent = 'Sign in with Google, then click Refresh to load the shared checklist.'; return; }
+      bftChecklistLoading = true;
+      status.textContent = 'Loading checklist…';
+      try {
+        const rows = await getSheetValues("'Working Checklist'!A1:F200", BFT_SPREADSHEET_ID);
+        bftChecklistRows = rows.slice(1).map((row,i)=>({row,number:i+2})).filter(item=>item.row[0]);
+        renderBftChecklist();
+        status.textContent = 'Shared checklist loaded. Each change saves automatically.';
+      } catch(error) { status.textContent = 'Checklist could not load: ' + error.message; }
+      finally { bftChecklistLoading = false; }
+    }
+    function renderBftChecklist() {
+      const done = item => String(item.row[3]).toLowerCase() === 'true';
+      const total = bftChecklistRows.length;
+      document.getElementById('bftChecklistProgress').textContent = bftChecklistRows.filter(done).length + ' / ' + total + ' completed';
+      const hide = document.getElementById('bftChecklistHideDone').checked;
+      const groups = [...new Set(bftChecklistRows.map(item=>item.row[1]))];
+      document.getElementById('bftChecklistItems').innerHTML = groups.map(group=>{
+        const all = bftChecklistRows.filter(item=>item.row[1]===group);
+        const shown = all.filter(item=>!hide||!done(item));
+        if (!shown.length) return '';
+        return '<section class="card" style="margin:16px 0"><h3>' + esc(group) + ' <small style="font-weight:normal">' + all.filter(done).length + '/' + all.length + '</small></h3>' + shown.map(item=>'<div class="bft-checklist-task" data-checklist-row="' + item.number + '"><label style="display:flex;gap:12px;align-items:flex-start;font-weight:750"><input type="checkbox" data-checklist-column="3" ' + (done(item)?'checked':'') + ' style="width:22px;height:22px;flex-shrink:0"><span style="' + (done(item)?'text-decoration:line-through;color:#666':'') + '">' + esc(item.row[2]) + '</span></label><div class="bft-checklist-fields"><label>Assigned to<input type="text" data-checklist-column="4" value="' + esc(item.row[4]||'') + '" placeholder="Name"></label><label>Notes<textarea data-checklist-column="5" rows="2" placeholder="Details or follow-up">' + esc(item.row[5]||'') + '</textarea></label></div></div>').join('') + '</section>';
+      }).join('');
+    }
+    document.getElementById('bftChecklistItems').addEventListener('change',async event=>{
+      const input = event.target.closest('[data-checklist-column]');
+      if (!input) return;
+      const number = Number(input.closest('[data-checklist-row]').dataset.checklistRow);
+      const column = Number(input.dataset.checklistColumn);
+      const item = bftChecklistRows.find(item=>item.number===number);
+      if (!item) return;
+      const value = input.type==='checkbox' ? input.checked : input.value;
+      const status = document.getElementById('bftChecklistStatus');
+      input.disabled = true; status.textContent = 'Saving…';
+      try {
+        // RAW preserves literal notes and names.
+        const range = "'Working Checklist'!" + columnNumberToLetters(column+1) + number;
+        await writePortalSheetRequest('https://sheets.googleapis.com/v4/spreadsheets/'+BFT_SPREADSHEET_ID+'/values/'+encodeURIComponent(range)+'?valueInputOption=RAW',{method:'PUT',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:[[value]]})},'Updated working checklist',item.row[2],1);
+        item.row[column] = value;
+        status.textContent = 'Saved to the shared checklist.';
+        if (column===3) renderBftChecklist();
+      } catch(error) {
+        if(input.type==='checkbox') input.checked = String(item.row[column]).toLowerCase()==='true'; else input.value = item.row[column]||'';
+        status.textContent = 'Change was not saved: '+error.message;
+      } finally { input.disabled = false; }
+    });
+    document.getElementById('bftChecklistRefresh').addEventListener('click',loadBftChecklist);
+    document.getElementById('bftChecklistHideDone').addEventListener('change',renderBftChecklist);
+
     let marketplaceVendorOrderPopup = null;
     let marketplaceVendorOrderRequestId = '';
     let portalHealthTimer = null;
@@ -6831,6 +6889,7 @@
       } else if (key === 'bft') {
         taskGrid.innerHTML = '';
         bftWorkspace.classList.add('active');
+        if (document.querySelector('[data-bft-tab="checklist"].active')) loadBftChecklist();
       } else if (key === 'bikenights') {
         taskGrid.innerHTML = '';
         bikeNightsWorkspace.classList.add('active');
@@ -6876,6 +6935,7 @@
     }));
     document.querySelectorAll('[data-bft-tab]').forEach(button => button.addEventListener('click', () => {
       const selected = button.dataset.bftTab;
+      if (selected === 'checklist') loadBftChecklist();
       document.querySelectorAll('[data-bft-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
       document.querySelectorAll('[data-bft-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.bftPanel === selected));
     }));
