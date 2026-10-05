@@ -6573,7 +6573,7 @@
           e.currentTarget.setAttribute('aria-pressed',String(zoomed));
         };
         storagePhotoViewer.addEventListener('click',e=>{if(e.target===storagePhotoViewer){const r=storagePhotoViewer.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)storagePhotoViewer.close();}});
-        storagePhotoViewer.addEventListener('close',()=>{storagePhotoViewer.querySelector('img').removeAttribute('src');});
+
       }
       storagePhotoViewer.querySelector('h2').textContent=photo.alt||'Item photo';
       const image=storagePhotoViewer.querySelector('img');image.src=photo.src;image.alt=photo.alt;
