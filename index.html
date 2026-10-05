@@ -1268,7 +1268,18 @@
 
     .non-renewal-people-count { color:#c8102e; font-size:1.35rem; font-weight:900; white-space:nowrap; flex:0 0 auto; }
 .bft-checklist-task{padding:16px 0;border-bottom:1px solid #bfc5ca}.bft-checklist-task:last-child{border-bottom:0}.bft-checklist-fields{display:grid;grid-template-columns:minmax(140px,1fr) minmax(200px,2fr);gap:14px;margin:12px 0 0 34px}.bft-checklist-fields label{font-size:.85rem;font-weight:700}.bft-checklist-fields input,.bft-checklist-fields textarea{display:block;width:100%;margin-top:5px;padding:9px;border:1px solid #aeb5bb;border-radius:7px;background:#edf0f2;color:#161616;font:inherit}@media(max-width:650px){.bft-checklist-fields{grid-template-columns:1fr;margin-left:0}}
-</style>
+
+    #storageWorkspace .storage-category,
+    #storageWorkspace .storage-category strong,
+    #storageWorkspace .storage-category span { color:#000; text-align:center; }
+    #storageWorkspace .storage-category.photos-missing,
+    #storageWorkspace .storage-category.photos-missing:hover,
+    #storageWorkspace .storage-category.photos-missing.selected { background:#ef5350; border-color:#ef5350; }
+    #storageWorkspace .storage-category.photos-complete,
+    #storageWorkspace .storage-category.photos-complete:hover,
+    #storageWorkspace .storage-category.photos-complete.selected { background:#4caf50; border-color:#4caf50; }
+    #storageWorkspace .storage-category.selected { box-shadow:inset 0 0 0 3px #000; }
+  </style>
 </head>
 <body>
   <section class="auth-gate" id="authGate">
@@ -6925,7 +6936,12 @@
     function renderStorageResults(){
       const categories=storageCategoryNames();
       const categoryHost=document.getElementById('storageCategories');
-      categoryHost.innerHTML=categories.map(category=>'<button class="storage-category '+(storageState.category===category?'selected':'')+'" data-storage-section="'+esc(category)+'" aria-pressed="'+(storageState.category===category)+'"><strong>'+esc(storageCategoryLabels[category]||category)+'</strong><span>'+storageRows.filter(r=>r[0]&&(r[2]||'Uncategorized')===category).length+' item types</span></button>').join('')+'<button class="storage-category '+(storageBrowseAll&&!storageState.category?'selected':'')+'" data-storage-all><strong>All Supplies</strong><span>'+storageRows.filter(r=>r[0]).length+' item types</span></button>';
+      const sectionButton=(rows,label,attributes,selected)=>{
+        const missing=rows.filter(r=>!/^data:image\/(jpeg|png|webp);base64,[a-z0-9+/=]+$/i.test(String(r[10]||''))).length;
+        const complete=rows.length>0&&missing===0;
+        return '<button class="storage-category '+(complete?'photos-complete':'photos-missing')+' '+(selected?'selected':'')+'" '+attributes+' aria-pressed="'+selected+'" title="'+esc(missing?missing+' item(s) missing a picture':rows.length?'All items have pictures':'No items yet')+'"><strong>'+esc(label)+'</strong><span>'+rows.length+' item types</span></button>';
+      };
+      categoryHost.innerHTML=categories.map(category=>sectionButton(storageRows.filter(r=>r[0]&&(r[2]||'Uncategorized')===category),storageCategoryLabels[category]||category,'data-storage-section="'+esc(category)+'"',storageState.category===category)).join('')+sectionButton(storageRows.filter(r=>r[0]),'All Supplies','data-storage-all',storageBrowseAll&&!storageState.category);
       categoryHost.querySelectorAll('[data-storage-section]').forEach(button=>button.onclick=()=>{storageState.category=button.dataset.storageSection;storageState.query='';storageState.status='';storageState.color='';renderStorage();});
       categoryHost.querySelector('[data-storage-all]').onclick=()=>{Object.keys(storageState).forEach(k=>storageState[k]='');storageBrowseAll=true;renderStorage();};
       if(!storageBrowseAll&&!Object.values(storageState).some(Boolean)){document.getElementById('storageAnswer').innerHTML='<p class="storage-help"></p>';document.getElementById('storageResults').innerHTML='';document.getElementById('storagePagination').innerHTML='';return;}
