@@ -6954,7 +6954,7 @@
         if(choices[i]){
           const values=[...new Set([...choices[i],original[i]].filter(Boolean))];
           const selected=i===5?storageLocation(original[i]):original[i]||(i===2?storageState.category:i===6?'Listed':'');
-          field='<select name="c'+i+'" '+(i===2?'required':'')+'><option value="">Choose '+h.toLowerCase()+'…</option>'+values.map(v=>'<option value="'+esc(v)+'" '+(selected===v?'selected':'')+'>'+esc(v)+'</option>').join('')+'</select>';
+          field='<select name="c'+i+'" '+(i===2?'required':'')+'><option value="">Choose '+h.toLowerCase()+'…</option>'+values.map(v=>'<option value="'+esc(v)+'" '+(selected===v?'selected':'')+'>'+esc(i===2?(storageCategoryLabels[v]||v):v)+'</option>').join('')+'</select>';
           if(i===5)field+='<input type="text" name="newLocation" placeholder="Or enter a new storage location">';
         }else if(i===7)field='<textarea name="c7" rows="3" placeholder="Optional notes">'+esc(storageCleanNotes(original[i]))+'</textarea>';
         else field='<input name="c'+i+'" type="'+(i===8?'date':'text')+'" value="'+esc(original[i]||'')+'" '+([1,3].includes(i)?'required':'')+' '+(i===3?'placeholder="e.g. 3 rolls, About 4, Count TBD"':'')+'>';
