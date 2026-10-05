@@ -6716,11 +6716,20 @@
     function storageTokens(q){return q.toLowerCase().replace(/[^a-z0-9 -]/g,' ').split(/\s+/).filter(w=>w&&!['do','i','we','have','a','an','the','of','how','many','what','about','are','they','is','there','any','set','me','show','our','and','in','stock','rolls'].includes(w)).map(w=>w==='tickets'?'ticket':w.endsWith('s')?w.slice(0,-1):w);}
     function storageMatches(row,q){const hay=row.slice(1,8).join(' ').toLowerCase().replace(/[^a-z0-9 -]/g,' ').split(/\s+/).map(w=>w.endsWith('s')?w.slice(0,-1):w);return storageTokens(q).every(t=>hay.includes(t));}
     let storageSections=['Office Supplies'];
-    function storageCanonicalCategory(value){return /^(event supplies|tools & event equipment)$/i.test(String(value||'').trim())?'Event Equipment':value;}
+    function storageCanonicalCategory(value){
+      const name=String(value||'').trim();
+      if(/^(event supplies|event equipment|tools & event equipment)$/i.test(name))return 'Event Supplies';
+      if(/^(displays & awards|awards|awards & keepsakes)$/i.test(name))return 'Awards & Keepsakes';
+      if(/^(storage bins & shelving|storage|storage & containers)$/i.test(name))return 'Storage & Containers';
+      return name;
+    }
+    function storageRowsEqual(left,right){
+      return storageHeaders.every((_,i)=>String(left?.[i]??'')===String(right?.[i]??''));
+    }
     function storageCategoryNames(){return [...new Set([...storageSections,...storageRows.filter(r=>r[0]).map(r=>r[2]||'Uncategorized')].map(storageCanonicalCategory))].sort((a,b)=>(storageCategoryLabels[a]||a).localeCompare(storageCategoryLabels[b]||b));}
     async function addStorageSection(){
       if(!storageShared||!accessToken)return;
-      const answer=prompt('Name of the new storage section:');
+      const answer=prompt('Name of the new inventory category:');
       if(answer===null)return;
       const name=answer.trim();
       if(!name)return;
@@ -6773,49 +6782,7 @@
           await writePortalSheetRequest(base+'/values:batchUpdate',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({valueInputOption:'RAW',data:locationDefaults.map(({row,i})=>({range:"'Storage Inventory'!F"+(i+2),values:[[storageLocation(row[5])]]}))})},'Set default inventory location','Storage Inventory',locationDefaults.length);
           locationDefaults.forEach(({row})=>row[5]=storageLocation(row[5]));
         }
-        // One-time inventory normalization requested Oct. 5, 2026.
-        // Runs against the shared Storage Inventory sheet when an authorized user opens Storage.
-        const requestedInventory=[
-          {match:/clipboard/i,item:'Clipboards',category:'Office Supplies',qty:'20',color:'',status:'Listed'},
-          {match:/^Blue pens$/i,item:'Blue pens',category:'Office Supplies',qty:'27',color:'Blue',status:'Listed'},
-          {match:/^Black pens$/i,item:'Black pens',category:'Office Supplies',qty:'39',color:'Black',status:'Listed'},
-          {match:/large.*clip|clip.*large/i,item:'Large black clips',category:'Office Supplies',qty:'28',color:'Black',status:'Listed'},
-          {match:/small.*clip|clip.*small/i,item:'Small black clips',category:'Office Supplies',qty:'6',color:'Black',status:'Listed'},
-          {match:/purple.*table(cloth|cover)|table(cloth|cover).*purple/i,item:'Purple plastic tablecover, 54 x 108 inches',category:'Serving & table supplies',qty:'1',color:'Purple',status:'Listed'},
-          {match:/yellow.*table(cloth|cover)|table(cloth|cover).*yellow/i,item:'Yellow plastic tablecover, 54 x 108 inches',category:'Serving & table supplies',qty:'1',color:'Yellow',status:'Listed'},
-          {match:/blue.*table(cloth|cover)|table(cloth|cover).*blue/i,item:'Blue plastic tablecover, 54 x 108 inches',category:'Serving & table supplies',qty:'1',color:'Blue',status:'Listed'},
-          {match:/scissor/i,item:'Scissors',category:'Office Supplies',qty:'2',color:'Pink/Purple, Red',status:'Listed'},
-          {match:/clothespin/i,item:'Wood clothespins',category:'Office Supplies',qty:'32',color:'Natural wood',status:'Listed'},
-          {match:/dry erase marker/i,item:'Dry erase markers',category:'Office Supplies',qty:null,color:null,status:'Listed'}
-        ];
-        const wristbands=[
-          ['Event wristbands - Red','100','Red'],['Event wristbands - Blue','100','Blue'],['Event wristbands - Pink','100','Pink'],
-          ['Event wristbands - Orange','100','Orange'],['Event wristbands - Yellow','100','Yellow'],['Event wristbands - Green','50','Green']
-        ];
-        const today='2026-10-05', updates=[], appends=[];
-        const liveRows=rows.slice(1);
-        const makeId=()=>{let max=0;liveRows.concat(appends).forEach(r=>{const m=String(r[0]||'').match(/^STO-(\\d+)$/i);if(m)max=Math.max(max,+m[1]);});return 'STO-'+String(max+1).padStart(3,'0');};
-        requestedInventory.forEach(spec=>{
-          let idx=liveRows.findIndex(r=>spec.match.test(String(r[1]||'')));
-          if(idx<0 && /large.*clip/i.test(spec.match.source)) idx=liveRows.findIndex(r=>/black.*clip/i.test(String(r[1]||''))&&!/small/i.test(String(r[1]||'')));
-          const base=idx>=0?liveRows[idx].slice():[makeId()];
-          while(base.length<11)base.push('');
-          base[1]=spec.item;base[2]=spec.category;if(spec.qty!==null)base[3]=spec.qty;if(spec.color!==null)base[4]=spec.color;
-          base[5]=storageLocation(base[5]);base[6]=spec.status;base[8]=today;base[9]=new Date().toISOString();
-          if(idx>=0){updates.push({range:"'Storage Inventory'!A"+(idx+2)+":K"+(idx+2),values:[base]});liveRows[idx]=base;}else{appends.push(base);liveRows.push(base);}
-        });
-        wristbands.forEach(([item,qty,color])=>{
-          let idx=liveRows.findIndex(r=>String(r[1]||'').trim().toLowerCase()===item.toLowerCase());
-          const base=idx>=0?liveRows[idx].slice():[makeId()];while(base.length<11)base.push('');
-          base[1]=item;base[2]='Event Equipment';base[3]=qty;base[4]=color;base[5]=storageLocation(base[5]);base[6]='Listed';base[8]=today;base[9]=new Date().toISOString();
-          if(idx>=0){updates.push({range:"'Storage Inventory'!A"+(idx+2)+":K"+(idx+2),values:[base]});liveRows[idx]=base;}else{appends.push(base);liveRows.push(base);}
-        });
-        // Remove any old combined multicolor tablecloth/tablecover record, but keep black tablecloth stock.
-        liveRows.forEach((r,i)=>{const name=String(r[1]||'');if(/table(cloth|cover)/i.test(name)&&/(purple|yellow|blue).*(purple|yellow|blue)/i.test(name)){updates.push({range:"'Storage Inventory'!A"+(i+2)+":K"+(i+2),values:[Array(11).fill('')]});}});
-        if(updates.length)await writePortalSheetRequest(base+'/values:batchUpdate',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({valueInputOption:'RAW',data:updates}),signal:AbortSignal.timeout(15000)},'Updated storage counts','Storage Inventory',updates.length);
-        if(appends.length)await writePortalSheetRequest(base+'/values/'+encodeURIComponent("'Storage Inventory'!A:K")+':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:appends}),signal:AbortSignal.timeout(15000)},'Added storage items','Storage Inventory',appends.length);
-        if(updates.length||appends.length)rows=await getSheetValues("'Storage Inventory'!A1:K10000",MEMBERSHIP_SPREADSHEET_ID);
-        storageRows=rows.slice(1).map(row=>{const copy=row.slice();copy[2]=storageCanonicalCategory(copy[2]);return copy;});storageShared=true;storageLoading=false;renderStorage();
+        storageRows=rows.slice(1).map(row=>row.slice());storageShared=true;storageLoading=false;renderStorage();
       }catch(error){storageLoading=false;renderStorage();document.getElementById('storageMessage').textContent=error.message+' Showing '+(storageRows===storageSeed?'':'the last available ')+'inventory; editing is disabled until shared records load.';}
     }
 
@@ -6926,13 +6893,13 @@
     function renderStorage(){
       const host=document.getElementById('storageWorkspace');
       const options=(i,label)=>'<option value="">'+label+'</option>'+(i===2?storageCategoryNames():[...new Set(storageRows.filter(r=>r[0]).map(r=>r[i]).filter(Boolean))].sort()).map(v=>'<option value="'+esc(v)+'">'+esc(i===2?(storageCategoryLabels[v]||v):v)+'</option>').join('');
-      host.innerHTML='<section class="workspace-card"><div class="storage-toolbar"><label class="storage-search">Search all supplies<input id="storageSearch" type="search" placeholder="Search items, colors, or locations…" value="'+esc(storageState.query)+'"></label><button class="open-btn" id="storageAdd" '+(!storageShared?'disabled':'')+'>Add item</button><button class="open-btn" id="storageCatalog" style="background:#c8102e;border-color:#c8102e" '+(!storageShared||storageLoading?'disabled':'')+'>Download PDF Catalog</button><button class="sponsor-tab" id="storageRefresh" '+(storageLoading?'disabled':'')+'>Refresh</button></div><div class="storage-toolbar"><h2>Choose a section</h2><button class="sponsor-tab" id="storageAddSection" '+(!storageShared?'disabled':'')+'>Add New Section</button></div><div class="storage-categories" id="storageCategories"></div><div class="storage-filters"><label>Category<select id="storageCategory">'+options(2,'All categories')+'</select></label><label>Color<select id="storageColor">'+options(4,'All colors')+'</select></label><label>Status<select id="storageStatus">'+options(6,'All statuses')+'</select></label><button class="sponsor-tab" id="storageClear">Clear filters</button></div><p id="storageMessage" role="status">'+(storageLoading?'Loading shared inventory…':storageShared?'':'PDF inventory · Shared records have not loaded.')+'</p><div id="storageAnswer" aria-live="polite"></div><div class="storage-grid" id="storageResults"></div><div class="storage-pagination" id="storagePagination"></div></section><div id="storageEditor"></div>';
+      host.innerHTML='<section class="workspace-card"><div class="storage-toolbar"><label class="storage-search">Search all supplies<input id="storageSearch" type="search" placeholder="Search items, colors, or locations…" value="'+esc(storageState.query)+'"></label><button class="open-btn" id="storageAdd" '+(!storageShared?'disabled':'')+'>Add item</button><button class="open-btn" id="storageCatalog" style="background:#c8102e;border-color:#c8102e" '+(!storageShared||storageLoading?'disabled':'')+'>Download PDF Catalog</button><button class="sponsor-tab" id="storageRefresh" '+(storageLoading?'disabled':'')+'>Refresh</button></div><div class="storage-toolbar"><h2>Choose a category</h2><button class="sponsor-tab" id="storageAddSection" '+(!storageShared?'disabled':'')+'>Add New Category</button></div><div class="storage-categories" id="storageCategories"></div><div class="storage-filters"><label>Category<select id="storageCategory">'+options(2,'All categories')+'</select></label><label>Color<select id="storageColor">'+options(4,'All colors')+'</select></label><label>Status<select id="storageStatus">'+options(6,'All statuses')+'</select></label><button class="sponsor-tab" id="storageClear">Clear filters</button></div><p id="storageMessage" role="status">'+(storageLoading?'Loading shared inventory…':storageShared?'':'PDF inventory · Shared records have not loaded.')+'</p><div id="storageAnswer" aria-live="polite"></div><div class="storage-grid" id="storageResults"></div><div class="storage-pagination" id="storagePagination"></div></section><div id="storageEditor"></div>';
       for(const [id,key] of [['storageSearch','query'],['storageCategory','category'],['storageColor','color'],['storageStatus','status']]){const el=document.getElementById(id);el.value=storageState[key];el.addEventListener(key==='query'?'input':'change',()=>{storageState[key]=el.value;if(key==='query'){storageState.category='';document.getElementById('storageCategory').value='';}renderStorageResults();});}
       document.getElementById('storageCatalog').onclick=downloadStorageCatalog;document.getElementById('storageAddSection').onclick=addStorageSection;document.getElementById('storageRefresh').onclick=loadStorage;document.getElementById('storageAdd').onclick=()=>editStorage();
       document.getElementById('storageClear').onclick=()=>{Object.keys(storageState).forEach(k=>storageState[k]='');storageBrowseAll=false;renderStorage();};
       host.querySelectorAll('[data-storage-query]').forEach(b=>b.onclick=()=>{Object.keys(storageState).forEach(k=>storageState[k]='');storageState.query=b.dataset.storageQuery;renderStorage();});renderStorageResults();
     }
-    const storageCategoryLabels={"Displays & awards":"Awards","Office Supplies":"Office Supplies","Poker run":"Poker Run","Remove / trash":"Discard","Seasonal & keepsakes":"Seasonal","Serving & table supplies":"Table Supplies","Signs & display equipment":"Signs & Displays","Storage bins & shelving":"Storage","Event Equipment":"Event Equipment"};
+    const storageCategoryLabels={"Displays & awards":"Awards & Keepsakes","Awards & Keepsakes":"Awards & Keepsakes","Office Supplies":"Office Supplies","Poker run":"Poker Run","Remove / trash":"Discard","Seasonal & keepsakes":"Seasonal","Serving & table supplies":"Table Supplies","Signs & display equipment":"Signs & Displays","Storage bins & shelving":"Storage & Containers","Storage & Containers":"Storage & Containers","Event Equipment":"Event Supplies","Event Supplies":"Event Supplies"};
     function renderStorageResults(){
       const categories=storageCategoryNames();
       const categoryHost=document.getElementById('storageCategories');
@@ -6961,7 +6928,7 @@
       try{
         const range="'Storage Inventory'!A"+rowNumber+':K'+rowNumber;
         const live=await getSheetValues(range,MEMBERSHIP_SPREADSHEET_ID);
-        if(JSON.stringify(live[0]||[])!==JSON.stringify(original))throw new Error('Someone changed this item. Refresh and try again.');
+        if(!storageRowsEqual(live[0],original))throw new Error('Someone changed this item. Refresh and try again.');
         await writePortalSheetRequest('https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+'/values/'+encodeURIComponent(range)+':clear',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(15000)},'Deleted storage item',original[1],1);
         storageRows[rowNumber-2]=[];
         document.querySelector('#storageEditor dialog')?.close();
@@ -6998,7 +6965,7 @@
       };
       form.onsubmit=async event=>{event.preventDefault();if(photoLoading)return;const button=form.querySelector('[type=submit]');button.disabled=true;
         try{if(!storageShared||!accessToken)throw new Error('Sign in and refresh shared inventory first.');const data=new FormData(form),row=storageHeaders.map((h,i)=>i===0?(original[0]||crypto.randomUUID()):i===9?new Date().toISOString():String(i===5?(data.get('newLocation')||data.get('c5')||STORAGE_DEFAULT_LOCATION):data.get('c'+i)||'').trim());
-          if(rowNumber){const live=await getSheetValues("'Storage Inventory'!A"+rowNumber+':K'+rowNumber,MEMBERSHIP_SPREADSHEET_ID);if(JSON.stringify(live[0]||[])!==JSON.stringify(original))throw new Error('Someone updated this item. Cancel, refresh, and reopen it.');}
+          if(rowNumber){const live=await getSheetValues("'Storage Inventory'!A"+rowNumber+':K'+rowNumber,MEMBERSHIP_SPREADSHEET_ID);if(!storageRowsEqual(live[0],original))throw new Error('Someone updated this item. Cancel, refresh, and reopen it.');}
           const range=rowNumber?"'Storage Inventory'!A"+rowNumber+':K'+rowNumber:"'Storage Inventory'!A:K";
           await writePortalSheetRequest('https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+'/values/'+encodeURIComponent(range)+(rowNumber?'?valueInputOption=RAW':':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS'),{method:rowNumber?'PUT':'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:[row]}),signal:AbortSignal.timeout(15000)},'Saved storage item',row[1],1);dialog.close();await loadStorage();
         }catch(error){form.querySelector('[data-storage-save]').textContent='Unable to save: '+error.message;button.disabled=false;}
