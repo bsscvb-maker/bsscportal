@@ -6750,6 +6750,48 @@
           await writePortalSheetRequest(base+'/values:batchUpdate',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({valueInputOption:'RAW',data:locationDefaults.map(({row,i})=>({range:"'Storage Inventory'!F"+(i+2),values:[[storageLocation(row[5])]]}))})},'Set default inventory location','Storage Inventory',locationDefaults.length);
           locationDefaults.forEach(({row})=>row[5]=storageLocation(row[5]));
         }
+        // One-time inventory normalization requested Oct. 5, 2026.
+        // Runs against the shared Storage Inventory sheet when an authorized user opens Storage.
+        const requestedInventory=[
+          {match:/clipboard/i,item:'Clipboards',category:'Office Supplies',qty:'20',color:'',status:'Listed'},
+          {match:/^Blue pens$/i,item:'Blue pens',category:'Office Supplies',qty:'27',color:'Blue',status:'Listed'},
+          {match:/^Black pens$/i,item:'Black pens',category:'Office Supplies',qty:'39',color:'Black',status:'Listed'},
+          {match:/large.*clip|clip.*large/i,item:'Large black clips',category:'Office Supplies',qty:'28',color:'Black',status:'Listed'},
+          {match:/small.*clip|clip.*small/i,item:'Small black clips',category:'Office Supplies',qty:'6',color:'Black',status:'Listed'},
+          {match:/purple.*table(cloth|cover)|table(cloth|cover).*purple/i,item:'Purple plastic tablecover, 54 x 108 inches',category:'Serving & table supplies',qty:'1',color:'Purple',status:'Listed'},
+          {match:/yellow.*table(cloth|cover)|table(cloth|cover).*yellow/i,item:'Yellow plastic tablecover, 54 x 108 inches',category:'Serving & table supplies',qty:'1',color:'Yellow',status:'Listed'},
+          {match:/blue.*table(cloth|cover)|table(cloth|cover).*blue/i,item:'Blue plastic tablecover, 54 x 108 inches',category:'Serving & table supplies',qty:'1',color:'Blue',status:'Listed'},
+          {match:/scissor/i,item:'Scissors',category:'Office Supplies',qty:'2',color:'Pink/Purple, Red',status:'Listed'},
+          {match:/clothespin/i,item:'Wood clothespins',category:'Office Supplies',qty:'32',color:'Natural wood',status:'Listed'},
+          {match:/dry erase marker/i,item:'Dry erase markers',category:'Office Supplies',qty:null,color:null,status:'Listed'}
+        ];
+        const wristbands=[
+          ['Event wristbands - Red','100','Red'],['Event wristbands - Blue','100','Blue'],['Event wristbands - Pink','100','Pink'],
+          ['Event wristbands - Orange','100','Orange'],['Event wristbands - Yellow','100','Yellow'],['Event wristbands - Green','50','Green']
+        ];
+        const today='2026-10-05', updates=[], appends=[];
+        const liveRows=rows.slice(1);
+        const makeId=()=>{let max=0;liveRows.concat(appends).forEach(r=>{const m=String(r[0]||'').match(/^STO-(\\d+)$/i);if(m)max=Math.max(max,+m[1]);});return 'STO-'+String(max+1).padStart(3,'0');};
+        requestedInventory.forEach(spec=>{
+          let idx=liveRows.findIndex(r=>spec.match.test(String(r[1]||'')));
+          if(idx<0 && /large.*clip/i.test(spec.match.source)) idx=liveRows.findIndex(r=>/black.*clip/i.test(String(r[1]||''))&&!/small/i.test(String(r[1]||'')));
+          const base=idx>=0?liveRows[idx].slice():[makeId()];
+          while(base.length<11)base.push('');
+          base[1]=spec.item;base[2]=spec.category;if(spec.qty!==null)base[3]=spec.qty;if(spec.color!==null)base[4]=spec.color;
+          base[5]=storageLocation(base[5]);base[6]=spec.status;base[8]=today;base[9]=new Date().toISOString();
+          if(idx>=0){updates.push({range:"'Storage Inventory'!A"+(idx+2)+":K"+(idx+2),values:[base]});liveRows[idx]=base;}else{appends.push(base);liveRows.push(base);}
+        });
+        wristbands.forEach(([item,qty,color])=>{
+          let idx=liveRows.findIndex(r=>String(r[1]||'').trim().toLowerCase()===item.toLowerCase());
+          const base=idx>=0?liveRows[idx].slice():[makeId()];while(base.length<11)base.push('');
+          base[1]=item;base[2]='Event Supplies';base[3]=qty;base[4]=color;base[5]=storageLocation(base[5]);base[6]='Listed';base[8]=today;base[9]=new Date().toISOString();
+          if(idx>=0){updates.push({range:"'Storage Inventory'!A"+(idx+2)+":K"+(idx+2),values:[base]});liveRows[idx]=base;}else{appends.push(base);liveRows.push(base);}
+        });
+        // Remove any old combined multicolor tablecloth/tablecover record, but keep black tablecloth stock.
+        liveRows.forEach((r,i)=>{const name=String(r[1]||'');if(/table(cloth|cover)/i.test(name)&&/(purple|yellow|blue).*(purple|yellow|blue)/i.test(name)){updates.push({range:"'Storage Inventory'!A"+(i+2)+":K"+(i+2),values:[Array(11).fill('')]});}});
+        if(updates.length)await writePortalSheetRequest(base+'/values:batchUpdate',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({valueInputOption:'RAW',data:updates}),signal:AbortSignal.timeout(15000)},'Updated storage counts','Storage Inventory',updates.length);
+        if(appends.length)await writePortalSheetRequest(base+'/values/'+encodeURIComponent("'Storage Inventory'!A:K")+':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:appends}),signal:AbortSignal.timeout(15000)},'Added storage items','Storage Inventory',appends.length);
+        if(updates.length||appends.length)rows=await getSheetValues("'Storage Inventory'!A1:K10000",MEMBERSHIP_SPREADSHEET_ID);
         storageRows=rows.slice(1);storageShared=true;storageLoading=false;renderStorage();
       }catch(error){storageLoading=false;renderStorage();document.getElementById('storageMessage').textContent=error.message+' Showing '+(storageRows===storageSeed?'':'the last available ')+'inventory; editing is disabled until shared records load.';}
     }
