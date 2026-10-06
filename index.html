@@ -2672,6 +2672,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const updated = result?.updates?.updatedRange || '';
       const match = updated.match(/!A(\d+):[A-Z]+(\d+)$/);
       if (!match) throw new Error('Could not identify newly added transaction rows.');
+      await writePortalSheetRequest(`https://sheets.googleapis.com/v4/spreadsheets/${FINANCE_SPREADSHEET_ID}:batchUpdate`,{
+        method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
+        body:JSON.stringify({requests:[{repeatCell:{range:{sheetId:772518726,startRowIndex:Number(match[1])-1,endRowIndex:Number(match[2]),startColumnIndex:0,endColumnIndex:1},cell:{userEnteredFormat:{numberFormat:{type:'DATE',pattern:'m/d/yyyy'}}},fields:'userEnteredFormat.numberFormat'}}]})
+      },'Formatted transaction dates','Transactions-2026',Number(match[2])-Number(match[1])+1);
       const updates = [];
       for (let row = Number(match[1]); row <= Number(match[2]); row += 1) {
         updates.push({range:`'Transactions-2026'!K${row}`,value:`=IF($A${row}="","",'Control-2026'!$E$30+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"<>PayPal")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer Out")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Pending at Chase",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Pending at Chase",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer Out"))`});
@@ -4051,6 +4055,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const text = String(value || '').trim();
       if (!text) return '';
       if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+      const serial = /^\d{5}(?:\.\d+)?$/.test(text) ? Number(text) : NaN;
+      if (Number.isFinite(serial) && serial >= 20000 && serial <= 80000) {
+        return new Date(Date.UTC(1899,11,30) + Math.floor(serial) * 86400000).toISOString().slice(0,10);
+      }
       const parsed = new Date(text);
       if (Number.isNaN(parsed.getTime())) return text;
       const local = new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60000);
@@ -5691,7 +5699,8 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 
     function tallyTransactionFromRow(row) {
       const eventName = String(row[1] || '').trim();
-      const date = String(row[2] || '').trim();
+      const isoDate = transactionDateForInput(row[2]);
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(isoDate) ? isoDate.split('-').map(Number).slice(1).concat(Number(isoDate.slice(0,4))).join('/') : '';
       const treasurer = String(row[3] || '').trim();
       const moneyType = String(row[4] || '').trim();
       const amount = Number(String(row[5] || '').replace(/[$,]/g,'').trim());
@@ -5755,7 +5764,20 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     }
 
     function tallyTransferKey(values) {
-      return [values[0],values[3],values[8],Number(String(values[9] || '').replace(/[$,]/g,'')),values[16]].map(value => String(value || '').trim().toLowerCase()).join('\u001f');
+      return [transactionDateForInput(values[0]),values[3],values[8],Number(String(values[9] || '').replace(/[$,]/g,'')),values[16]].map(value => String(value || '').trim().toLowerCase()).join('\u001f');
+    }
+
+    // Match dues recorded through Tally or the renewal collection screen.
+    // Other income keeps its reference-based transfer key.
+    function membershipDuesPaymentKey(values) {
+      if (String(values[4] || '').trim().toLowerCase() !== 'membership' ||
+          !/dues/i.test(String(values[3] || '') + ' ' + String(values[5] || '')) ||
+          String(values[12] || '').trim().toLowerCase() !== 'income') return '';
+      const date = transactionDateForInput(values[0]);
+      const name = String(values[8] || '').trim().toLowerCase().replace(/\s+/g,' ');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !name) return '';
+      return [date,name,Number(String(values[9] || '').replace(/[$,]/g,'')),
+        String(values[6] || '').trim().toLowerCase(),String(values[13] || '').trim().toLowerCase()].join('\u001f');
     }
 
     function tallyCardKey(row) {
@@ -5971,7 +5993,14 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           for (const key of cardDetails.keys()) if (!foundKeys.has(key)) throw new Error('A card entry changed. Refresh Tally and check it before sending.');
           const existing = await getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID);
           const existingKeys = new Set(existing.slice(1).map(tallyTransferKey));
-          const newTransactions = prepared.flatMap(item => item.transactions.filter(transaction => !existingKeys.has(tallyTransferKey(transaction))));
+          const existingDuesKeys = new Set(existing.slice(1).map(membershipDuesPaymentKey).filter(Boolean));
+          const newTransactions = prepared.flatMap(item => item.transactions.filter(transaction => {
+            const key = tallyTransferKey(transaction), duesKey = membershipDuesPaymentKey(transaction);
+            if (existingKeys.has(key) || (duesKey && existingDuesKeys.has(duesKey))) return false;
+            existingKeys.add(key);
+            if (duesKey) existingDuesKeys.add(duesKey);
+            return true;
+          }));
           button.textContent = newTransactions.length ? 'Sending…' : 'Finishing…';
           if (newTransactions.length) await appendSheetRows(FINANCE_SPREADSHEET_ID,'Transactions-2026',newTransactions);
           const sentStamp = `✓ Sent — ${new Date().toLocaleString('en-US',{timeZone:'America/New_York'})} ET`;

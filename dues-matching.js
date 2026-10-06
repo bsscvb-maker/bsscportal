@@ -278,7 +278,12 @@ async function record2027MeetingDues(selected,date,method) {
   let finance=await getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID);
   const fc=name=>duesHeader(finance,name);
   const marker='[DUES_COLLECTION:'+id+']';
-  const transactions=finance.slice(1).map((row,i)=>({row,index:i+2})).filter(item=>String(item.row[fc('Note')]||'').includes(marker));
+  const paymentKey=membershipDuesPaymentKey(duesMappedRow(finance[0],{
+    'Date':date,'Description':'2027 Membership Renewal Dues','Category':'Membership','Subcategory':'Dues',
+    'Fund':'General Fund','Payee/Payer':person.name,'Amount':50,'Type':'Income','Payment Method':method
+  }));
+  const transactions=finance.slice(1).map((row,i)=>({row,index:i+2})).filter(item=>
+    String(item.row[fc('Note')]||'').includes(marker) || (paymentKey && membershipDuesPaymentKey(item.row)===paymentKey));
   if(transactions.length>1)throw new Error('Duplicate finance entry for '+person.name+'. Review Finance.');
   if(transactions.length && (Number(String(transactions[0].row[fc('Amount')]).replace(/[$,]/g,''))!==50 || String(transactions[0].row[fc('Payment Method')])!==method))throw new Error('Existing finance entry differs for '+person.name+'. Review Finance.');
   if(!logs.length) {
@@ -297,6 +302,10 @@ async function record2027MeetingDues(selected,date,method) {
     sourceRow=Number(result?.updates?.updatedRange?.match(/!A(\d+):/)?.[1]);
   } else {
     sourceRow=transactions[0].index;
+    if(!String(transactions[0].row[fc('Note')]||'').includes(marker)) {
+      await updateSheetCell(FINANCE_SPREADSHEET_ID,'Transactions-2026',sourceRow,fc('Note'),
+        [transactions[0].row[fc('Note')],marker].filter(Boolean).join(' | '));
+    }
     await restoreAppendedTransactionBalances({updates:{updatedRange:"'Transactions-2026'!A"+sourceRow+':Q'+sourceRow}});
   }
   const ledger=await getSheetValues("'Dues Payments'!A1:O1000",MEMBERSHIP_SPREADSHEET_ID);
