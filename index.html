@@ -5340,13 +5340,14 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         return Number.isFinite(numeric) ? (numeric < 0 ? 'alert' : (numeric > 0 ? 'good' : '')) : '';
       };
       const card = (label,value,cls='') => `<div class="finance-dashboard-card ${cls}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
+      const bankAt = (r,c) => String(controlRows[r]?.[c] ?? '—').replace(/\s+/g,' ').trim();
       const reconciliation = cash.status;
       document.getElementById('financeDashboard').innerHTML = `<section class="finance-dashboard-hero">
         <div class="finance-dashboard-heading"><div><h2>${esc(at(1,1))}</h2><p>Board-level view of liquidity, financial performance, community impact, and financial control.</p></div><span class="finance-dashboard-asof live-eastern-time" data-live-eastern-clock="true"></span></div>
         <section class="finance-dashboard-section"><h3>Cash Position</h3><div class="finance-dashboard-grid">
-          ${card('Chase Available — Combined',at(5,4),'cash-total')}
-          ${card('Chase General Checking',at(6,4),'fund-general')}
-          ${card('Chase Bikes for Tykes Savings',at(7,4),'fund-bft')}
+          ${card('Chase Available — Combined',bankAt(5,4),'cash-total')}
+          ${card('Chase General Checking',bankAt(6,4),'fund-general')}
+          ${card('Chase Bikes for Tykes Savings',bankAt(7,4),'fund-bft')}
         </div><p>Chase available balances from the latest manual bank update. These may include pending activity; they are not a live bank feed.</p></section>
         <section class="finance-dashboard-section"><h3>After Reserving Uncleared Payments</h3><div class="finance-dashboard-grid">${card('Combined Reserve Calculation',money(cash.generalAvailable+cash.bftAvailable),'cash-total')}${card('General After Reserves',money(cash.generalAvailable),'fund-general')}${card('BFT After Reserves',money(cash.bftAvailable),'fund-bft')}</div><p>Posted ledger balances minus all uncleared outgoing payments. Incoming uncleared deposits are excluded.</p></section>
         <section class="finance-dashboard-section"><h3>Pending Transactions</h3><div class="finance-dashboard-grid">
