@@ -3146,7 +3146,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 
     function downloadNonRenewalNames() {
       if (currentMembershipSheet !== '2026 - Non Renewal') return;
-      const table = document.querySelector('#membershipContent table');
+      const table = document.querySelector('#membershipContent table[data-rendered-table="membershipContent"]');
       if (!table) return;
       const headers = [...table.querySelectorAll('thead tr:last-child th')].map(cell => cell.textContent.trim());
       const rows = [...table.querySelectorAll('tbody tr')].filter(row => !row.hidden)
@@ -3168,7 +3168,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 
     function exportVisibleTable(targetId) {
       const target = document.getElementById(targetId);
-      const table = target?.querySelector('table');
+      const table = target?.querySelector('table[data-rendered-table]');
       if (!table) return;
       const headerCells = [...table.querySelectorAll('thead tr:last-child th')];
       const excluded = headerCells.map(cell => /^(edit)$/i.test(cell.textContent.trim()));
@@ -3276,7 +3276,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       if (!Number.isFinite(ticketPrice) || ticketPrice <= 0) ticketPrice = 20;
       const ticketPriceBar = isTicketLedger ? `<div class="ticket-price-bar"><strong>Ticket Cost</strong><span class="ticket-price-value" data-ticket-price="true" data-value="${ticketPrice}" ${editMode ? 'contenteditable="true" spellcheck="false"' : ''}>${money(ticketPrice)}</span></div>` : '';
       const editHelp = editMode ? (isTransaction2026 || isBftTracking || isHonorary ? '<div class="edit-help" role="status"><strong>Check the box next to the row you want to edit.</strong> Only the checked row will open. Review the fields before saving.</div>' : '<div class="edit-help">Edit mode is on. Click any cell and type. Changed cells turn yellow; click “Done editing” to save everything.</div>') : '';
-      target.innerHTML = `${toolbar}${editHelp}${ticketPriceBar}<div class="table-wrap${isYearCount ? ' year-count-wrap' : isNumberedRoster ? ` membership-roster-wrap${isRoster2027 ? ' membership-roster-2027' : ''}` : ''}"><table class="${tableClass}${isTransaction2026 && editMode ? ' transaction-picking' : isBftTracking && editMode ? ' tracking-picking' : ''}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${(isTransaction2026 || isBftTracking || isHonorary) && editMode ? '<th class="transaction-pick-cell">Edit</th>' : ''}${isTransaction2026 ? '<th class="transaction-row-number">Row</th>' : ''}${isLifer ? '<th class="lifer-row-number">Row</th>' : ''}${isNumberedRoster ? '<th class="lifer-row-number">#</th>' : ''}${finalHeaders.map((header,index) => `<th class="${isTransaction2026 && [1,2,16].includes(index) ? 'transaction-extra' : ''}">${esc(isTransaction2026 && index === 10 ? 'Chase balance' : isTransaction2026 && index === 11 ? 'With outstanding' : header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map((item, rosterIndex) => {
+      target.innerHTML = `${toolbar}${editHelp}${ticketPriceBar}<div class="table-wrap${isYearCount ? ' year-count-wrap' : isNumberedRoster ? ` membership-roster-wrap${isRoster2027 ? ' membership-roster-2027' : ''}` : ''}"><table data-rendered-table="${targetId}" class="${tableClass}${isTransaction2026 && editMode ? ' transaction-picking' : isBftTracking && editMode ? ' tracking-picking' : ''}" ${isTicketLedger ? `data-ticket-group-start="${ticketGroupStart}"` : ''}><thead>${groupedHeader}<tr>${(isTransaction2026 || isBftTracking || isHonorary) && editMode ? '<th class="transaction-pick-cell">Edit</th>' : ''}${isTransaction2026 ? '<th class="transaction-row-number">Row</th>' : ''}${isLifer ? '<th class="lifer-row-number">Row</th>' : ''}${isNumberedRoster ? '<th class="lifer-row-number">#</th>' : ''}${finalHeaders.map((header,index) => `<th class="${isTransaction2026 && [1,2,16].includes(index) ? 'transaction-extra' : ''}">${esc(isTransaction2026 && index === 10 ? 'Chase balance' : isTransaction2026 && index === 11 ? 'With outstanding' : header)}</th>`).join('')}</tr></thead><tbody>${indexedData.map((item, rosterIndex) => {
         const labels = item.row.map(value => String(value).trim().toLowerCase());
         const isSubtotal = labels.some(value => value.includes('subtotal'));
         const isTotal = !isSubtotal && labels.some(value => value === 'total' || value.endsWith(' total') || value.includes('total with locks'));
@@ -3463,7 +3463,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         const query = searchInput.value.trim().toLowerCase();
         const pipelineStage = targetId === 'marketOrdersTable' ? (target.dataset.marketPipelineStage || '') : '';
         const pipelineLabel = ({payment:'Awaiting Payment',unsent:'Not Yet Submitted',vendor:'With Manufacturer',pickup:'Ready for Pickup',complete:'Handed Out'})[pipelineStage] || '';
-        const bodyRows = [...target.querySelectorAll('tbody tr')];
+        const bodyRows = [...target.querySelectorAll('table[data-rendered-table] > tbody > tr')];
         let visible = 0;
         bodyRows.forEach(row => {
           const rowStages = (row.dataset.marketStages || '').split(/\\s+/);
