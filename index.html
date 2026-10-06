@@ -1624,6 +1624,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       body.portal-authenticated .mobile-more-grid button{min-height:50px;border:1px solid #34353a;border-radius:10px;background:#1c1d21;color:#fff;font:800 .78rem system-ui}
     }
     @media(min-width:761px){.mobile-app-nav,.mobile-more-sheet{display:none!important}}
+
+.finance-detail-plus{border:1px solid #64748b;border-radius:50%;width:28px;height:28px;margin-left:10px;background:white;color:#111;font-weight:700;cursor:pointer}
+.finance-breakdown-dialog{width:min(660px,calc(100vw - 32px));max-height:75vh;overflow:auto;border:0;border-radius:12px;padding:22px;color:#111;background:white;box-shadow:0 20px 60px #0005}
+.finance-breakdown-dialog::backdrop{background:#0007}.finance-breakdown-dialog header{display:flex;justify-content:space-between;align-items:center;gap:16px}.finance-breakdown-dialog h3{margin:0;font-size:20px}.finance-breakdown-dialog table{width:100%;border-collapse:collapse;font-size:14px}.finance-breakdown-dialog th,.finance-breakdown-dialog td{text-align:left;padding:9px 5px;border-bottom:1px solid #ddd}.finance-breakdown-dialog th:last-child,.finance-breakdown-dialog td:last-child{text-align:right;white-space:nowrap}.finance-breakdown-dialog button{cursor:pointer}.finance-breakdown-total{text-align:right;font-weight:bold;margin-top:14px}
 </style>
 </head>
 <body>
@@ -5363,6 +5367,34 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       document.getElementById('financeDashboardStatus').textContent = 'Executive dashboard connected to BSSC Finance System 2026.';
     }
 
+    function financeBreakdownRows(fundName,kind,rows=financeControlTransactionRows) {
+      const number=value=>Number(String(value||0).replace(/[$,]/g,''));
+      return rows.slice(1).filter(row=>{
+        const fund=String(row[6]||'').trim().toLowerCase(),status=String(row[14]||'').trim().toLowerCase(),method=String(row[13]||'').trim().toLowerCase(),type=String(row[12]||'').trim().toLowerCase(),amount=number(row[9]);
+        if(fund!==fundName.toLowerCase()||status!=='no'||!Number.isFinite(amount)||(method==='paypal'&&!['transfer in','transfer out'].includes(type))) return false;
+        return kind==='outgoing'?amount<0:kind==='paypal'?amount>0&&method==='paypal':amount>0&&method!=='paypal';
+      });
+    }
+
+    function showFinanceBreakdown(fund,kind) {
+      let dialog=document.getElementById('financeBreakdownDialog');
+      if(!dialog){dialog=document.createElement('dialog');dialog.id='financeBreakdownDialog';dialog.className='finance-breakdown-dialog';document.body.appendChild(dialog);dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close();});}
+      const money=value=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value||0);
+      const number=value=>Number(String(value||0).replace(/[$,]/g,''));
+      const labels={outgoing:'Uncleared outgoing payments',other:'Deposits awaiting availability',paypal:'Pending PayPal deposits',bank:'Chase available balance',available:'After reserving uncleared payments'};
+      const cash=financeCashSnapshot(financeControlRows,financeControlTransactionRows),general=fund==='General Fund';
+      const selected=financeBreakdownRows(fund,kind==='available'?'outgoing':kind);
+      const total=selected.reduce((sum,row)=>sum+number(row[9]),0);
+      let body;
+      if(kind==='bank')body='<p>This is the latest manually entered Chase available balance. Chase can reflect pending activity in this number.</p><p>Use Edit Bank Reconciliation to update it from Chase. The posted ledger and uncleared transaction totals below are tracked separately.</p><div class="finance-breakdown-total">'+money(number(financeControlRows[general?6:7]?.[4]))+'</div>';
+      else {
+        const intro=kind==='available'?'<p>Posted ledger balance '+money(general?cash.generalBank:cash.bftBank)+' minus '+money(-total)+' reserved for the payments below = <strong>'+money(general?cash.generalAvailable:cash.bftAvailable)+'</strong>. Incoming uncleared deposits are excluded.</p>':'<p>These are the recorded transactions that make up this total. Internal transfers appear once per account. Uncleared does not always mean Chase has received the transaction.</p>';
+        body=intro+(selected.length?'<table><thead><tr><th>Date / recipient</th><th>Description</th><th>Amount</th></tr></thead><tbody>'+selected.map(row=>'<tr><td>'+esc(row[0])+'<br>'+esc(row[8])+'</td><td>'+esc(row[3])+'</td><td>'+money(number(row[9]))+'</td></tr>').join('')+'</tbody></table>':'<p>No transactions in this group.</p>')+'<div class="finance-breakdown-total">'+selected.length+' entries · '+money(total)+'</div>';
+      }
+      dialog.innerHTML='<header><h3 id="financeBreakdownTitle">'+esc(fund)+' — '+esc(labels[kind])+'</h3><button type="button" aria-label="Close breakdown">Close</button></header>'+body;
+      dialog.setAttribute('aria-labelledby','financeBreakdownTitle');dialog.querySelector('button').addEventListener('click',()=>dialog.close());dialog.showModal();
+    }
+
     function renderFinanceControl(rows, transactionRows=financeControlTransactionRows) {
       financeControlRows = rows;
       financeControlTransactionRows = transactionRows;
@@ -5370,7 +5402,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const numeric = value => Number(String(value).replace(/[$,%(),▲▼]/g,'').trim()) * (String(value).includes('(') ? -1 : 1);
       const resultTone = value => numeric(value) < 0 ? 'tone-red' : 'tone-green';
       const editableValue = (value,row) => financeControlEditMode ? `<input class="control-edit-input" data-control-row="${row}" value="${esc(value === '—' ? '' : value)}" aria-label="Edit bank reconciliation amount">` : `<strong>${esc(value)}</strong>`;
-      const section = (title,pairs,cls='') => `<section class="control-card ${cls}"><h3>${esc(title)}</h3><div class="control-rows">${pairs.map(([label,value,bad,row]) => `<div class="control-row ${bad ? 'status-bad' : ''}"><span>${esc(label)}</span>${row ? editableValue(value,row) : `<strong>${esc(value)}</strong>`}</div>`).join('')}</div></section>`;
+      const section = (title,pairs,cls='') => `<section class="control-card ${cls}"><h3>${esc(title)}</h3><div class="control-rows">${pairs.map(([label,value,bad,row,detail]) => `<div class="control-row ${bad ? 'status-bad' : ''}"><span>${esc(label)}</span>${row ? editableValue(value,row) : `<strong>${esc(value)}${detail ? `<button type="button" class="finance-detail-plus" data-finance-fund="${esc(detail[0])}" data-finance-kind="${esc(detail[1])}" aria-label="Show ${esc(label)} breakdown">+</button>` : ''}</strong>`}</div>`).join('')}</div></section>`;
       const money = value => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value || 0);
       const now = new Date();
       const monthlyTotals = fundName => transactionRows.slice(1).reduce((totals,row) => {
@@ -5390,19 +5422,20 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const impactPriorYear = numeric(at(25,4));
       const impactIncrease = impactYtd - impactPriorYear;
       const {generalPending,bftPending,generalBank,bftBank,generalAvailable,bftAvailable,bankSplitMismatch,status,fundStatus,hasPending}=financeCashSnapshot(rows,transactionRows);
-      const fundDetail = (title,balance,pending,available,tone='tone-green') => section(title,[
+      const fundDetail = (title,balance,pending,available,tone='tone-green') => { const fund=title==='GENERAL FUND'?'General Fund':'Bikes for Tykes'; return section(title,[
+        ['Chase available balance',at(title==='GENERAL FUND'?6:7,4),false,financeControlEditMode?(title==='GENERAL FUND'?7:8):null,[fund,'bank']],
         ['Cleared bank balance',money(balance)],
-        ['Pending PayPal deposits',money(pending.paypal)],
-        ['Deposits awaiting availability',money(pending.otherDeposits)],
-        ['Pending outgoing payments',money(-pending.outgoing)],
-        ['After reserving uncleared payments',money(available)],
+        ['Pending PayPal deposits',money(pending.paypal),false,null,[fund,'paypal']],
+        ['Deposits awaiting availability',money(pending.otherDeposits),false,null,[fund,'other']],
+        ['Pending outgoing payments',money(-pending.outgoing),false,null,[fund,'outgoing']],
+        ['After reserving uncleared payments',money(available),false,null,[fund,'available']],
         ['Status',fundStatus(pending),false]
-      ],tone+(hasPending(pending)?' fund-awaiting-clearance':''));
+      ],tone+(hasPending(pending)?' fund-awaiting-clearance':'')); };
       document.getElementById('financeControlTable').innerHTML = `<div class="control-title"><h2>${esc(at(0,0))}</h2><span class="live-eastern-time" data-live-eastern-clock="true"></span></div>
         <div class="control-action-bar"><button class="dashboard-edit-btn ${financeControlEditMode ? 'active' : ''}" id="financeControlEditToggle" aria-pressed="${financeControlEditMode}">${financeControlEditMode ? 'Done Editing' : 'Edit Bank Reconciliation'}</button></div>
         ${financeControlEditMode ? '<div class="control-edit-note">Enter Chase’s Total available balance, General Fund available balance, and Bikes for Tykes available balance. Use the amounts labeled Available balance on Chase. Cleared Yes/No in Transactions-2026 controls the ledger and pending breakdown.</div>' : ''}<div class="control-grid">
         <div style="grid-column:1/-1;display:grid;gap:14px">
-        ${section('CHASE AVAILABLE BALANCES',[['General checking',at(6,4),false,7],['Bikes for Tykes savings',at(7,4),false,8],['COMBINED BANK BALANCE',at(5,4),false,6],['Status',status,/out of balance/i.test(status)]],'tone-cash-total '+(bankSplitMismatch?'fund-status-error':(hasPending(generalPending)||hasPending(bftPending)?'fund-awaiting-clearance':'fund-status-balanced')))}
+        ${section('CHASE AVAILABLE BALANCES',[['COMBINED BANK BALANCE',at(5,4),false,6],['Status',status,/out of balance/i.test(status)]],'tone-cash-total '+(bankSplitMismatch?'fund-status-error':(hasPending(generalPending)||hasPending(bftPending)?'fund-awaiting-clearance':'fund-status-balanced')))}
         <div class="control-edit-note">These are Chase available balances from the latest manual bank update, including any pending activity Chase reflects. Update them with Edit Bank Reconciliation when the bank changes; this is not a live bank feed.</div>
         ${section('AFTER RESERVING UNCLEARED PAYMENTS',[['General after reserves',money(generalAvailable)],['Bikes for Tykes after reserves',money(bftAvailable)],['COMBINED AFTER RESERVES',money(generalAvailable+bftAvailable)]])}
         <div class="control-edit-note">Reserve calculation: posted ledger balances minus all uncleared outgoing payments, including outstanding checks and transfers. Uncleared incoming deposits are excluded.</div>
@@ -5418,6 +5451,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         ${section(at(22,3),[['Lifetime Giving Since 2005',at(22,4)],[at(26,3),at(26,4)]],'tone-community')}
         ${section(at(25,0),[['2026 Community Impact — YTD',at(27,1)],['2025 Community Impact — Full Year',at(25,4)],['Increase Over 2025 Full Year',money(impactIncrease)]],'tone-community')}
       </div>`;
+      document.querySelectorAll('#financeControlTable .finance-detail-plus').forEach(button=>button.addEventListener('click',()=>showFinanceBreakdown(button.dataset.financeFund,button.dataset.financeKind)));
       document.getElementById('financeControlEditToggle').addEventListener('click',saveFinanceControlEdits);
       startEasternClock();
       document.getElementById('financeControlStatus').textContent = 'Executive financial snapshot connected to Control-2026.';
