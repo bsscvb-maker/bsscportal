@@ -46,9 +46,78 @@ async function setup2027DuesReview(rows) {
     const context=await duesReadContext(rows);
     if (currentMembershipSheet!=='2027') return;
     const pending=duesPending(context.ledger);
+    const eligible=context.people.filter(p=>['active','prospect'].includes(p.status));
+    const totalRenewed=eligible.length;
+    const exemptCount=eligible.filter(p=>Boolean(duesExemption(p,context.previous,context.presidents)) || /^(exempt|waived)$/.test(duesNorm(p.values[p.cols['Dues Paid']]))).length;
+    const paidCount=eligible.filter(p=>!duesExemption(p,context.previous,context.presidents) && /^(yes|paid)$/.test(duesNorm(p.values[p.cols['Dues Paid']]))).length;
+    const duesComplete=paidCount+exemptCount;
+    const unpaidCount=unpaid2027Dues(context).length;
+    let startingMembers=59,notReturningCount=0,leftToRenew=Math.max(0,startingMembers-totalRenewed),nonRenewalMembers=[],decisionRows=[];
+    try {
+      const results=await Promise.all([
+        getSheetValues("'2026 - Non Renewal'!A1:AK1000",MEMBERSHIP_SPREADSHEET_ID),
+        getSheetValues("'Renewal Decisions'!A1:G500",MEMBERSHIP_SPREADSHEET_ID).catch(()=>[])
+      ]);
+      const nonRenewalRows=results[0]; decisionRows=results[1];
+      const nonRenewalHeaders=(nonRenewalRows[0]||[]).map(v=>duesNorm(v));
+      const nrFirst=nonRenewalHeaders.indexOf('first name'),nrLast=nonRenewalHeaders.indexOf('last name'),nrRoad=nonRenewalHeaders.indexOf('road name');
+      nonRenewalMembers=nonRenewalRows.slice(1).filter(r=>(nrFirst>=0&&String(r[nrFirst]||'').trim())||(nrLast>=0&&String(r[nrLast]||'').trim())).map(r=>({
+        first:String(r[nrFirst]||'').trim(),last:String(r[nrLast]||'').trim(),road:nrRoad>=0?String(r[nrRoad]||'').trim():''
+      }));
+      const nonRenewalKeys=new Set(nonRenewalMembers.map(m=>duesNorm(m.first+'|'+m.last)));
+      const declinedKeys=new Set(decisionRows.slice(1).filter(r=>duesNorm(r[3])==='not returning').map(r=>duesNorm(String(r[0]||'').trim()+'|'+String(r[1]||'').trim())));
+      notReturningCount=[...nonRenewalKeys].filter(key=>declinedKeys.has(key)).length;
+      leftToRenew=Math.max(0,nonRenewalKeys.size-notReturningCount);
+      startingMembers=totalRenewed+nonRenewalKeys.size;
+      nonRenewalMembers=nonRenewalMembers.filter(m=>!declinedKeys.has(duesNorm(m.first+'|'+m.last))).sort((a,b)=>a.last.localeCompare(b.last)||a.first.localeCompare(b.first));
+    } catch(error) { leftToRenew=Math.max(0,startingMembers-totalRenewed-notReturningCount); }
     const panel=document.createElement('section');panel.className='dues-manager-launch';
-    panel.innerHTML='<div><strong>2027 Membership Dues</strong><span>'+unpaid2027Dues(context).length+' unpaid · '+pending.length+' online payments to review</span></div><button type="button" class="dashboard-edit-btn" data-manage-dues>Manage Dues</button><span role="status" class="dues-review-status"></span>';
+    panel.style.cssText='display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;border-left:6px solid #c8102e;padding:16px 18px;';
+    panel.innerHTML='<div style="min-width:0"><strong style="font-size:1.05rem">2027 Membership Dues & Renewal Progress</strong>'+
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-weight:900">'+
+        '<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:8px;padding:7px 10px">'+totalRenewed+' RENEWED</span>'+
+        '<span style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:7px 10px">'+leftToRenew+' LEFT TO RENEW</span>'+
+        '<span style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px">'+notReturningCount+' NOT RETURNING</span>'+
+        '<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:8px;padding:7px 10px">'+duesComplete+' / '+totalRenewed+' DUES COMPLETE</span>'+
+        '<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:8px;padding:7px 10px">'+paidCount+' PAID</span>'+
+        '<span style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px">'+exemptCount+' EXEMPT</span>'+
+        '<span style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:7px 10px">'+unpaidCount+' STILL OWES</span>'+
+        '<span style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px">'+startingMembers+' STARTING MEMBERS</span>'+
+      '</div>'+
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin-top:12px;padding-top:12px;border-top:1px solid #b8bec4">'+
+        '<label style="font-weight:800;min-width:min(360px,100%)">Known not returning<select data-not-returning-member style="display:block;width:100%;margin-top:5px;padding:9px 10px;border:1px solid #9ca3af;border-radius:7px;background:white"><option value="">Choose a member who is not returning…</option>'+nonRenewalMembers.map((m,i)=>'<option value="'+i+'">'+esc(m.first+' '+(m.road?'“'+m.road+'” ':'')+m.last)+'</option>').join('')+'</select></label>'+
+        '<button type="button" class="dashboard-edit-btn" data-mark-not-returning style="background:#c8102e">Mark Not Returning</button>'+
+        (pending.length?'<strong style="color:#991b1b">'+pending.length+' online payment'+(pending.length===1?'':'s')+' to review</strong>':'')+
+      '</div></div>'+
+      '<div><button type="button" class="dashboard-edit-btn" data-manage-dues>Manage Dues</button><span role="status" class="dues-review-status"></span></div>';
     target.prepend(panel);
+    const todayET=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+    if(todayET>='2027-01-01'){
+      const allNonRenewing=decisionRows.slice(1).filter(r=>duesNorm(r[3])==='not returning').map(r=>[String(r[0]||'').trim(),String(r[2]||'').trim()?('“'+String(r[2]||'').trim()+'”'):'',String(r[1]||'').trim()].filter(Boolean).join(' '));
+      const finalNonRenewal=allNonRenewing.length?allNonRenewing:nonRenewalMembers.map(m=>[m.first,m.road?('“'+m.road+'”'):'',m.last].filter(Boolean).join(' '));
+      if(finalNonRenewal.length){
+        const cleanup=document.createElement('section');
+        cleanup.style.cssText='margin:0 0 16px;border:3px solid #b91c1c;border-radius:10px;background:#fff1f2;padding:16px 18px;color:#7f1d1d;';
+        const cleanupKey='bssc_2027_membership_cleanup_v1';
+        let cleanupState={};try{cleanupState=JSON.parse(localStorage.getItem(cleanupKey)||'{}')||{};}catch(_){}
+        const channels=[['facebook','Facebook / Members Group'],['website','Members-Only Site'],['groupme','GroupMe'],['email','Club Email']];
+        const memberKey=name=>duesNorm(name).replace(/[^a-z0-9]+/g,'_');
+        const renderCleanup=()=>{
+          const completed=finalNonRenewal.filter(name=>channels.every(([key])=>cleanupState[memberKey(name)]&&cleanupState[memberKey(name)][key])).length;
+          cleanup.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><strong style="font-size:1.2rem">JANUARY 1 — MEMBERSHIP CLEANUP REQUIRED</strong><div style="margin-top:5px;font-weight:800">'+(finalNonRenewal.length-completed)+' member'+(finalNonRenewal.length-completed===1?'':'s')+' still require cleanup</div></div><span style="background:'+(completed===finalNonRenewal.length?'#dcfce7':'#fee2e2')+';color:'+(completed===finalNonRenewal.length?'#166534':'#991b1b')+';border:1px solid currentColor;border-radius:8px;padding:8px 11px;font-weight:900">'+completed+' / '+finalNonRenewal.length+' COMPLETE</span></div>'+
+          '<p style="margin:10px 0 12px;font-weight:700">Check each service as the member is removed. Progress is saved on this device.</p>'+
+          '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;background:white;color:#172033"><thead><tr><th style="text-align:left;padding:8px;border-bottom:2px solid #b91c1c">Member</th>'+channels.map(([,label])=>'<th style="padding:8px;border-bottom:2px solid #b91c1c;text-align:center">'+label+'</th>').join('')+'<th style="padding:8px;border-bottom:2px solid #b91c1c;text-align:center">Status</th></tr></thead><tbody>'+
+          finalNonRenewal.map(name=>{const mk=memberKey(name),state=cleanupState[mk]||{},done=channels.every(([key])=>state[key]);return '<tr style="background:'+(done?'#f0fdf4':'#fff')+'"><td style="padding:9px;border-bottom:1px solid #e5e7eb;font-weight:800">'+esc(name)+'</td>'+channels.map(([key,label])=>'<td style="padding:9px;border-bottom:1px solid #e5e7eb;text-align:center"><label title="'+esc(label)+'"><input type="checkbox" data-cleanup-member="'+esc(mk)+'" data-cleanup-channel="'+key+'" '+(state[key]?'checked':'')+' style="width:20px;height:20px;accent-color:#15803d"></label></td>').join('')+'<td style="padding:9px;border-bottom:1px solid #e5e7eb;text-align:center;font-weight:900;color:'+(done?'#166534':'#991b1b')+'">'+(done?'COMPLETE':'PENDING')+'</td></tr>'}).join('')+
+          '</tbody></table></div><p style="margin:10px 0 0;font-size:.9rem;font-weight:700">2026 membership history remains intact. This tracker only confirms removal from 2027 club communications and member access.</p>';
+          cleanup.querySelectorAll('[data-cleanup-member]').forEach(box=>box.addEventListener('change',()=>{
+            const mk=box.dataset.cleanupMember,key=box.dataset.cleanupChannel;cleanupState[mk]=cleanupState[mk]||{};cleanupState[mk][key]=box.checked;
+            localStorage.setItem(cleanupKey,JSON.stringify(cleanupState));renderCleanup();
+          }));
+        };
+        renderCleanup();
+        target.prepend(cleanup);
+      }
+    }
     const header=target.querySelector('table thead tr:last-child');
     if(header) { const th=document.createElement('th');th.textContent='2027 Dues Status';const renewalHeader=[...header.children].find(cell=>cell.textContent==='Renewed On');header.insertBefore(th,renewalHeader||null); }
     const bodyRows=[...target.querySelectorAll('table tbody tr')];
@@ -57,7 +126,20 @@ async function setup2027DuesReview(rows) {
       const td=document.createElement('td');const contribution=context.ledger.slice(1).some(r=>duesNorm(r[duesHeader(context.ledger,'Status')])==='reconciled' && Number(r[duesHeader(context.ledger,'Membership Year')])===2027 && duesNorm(r[duesHeader(context.ledger,'Member Name')])===duesNorm(p.name) && String(r[duesHeader(context.ledger,'Notes')]||'').includes('[VOLUNTARY_CONTRIBUTION_RECEIVED]'));td.textContent=(duesExemption(p,context.previous,context.presidents)||(/^(yes|paid)$/.test(duesNorm(p.values[p.cols['Dues Paid']]))?'Paid':'Payment Required'))+(contribution?' · Voluntary contribution received':'');const renewedOnIndex=[...header.children].findIndex(cell=>cell.textContent==='Renewed On');tr.insertBefore(td,renewedOnIndex>=0?tr.children[renewedOnIndex-1]||null:null);
     });
     const open=()=>open2027DuesManager(panel.querySelector('.dues-review-status'));
-    panel.querySelector('button').addEventListener('click',open);
+    panel.querySelector('[data-manage-dues]').addEventListener('click',open);
+    const markButton=panel.querySelector('[data-mark-not-returning]'),memberSelect=panel.querySelector('[data-not-returning-member]');
+    if(markButton) markButton.addEventListener('click',async()=>{
+      const member=nonRenewalMembers[Number(memberSelect.value)];
+      if(!member){alert('Choose a member first.');return;}
+      const display=[member.first,member.road?'“'+member.road+'”':'',member.last].filter(Boolean).join(' ');
+      if(!confirm('Mark '+display+' as Not Returning for 2027? They will no longer count as Left to Renew.'))return;
+      markButton.disabled=true;markButton.textContent='Saving…';
+      try{
+        await saveRenewalDecision(member,true);
+        recordPortalAudit('Marked member not returning','Renewal Decisions',1);
+        await loadMembershipSheet('2027',true);
+      }catch(error){markButton.disabled=false;markButton.textContent='Mark Not Returning';alert('Could not save the renewal decision. '+(error.message||''));}
+    });
     if(pending.length && !tableEditModes.membershipContent) open();
   } catch(error) {
     if(currentMembershipSheet==='2027') target.insertAdjacentHTML('afterbegin','<div class="membership-system-note" role="alert">Payment review could not load: '+esc(error.message)+'. Refresh the roster to retry.</div>');
