@@ -1441,6 +1441,92 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 
     .appendix-reader-shell{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}.appendix-toc button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #eee;background:#fff;padding:11px 7px;cursor:pointer}.appendix-toc button.active{background:#eef6ff;border-left:4px solid #c8102e;padding-left:10px}.appendix-toc button strong,.appendix-toc button small{display:block}.appendix-toc button small{color:var(--muted);margin-top:3px;line-height:1.3}.appendix-reader-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px}.appendix-reader-head span{font-size:.78rem;font-weight:900;letter-spacing:.08em;color:#64748b}.appendix-reader-head h2{margin:5px 0 0}.appendix-reader-article h3{margin:20px 0 7px}.appendix-reader-article p{line-height:1.62;margin:7px 0}@media(max-width:900px){.appendix-reader-shell{grid-template-columns:1fr}.appendix-reader-head{display:block}.appendix-reader-head .open-btn{display:inline-block;margin-top:12px}}
 
+
+    /* Mobile module-flow refinement: authenticated portal only. */
+    @media(max-width:760px){
+      body.portal-authenticated .detail-head{position:relative!important;display:block!important}
+      body.portal-authenticated .detail-head>div:first-child{padding-right:0!important}
+      body.portal-authenticated .detail-head p{margin:6px 0 0!important;font-size:.84rem!important;line-height:1.4!important}
+      body.portal-authenticated .detail-head .portal-health{margin-top:11px!important;width:100%!important}
+      body.portal-authenticated .finance-admin-header{position:absolute!important;right:12px!important;top:12px!important;min-height:38px!important;padding:7px 11px!important}
+      body.portal-authenticated .membership-workspace,
+      body.portal-authenticated .sponsor-workspace,
+      body.portal-authenticated .bft-workspace,
+      body.portal-authenticated .club-workspace,
+      body.portal-authenticated .admin-workspace{width:100%!important;min-width:0!important}
+      body.portal-authenticated .membership-tabs,
+      body.portal-authenticated .sponsor-tabs,
+      body.portal-authenticated .bike-tabs,
+      body.portal-authenticated .bft-tabs,
+      body.portal-authenticated .market-tabs{
+        position:sticky!important;top:116px!important;z-index:7!important;
+        display:flex!important;gap:7px!important;width:calc(100% + 22px)!important;
+        margin:0 -11px 11px!important;padding:9px 11px!important;
+        overflow-x:auto!important;overscroll-behavior-x:contain!important;scrollbar-width:none!important;
+        background:rgba(225,229,232,.96)!important;border-bottom:1px solid #c5c9ce!important;
+        box-shadow:0 5px 11px #0001!important;backdrop-filter:blur(8px)!important
+      }
+      body.portal-authenticated .membership-tabs::-webkit-scrollbar,
+      body.portal-authenticated .sponsor-tabs::-webkit-scrollbar,
+      body.portal-authenticated .bike-tabs::-webkit-scrollbar,
+      body.portal-authenticated .bft-tabs::-webkit-scrollbar,
+      body.portal-authenticated .market-tabs::-webkit-scrollbar{display:none!important}
+      body.portal-authenticated .membership-tab,
+      body.portal-authenticated .sponsor-tab,
+      body.portal-authenticated .bike-tab,
+      body.portal-authenticated [data-bft-tab],
+      body.portal-authenticated [data-market-tab],
+      body.portal-authenticated [data-finance-tab]{
+        flex:0 0 auto!important;min-height:40px!important;padding:8px 12px!important;border-radius:999px!important;
+        white-space:nowrap!important;font-size:.78rem!important;font-weight:800!important
+      }
+      body.portal-authenticated .membership-tab.active,
+      body.portal-authenticated .sponsor-tab.active,
+      body.portal-authenticated .bike-tab.active,
+      body.portal-authenticated [data-bft-tab].active,
+      body.portal-authenticated [data-market-tab].active,
+      body.portal-authenticated [data-finance-tab].active{background:#09090b!important;color:#fff!important;border-color:#09090b!important}
+      body.portal-authenticated .membership-section-picker{flex:0 0 190px!important;min-height:40px!important;border-radius:999px!important;padding:7px 12px!important}
+      body.portal-authenticated .data-status{margin:8px 0 11px!important;padding:9px 11px!important;border-radius:10px!important;font-size:.78rem!important;line-height:1.35!important}
+      body.portal-authenticated .sponsor-panel.active{animation:mobilePanelIn .16s ease-out}
+      body.portal-authenticated .workspace-card,body.portal-authenticated .coming-soon{padding:13px!important;border-radius:13px!important}
+      body.portal-authenticated .workspace-card>h2,body.portal-authenticated .coming-soon>h2{font-size:1.08rem!important;margin-top:0!important}
+      body.portal-authenticated .club-toolbar{
+        display:grid!important;grid-template-columns:1fr!important;gap:8px!important;padding:11px!important;margin:0 0 11px!important;
+        border:1px solid #c8ccd1!important;border-radius:13px!important;background:#f5f6f7!important
+      }
+      body.portal-authenticated .club-toolbar input,
+      body.portal-authenticated .club-toolbar select,
+      body.portal-authenticated .club-toolbar button{width:100%!important;min-height:45px!important;margin:0!important}
+      body.portal-authenticated .sponsor-summary,
+      body.portal-authenticated .admin-overview{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+      body.portal-authenticated .admin-grid{grid-template-columns:1fr!important;gap:10px!important}
+      body.portal-authenticated .admin-stat,body.portal-authenticated .admin-card{border-radius:12px!important}
+      body.portal-authenticated .admin-card-body{padding:10px!important}
+      body.portal-authenticated .admin-row{align-items:flex-start!important;gap:8px!important;padding:10px 2px!important}
+      body.portal-authenticated .data-table{font-size:.8rem!important;min-width:680px!important}
+      body.portal-authenticated .data-table th{position:sticky!important;top:0!important;z-index:2!important;white-space:nowrap!important}
+      body.portal-authenticated .data-table td,body.portal-authenticated .data-table th{padding:9px 8px!important}
+      body.portal-authenticated .table-wrap,body.portal-authenticated .table-container,
+      body.portal-authenticated #membershipContent>div:has(>table),
+      body.portal-authenticated [id$="Table"]:has(table){
+        position:relative!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;
+        border-radius:11px!important;box-shadow:inset -12px 0 14px -14px #0009!important
+      }
+      body.portal-authenticated dialog{width:calc(100vw - 22px)!important;max-width:none!important;max-height:calc(100dvh - 30px)!important;margin:auto!important;padding:15px!important;border-radius:17px!important}
+      body.portal-authenticated dialog input,body.portal-authenticated dialog select,body.portal-authenticated dialog textarea,body.portal-authenticated dialog button{min-height:44px!important}
+      body.portal-authenticated details{border-radius:11px!important}
+      body.portal-authenticated details>summary{min-height:44px!important;padding:11px!important;display:flex!important;align-items:center!important}
+      body.portal-authenticated .open-btn{min-height:44px!important}
+      body.portal-authenticated .records-command-head,
+      body.portal-authenticated .records-section-head{display:block!important}
+      body.portal-authenticated .records-command-head .open-btn,
+      body.portal-authenticated .records-section-head .open-btn{width:100%!important;margin-top:9px!important}
+      body.portal-authenticated .storage-toolbar{display:grid!important;grid-template-columns:1fr!important;gap:8px!important}
+      body.portal-authenticated .storage-toolbar>*{width:100%!important;min-height:44px!important}
+    }
+    @keyframes mobilePanelIn{from{opacity:.35;transform:translateY(4px)}to{opacity:1;transform:none}}
+
     /* Authenticated mobile app shell. Scoped to body.portal-authenticated so login is untouched. */
     @media(max-width:760px){
       body.portal-authenticated{--mobile-nav-h:74px;background:#f3f4f6;padding-bottom:calc(var(--mobile-nav-h) + env(safe-area-inset-bottom));overflow-x:hidden}
@@ -7789,6 +7875,19 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       setTimeout(build,0);
       document.addEventListener('click',e=>{if(e.target.closest('[data-module],[data-open],#back'))setTimeout(()=>sync(),0);});
     })();
+
+    /* Mobile flow helpers: keep the newly selected section visible and centered. */
+    if(window.matchMedia('(max-width:760px)').matches){
+      document.addEventListener('click',event=>{
+        const tab=event.target.closest('[data-membership-sheet],[data-sponsor-tab],[data-bft-tab],[data-bike-tab],[data-market-tab],[data-finance-tab]');
+        if(!tab)return;
+        setTimeout(()=>{
+          try{tab.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}catch(e){}
+          const body=document.querySelector('.detail-body');
+          if(body&&window.scrollY>body.offsetTop+260) window.scrollTo({top:Math.max(0,body.offsetTop-112),behavior:'smooth'});
+        },40);
+      });
+    }
 
 </script>
 </body>
