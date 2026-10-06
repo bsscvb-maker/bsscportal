@@ -3151,9 +3151,15 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const headers = [...table.querySelectorAll('thead tr:last-child th')].map(cell => cell.textContent.trim());
       const rows = [...table.querySelectorAll('tbody tr')].filter(row => !row.hidden)
         .map(row => [...row.children].map(cell => cell.textContent.trim()));
-      const names = nonRenewalNames(headers, rows);
+      const review=document.querySelector('#membershipContent [data-renewal-review]');
+      if (!review) { alert('Renewal statuses are still loading. Please try again in a moment.'); return; }
+      const waitingKeys=new Set([...review.querySelectorAll('[data-renewal-state="Waiting"]')].map(row=>row.dataset.memberKey));
+      const normalized=headers.map(value=>value.toLowerCase().replace(/[^a-z]/g,''));
+      const first=normalized.indexOf('firstname'),last=normalized.indexOf('lastname');
+      const waitingRows=rows.filter(row=>waitingKeys.has(renewalDecisionKey(row[first],row[last])));
+      const names = nonRenewalNames(headers, waitingRows);
       if (!names || !names.length) {
-        alert(names ? 'No names match the current search.' : 'Name columns could not be found in this list.');
+        alert(names ? 'No Waiting members match the current search.' : 'Name columns could not be found in this list.');
         return;
       }
       const url = URL.createObjectURL(new Blob([names.join('\r\n') + '\r\n'], {type:'text/plain;charset=utf-8'}));
@@ -6727,14 +6733,20 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       catch(error) { return []; }
     }
 
+    function renewalDecisionStatus(value) {
+      const status=String(value||'').trim().toLowerCase();
+      return status==='not returning' ? 'Not Returning' : ['not eligible to renew','not allowed to return'].includes(status) ? 'Not Eligible to Renew' : 'Waiting';
+    }
+
     async function saveRenewalDecision(member, decision) {
       await ensureRenewalDecisionsSheet();
       const rows=await loadRenewalDecisions();
       const key=renewalDecisionKey(member.first,member.last);
       const existing=rows.slice(1).findIndex(row=>renewalDecisionKey(row[0],row[1])===key);
-      const rowNumber=existing>=0?existing+2:rows.length+1;
+      const rowNumber=existing>=0?existing+2:Math.max(2,rows.length+1);
       const today=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-      const values=decision ? [member.first,member.last,member.road,'Not Returning',today,'Verbally confirmed',new Date().toISOString()] : [member.first,member.last,member.road,'','','',new Date().toISOString()];
+      const selected=renewalDecisionStatus(decision);
+      const values=[member.first,member.last,member.road,selected==='Waiting'?'':selected,selected==='Waiting'?'':today,selected==='Not Returning'?'Verbally confirmed':selected==='Not Eligible to Renew'?'Marked not eligible to renew':'',new Date().toISOString()];
       await updateSheetRanges(MEMBERSHIP_SPREADSHEET_ID,values.map((value,index)=>({range:"'Renewal Decisions'!"+columnNumberToLetters(index+1)+rowNumber,value})));
     }
 
@@ -6742,55 +6754,57 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const target=document.getElementById('membershipContent');
       const status=document.getElementById('membershipStatus');
       const headers=(rows[0]||[]).map(value=>String(value||'').trim().toLowerCase());
-      const indexes={
-        first:headers.indexOf('first name'),
-        last:headers.indexOf('last name'),
-        road:headers.indexOf('road name')
-      };
+      const indexes={first:headers.indexOf('first name'),last:headers.indexOf('last name'),road:headers.indexOf('road name')};
       if(indexes.first<0||indexes.last<0) {
-        target.insertAdjacentHTML('afterbegin','<div class="membership-system-note"><strong>Renewal Status:</strong> The non-renewal sheet is connected, but First Name / Last Name columns could not be identified.</div>');
+        target.insertAdjacentHTML('afterbegin','<div class="membership-system-note">First Name / Last Name columns could not be identified.</div>');
         return;
       }
-      const members=rows.slice(1).filter(row=>String(row[indexes.first]||'').trim()||String(row[indexes.last]||'').trim()).map(row=>({
-        first:String(row[indexes.first]||'').trim(),
-        last:String(row[indexes.last]||'').trim(),
-        road:indexes.road>=0?String(row[indexes.road]||'').trim():'',
-        row
-      }));
       const decisionRows=await loadRenewalDecisions();
-      const declined=new Map(decisionRows.slice(1).filter(row=>/^not returning$/i.test(String(row[3]||'').trim())).map(row=>[renewalDecisionKey(row[0],row[1]),row]));
-      const pending=members.filter(member=>!declined.has(renewalDecisionKey(member.first,member.last)));
-      const confirmed=members.filter(member=>declined.has(renewalDecisionKey(member.first,member.last)));
+      const decisions=new Map(decisionRows.slice(1).map(row=>[renewalDecisionKey(row[0],row[1]),row]));
+      const members=rows.slice(1).filter(row=>String(row[indexes.first]||'').trim()||String(row[indexes.last]||'').trim()).map(row=>{
+        const first=String(row[indexes.first]||'').trim(),last=String(row[indexes.last]||'').trim();
+        const saved=decisions.get(renewalDecisionKey(first,last))||[];
+        return {first,last,road:indexes.road>=0?String(row[indexes.road]||'').trim():'',row,saved,decision:renewalDecisionStatus(saved[3])};
+      });
+      const groups=['Waiting','Not Returning','Not Eligible to Renew'];
       const panel=document.createElement('section');
       panel.className='membership-sheet-block wide';
+      panel.dataset.renewalReview='true';
       panel.innerHTML='<h3>2027 Renewal Status</h3>'+
-        '<div class="membership-attendance-snapshot" style="margin-bottom:14px"><div><span>Still Waiting</span><strong>'+pending.length+'</strong></div><div><span>Confirmed Not Returning</span><strong>'+confirmed.length+'</strong></div><div><span>Total Not Yet Renewed</span><strong>'+members.length+'</strong></div></div>'+
-        '<div class="membership-system-note"><strong>How this works:</strong> Marking someone Not Returning removes them from Still Waiting but keeps them on this non-renewal screen and leaves their 2026 roster record untouched.</div>'+
-        '<div class="table-wrap"><table class="data-table" style="min-width:650px"><thead><tr><th>Member</th><th>Renewal Decision</th><th>Action</th></tr></thead><tbody>'+
-        members.map(member=>{const key=renewalDecisionKey(member.first,member.last),isDeclined=declined.has(key),saved=declined.get(key)||[];return '<tr><td><strong>'+esc(renewalDecisionName(member.row,indexes))+'</strong></td><td>'+(isDeclined?'<strong style="color:#9e0d29">Not Returning</strong><br><small>'+esc(saved[4]||'')+' · '+esc(saved[5]||'Verbally confirmed')+'</small>':'<strong>Waiting</strong>')+'</td><td><button type="button" class="sponsor-tab" data-renewal-decision="'+esc(key)+'">'+(isDeclined?'Undo / Return to Waiting':'Mark Not Returning')+'</button></td></tr>';}).join('')+
-        '</tbody></table></div>';
+        '<div class="membership-attendance-snapshot" style="margin-bottom:14px">'+groups.map(group=>'<div><span>'+group+'</span><strong>'+members.filter(member=>member.decision===group).length+'</strong></div>').join('')+'<div><span>Total Not Yet Renewed</span><strong>'+members.length+'</strong></div></div>'+
+        '<div class="membership-system-note">Download Names Only includes Waiting members. Export Data includes the full roster. Marking a renewal status keeps the 2026 roster record intact.</div>'+
+        groups.map(group=>{
+          const list=members.filter(member=>member.decision===group);
+          return '<section class="renewal-status-section"><h4>'+group+' ('+list.length+')</h4><div class="table-wrap"><table class="data-table" style="min-width:650px"><thead><tr><th>Member</th><th>Renewal Decision</th><th>Action</th></tr></thead><tbody>'+
+            list.map(member=>{
+              const key=renewalDecisionKey(member.first,member.last);
+              return '<tr data-renewal-state="'+esc(group)+'" data-member-key="'+esc(key)+'" data-member-name="'+esc(member.first+' '+member.last)+'"><td><strong>'+esc(renewalDecisionName(member.row,indexes))+'</strong></td><td><strong>'+group+'</strong>'+(member.saved[4]?'<br><small>'+esc(member.saved[4])+'</small>':'')+'</td><td><div style="display:flex;flex-wrap:wrap;gap:8px">'+groups.filter(choice=>choice!==group).map(choice=>'<button type="button" class="sponsor-tab" data-renewal-decision="'+esc(key)+'" data-decision-status="'+choice+'">'+(choice==='Waiting'?'Return to Waiting':'Mark '+choice)+'</button>').join('')+'</div></td></tr>';
+            }).join('')+(list.length?'':'<tr><td colspan="3">No members in this section.</td></tr>')+'</tbody></table></div></section>';
+        }).join('');
       target.insertAdjacentElement('afterbegin',panel);
       const downloadActions=document.createElement('div');
       downloadActions.className='table-tool-actions non-renewal-download-actions';
       downloadActions.style.cssText='display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin:14px 0';
       target.querySelectorAll('[data-export-table="membershipContent"],[data-download-non-renewal-names]').forEach(button=>downloadActions.appendChild(button));
-      panel.querySelector('.table-wrap').before(downloadActions);
+      panel.querySelector('.renewal-status-section').before(downloadActions);
       panel.querySelectorAll('[data-renewal-decision]').forEach(button=>button.addEventListener('click',async()=>{
         const member=members.find(item=>renewalDecisionKey(item.first,item.last)===button.dataset.renewalDecision);
         if(!member)return;
-        const isDeclined=declined.has(button.dataset.renewalDecision);
-        if(!isDeclined&&!confirm('Mark '+renewalDecisionName(member.row,indexes)+' as Not Returning for 2027? They will stay on the non-renewal list but will no longer count as Still Waiting.'))return;
-        button.disabled=true;button.textContent='Saving…';
+        const selected=button.dataset.decisionStatus;
+        if(selected!=='Waiting'&&!confirm('Mark '+renewalDecisionName(member.row,indexes)+' as '+selected+' for 2027?'))return;
+        const label=button.textContent;
+        const memberButtons=[...panel.querySelectorAll('[data-renewal-decision]')].filter(item=>item.dataset.renewalDecision===button.dataset.renewalDecision);
+        memberButtons.forEach(item=>item.disabled=true);button.textContent='Saving…';
         try{
-          await saveRenewalDecision(member,!isDeclined);
-          recordPortalAudit(isDeclined?'Returned member to renewal waiting':'Marked member not returning','Renewal Decisions',1);
+          await saveRenewalDecision(member,selected);
+          recordPortalAudit('Marked renewal status: '+selected,'Renewal Decisions',1);
           await loadMembershipSheet('2026 - Non Renewal',true);
         }catch(error){
-          button.disabled=false;button.textContent=isDeclined?'Undo / Return to Waiting':'Mark Not Returning';
+          memberButtons.forEach(item=>item.disabled=false);button.textContent=label;
           alert('The renewal decision could not be saved. '+(error.message||'Please try again.'));
         }
       }));
-      status.textContent=pending.length+' still waiting · '+confirmed.length+' confirmed not returning · '+members.length+' total members currently absent from the 2027 roster.';
+      status.textContent=groups.map(group=>members.filter(member=>member.decision===group).length+' '+group.toLowerCase()).join(' · ');
     }
 
     const MEMBERSHIP_HIDDEN_KEY = 'bssc_membership_hidden_sections';
