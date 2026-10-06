@@ -397,8 +397,9 @@
     .transaction-entry-form { display:grid; grid-template-columns:1fr; gap:11px; max-width:680px; }
     .transaction-field { display:grid; grid-template-columns:minmax(160px,220px) minmax(0,1fr); align-items:center; gap:14px; }
     .transaction-field label { color:#111113; font-weight:850; }
-    .transaction-field input,.transaction-field select { width:100%; min-height:42px; padding:9px 11px; border:1px solid #aeb4bb; border-radius:8px; background:#e1e5e8; font:inherit; }
-    .transaction-field input:focus,.transaction-field select:focus { outline:2px solid var(--gold); border-color:var(--gold); }
+    .transaction-field input,.transaction-field select,.transaction-field textarea { width:100%; min-height:42px; padding:9px 11px; border:1px solid #aeb4bb; border-radius:8px; background:#e1e5e8; font:inherit; }
+    .transaction-field textarea { resize:vertical; cursor:text; }
+    .transaction-field input:focus,.transaction-field select:focus,.transaction-field textarea:focus { outline:2px solid var(--gold); border-color:var(--gold); }
     .transaction-consistency { display:none; margin:4px 0 0 234px; padding:11px 13px; border-left:4px solid #d99a00; border-radius:7px; color:#533b00; background:#fff4c7; font-size:.88rem; line-height:1.45; }
     .transaction-consistency.visible { display:block; }
     .transaction-consistency.good { border-left-color:#0b9b50; color:#075c2d; background:#e2f7eb; }
@@ -4111,7 +4112,8 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
             const placeholder = /^payee\/payer$/i.test(field.header) ? 'Type a new payee/payer or choose a previous one' : 'Type a description or choose a previous one';
             let control;
             const required = !/^note$/i.test(field.header) ? 'required' : '';
-            if (isSuggestedText) control = `<input id="editTransactionField${field.column}" name="column${field.column}" type="text" ${options.length ? `list="editTransactionSuggestions${field.column}"` : ''} value="${esc(value)}" data-original="${esc(value)}" autocomplete="off" ${required} placeholder="${placeholder}">${options.length ? `<datalist id="editTransactionSuggestions${field.column}">${options.map(option => `<option value="${esc(option)}"></option>`).join('')}</datalist>` : ''}`;
+            if (/^description$/i.test(field.header)) control = `<textarea id="editTransactionField${field.column}" name="column${field.column}" rows="2" data-original="${esc(value)}" autocomplete="off" ${required} placeholder="Enter or change the transaction description">${esc(value)}</textarea>`;
+            else if (isSuggestedText) control = `<input id="editTransactionField${field.column}" name="column${field.column}" type="text" ${options.length ? `list="editTransactionSuggestions${field.column}"` : ''} value="${esc(value)}" data-original="${esc(value)}" autocomplete="off" ${required} placeholder="${placeholder}">${options.length ? `<datalist id="editTransactionSuggestions${field.column}">${options.map(option => `<option value="${esc(option)}"></option>`).join('')}</datalist>` : ''}`;
             else if (options.length) {
               const selectable = options.includes(value) || !value ? options : [value,...options];
               control = `<select id="editTransactionField${field.column}" name="column${field.column}" data-original="${esc(value)}" ${required}><option value="">Select ${esc(field.header)}…</option>${selectable.map(option => `<option value="${esc(option)}" ${option === value ? 'selected' : ''}>${esc(option)}</option>`).join('')}</select>`;
