@@ -6770,6 +6770,11 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         members.map(member=>{const key=renewalDecisionKey(member.first,member.last),isDeclined=declined.has(key),saved=declined.get(key)||[];return '<tr><td><strong>'+esc(renewalDecisionName(member.row,indexes))+'</strong></td><td>'+(isDeclined?'<strong style="color:#9e0d29">Not Returning</strong><br><small>'+esc(saved[4]||'')+' · '+esc(saved[5]||'Verbally confirmed')+'</small>':'<strong>Waiting</strong>')+'</td><td><button type="button" class="sponsor-tab" data-renewal-decision="'+esc(key)+'">'+(isDeclined?'Undo / Return to Waiting':'Mark Not Returning')+'</button></td></tr>';}).join('')+
         '</tbody></table></div>';
       target.insertAdjacentElement('afterbegin',panel);
+      const downloadActions=document.createElement('div');
+      downloadActions.className='table-tool-actions non-renewal-download-actions';
+      downloadActions.style.cssText='display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin:14px 0';
+      target.querySelectorAll('[data-export-table="membershipContent"],[data-download-non-renewal-names]').forEach(button=>downloadActions.appendChild(button));
+      panel.querySelector('.table-wrap').before(downloadActions);
       panel.querySelectorAll('[data-renewal-decision]').forEach(button=>button.addEventListener('click',async()=>{
         const member=members.find(item=>renewalDecisionKey(item.first,item.last)===button.dataset.renewalDecision);
         if(!member)return;
