@@ -5423,22 +5423,19 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const impactIncrease = impactYtd - impactPriorYear;
       const {generalPending,bftPending,generalBank,bftBank,generalAvailable,bftAvailable,bankSplitMismatch,status,fundStatus,hasPending}=financeCashSnapshot(rows,transactionRows);
       const fundDetail = (title,balance,pending,available,tone='tone-green') => { const fund=title==='GENERAL FUND'?'General Fund':'Bikes for Tykes'; return section(title,[
-        ['Chase available balance',at(title==='GENERAL FUND'?6:7,4),false,financeControlEditMode?(title==='GENERAL FUND'?7:8):null,[fund,'bank']],
+        ['Chase available balance',at(title==='GENERAL FUND'?6:7,4)],
         ['Cleared bank balance',money(balance)],
         ['Pending PayPal deposits',money(pending.paypal),false,null,[fund,'paypal']],
         ['Deposits awaiting availability',money(pending.otherDeposits),false,null,[fund,'other']],
         ['Pending outgoing payments',money(-pending.outgoing),false,null,[fund,'outgoing']],
-        ['After reserving uncleared payments',money(available),false,null,[fund,'available']],
+        ['After reserving uncleared payments',money(available)],
         ['Status',fundStatus(pending),false]
       ],tone+(hasPending(pending)?' fund-awaiting-clearance':'')); };
       document.getElementById('financeControlTable').innerHTML = `<div class="control-title"><h2>${esc(at(0,0))}</h2><span class="live-eastern-time" data-live-eastern-clock="true"></span></div>
         <div class="control-action-bar"><button class="dashboard-edit-btn ${financeControlEditMode ? 'active' : ''}" id="financeControlEditToggle" aria-pressed="${financeControlEditMode}">${financeControlEditMode ? 'Done Editing' : 'Edit Bank Reconciliation'}</button></div>
         ${financeControlEditMode ? '<div class="control-edit-note">Enter Chase’s Total available balance, General Fund available balance, and Bikes for Tykes available balance. Use the amounts labeled Available balance on Chase. Cleared Yes/No in Transactions-2026 controls the ledger and pending breakdown.</div>' : ''}<div class="control-grid">
         <div style="grid-column:1/-1;display:grid;gap:14px">
-        ${section('CHASE AVAILABLE BALANCES',[['COMBINED BANK BALANCE',at(5,4),false,6],['Status',status,/out of balance/i.test(status)]],'tone-cash-total '+(bankSplitMismatch?'fund-status-error':(hasPending(generalPending)||hasPending(bftPending)?'fund-awaiting-clearance':'fund-status-balanced')))}
-        <div class="control-edit-note">These are Chase available balances from the latest manual bank update, including any pending activity Chase reflects. Update them with Edit Bank Reconciliation when the bank changes; this is not a live bank feed.</div>
-        ${section('AFTER RESERVING UNCLEARED PAYMENTS',[['General after reserves',money(generalAvailable)],['Bikes for Tykes after reserves',money(bftAvailable)],['COMBINED AFTER RESERVES',money(generalAvailable+bftAvailable)]])}
-        <div class="control-edit-note">Reserve calculation: posted ledger balances minus all uncleared outgoing payments, including outstanding checks and transfers. Uncleared incoming deposits are excluded.</div>
+        ${section('FUND BALANCES',[['CASH AVAILABLE RIGHT NOW',money(generalAvailable+bftAvailable)],['General Fund available',money(generalAvailable)],['Bikes for Tykes available',money(bftAvailable)],['Chase total available balance',at(5,4),false,6],['Chase General Fund available balance',at(6,4),false,7],['Chase Bikes for Tykes available balance',at(7,4),false,8],['Status',status,/out of balance/i.test(status)]],'tone-cash-total '+(bankSplitMismatch?'fund-status-error':(hasPending(generalPending)||hasPending(bftPending)?'fund-awaiting-clearance':'fund-status-balanced')))}
         <div class="control-fund-details">
         ${fundDetail('GENERAL FUND',generalBank,generalPending,generalAvailable)}
         ${fundDetail('BIKES FOR TYKES',bftBank,bftPending,bftAvailable,'tone-baby-blue')}
