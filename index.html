@@ -1442,6 +1442,42 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     .appendix-reader-shell{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}.appendix-toc button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #eee;background:#fff;padding:11px 7px;cursor:pointer}.appendix-toc button.active{background:#eef6ff;border-left:4px solid #c8102e;padding-left:10px}.appendix-toc button strong,.appendix-toc button small{display:block}.appendix-toc button small{color:var(--muted);margin-top:3px;line-height:1.3}.appendix-reader-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px}.appendix-reader-head span{font-size:.78rem;font-weight:900;letter-spacing:.08em;color:#64748b}.appendix-reader-head h2{margin:5px 0 0}.appendix-reader-article h3{margin:20px 0 7px}.appendix-reader-article p{line-height:1.62;margin:7px 0}@media(max-width:900px){.appendix-reader-shell{grid-template-columns:1fr}.appendix-reader-head{display:block}.appendix-reader-head .open-btn{display:inline-block;margin-top:12px}}
 
 
+
+    .mobile-roster-view{display:none}
+    @media(max-width:760px){
+      body.portal-authenticated #membershipContent.mobile-roster-active>.table-tools,
+      body.portal-authenticated #membershipContent.mobile-roster-active>.table-search-count,
+      body.portal-authenticated #membershipContent.mobile-roster-active>.membership-roster-wrap{display:none!important}
+      body.portal-authenticated #membershipContent.mobile-roster-active>.mobile-roster-view{display:block!important}
+      .mobile-roster-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;padding:13px 14px;border-radius:13px;background:#0d0e10;color:#fff;border-bottom:3px solid #c8102e}
+      .mobile-roster-summary strong{display:block;font-size:1.28rem;line-height:1}
+      .mobile-roster-summary span{display:block;margin-top:4px;color:#c8cbd0;font-size:.74rem;font-weight:750}
+      .mobile-roster-search{position:sticky;top:174px;z-index:6;margin:0 0 10px;padding:8px;background:#e1e5e8}
+      .mobile-roster-search input{width:100%;min-height:46px;border:1px solid #b9bec5;border-radius:12px;padding:10px 13px;background:#fff;font-size:16px}
+      .mobile-roster-list{display:grid;gap:9px}
+      .mobile-roster-card{overflow:hidden;border:1px solid #cbd0d5;border-left:4px solid #777;border-radius:13px;background:#fff;box-shadow:0 3px 10px #00000012}
+      .mobile-roster-card[data-status="active"]{border-left-color:#168447}
+      .mobile-roster-card[data-status="prospect"]{border-left-color:#c88700}
+      .mobile-roster-card[data-status="inactive"]{border-left-color:#9b1c31}
+      .mobile-roster-main{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:12px}
+      .mobile-roster-name{min-width:0}
+      .mobile-roster-name strong{display:block;font-size:1rem;line-height:1.15;color:#161719}
+      .mobile-roster-name small{display:block;margin-top:3px;color:#62676e;font-size:.76rem}
+      .mobile-roster-status{flex:0 0 auto;padding:5px 8px;border-radius:999px;background:#eef0f2;color:#35383d;font-size:.67rem;font-weight:900;text-transform:uppercase}
+      .mobile-roster-card[data-status="active"] .mobile-roster-status{background:#e4f4e9;color:#126b3a}
+      .mobile-roster-card[data-status="prospect"] .mobile-roster-status{background:#fff1cc;color:#775300}
+      .mobile-roster-quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:#d9dde1;border-top:1px solid #d9dde1}
+      .mobile-roster-quick>div{min-width:0;padding:8px 10px;background:#f6f7f8}
+      .mobile-roster-quick span,.mobile-roster-details dt{display:block;color:#72777e;font-size:.62rem;font-weight:850;text-transform:uppercase;letter-spacing:.04em}
+      .mobile-roster-quick strong{display:block;margin-top:2px;font-size:.78rem;overflow-wrap:anywhere}
+      .mobile-roster-card details{border:0!important;border-radius:0!important;background:#fff}
+      .mobile-roster-card details>summary{justify-content:center!important;min-height:39px!important;padding:7px!important;border-top:1px solid #e0e2e5;color:#4c5056;font-size:.72rem;font-weight:850}
+      .mobile-roster-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:10px 12px 13px;margin:0}
+      .mobile-roster-details div{min-width:0}
+      .mobile-roster-details dd{margin:2px 0 0;font-size:.77rem;font-weight:700;overflow-wrap:anywhere}
+      .mobile-roster-empty{padding:24px 12px;text-align:center;color:#666}
+    }
+
     /* Mobile module-flow refinement: authenticated portal only. */
     @media(max-width:760px){
       body.portal-authenticated .detail-head{position:relative!important;display:block!important}
@@ -6540,7 +6576,11 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           const editOptions = config.editable ? {sheetName,spreadsheetId:MEMBERSHIP_SPREADSHEET_ID,formulaRows:formulasOrRoster} : null;
           renderDataTable('membershipContent','membershipStatus',rows,0,sheetName === 'Lifer' ? 8 : config.columns,editOptions);
           if (sheetName === '2026-Attendance') addAttendanceEntryLauncher(rows);
-          if (sheetName === '2027') await setup2027DuesReview(rows);
+          if (sheetName === '2027') {
+            await setup2027DuesReview(rows);
+            setupMobileRosterView(rows, '2027');
+          }
+          if (sheetName === '2026') setupMobileRosterView(rows, '2026');
           if (sheetName === '2026 - Non Renewal') {
             await setupRenewalDecisionReview(rows);
           }
@@ -6552,6 +6592,44 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         target.innerHTML = '<div class="empty-state">This membership section could not be loaded.</div>';
         status.textContent = `${sheetName} could not load from Google Sheets. Confirm this Google account can access the Club Membership Roster workbook.`;
       }
+    }
+
+
+    function setupMobileRosterView(rows, year) {
+      if (!window.matchMedia('(max-width:760px)').matches) return;
+      const target=document.getElementById('membershipContent');
+      if(!target||!rows?.length)return;
+      const headers=(rows[0]||[]).map(value=>String(value||'').trim());
+      const norm=value=>String(value||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+      const find=(...names)=>headers.findIndex(h=>names.includes(norm(h)));
+      const first=find('firstname','first'),last=find('lastname','last'),road=find('roadname','road'),status=find('status'),type=find('membershiptype','membertype','type'),dues=find('duespaid','dues','duesstatus'),waiver=find('waiver','waiversigned'),start=find('startyear','yearjoined','joinyear');
+      const data=rows.slice(1).filter(row=>row.some(v=>String(v??'').trim())).map((row,index)=>({row,index}));
+      const ignored=new Set([first,last,road,status,type,dues,waiver]);
+      const label=(i)=>headers[i]||'Field';
+      const value=(row,i)=>i>=0?String(row[i]??'').trim():'';
+      const escAttr=s=>esc(s).replace(/"/g,'&quot;');
+      const cards=data.map(item=>{
+        const row=item.row;
+        const name=[value(row,first),value(row,last)].filter(Boolean).join(' ')||'Member';
+        const roadName=value(row,road);
+        const stat=value(row,status)||'—';
+        const quick=[['Membership',value(row,type)||'—'],['Dues',value(row,dues)||'—'],['Waiver',value(row,waiver)||'—'],['Start Year',value(row,start)||'—']];
+        const details=headers.map((h,i)=>({h,v:value(row,i),i})).filter(x=>x.v&&!ignored.has(x.i)&&x.i!==start&&!/^(?:codeofconduct|coc)(?:ref|reference)/.test(norm(x.h))).slice(0,18);
+        const search=[name,roadName,stat,...quick.map(x=>x[1]),...details.map(x=>x.v)].join(' ').toLowerCase();
+        return '<article class="mobile-roster-card" data-mobile-roster-card data-status="'+escAttr(stat.toLowerCase())+'" data-search="'+escAttr(search)+'"><div class="mobile-roster-main"><div class="mobile-roster-name"><strong>'+esc(name)+'</strong>'+(roadName?'<small>“'+esc(roadName)+'”</small>':'')+'</div><span class="mobile-roster-status">'+esc(stat)+'</span></div><div class="mobile-roster-quick">'+quick.map(x=>'<div><span>'+esc(x[0])+'</span><strong>'+esc(x[1])+'</strong></div>').join('')+'</div>'+(details.length?'<details><summary>More member details</summary><dl class="mobile-roster-details">'+details.map(x=>'<div><dt>'+esc(x.h)+'</dt><dd>'+esc(x.v)+'</dd></div>').join('')+'</dl></details>':'')+'</article>';
+      }).join('');
+      const view=document.createElement('section');
+      view.className='mobile-roster-view';
+      view.innerHTML='<div class="mobile-roster-summary"><div><strong data-mobile-roster-count>'+data.length+'</strong><span>'+esc(year)+' roster members shown</span></div><span>Tap a member for details</span></div><label class="mobile-roster-search"><span class="sr-only">Search '+esc(year)+' roster</span><input type="search" placeholder="Search members…" autocomplete="off" data-mobile-roster-search></label><div class="mobile-roster-list">'+cards+'</div><div class="mobile-roster-empty" data-mobile-roster-empty hidden>No matching members.</div>';
+      target.prepend(view);
+      target.classList.add('mobile-roster-active');
+      const input=view.querySelector('[data-mobile-roster-search]');
+      input.addEventListener('input',()=>{
+        const q=input.value.trim().toLowerCase();let shown=0;
+        view.querySelectorAll('[data-mobile-roster-card]').forEach(card=>{const visible=!q||card.dataset.search.includes(q);card.hidden=!visible;if(visible)shown++;});
+        view.querySelector('[data-mobile-roster-count]').textContent=shown;
+        view.querySelector('[data-mobile-roster-empty]').hidden=shown!==0;
+      });
     }
 
     const RENEWAL_DECISIONS_SHEET = 'Renewal Decisions';
