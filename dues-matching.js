@@ -52,7 +52,7 @@ async function setup2027DuesReview(rows) {
     const paidCount=eligible.filter(p=>!duesExemption(p,context.previous,context.presidents) && /^(yes|paid)$/.test(duesNorm(p.values[p.cols['Dues Paid']]))).length;
     const duesComplete=paidCount+exemptCount;
     const unpaidCount=unpaid2027Dues(context).length;
-    let startingMembers=59,notReturningCount=0,leftToRenew=Math.max(0,startingMembers-totalRenewed),nonRenewalMembers=[],decisionRows=[];
+    let startingMembers=59,notReturningCount=0,notEligibleCount=0,leftToRenew=Math.max(0,startingMembers-totalRenewed),nonRenewalMembers=[],decisionRows=[];
     try {
       const results=await Promise.all([
         getSheetValues("'2026 - Non Renewal'!A1:AK1000",MEMBERSHIP_SPREADSHEET_ID),
@@ -66,18 +66,21 @@ async function setup2027DuesReview(rows) {
       }));
       const nonRenewalKeys=new Set(nonRenewalMembers.map(m=>duesNorm(m.first+'|'+m.last)));
       const declinedKeys=new Set(decisionRows.slice(1).filter(r=>duesNorm(r[3])==='not returning').map(r=>duesNorm(String(r[0]||'').trim()+'|'+String(r[1]||'').trim())));
+      const ineligibleKeys=new Set(decisionRows.slice(1).filter(r=>['not eligible to renew','not allowed to return'].includes(duesNorm(r[3]))).map(r=>duesNorm(String(r[0]||'').trim()+'|'+String(r[1]||'').trim())));
+      notEligibleCount=[...nonRenewalKeys].filter(key=>ineligibleKeys.has(key)).length;
       notReturningCount=[...nonRenewalKeys].filter(key=>declinedKeys.has(key)).length;
-      leftToRenew=Math.max(0,nonRenewalKeys.size-notReturningCount);
+      leftToRenew=Math.max(0,nonRenewalKeys.size-notReturningCount-notEligibleCount);
       startingMembers=totalRenewed+nonRenewalKeys.size;
-      nonRenewalMembers=nonRenewalMembers.filter(m=>!declinedKeys.has(duesNorm(m.first+'|'+m.last))).sort((a,b)=>a.last.localeCompare(b.last)||a.first.localeCompare(b.first));
-    } catch(error) { leftToRenew=Math.max(0,startingMembers-totalRenewed-notReturningCount); }
+      nonRenewalMembers=nonRenewalMembers.filter(m=>!declinedKeys.has(duesNorm(m.first+'|'+m.last))&&!ineligibleKeys.has(duesNorm(m.first+'|'+m.last))).sort((a,b)=>a.last.localeCompare(b.last)||a.first.localeCompare(b.first));
+    } catch(error) { leftToRenew=Math.max(0,startingMembers-totalRenewed-notReturningCount-notEligibleCount); }
     const panel=document.createElement('section');panel.className='dues-manager-launch';
     panel.style.cssText='display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;border-left:6px solid #c8102e;padding:16px 18px;';
     panel.innerHTML='<div style="min-width:0"><strong style="font-size:1.05rem">2027 Membership Dues & Renewal Progress</strong>'+
       '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-weight:900">'+
         '<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:8px;padding:7px 10px">'+totalRenewed+' RENEWED</span>'+
-        '<span style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:7px 10px">'+leftToRenew+' LEFT TO RENEW</span>'+
+        '<span style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:7px 10px">'+leftToRenew+' ELIGIBLE TO RENEW / WAITING</span>'+
         '<span style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px">'+notReturningCount+' NOT RETURNING</span>'+
+        '<span style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:7px 10px">'+notEligibleCount+' NOT ELIGIBLE TO RENEW</span>'+
         '<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:8px;padding:7px 10px">'+duesComplete+' / '+totalRenewed+' DUES COMPLETE</span>'+
         '<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:8px;padding:7px 10px">'+paidCount+' PAID</span>'+
         '<span style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px">'+exemptCount+' EXEMPT</span>'+
@@ -85,15 +88,16 @@ async function setup2027DuesReview(rows) {
         '<span style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px">'+startingMembers+' STARTING MEMBERS</span>'+
       '</div>'+
       '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin-top:12px;padding-top:12px;border-top:1px solid #b8bec4">'+
-        '<label style="font-weight:800;min-width:min(360px,100%)">Known not returning<select data-not-returning-member style="display:block;width:100%;margin-top:5px;padding:9px 10px;border:1px solid #9ca3af;border-radius:7px;background:white"><option value="">Choose a member who is not returning…</option>'+nonRenewalMembers.map((m,i)=>'<option value="'+i+'">'+esc(m.first+' '+(m.road?'“'+m.road+'” ':'')+m.last)+'</option>').join('')+'</select></label>'+
-        '<button type="button" class="dashboard-edit-btn" data-mark-not-returning style="background:#c8102e">Mark Not Returning</button>'+
+        '<label style="font-weight:800;min-width:min(360px,100%)">Update renewal status<select data-not-returning-member style="display:block;width:100%;margin-top:5px;padding:9px 10px;border:1px solid #9ca3af;border-radius:7px;background:white"><option value="">Choose a Waiting member…</option>'+nonRenewalMembers.map((m,i)=>'<option value="'+i+'">'+esc(m.first+' '+(m.road?'“'+m.road+'” ':'')+m.last)+'</option>').join('')+'</select></label>'+
+        '<label style="font-weight:800">Status<select data-renewal-status-choice style="display:block;margin-top:5px;padding:9px 10px;border:1px solid #9ca3af;border-radius:7px;background:white"><option>Not Returning</option><option>Not Eligible to Renew</option></select></label>'+
+        '<button type="button" class="dashboard-edit-btn" data-mark-not-returning style="background:#c8102e">Save Status</button>'+
         (pending.length?'<strong style="color:#991b1b">'+pending.length+' online payment'+(pending.length===1?'':'s')+' to review</strong>':'')+
       '</div></div>'+
       '<div><button type="button" class="dashboard-edit-btn" data-manage-dues>Manage Dues</button><span role="status" class="dues-review-status"></span></div>';
     target.prepend(panel);
     const todayET=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
     if(todayET>='2027-01-01'){
-      const allNonRenewing=decisionRows.slice(1).filter(r=>duesNorm(r[3])==='not returning').map(r=>[String(r[0]||'').trim(),String(r[2]||'').trim()?('“'+String(r[2]||'').trim()+'”'):'',String(r[1]||'').trim()].filter(Boolean).join(' '));
+      const allNonRenewing=decisionRows.slice(1).filter(r=>['not returning','not eligible to renew','not allowed to return'].includes(duesNorm(r[3]))).map(r=>[String(r[0]||'').trim(),String(r[2]||'').trim()?('“'+String(r[2]||'').trim()+'”'):'',String(r[1]||'').trim()].filter(Boolean).join(' '));
       const finalNonRenewal=allNonRenewing.length?allNonRenewing:nonRenewalMembers.map(m=>[m.first,m.road?('“'+m.road+'”'):'',m.last].filter(Boolean).join(' '));
       if(finalNonRenewal.length){
         const cleanup=document.createElement('section');
@@ -130,15 +134,16 @@ async function setup2027DuesReview(rows) {
     const markButton=panel.querySelector('[data-mark-not-returning]'),memberSelect=panel.querySelector('[data-not-returning-member]');
     if(markButton) markButton.addEventListener('click',async()=>{
       const member=nonRenewalMembers[Number(memberSelect.value)];
-      if(!member){alert('Choose a member first.');return;}
+      if(memberSelect.value===''||!member){alert('Choose a member first.');return;}
+      const selected=panel.querySelector('[data-renewal-status-choice]').value;
       const display=[member.first,member.road?'“'+member.road+'”':'',member.last].filter(Boolean).join(' ');
-      if(!confirm('Mark '+display+' as Not Returning for 2027? They will no longer count as Left to Renew.'))return;
+      if(!confirm('Mark '+display+' as '+selected+' for 2027? They will no longer count as Eligible to Renew / Waiting.'))return;
       markButton.disabled=true;markButton.textContent='Saving…';
       try{
-        await saveRenewalDecision(member,true);
-        recordPortalAudit('Marked member not returning','Renewal Decisions',1);
+        await saveRenewalDecision(member,selected);
+        recordPortalAudit('Marked renewal status: '+selected,'Renewal Decisions',1);
         await loadMembershipSheet('2027',true);
-      }catch(error){markButton.disabled=false;markButton.textContent='Mark Not Returning';alert('Could not save the renewal decision. '+(error.message||''));}
+      }catch(error){markButton.disabled=false;markButton.textContent='Save Status';alert('Could not save the renewal decision. '+(error.message||''));}
     });
     if(pending.length && !tableEditModes.membershipContent) open();
   } catch(error) {
