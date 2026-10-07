@@ -3869,7 +3869,9 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
             const suggestedPlaceholder = /^payee\/payer$/i.test(field.header) ? 'Type a new payee/payer or choose a previous one' : 'Type a description or choose a previous one';
             const required = !/^note$/i.test(field.header) ? 'required' : '';
             const control = isSuggestedText ? `<input id="transactionField${field.column}" name="column${field.column}" type="text" list="transactionSuggestions${field.column}" value="" autocomplete="off" ${required} placeholder="${suggestedPlaceholder}"><datalist id="transactionSuggestions${field.column}">${options.map(option => `<option value="${esc(option)}"></option>`).join('')}</datalist>` : options.length ? `<select id="transactionField${field.column}" name="column${field.column}" ${required}><option value="">Select ${esc(field.header)}…</option>${options.map(option => `<option value="${esc(option)}">${esc(option)}</option>`).join('')}</select>` : `<input id="transactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} ${required} value="${esc(value)}" autocomplete="off">`;
-            return `<div class="transaction-field"><label for="transactionField${field.column}">${esc(field.header)}</label>${control}</div>`;
+            const label = /^fund$/i.test(field.header) ? "Paid from" : field.header;
+            const reimbursement = /^fund$/i.test(field.header) ? '<div class="transaction-field"><label for="reimbursementFund">Expense belongs to</label><select id="reimbursementFund"><option value="">Same fund</option><option>General Fund</option><option>Bikes For Tykes</option></select></div>' : '';
+            return `<div class="transaction-field"><label for="transactionField${field.column}">${esc(label)}</label>${control}</div>${reimbursement}`;
           }).join('')}
           <section class="paypal-bundle" id="paypalBundle" aria-live="polite">
             <h4>PayPal three-entry workflow</h4>
@@ -3879,14 +3881,6 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
               <div class="paypal-bundle-field"><label for="paypalFeeAmount">PayPal processing fee</label><input id="paypalFeeAmount" type="number" min="0" step="0.01" placeholder="0.00"></div>
               <div class="paypal-bundle-preview"><div><span>Gross sale</span><strong id="paypalGrossPreview">$0.00</strong></div><div><span>Processing fee</span><strong id="paypalFeePreview">-$0.00</strong></div><div><span>Bank transfer</span><strong id="paypalNetPreview">$0.00</strong></div></div>
             </div>
-          </section>
-          <section class="paypal-bundle visible" id="fundReimbursementBundle">
-            <h4>Reimburse the paying fund</h4>
-            <p>For an expense, Fund above is the account that paid. Choose the fund that should cover the cost to create the purchase and both transfer entries together.</p>
-            <label for="reimbursementFund">Fund responsible for the expense</label>
-            <select id="reimbursementFund"><option value="">Same as paying fund — no reimbursement</option><option>General Fund</option><option>Bikes For Tykes</option></select>
-            <p id="reimbursementPreview" role="status">No reimbursement selected.</p>
-            <p>Transfers are recorded as uncleared. Move the money in Chase, then mark each transfer cleared after it posts.</p>
           </section>
           <div class="transaction-consistency" id="transactionConsistency" role="status" aria-live="polite"></div>
           <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Add Transaction</button></div>
@@ -3969,16 +3963,13 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         panel.querySelector('#paypalNetPreview').textContent = money(Math.max(0,gross - fee));
       };
       const reimbursementFund = panel.querySelector('#reimbursementFund');
-      const updateReimbursementPreview = () => {
-        const paid = currentValue('fund'), responsible = reimbursementFund.value;
-        const amount = Math.abs(Number(currentValue('amount')) || 0);
+      const updateReimbursementControl = () => {
         const active = currentValue('type').toLowerCase() === 'expense' && !isPayPalWorkflow();
         reimbursementFund.disabled = !active;
-        panel.querySelector('#reimbursementPreview').textContent = !active ? 'Available for expenses paid directly from a fund.' : !responsible || responsible === paid ? 'No reimbursement needed.' : `Record ${money(amount)} from ${responsible} to ${paid || 'the paying fund'} with this purchase.`;
       };
-      panel.querySelector('form').addEventListener('input', updateReimbursementPreview);
-      panel.querySelector('form').addEventListener('change', updateReimbursementPreview);
-      updateReimbursementPreview();
+      panel.querySelector('form').addEventListener('input', updateReimbursementControl);
+      panel.querySelector('form').addEventListener('change', updateReimbursementControl);
+      updateReimbursementControl();
       const getPayeeGuidance = () => financePayeeHistory.get(currentValue('payee/payer').toLowerCase()) || null;
       const showPayeeGuidance = (fillBlanks = false) => {
         const guidance = getPayeeGuidance();
