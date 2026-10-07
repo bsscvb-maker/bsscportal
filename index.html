@@ -1645,6 +1645,27 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     .bank-review-choice { padding:10px; background:#f1f4f6; margin:8px 0; border-radius:6px; }
     .bank-review-warning { color:#a30b24; font-weight:700; }
     .bank-missing-form { border:2px solid #c8102e; padding:16px; border-radius:10px; }
+
+    .bank-review-steps { display:grid; gap:14px; margin-top:18px; }
+    .bank-review-help { color:#4b5563; font-size:14px; line-height:1.5; margin:6px 0 12px; }
+    .bank-review-tabs { display:flex; gap:8px; flex-wrap:wrap; margin:18px 0; }
+    .bank-review-tabs button { background:#eef1f4; color:#17212b; border:1px solid #c7cdd4; border-radius:8px; padding:12px 16px; font-weight:800; cursor:pointer; }
+    .bank-review-tabs button[aria-pressed="true"] { background:#202a36; color:#fff; border-color:#202a36; }
+    .bank-review-title { display:flex; gap:12px; justify-content:space-between; align-items:flex-start; }
+    .bank-review-title strong { font-size:18px; }
+    .bank-review-status { display:inline-block; padding:4px 8px; border-radius:5px; background:#edf0f3; font-size:13px; font-weight:700; }
+    .bank-review-ready .bank-review-status { background:#e3f4e7; color:#176c32; }
+    .bank-review-pending .bank-review-status { background:#ffe8a5; color:#5c4500; }
+    .bank-review-action { background:#c8102e; color:#fff; border:0; border-radius:7px; padding:10px 16px; font-weight:800; cursor:pointer; margin:8px 8px 0 0; }
+    .bank-review-action[data-selected="true"] { background:#e6f1e9; color:#176c32; border:1px solid #176c32; }
+    .bank-review-math { width:100%; margin:10px 0; border-collapse:collapse; font-size:14px; }
+    .bank-review-math th,.bank-review-math td { padding:8px 6px; border-bottom:1px solid #d8dee5; text-align:right; }
+    .bank-review-math th:first-child,.bank-review-math td:first-child { text-align:left; }
+    .bank-review-item details { margin-top:10px; }
+    .bank-review-item details summary { font-size:14px; font-weight:700; }
+    .bank-review-selected-note { color:#176c32; font-weight:700; }
+    .bank-review-panel [hidden] { display:none !important; }
+    @media(max-width:650px){.bank-review-tabs{display:grid;grid-template-columns:1fr}.bank-review-title strong{font-size:16px}}
 </style>
 </head>
 <body>
@@ -5751,70 +5772,116 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       if(item.duplicate)return {kind:'Duplicate bank line',choices:[],auto:false};
       if(processor && item.cents>0){
         const candidates=[...bundles].map(([n,group])=>({n,group,row:rows[n-1],cents:bankCents(rows[n-1]?.[9])})).filter(c=>String(c.row[13]).toLowerCase()===processor && dateFits(c.row) && c.cents>0 && bankCents(rows[c.group[0]-1][9]) + bankCents(rows[c.group[1]-1][9])===c.cents);
-        const openCandidates=candidates.filter(c=>c.group.some(n=>!isCleared(rows[n-1])));
+        const openCandidates=candidates.filter(c=>sameAccount(c.row) && c.group.every(n=>!isCleared(rows[n-1])));
         const result=bankExactSubsets(openCandidates,item.cents);
-        if(!result.solutions.length && !result.limited){
-          const previous=bankReviewSession?.matches?.find(x=>x.key===item.key)?.match?.choices || [];
-          for(const choice of previous)if(choice.net===item.cents && choice.numbers.every(n=>isCleared(rows[n-1])))result.solutions.push(choice.numbers.filter(n=>bundles.has(n)).map(n=>candidates.find(c=>c.n===n)).filter(Boolean));
-          if(!result.solutions.length)candidates.filter(c=>c.cents===item.cents && c.group.every(n=>isCleared(rows[n-1]))).forEach(c=>result.solutions.push([c]));
-        }
-        const choices=result.solutions.map(group=>({numbers:group.flatMap(c=>c.group),label:group.map(c=>`${c.row[3]}: gross ${money(bankCents(rows[c.group[0]-1][9])/100)} + fee ${money(bankCents(rows[c.group[1]-1][9])/100)} = net ${money(c.cents/100)}`).join(' + '),net:group.reduce((s,c)=>s+c.cents,0),already:group.every(c=>c.group.every(n=>isCleared(rows[n-1])))}));
+        const choices=result.solutions.map(group=>({numbers:group.flatMap(c=>c.group),parts:group.map(c=>({name:String(c.row[3] || '').replace(/^(PayPal to Bank Transfer|Chase Card Deposit)\s*[–—-]\s*/i,''),gross:bankCents(rows[c.group[0]-1][9]),fee:bankCents(rows[c.group[1]-1][9]),net:c.cents})),label:group.map(c=>`${c.row[3]}: gross ${money(bankCents(rows[c.group[0]-1][9])/100)} + fee ${money(bankCents(rows[c.group[1]-1][9])/100)} = net ${money(c.cents/100)}`).join(' + '),net:group.reduce((s,c)=>s+c.cents,0),already:group.every(c=>c.group.every(n=>isCleared(rows[n-1])))}));
         return {kind:result.limited?'Search limit — review manually':choices.length===1?(choices[0].already?'Already cleared':'Exact processor deposit'):choices.length>1?'Multiple exact combinations':'No exact processor deposit',choices,auto:choices.length===1 && !result.limited && !item.pending && choices[0].numbers.every(n=>sameAccount(rows[n-1]))};
       }
       const isTransfer=/online transfer (to|from) mma/i.test(item.description);
-      const candidates=rows.slice(1).map((row,i)=>({row,n:i+2})).filter(c=>sameAccount(c.row) && dateFits(c.row) && bankCents(c.row[9])===item.cents && !['paypal','chase payments'].includes(String(c.row[13]).toLowerCase()) && (isTransfer?/^Transfer (In|Out)$/.test(c.row[12]):!/^Transfer/.test(c.row[12])));
+      const candidates=rows.slice(1).map((row,i)=>({row,n:i+2})).filter(c=>!isCleared(c.row) && sameAccount(c.row) && dateFits(c.row) && bankCents(c.row[9])===item.cents && !['paypal','chase payments'].includes(String(c.row[13]).toLowerCase()) && (isTransfer?/^Transfer (In|Out)$/.test(c.row[12]):!/^Transfer/.test(c.row[12])));
       const strong=c=>{
         const payee=normalized(c.row[8]),description=normalized(item.description);
         return payee.length>=4 && description.includes(payee) && !['cash','chase','paypal','cash donor'].includes(payee);
       };
       const good=candidates.filter(strong), chosen=good.length?good:candidates;
-      const choices=chosen.map(c=>({numbers:[c.n],label:`${c.row[3]} · ${c.row[8]} · ${c.row[0]} · ${money(item.cents/100)} · ${c.row[6]} · ${c.row[4]} / ${c.row[5]} · ${c.row[7]}`,net:item.cents,already:isCleared(c.row)}));
+      const choices=chosen.map(c=>({numbers:[c.n],summary:String(c.row[3] || ''),fund:c.row[6],category:`${c.row[4]} / ${c.row[5]}`,label:`${c.row[3]} · ${c.row[8]} · ${c.row[0]} · ${money(item.cents/100)} · ${c.row[6]} · ${c.row[4]} / ${c.row[5]} · ${c.row[7]}`,net:item.cents,already:isCleared(c.row)}));
       return {kind:choices.length===1 && good.length?'Merchant and amount match':isTransfer && choices.length===1?'Internal transfer — review account':choices.length?'Amount matches — verify description':'Missing or different amount',choices,auto:good.length===1 && !item.pending};
     }
     function mountBankReview(target,rows,bundles,staged,updateSelectionStatus) {
       const panel=document.createElement('section');panel.className='bank-review-panel';
-      panel.innerHTML=`<details ${bankReviewSession?'open':''}><summary>Review Bank Transactions</summary><p>Paste your bank list or transcribed screenshot text. Choose the account shown. Review every proposed match; Submit saves selected clears. Pending items stay uncleared and require your review.</p><label>Bank account <select id="bankReviewAccount"><option>General Fund</option><option>Bikes For Tykes</option></select></label><label for="bankReviewInput">Bank transactions</label><textarea id="bankReviewInput" rows="7" placeholder="Paste the Chase transaction list, or one line per item:\n10/6/2026 | PAYPAL TRANSFER | 324.41\nPending | HOBBY LOBBY | -23.30"></textarea><button type="button" class="dashboard-edit-btn" id="bankReviewAnalyze">Review matches</button><button type="button" class="dashboard-edit-btn" id="bankReviewCorrect">Correct an existing ledger entry</button><div id="bankReviewResults" aria-live="polite"></div></details>`;
+      panel.innerHTML=`<details ${bankReviewSession?'open':''}><summary>Review Bank Transactions</summary><div class="bank-review-steps"><div><label for="bankReviewAccount">1. Which statement are you reviewing?</label><select id="bankReviewAccount"><option value="General Fund">General Fund — checking</option><option value="Bikes For Tykes">Bikes for Tykes — savings</option></select><p id="bankReviewAccountHelp" class="bank-review-help"></p></div><div><label for="bankReviewInput">2. Paste the bank transactions</label><textarea id="bankReviewInput" rows="5" placeholder="Paste the Chase transaction list here."></textarea></div><div><button type="button" class="bank-review-action" id="bankReviewAnalyze">3. Find uncleared matches</button><p class="bank-review-help">Only uncleared ledger entries are considered. Nothing is saved until you select a match and click Submit.</p></div></div><div id="bankReviewResults" aria-live="polite"></div></details>`;
       target.prepend(panel);
-      panel.querySelector('#bankReviewCorrect').addEventListener('click',()=>{if(staged.size){statusMessage();return;}document.querySelector('[data-finance-tab="transactions2026"]')?.click();});
-      const statusMessage=()=>document.getElementById('financeReconciliationStatus').textContent='Submit or deselect current choices before correcting ledger entries.';
-      const input=panel.querySelector('#bankReviewInput'), account=panel.querySelector('#bankReviewAccount'),results=panel.querySelector('#bankReviewResults');
+      const input=panel.querySelector('#bankReviewInput'),account=panel.querySelector('#bankReviewAccount'),results=panel.querySelector('#bankReviewResults');
+      const accountHelp=()=>{panel.querySelector('#bankReviewAccountHelp').textContent=account.value==='General Fund'?'Use your General checking statement. Matches are limited to General Fund entries. For transfers, only the checking side can be cleared here.':'Use your Bikes for Tykes savings statement. Matches are limited to BFT entries. For transfers, only the savings side can be cleared here.';};
+      const correct=()=>{if(staged.size){document.getElementById('financeReconciliationStatus').textContent='Submit or deselect your choices before editing ledger entries.';return;}document.querySelector('[data-finance-tab="transactions2026"]')?.click();};
+      const title=item=>{
+        if(/paypal/i.test(item.description))return 'PayPal deposit';
+        if(/paymentech|book transfer customer/i.test(item.description))return 'Chase card deposit';
+        if(/online transfer to mma/i.test(item.description))return `Transfer to ${bankReviewSession.account==='General Fund'?'BFT savings':'General checking'}`;
+        if(/online transfer from mma/i.test(item.description))return `Transfer from ${bankReviewSession.account==='General Fund'?'BFT savings':'General checking'}`;
+        if(/hobby.?lobby/i.test(item.description))return 'Hobby Lobby purchase';
+        if(/aldi/i.test(item.description))return 'ALDI purchase';
+        if(/amazon/i.test(item.description))return 'Amazon purchase';
+        if(/zelle.*teala/i.test(item.description))return 'Zelle payment to Teala';
+        if(/deposit id/i.test(item.description))return 'Bank deposit';
+        return item.description.length>70?item.description.slice(0,67)+'…':item.description;
+      };
       const draw=()=>{
         if(!bankReviewSession)return;
         const matches=bankReviewSession.items.map(item=>({...item,match:bankReviewMatch(item,rows,bundles,bankReviewSession.account)}));
         bankReviewSession.matches=matches;
         const claimed=new Map();matches.forEach((item,i)=>{if(item.match.auto && item.match.choices.length===1)item.match.choices[0].numbers.forEach(n=>{if(!claimed.has(n))claimed.set(n,[]);claimed.get(n).push(i);});});
         matches.forEach(item=>{if(item.match.auto && item.match.choices[0].numbers.some(n=>claimed.get(n).length>1)){item.match.auto=false;item.match.kind='Overlapping matches — choose one';}});
-        results.innerHTML=`<p><strong>${matches.length} bank entries</strong> · ${matches.filter(x=>x.pending).length} pending · ${matches.filter(x=>x.match.auto).length} confirmed match suggestions</p>${bankReviewSession.errors.length?`<p class="bank-review-warning">${bankReviewSession.errors.map(esc).join('<br>')}</p>`:''}<button type="button" class="dashboard-edit-btn" id="bankStageConfirmed">Select confirmed posted matches</button><p>Amount-only matches, internal transfers, missing items and pending entries require review. Selecting does not save.</p>${matches.map((item,i)=>`<article class="bank-review-item ${item.pending?'bank-review-pending':''}"><strong>${esc(item.date)} · ${money(item.cents/100)}</strong><p>${esc(item.description)}</p><strong>${esc(item.match.kind)}</strong>${item.match.choices.map((choice,j)=>`<div class="bank-review-choice"><p>${esc(choice.label)}${/processor/.test(item.match.kind.toLowerCase())?' = '+money(choice.net/100):''}${choice.already?' · Already cleared':''}</p>${!item.pending&&!choice.already?`<button type="button" class="dashboard-edit-btn" data-bank-stage="${i}:${j}">Select this match</button>`:''}</div>`).join('')}${item.pending?`<p>Review: What is this payment for? Is the fund/category shown in the ledger correct? ${item.match.choices.length?'Possible existing entries shown; confirm the description and categories before adding anything.':'No exact match. Identify the source before adding it.'}</p><label><input type="checkbox" data-bank-reviewed="${i}"> I reviewed this pending entry</label>`:''}${!item.match.choices.length&&!item.duplicate?`<button type="button" class="dashboard-edit-btn" data-bank-add="${i}">Categorize missing entry</button>`:''}<div data-bank-message="${i}" role="status"></div></article>`).join('')}<div id="bankMissingForm"></div>`;
+        const active=matches.map((item,i)=>({...item,index:i})).filter(item=>!item.duplicate && !bankReviewSession.completedKeys?.has(item.key) && !bankReviewSession.skippedKeys?.has(item.key));
+        const groups=[{key:'ready',name:'Ready to clear',items:active.filter(x=>!x.pending&&x.match.auto)},{key:'decision',name:'Needs your decision',items:active.filter(x=>!x.pending&&!x.match.auto)},{key:'pending',name:'Pending',items:active.filter(x=>x.pending)}];
+        const initial=groups.find(g=>g.key===bankReviewSession.group && g.items.length) || groups.find(g=>g.items.length) || groups[0];
+        bankReviewSession.group=initial.key;
+        const reason=item=>{
+          if(item.pending)return item.match.choices.length?'Already recorded and still uncleared. Review its category; wait for the bank to post it.':'No uncleared match. Identify what this is for before adding an entry. It stays uncleared.';
+          if(item.match.auto)return item.match.choices[0].parts?`The net amounts of ${item.match.choices[0].parts.length} payments total this deposit exactly.`:'The merchant, amount and recent date match an uncleared ledger entry.';
+          if(/Internal transfer/.test(item.match.kind))return 'Confirm the direction and amount. This selects only the side belonging to the statement account.';
+          if(item.match.choices.length>1)return `${item.match.choices.length} possible matches share this amount. Choose only the entry this bank payment belongs to.`;
+          if(item.match.choices.length)return 'The amount matches, but the description needs your confirmation.';
+          return /paypal|paymentech|book transfer customer/i.test(item.description)?'The uncleared payment totals do not explain this deposit exactly. Check the individual payments, fees and dates.':'No uncleared entry matches this bank amount. Check whether an entry is missing or has the wrong amount.';
+        };
+        const choiceHtml=(item,choice,j)=>{
+          const processor=!!choice.parts,selected=choice.numbers.every(n=>bankReviewSession.selected.get(n)===item.index);
+          const details=processor?`<table class="bank-review-math"><thead><tr><th>Payment</th><th>Gross</th><th>Fee</th><th>Net</th></tr></thead><tbody>${choice.parts.map(part=>`<tr><td>${esc(part.name)}</td><td>${money(part.gross/100)}</td><td>${money(part.fee/100)}</td><td>${money(part.net/100)}</td></tr>`).join('')}<tr><th>Total deposit</th><td></td><td></td><th>${money(choice.net/100)}</th></tr></tbody></table>`:`<p><strong>${esc(choice.summary)}</strong></p><p class="bank-review-help">${esc(choice.fund)} · ${esc(choice.category)}</p>`;
+          return `<div class="bank-review-choice">${details}${!item.pending?`<button type="button" class="bank-review-action" data-bank-stage="${item.index}:${j}" data-selected="${selected}">${selected?'Selected — click to undo':/Internal transfer/.test(item.match.kind)?'Confirm this transfer':'Select this match'}</button>`:''}</div>`;
+        };
+        results.innerHTML=`${bankReviewSession.errors.length?`<p class="bank-review-warning">Some lines could not be read. Check these before continuing:<br>${bankReviewSession.errors.map(esc).join('<br>')}</p>`:''}<div class="bank-review-tabs" role="group" aria-label="Review groups">${groups.map(group=>`<button type="button" data-bank-group="${group.key}" aria-pressed="${group.key===initial.key}">${group.name} (${group.items.length})</button>`).join('')}</div>${groups.map(group=>`<section data-bank-section="${group.key}" ${group.key!==initial.key?'hidden':''}><h3>${group.name}</h3><p class="bank-review-help">${group.key==='ready'?'Select the matches you want to clear, then click Submit.':group.key==='pending'?'These have not posted at the bank. Review their purpose and category; they cannot be cleared here.':'Resolve these one at a time. Amount alone is not enough to confirm a match.'}</p>${group.key==='ready'&&group.items.length?'<button type="button" class="bank-review-action" id="bankStageConfirmed">Select all ready matches</button>':''}${!group.items.length?'<p>Nothing to review in this group.</p>':''}${group.items.map(item=>`<article class="bank-review-item bank-review-${group.key==='pending'?'pending':group.key}"><div class="bank-review-title"><strong>${esc(title(item))}</strong><strong>${money(item.cents/100)}</strong></div><p class="bank-review-help">${esc(item.date)}</p><span class="bank-review-status">${group.name}</span><p>${esc(reason(item))}</p>${item.match.choices.length>1?`<details><summary>Show ${item.match.choices.length} possible matches</summary>${item.match.choices.map((choice,j)=>choiceHtml(item,choice,j)).join('')}</details>`:item.match.choices.map((choice,j)=>choiceHtml(item,choice,j)).join('')}<details><summary>Show bank description</summary><p>${esc(item.description)}</p></details>${item.pending?`<label><input type="checkbox" data-bank-reviewed="${item.index}"> I reviewed the purpose and category</label>`:''}${!item.match.choices.length&&!/paypal|paymentech|book transfer customer|online transfer (to|from) mma/i.test(item.description)?`<button type="button" class="bank-review-action" data-bank-add="${item.index}">Add missing entry</button>`:''}${group.key==='decision'||(item.pending&&!item.match.choices.length)?`<button type="button" class="bank-review-action" data-bank-correct>Edit or enter payment details</button>`:''}${group.key==='decision'?`<button type="button" class="bank-review-action" data-bank-skip="${item.index}">Already handled — remove from review</button>`:''}<div data-bank-message="${item.index}" class="bank-review-selected-note" role="status"></div><div data-bank-form="${item.index}"></div></article>`).join('')}</section>`).join('')}<div id="bankMissingForm"></div><p class="bank-review-help" id="bankReviewSelectionNote">Choose matches above, then use either Submit button below.</p>`;
+        results.querySelectorAll('[data-bank-group]').forEach(button=>button.addEventListener('click',()=>{
+          bankReviewSession.group=button.dataset.bankGroup;
+          results.querySelectorAll('[data-bank-group]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+          results.querySelectorAll('[data-bank-section]').forEach(section=>section.hidden=section.dataset.bankSection!==button.dataset.bankGroup);
+        }));
         const select=(i,j)=>{
           const item=matches[i],choice=item.match.choices[j];
-          if(item.pending || !choice || choice.already)return;
-          const conflict=choice.numbers.some(n=>bankReviewSession.selected.has(n) && bankReviewSession.selected.get(n)!==i);
-          const message=results.querySelector(`[data-bank-message="${i}"]`);
-          if(conflict){message.textContent='An entry is already assigned to another bank line. Review the overlapping matches before submitting.';return;}
+          if(item.pending || !choice || choice.numbers.some(n=>String(rows[n-1]?.[14]).toLowerCase()==='yes'))return;
+          const message=results.querySelector(`[data-bank-message="${i}"]`),button=results.querySelector(`[data-bank-stage="${i}:${j}"]`);
           const previous=[...bankReviewSession.selected].filter(([,owner])=>owner===i).map(([n])=>n);
+          const togglingOff=previous.length===choice.numbers.length && choice.numbers.every(n=>previous.includes(n));
+          if(!togglingOff && choice.numbers.some(n=>bankReviewSession.selected.has(n) && bankReviewSession.selected.get(n)!==i)){message.textContent='This ledger entry is selected for another bank line. Deselect that match first.';return;}
           previous.forEach(n=>{staged.delete(n);bankReviewSession.selected.delete(n);const box=target.querySelector(`[data-clear-row="${n}"]`);if(box)box.checked=false;});
-          choice.numbers.forEach(n=>{
-            bankReviewSession.selected.set(n,i);if(String(rows[n-1]?.[14]).toLowerCase()!=='yes')staged.set(n,'Yes');
+          results.querySelectorAll(`[data-bank-stage^="${i}:"]`).forEach(b=>{b.dataset.selected='false';b.textContent=/Internal transfer/.test(item.match.kind)?'Confirm this transfer':'Select this match';});
+          if(!togglingOff)choice.numbers.forEach(n=>{
+            bankReviewSession.selected.set(n,i);staged.set(n,'Yes');
             const box=target.querySelector(`[data-clear-row="${n}"]`);if(box)box.checked=true;
             const pending=target.querySelector(`[data-pending-row="${n}"]`);if(pending){pending.dataset.selected='false';pending.textContent='Pending at Chase';}
-          });updateSelectionStatus();message.textContent='Selected — click Submit to save.';
+          });
+          if(!togglingOff&&button){button.dataset.selected='true';button.textContent='Selected — click to undo';}
+          updateSelectionStatus();message.textContent=togglingOff?'Selection removed.':'Selected. Click Submit below to save.';
+          results.querySelector('#bankReviewSelectionNote').textContent=`${staged.size} ledger row changes selected. Submit below saves them.`;
         };
         results.querySelectorAll('[data-bank-stage]').forEach(button=>button.addEventListener('click',()=>select(...button.dataset.bankStage.split(':').map(Number))));
-        results.querySelector('#bankStageConfirmed').addEventListener('click',()=>matches.forEach((item,i)=>{if(item.match.auto)select(i,0);}));
+        results.querySelector('#bankStageConfirmed')?.addEventListener('click',()=>matches.forEach((item,i)=>{if(item.match.auto&&!item.pending&&!bankReviewSession.completedKeys?.has(item.key)&&!item.match.choices[0].numbers.every(n=>bankReviewSession.selected.has(n)))select(i,0);}));
+        results.querySelectorAll('[data-bank-skip]').forEach(button=>button.addEventListener('click',()=>{
+          const i=Number(button.dataset.bankSkip);
+          if([...bankReviewSession.selected.values()].includes(i)){results.querySelector(`[data-bank-message="${i}"]`).textContent='Deselect this match before removing it from review.';return;}
+          bankReviewSession.skippedKeys ||= new Set();bankReviewSession.skippedKeys.add(matches[i].key);draw();
+        }));
+        results.querySelectorAll('[data-bank-correct]').forEach(button=>button.addEventListener('click',correct));
         results.querySelectorAll('[data-bank-add]').forEach(button=>button.addEventListener('click',()=>{
-          const i=Number(button.dataset.bankAdd),item=matches[i];
-          if(staged.size){results.querySelector(`[data-bank-message="${i}"]`).textContent='Submit or deselect your current clears before adding a missing entry.';return;}
-          if(item.pending&&!results.querySelector(`[data-bank-reviewed="${i}"]`).checked){results.querySelector(`[data-bank-message="${i}"]`).textContent='Review this pending item first, then check the review box.';return;}
-          openBankMissingForm(results.querySelector('#bankMissingForm'),item,bankReviewSession.account,rows);
+          const i=Number(button.dataset.bankAdd),item=matches[i],message=results.querySelector(`[data-bank-message="${i}"]`);
+          if(staged.size){message.textContent='Submit or deselect your choices before adding a missing entry.';return;}
+          if(item.pending&&!results.querySelector(`[data-bank-reviewed="${i}"]`).checked){message.textContent='Review the purpose and category first, then check the review box.';return;}
+          openBankMissingForm(results.querySelector(`[data-bank-form="${i}"]`),item,bankReviewSession.account,rows);
         }));
       };
+      const analyze=()=>{
+        if(staged.size){document.getElementById('financeReconciliationStatus').textContent='Submit or deselect your choices before checking a new bank list.';return;}
+        const parsed=parseBankReview(input.value),completedKeys=bankReviewSession?.account===account.value?bankReviewSession.completedKeys:new Set();
+        bankReviewSession={...parsed,text:input.value,account:account.value,selected:new Map(),completedKeys:completedKeys || new Set(),skippedKeys:bankReviewSession?.account===account.value?bankReviewSession.skippedKeys:new Set()};draw();
+      };
       if(bankReviewSession){input.value=bankReviewSession.text;account.value=bankReviewSession.account;bankReviewSession.selected=new Map();draw();}
-      panel.querySelector('#bankReviewAnalyze').addEventListener('click',()=>{
-        if(staged.size){results.textContent='Submit or deselect your current choices before reviewing a new bank list.';return;}
-        const parsed=parseBankReview(input.value);
-        bankReviewSession={...parsed,text:input.value,account:account.value,selected:new Map()};draw();
+      accountHelp();
+      account.addEventListener('change',()=>{
+        if(staged.size){account.value=bankReviewSession?.account || 'General Fund';document.getElementById('financeReconciliationStatus').textContent='Submit or deselect your choices before changing the statement account.';return;}
+        accountHelp();if(input.value.trim())analyze();
       });
+      panel.querySelector('#bankReviewAnalyze').addEventListener('click',analyze);
     }
+
     function openBankMissingForm(target,item,account,rows) {
       const options=column=>[...new Set(rows.slice(1).map(row=>String(row[column] || '').trim()).filter(Boolean))].sort();
       const field=(label,column)=>`<label>${label}<input name="c${column}" list="bankDraft${column}" required autocomplete="off"><datalist id="bankDraft${column}">${options(column).map(value=>`<option value="${esc(value)}"></option>`).join('')}</datalist></label>`;
@@ -5937,6 +6004,13 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
             throw new Error('Could not verify every saved status. Refresh to check the entries before retrying.');
           }
           ['transactions2026','control','dashboard'].forEach(tab => loadedFinanceTabs.delete(tab));
+          if(bankReviewSession){
+            bankReviewSession.completedKeys ||= new Set();
+            bankReviewSession.matches.forEach(item=>{
+              const selected=item.match.choices.find(choice=>choice.numbers.every(n=>bankReviewSession.selected.has(n)));
+              if(selected && selected.numbers.every(n=>String(verified[n-1]?.[14]).toLowerCase()==='yes'))bankReviewSession.completedKeys.add(item.key);
+            });
+          }
           renderFinanceReconciliation(verified,changes.length);
         } catch (error) {
           setSubmitState('ready','Submit');
