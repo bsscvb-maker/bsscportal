@@ -1633,6 +1633,18 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     .reconciliation-submit[data-state="saving"] { background:#facc15; color:#111; }
     .reconciliation-submit[data-state="saved"] { background:#16803c; color:#fff; }
     .reconciliation-submit-footer { display:flex; justify-content:flex-end; margin-top:16px; }
+
+    .bank-review-panel { background:#fff; border:1px solid #d6d9de; border-radius:12px; padding:18px; margin:0 0 20px; color:#18212b; }
+    .bank-review-panel summary { font-size:20px; font-weight:800; cursor:pointer; }
+    .bank-review-panel label { display:block; margin:12px 0; font-weight:700; }
+    .bank-review-panel textarea { width:100%; padding:12px; border:1px solid #adb5bd; border-radius:8px; font:inherit; }
+    .bank-review-panel select,.bank-review-panel input:not([type="checkbox"]) { padding:9px; border:1px solid #adb5bd; border-radius:6px; max-width:100%; }
+    .bank-review-item { border:1px solid #d6d9de; border-radius:8px; padding:14px; margin:12px 0; overflow-wrap:anywhere; }
+    .bank-review-item p { margin:8px 0; }
+    .bank-review-pending { background:#fff6d6; border-color:#d7b54b; }
+    .bank-review-choice { padding:10px; background:#f1f4f6; margin:8px 0; border-radius:6px; }
+    .bank-review-warning { color:#a30b24; font-weight:700; }
+    .bank-missing-form { border:2px solid #c8102e; padding:16px; border-radius:10px; }
 </style>
 </head>
 <body>
@@ -5668,6 +5680,159 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       } catch (error) { document.getElementById('financeBftStatus').textContent = 'Bikes for Tykes finance could not load from Google Sheets.'; }
     }
 
+    let bankReviewSession = null;
+    function bankCents(value) {
+      const text = String(value ?? '').replace(/[−–]/g,'-').replace(/[$,\s]/g,'');
+      const match = text.match(/^(-?)(\d+)(?:\.(\d{1,2}))?$/);
+      return match ? (match[1] ? -1 : 1) * (Number(match[2])*100 + Number((match[3] || '').padEnd(2,'0'))) : null;
+    }
+    function bankDay(value) {
+      let text=String(value || '').trim(), parts;
+      if ((parts=text.match(/^(\d{4})-(\d{2})-(\d{2})$/))) text=`${parts[2]}/${parts[3]}/${parts[1]}`;
+      const d=new Date(`${text} 12:00:00`);
+      return Number.isNaN(d.getTime()) ? null : Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/86400000);
+    }
+    function parseBankReview(text) {
+      const items=[],errors=[];
+      const add=(date,description,amount,pending) => {
+        const cents=bankCents(amount);
+        if (!description.trim() || cents===null || (!pending && bankDay(date)===null)) {errors.push(`Could not read: ${date} ${description} ${amount}`);return;}
+        items.push({date:pending?'Pending':date,description:description.trim(),cents,pending});
+      };
+      // Simple pipe/tab format makes transcribed screenshots easy to review.
+      if (text.split('\n').some(line=> /^(Pending|\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2})\s*[|\t]/i.test(line))) {
+        text.split('\n').filter(line=>line.trim()).forEach(line=>{
+          const fields=line.split(/\t|\|/).map(x=>x.trim());
+          if (/^date$/i.test(fields[0])) return;
+          if(fields.length<3){errors.push(`Unrecognized line: ${line}`);return;}
+          add(fields[0],fields[1],fields[2],/^pending$/i.test(fields[0]) || /^pending$/i.test(fields[3] || ''));
+        });
+      } else {
+        let block=null;
+        const finish=()=>{
+          if(!block)return;
+          const moneyLine=block.lines.findIndex(line=>/^[−-]?\$[\d,]+\.\d{2}$/.test(line));
+          if(moneyLine<0){errors.push(`Amount missing for ${block.date}: ${block.lines.join(' ')}`);return;}
+          const description=block.lines.slice(0,moneyLine).filter(line=>!['other','misc. debit','account transfer','zelle debit','card','—','action'].includes(line.toLowerCase())).filter((line,i,a)=>i===0 || line!==a[i-1]).join(' ');
+          add(block.date,description,block.lines[moneyLine],block.pending);
+        };
+        text.split('\n').map(line=>line.trim()).filter(Boolean).forEach(line=>{
+          if (/^Pending$/i.test(line) || /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(line) || /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}, \d{4}$/i.test(line)) {
+            finish();block={date:line,pending:/^Pending$/i.test(line),lines:[]};
+          } else if(block)block.lines.push(line);
+          else if(!['date','description','type','amount','balance','action'].includes(line.toLowerCase())) errors.push(`Unrecognized line: ${line}`);
+        });finish();
+      }
+      const seen=new Set();return {items:items.map(item=>{
+        const key=[item.date,item.description.toLowerCase().replace(/\s+/g,' '),item.cents].join('|');
+        const duplicate=seen.has(key);seen.add(key);return {...item,key,duplicate};
+      }),errors};
+    }
+    function bankExactSubsets(candidates,target) {
+      const solutions=[];let visits=0,limited=false;
+      const sorted=candidates.filter(c=>c.cents>0 && c.cents<=target).sort((a,b)=>b.cents-a.cents);
+      const walk=(start,left,picked)=>{
+        if(++visits>150000 || solutions.length>=12){limited=true;return;}
+        if(!left){solutions.push(picked);return;}
+        for(let i=start;i<sorted.length;i++)if(sorted[i].cents<=left)walk(i+1,left-sorted[i].cents,[...picked,sorted[i]]);
+      };
+      if(sorted.length>60)return {solutions:[],limited:true};
+      walk(0,target,[]);return {solutions,limited};
+    }
+    function bankReviewMatch(item,rows,bundles,account) {
+      const normalized=s=>String(s || '').toLowerCase().replace(/[^a-z0-9]+/g,' ');
+      const isCleared=row=>String(row[14] || '').trim().toLowerCase()==='yes';
+      const processor=/paypal/i.test(item.description)?'paypal':/paymentech|book transfer customer/i.test(item.description)?'chase payments':null;
+      const day=bankDay(item.date);
+      const dateFits=row=>{const rd=bankDay(row[0]);return item.pending || (rd!==null && rd<=day && day-rd<=14);};
+      const sameAccount=row=>String(row[6] || '').toLowerCase()===account.toLowerCase();
+      if(item.duplicate)return {kind:'Duplicate bank line',choices:[],auto:false};
+      if(processor && item.cents>0){
+        const candidates=[...bundles].map(([n,group])=>({n,group,row:rows[n-1],cents:bankCents(rows[n-1]?.[9])})).filter(c=>String(c.row[13]).toLowerCase()===processor && dateFits(c.row) && c.cents>0);
+        const result=bankExactSubsets(candidates,item.cents);
+        const choices=result.solutions.map(group=>({numbers:group.flatMap(c=>c.group),label:group.map(c=>`${c.row[3]}: gross ${money(bankCents(rows[c.group[0]-1][9])/100)} + fee ${money(bankCents(rows[c.group[1]-1][9])/100)} = net ${money(c.cents/100)}`).join(' + '),net:group.reduce((s,c)=>s+c.cents,0),already:group.every(c=>c.group.every(n=>isCleared(rows[n-1])))}));
+        return {kind:result.limited?'Search limit — review manually':choices.length===1?(choices[0].already?'Already cleared':'Exact processor deposit'):choices.length>1?'Multiple exact combinations':'No exact processor deposit',choices,auto:choices.length===1 && !result.limited && !item.pending && choices[0].numbers.every(n=>sameAccount(rows[n-1]))};
+      }
+      const isTransfer=/online transfer (to|from) mma/i.test(item.description);
+      const candidates=rows.slice(1).map((row,i)=>({row,n:i+2})).filter(c=>sameAccount(c.row) && dateFits(c.row) && bankCents(c.row[9])===item.cents && !['paypal','chase payments'].includes(String(c.row[13]).toLowerCase()) && (isTransfer?/^Transfer (In|Out)$/.test(c.row[12]):!/^Transfer/.test(c.row[12])));
+      const strong=c=>{
+        const payee=normalized(c.row[8]),description=normalized(item.description);
+        return payee.length>=4 && description.includes(payee) && !['cash','chase','paypal','cash donor'].includes(payee);
+      };
+      const good=candidates.filter(strong), chosen=good.length?good:candidates;
+      const choices=chosen.map(c=>({numbers:[c.n],label:`${c.row[3]} · ${c.row[8]} · ${c.row[0]} · ${money(item.cents/100)} · ${c.row[6]}`,net:item.cents,already:isCleared(c.row)}));
+      return {kind:choices.length===1 && good.length?'Merchant and amount match':isTransfer && choices.length===1?'Internal transfer — review account':choices.length?'Amount matches — verify description':'Missing or different amount',choices,auto:good.length===1 && !item.pending};
+    }
+    function mountBankReview(target,rows,bundles,staged,updateSelectionStatus) {
+      const panel=document.createElement('section');panel.className='bank-review-panel';
+      panel.innerHTML=`<details ${bankReviewSession?'open':''}><summary>Review Bank Transactions</summary><p>Paste your bank list or transcribed screenshot text. Choose the account shown. Review every proposed match; Submit saves selected clears. Pending items stay uncleared and require your review.</p><label>Bank account <select id="bankReviewAccount"><option>General Fund</option><option>Bikes For Tykes</option></select></label><label for="bankReviewInput">Bank transactions</label><textarea id="bankReviewInput" rows="7" placeholder="Paste the Chase transaction list, or one line per item:\n10/6/2026 | PAYPAL TRANSFER | 324.41\nPending | HOBBY LOBBY | -23.30"></textarea><button type="button" class="dashboard-edit-btn" id="bankReviewAnalyze">Review matches</button><div id="bankReviewResults" aria-live="polite"></div></details>`;
+      target.prepend(panel);
+      const input=panel.querySelector('#bankReviewInput'), account=panel.querySelector('#bankReviewAccount'),results=panel.querySelector('#bankReviewResults');
+      const draw=()=>{
+        if(!bankReviewSession)return;
+        const matches=bankReviewSession.items.map(item=>({...item,match:bankReviewMatch(item,rows,bundles,bankReviewSession.account)}));
+        bankReviewSession.matches=matches;
+        const claimed=new Map();matches.forEach((item,i)=>{if(item.match.auto && item.match.choices.length===1)item.match.choices[0].numbers.forEach(n=>{if(!claimed.has(n))claimed.set(n,[]);claimed.get(n).push(i);});});
+        matches.forEach(item=>{if(item.match.auto && item.match.choices[0].numbers.some(n=>claimed.get(n).length>1)){item.match.auto=false;item.match.kind='Overlapping matches — choose one';}});
+        results.innerHTML=`<p><strong>${matches.length} bank entries</strong> · ${matches.filter(x=>x.pending).length} pending · ${matches.filter(x=>x.match.auto).length} confirmed match suggestions</p>${bankReviewSession.errors.length?`<p class="bank-review-warning">${bankReviewSession.errors.map(esc).join('<br>')}</p>`:''}<button type="button" class="dashboard-edit-btn" id="bankStageConfirmed">Select confirmed posted matches</button><p>Amount-only matches, internal transfers, missing items and pending entries require review. Selecting does not save.</p>${matches.map((item,i)=>`<article class="bank-review-item ${item.pending?'bank-review-pending':''}"><strong>${esc(item.date)} · ${money(item.cents/100)}</strong><p>${esc(item.description)}</p><strong>${esc(item.match.kind)}</strong>${item.match.choices.map((choice,j)=>`<div class="bank-review-choice"><p>${esc(choice.label)}${/processor/.test(item.match.kind.toLowerCase())?' = '+money(choice.net/100):''}${choice.already?' · Already cleared':''}</p>${!item.pending&&!choice.already?`<button type="button" class="dashboard-edit-btn" data-bank-stage="${i}:${j}">Select this match</button>`:''}</div>`).join('')}${item.pending?`<p>Review: What is this payment for? Is the fund/category shown in the ledger correct? ${item.match.choices.length?'Existing entries found; do not add a duplicate.':'No exact match. Identify the source before adding it.'}</p><label><input type="checkbox" data-bank-reviewed="${i}"> I reviewed this pending entry</label>`:''}${!item.match.choices.length&&!item.duplicate?`<button type="button" class="dashboard-edit-btn" data-bank-add="${i}">Categorize missing entry</button>`:''}<div data-bank-message="${i}" role="status"></div></article>`).join('')}<div id="bankMissingForm"></div>`;
+        const select=(i,j)=>{
+          const item=matches[i],choice=item.match.choices[j];
+          if(item.pending || !choice || choice.already)return;
+          const conflict=choice.numbers.some(n=>bankReviewSession.selected.has(n) && bankReviewSession.selected.get(n)!==i);
+          const message=results.querySelector(`[data-bank-message="${i}"]`);
+          if(conflict){message.textContent='An entry is already assigned to another bank line. Review the overlapping matches before submitting.';return;}
+          const previous=[...bankReviewSession.selected].filter(([,owner])=>owner===i).map(([n])=>n);
+          previous.forEach(n=>{staged.delete(n);bankReviewSession.selected.delete(n);const box=target.querySelector(`[data-clear-row="${n}"]`);if(box)box.checked=false;});
+          choice.numbers.forEach(n=>{
+            bankReviewSession.selected.set(n,i);if(String(rows[n-1]?.[14]).toLowerCase()!=='yes')staged.set(n,'Yes');
+            const box=target.querySelector(`[data-clear-row="${n}"]`);if(box)box.checked=true;
+            const pending=target.querySelector(`[data-pending-row="${n}"]`);if(pending){pending.dataset.selected='false';pending.textContent='Pending at Chase';}
+          });updateSelectionStatus();message.textContent='Selected — click Submit to save.';
+        };
+        results.querySelectorAll('[data-bank-stage]').forEach(button=>button.addEventListener('click',()=>select(...button.dataset.bankStage.split(':').map(Number))));
+        results.querySelector('#bankStageConfirmed').addEventListener('click',()=>matches.forEach((item,i)=>{if(item.match.auto)select(i,0);}));
+        results.querySelectorAll('[data-bank-add]').forEach(button=>button.addEventListener('click',()=>{
+          const i=Number(button.dataset.bankAdd),item=matches[i];
+          if(staged.size){results.querySelector(`[data-bank-message="${i}"]`).textContent='Submit or deselect your current clears before adding a missing entry.';return;}
+          if(item.pending&&!results.querySelector(`[data-bank-reviewed="${i}"]`).checked){results.querySelector(`[data-bank-message="${i}"]`).textContent='Review this pending item first, then check the review box.';return;}
+          openBankMissingForm(results.querySelector('#bankMissingForm'),item,bankReviewSession.account,rows);
+        }));
+      };
+      if(bankReviewSession){input.value=bankReviewSession.text;account.value=bankReviewSession.account;bankReviewSession.selected=new Map();draw();}
+      panel.querySelector('#bankReviewAnalyze').addEventListener('click',()=>{
+        if(staged.size){results.textContent='Submit or deselect your current choices before reviewing a new bank list.';return;}
+        const parsed=parseBankReview(input.value);
+        bankReviewSession={...parsed,text:input.value,account:account.value,selected:new Map()};draw();
+      });
+    }
+    function openBankMissingForm(target,item,account,rows) {
+      const options=column=>[...new Set(rows.slice(1).map(row=>String(row[column] || '').trim()).filter(Boolean))].sort();
+      const field=(label,column)=>`<label>${label}<input name="c${column}" list="bankDraft${column}" required autocomplete="off"><datalist id="bankDraft${column}">${options(column).map(value=>`<option value="${esc(value)}"></option>`).join('')}</datalist></label>`;
+      target.innerHTML=`<form class="bank-missing-form"><h3>Categorize missing bank entry</h3><p>${esc(item.description)} · ${money(item.cents/100)}. Saved as uncleared; pending entries are never cleared here. For a processor payout, enter its individual payments and fees through Tally or Transactions instead of creating another deposit.</p><label>Transaction date <input name="date" type="date" required value="${item.pending?'':transactionDateForInput(item.date)}"></label><label>Description<input name="description" required value="${esc(item.description)}"></label><label>Fund<select name="fund"><option ${account==='General Fund'?'selected':''}>General Fund</option><option ${account==='Bikes For Tykes'?'selected':''}>Bikes For Tykes</option></select></label>${field('Payee / payer',8)}${field('Category',4)}${field('Subcategory',5)}${field('Activity',7)}${field('Payment method',13)}<label>Type<select name="type"><option ${item.cents<0?'selected':''}>Expense</option><option ${item.cents>0?'selected':''}>Income</option><option>Transfer In</option><option>Transfer Out</option></select></label><label>Note<input name="note" placeholder="What was purchased or received?"></label><label><input type="checkbox" name="confirmed" required> I confirmed this is missing and these categories are correct</label><button type="submit" class="reconciliation-submit">Add reviewed entry</button><button type="button" data-bank-cancel>Cancel</button><p role="status" data-bank-save-status></p></form>`;
+      const form=target.querySelector('form'), status=form.querySelector('[data-bank-save-status]'),button=form.querySelector('[type="submit"]');
+      form.querySelector('[data-bank-cancel]').addEventListener('click',()=>target.replaceChildren());
+      form.addEventListener('submit',async event=>{
+        event.preventDefault();
+        if(/paypal|paymentech|book transfer customer/i.test(item.description)){status.textContent='Processor payouts need their gross payments and fees. Use Tally or Transactions, then review this deposit again.';return;}
+        if(/^Transfer/.test(form.elements.type.value)){status.textContent='Use Transactions to record both sides of an internal transfer, then review the bank entry again.';return;}
+        const data=new FormData(form),row=Array(17).fill(''),date=data.get('date').split('-').map(Number);
+        row[0]=`${date[1]}/${date[2]}/${date[0]}`;row[1]=new Date(date[0],date[1]-1,date[2]).toLocaleString('en-US',{month:'long'});row[2]=date[0];row[3]=data.get('description');row[4]=data.get('c4');row[5]=data.get('c5');row[6]=data.get('fund');row[7]=data.get('c7');row[8]=data.get('c8');row[9]=item.cents/100;row[12]=data.get('type');row[13]=data.get('c13');row[14]='No';row[15]='FALSE';row[16]=`Bank review: ${item.pending?'Pending':'Posted, awaiting reconciliation'} | ${item.description} | ${data.get('note') || ''}`;
+        if((row[9]<0 && row[12]!=='Expense') || (row[9]>0 && row[12]!=='Income')){status.textContent='Choose Expense for a debit or Income for a credit.';return;}
+        button.disabled=true;button.dataset.state='saving';button.textContent='Adding…';
+        let appended=false;
+        try {
+          const current=await getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID);
+          const existing=current.slice(1).filter(r=>bankCents(r[9])===item.cents && r[6]===row[6] && (item.pending || Math.abs(bankDay(r[0])-bankDay(row[0]))<=14) && (String(r[3]).toLowerCase()===String(row[3]).toLowerCase() || String(r[16] || '').includes(item.description)));
+          if(existing.length)throw new Error('A matching entry already exists. Refresh and review it instead of adding a duplicate.');
+          const result=await appendSheetRow(FINANCE_SPREADSHEET_ID,'Transactions-2026',row);appended=true;
+          await restoreAppendedTransactionBalances(result);
+          const latest=await getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID);
+          if(!latest.some(r=>r[3]===row[3] && bankCents(r[9])===item.cents && r[14]==='No'))throw new Error('Entry saved but readback could not verify it. Refresh before proceeding.');
+          ['transactions2026','control','dashboard'].forEach(tab=>loadedFinanceTabs.delete(tab));renderFinanceReconciliation(latest);
+        }catch(error){status.textContent=(appended?'Entry was added. Do not add it again. ':'')+error.message;button.dataset.state='ready';button.textContent=appended?'Added — refresh to review':'Add reviewed entry';button.disabled=appended;}
+      });
+    }
+
     function renderFinanceReconciliation(rows, submittedCount = 0) {
       const target = document.getElementById('financeReconciliationTable');
       const status = document.getElementById('financeReconciliationStatus');
@@ -5686,11 +5851,6 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         paypalDetails.add(index-1);paypalDetails.add(index);
       }
       updateFinanceReconciliationCount(uncleared.length);
-      if (!uncleared.length) {
-        target.innerHTML = '<div class="reconciliation-empty">✓ Everything is cleared. There are no outstanding transactions to reconcile.</div>' + (submittedCount ? '<div class="reconciliation-submit-footer"><button class="reconciliation-submit" data-state="saved" disabled>Submitted ✓</button></div>' : '');
-        status.textContent = submittedCount ? `${submittedCount} row status changes saved successfully. 0 uncleared transactions.` : '0 uncleared transactions.';
-        return;
-      }
       const columns = [[0,'Date'],[3,'Description'],[6,'Fund'],[7,'Activity'],[8,'Payee/Payer'],[9,'Amount'],[13,'Payment Method']];
       target.innerHTML = `<p class="control-edit-note">PayPal and Chase card payments: the full payment and fee stay visible. Mark the net transfer Pending at Chase when Chase lists it as pending. Once it posts, select all three rows together. Selections are saved only when you click Submit.</p><div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search uncleared transactions</span><input class="table-search" type="search" id="reconciliationSearch" placeholder="Search uncleared transactions…" autocomplete="off"></label></div><div class="table-search-count" id="reconciliationSearchCount"></div><div class="table-wrap"><table class="data-table"><thead><tr>${columns.map(([,label]) => `<th>${esc(label)}</th>`).join('')}<th><button type="button" class="reconciliation-submit" data-reconciliation-submit>Submit</button><br>Bank status / clear</th></tr></thead><tbody>${uncleared.map(item => `<tr>${columns.map(([column]) => `<td>${esc(item.row[column] || '')}</td>`).join('')}<td>${paypalDetails.has(item.sourceRow) ? '<span class="reconciliation-linked">Clears with bank transfer</span>' : `${paypalBundles.has(item.sourceRow) && String(item.row[14] || '').trim().toLowerCase() !== 'pending at chase' ? `<button type="button" class="dashboard-edit-btn" data-pending-row="${item.sourceRow}">Pending at Chase</button>` : ''}${String(item.row[14] || '').trim().toLowerCase() === 'pending at chase' ? '<strong>Pending at Chase · </strong>' : ''}<label class="reconciliation-check"><input type="checkbox" data-clear-row="${item.sourceRow}"> ${paypalBundles.has(item.sourceRow) ? 'Clear all 3 after posting' : 'Mark cleared'}</label>`}</td></tr>`).join('')}</tbody></table></div><div class="reconciliation-submit-footer"><button type="button" class="reconciliation-submit" data-reconciliation-submit>Submit</button></div>`;
       status.textContent = `${uncleared.length} uncleared transaction${uncleared.length === 1 ? '' : 's'} require review.`;
@@ -5743,11 +5903,12 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         }
         updateSelectionStatus();
       }));
+      mountBankReview(target,rows,paypalBundles,staged,updateSelectionStatus);
       submitButtons.forEach(button => button.addEventListener('click',async () => {
         if (!staged.size) {status.textContent = 'Select at least one entry before submitting.';return;}
         const changes = [...staged].map(([sourceRow,value]) => ({sourceRow,value}));
         setSubmitState('saving','Submitting…');
-        target.querySelectorAll('[data-clear-row],[data-pending-row]').forEach(control => control.disabled = true);
+        target.querySelectorAll('[data-clear-row],[data-pending-row],.bank-review-panel button,.bank-review-panel input,.bank-review-panel select,.bank-review-panel textarea').forEach(control => control.disabled = true);
         status.textContent = `Saving ${changes.length} row status changes…`;
         try {
           const latest = await getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID);
@@ -5769,7 +5930,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           renderFinanceReconciliation(verified,changes.length);
         } catch (error) {
           setSubmitState('ready','Submit');
-          target.querySelectorAll('[data-clear-row],[data-pending-row]').forEach(control => control.disabled = false);
+          target.querySelectorAll('[data-clear-row],[data-pending-row],.bank-review-panel button,.bank-review-panel input,.bank-review-panel select,.bank-review-panel textarea').forEach(control => control.disabled = false);
           status.textContent = `Submit failed: ${error.message || 'Could not save changes. Try again.'}`;
         }
       }));
