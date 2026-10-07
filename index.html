@@ -5723,9 +5723,11 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           else if(!['date','description','type','amount','balance','action'].includes(line.toLowerCase())) errors.push(`Unrecognized line: ${line}`);
         });finish();
       }
+      const dated=items.filter(item=>!item.pending).map(item=>bankDay(item.date));
+      const statementDay=dated.length?Math.max(...dated):bankDay(new Date().toLocaleDateString('en-US',{timeZone:'America/New_York'}));
       const seen=new Set();return {items:items.map(item=>{
         const key=[item.date,item.description.toLowerCase().replace(/\s+/g,' '),item.cents].join('|');
-        const duplicate=seen.has(key);seen.add(key);return {...item,key,duplicate};
+        const duplicate=seen.has(key);seen.add(key);return {...item,key,duplicate,statementDay};
       }),errors};
     }
     function bankExactSubsets(candidates,target) {
@@ -5744,7 +5746,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const isCleared=row=>String(row[14] || '').trim().toLowerCase()==='yes';
       const processor=/paypal/i.test(item.description)?'paypal':/paymentech|book transfer customer/i.test(item.description)?'chase payments':null;
       const day=bankDay(item.date);
-      const dateFits=row=>{const rd=bankDay(row[0]);return item.pending || (rd!==null && rd<=day && day-rd<=14);};
+      const dateFits=row=>{const rd=bankDay(row[0]),anchor=item.pending?(item.statementDay ?? bankDay(new Date().toLocaleDateString('en-US',{timeZone:'America/New_York'}))):day;return rd!==null && rd<=anchor && anchor-rd<=14;};
       const sameAccount=row=>String(row[6] || '').toLowerCase()===account.toLowerCase();
       if(item.duplicate)return {kind:'Duplicate bank line',choices:[],auto:false};
       if(processor && item.cents>0){
@@ -5766,13 +5768,15 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         return payee.length>=4 && description.includes(payee) && !['cash','chase','paypal','cash donor'].includes(payee);
       };
       const good=candidates.filter(strong), chosen=good.length?good:candidates;
-      const choices=chosen.map(c=>({numbers:[c.n],label:`${c.row[3]} · ${c.row[8]} · ${c.row[0]} · ${money(item.cents/100)} · ${c.row[6]}`,net:item.cents,already:isCleared(c.row)}));
+      const choices=chosen.map(c=>({numbers:[c.n],label:`${c.row[3]} · ${c.row[8]} · ${c.row[0]} · ${money(item.cents/100)} · ${c.row[6]} · ${c.row[4]} / ${c.row[5]} · ${c.row[7]}`,net:item.cents,already:isCleared(c.row)}));
       return {kind:choices.length===1 && good.length?'Merchant and amount match':isTransfer && choices.length===1?'Internal transfer — review account':choices.length?'Amount matches — verify description':'Missing or different amount',choices,auto:good.length===1 && !item.pending};
     }
     function mountBankReview(target,rows,bundles,staged,updateSelectionStatus) {
       const panel=document.createElement('section');panel.className='bank-review-panel';
-      panel.innerHTML=`<details ${bankReviewSession?'open':''}><summary>Review Bank Transactions</summary><p>Paste your bank list or transcribed screenshot text. Choose the account shown. Review every proposed match; Submit saves selected clears. Pending items stay uncleared and require your review.</p><label>Bank account <select id="bankReviewAccount"><option>General Fund</option><option>Bikes For Tykes</option></select></label><label for="bankReviewInput">Bank transactions</label><textarea id="bankReviewInput" rows="7" placeholder="Paste the Chase transaction list, or one line per item:\n10/6/2026 | PAYPAL TRANSFER | 324.41\nPending | HOBBY LOBBY | -23.30"></textarea><button type="button" class="dashboard-edit-btn" id="bankReviewAnalyze">Review matches</button><div id="bankReviewResults" aria-live="polite"></div></details>`;
+      panel.innerHTML=`<details ${bankReviewSession?'open':''}><summary>Review Bank Transactions</summary><p>Paste your bank list or transcribed screenshot text. Choose the account shown. Review every proposed match; Submit saves selected clears. Pending items stay uncleared and require your review.</p><label>Bank account <select id="bankReviewAccount"><option>General Fund</option><option>Bikes For Tykes</option></select></label><label for="bankReviewInput">Bank transactions</label><textarea id="bankReviewInput" rows="7" placeholder="Paste the Chase transaction list, or one line per item:\n10/6/2026 | PAYPAL TRANSFER | 324.41\nPending | HOBBY LOBBY | -23.30"></textarea><button type="button" class="dashboard-edit-btn" id="bankReviewAnalyze">Review matches</button><button type="button" class="dashboard-edit-btn" id="bankReviewCorrect">Correct an existing ledger entry</button><div id="bankReviewResults" aria-live="polite"></div></details>`;
       target.prepend(panel);
+      panel.querySelector('#bankReviewCorrect').addEventListener('click',()=>{if(staged.size){statusMessage();return;}document.querySelector('[data-finance-tab="transactions2026"]')?.click();});
+      const statusMessage=()=>document.getElementById('financeReconciliationStatus').textContent='Submit or deselect current choices before correcting ledger entries.';
       const input=panel.querySelector('#bankReviewInput'), account=panel.querySelector('#bankReviewAccount'),results=panel.querySelector('#bankReviewResults');
       const draw=()=>{
         if(!bankReviewSession)return;
@@ -5780,7 +5784,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         bankReviewSession.matches=matches;
         const claimed=new Map();matches.forEach((item,i)=>{if(item.match.auto && item.match.choices.length===1)item.match.choices[0].numbers.forEach(n=>{if(!claimed.has(n))claimed.set(n,[]);claimed.get(n).push(i);});});
         matches.forEach(item=>{if(item.match.auto && item.match.choices[0].numbers.some(n=>claimed.get(n).length>1)){item.match.auto=false;item.match.kind='Overlapping matches — choose one';}});
-        results.innerHTML=`<p><strong>${matches.length} bank entries</strong> · ${matches.filter(x=>x.pending).length} pending · ${matches.filter(x=>x.match.auto).length} confirmed match suggestions</p>${bankReviewSession.errors.length?`<p class="bank-review-warning">${bankReviewSession.errors.map(esc).join('<br>')}</p>`:''}<button type="button" class="dashboard-edit-btn" id="bankStageConfirmed">Select confirmed posted matches</button><p>Amount-only matches, internal transfers, missing items and pending entries require review. Selecting does not save.</p>${matches.map((item,i)=>`<article class="bank-review-item ${item.pending?'bank-review-pending':''}"><strong>${esc(item.date)} · ${money(item.cents/100)}</strong><p>${esc(item.description)}</p><strong>${esc(item.match.kind)}</strong>${item.match.choices.map((choice,j)=>`<div class="bank-review-choice"><p>${esc(choice.label)}${/processor/.test(item.match.kind.toLowerCase())?' = '+money(choice.net/100):''}${choice.already?' · Already cleared':''}</p>${!item.pending&&!choice.already?`<button type="button" class="dashboard-edit-btn" data-bank-stage="${i}:${j}">Select this match</button>`:''}</div>`).join('')}${item.pending?`<p>Review: What is this payment for? Is the fund/category shown in the ledger correct? ${item.match.choices.length?'Existing entries found; do not add a duplicate.':'No exact match. Identify the source before adding it.'}</p><label><input type="checkbox" data-bank-reviewed="${i}"> I reviewed this pending entry</label>`:''}${!item.match.choices.length&&!item.duplicate?`<button type="button" class="dashboard-edit-btn" data-bank-add="${i}">Categorize missing entry</button>`:''}<div data-bank-message="${i}" role="status"></div></article>`).join('')}<div id="bankMissingForm"></div>`;
+        results.innerHTML=`<p><strong>${matches.length} bank entries</strong> · ${matches.filter(x=>x.pending).length} pending · ${matches.filter(x=>x.match.auto).length} confirmed match suggestions</p>${bankReviewSession.errors.length?`<p class="bank-review-warning">${bankReviewSession.errors.map(esc).join('<br>')}</p>`:''}<button type="button" class="dashboard-edit-btn" id="bankStageConfirmed">Select confirmed posted matches</button><p>Amount-only matches, internal transfers, missing items and pending entries require review. Selecting does not save.</p>${matches.map((item,i)=>`<article class="bank-review-item ${item.pending?'bank-review-pending':''}"><strong>${esc(item.date)} · ${money(item.cents/100)}</strong><p>${esc(item.description)}</p><strong>${esc(item.match.kind)}</strong>${item.match.choices.map((choice,j)=>`<div class="bank-review-choice"><p>${esc(choice.label)}${/processor/.test(item.match.kind.toLowerCase())?' = '+money(choice.net/100):''}${choice.already?' · Already cleared':''}</p>${!item.pending&&!choice.already?`<button type="button" class="dashboard-edit-btn" data-bank-stage="${i}:${j}">Select this match</button>`:''}</div>`).join('')}${item.pending?`<p>Review: What is this payment for? Is the fund/category shown in the ledger correct? ${item.match.choices.length?'Possible existing entries shown; confirm the description and categories before adding anything.':'No exact match. Identify the source before adding it.'}</p><label><input type="checkbox" data-bank-reviewed="${i}"> I reviewed this pending entry</label>`:''}${!item.match.choices.length&&!item.duplicate?`<button type="button" class="dashboard-edit-btn" data-bank-add="${i}">Categorize missing entry</button>`:''}<div data-bank-message="${i}" role="status"></div></article>`).join('')}<div id="bankMissingForm"></div>`;
         const select=(i,j)=>{
           const item=matches[i],choice=item.match.choices[j];
           if(item.pending || !choice || choice.already)return;
