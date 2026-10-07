@@ -4791,6 +4791,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         @media screen{body{padding:15px}.print-only{display:block;margin-bottom:15px}.print-only button{padding:10px 15px}}
     
 
+    .reconciliation-submit { background:#c8102e; color:#fff; border:0; border-radius:7px; padding:10px 24px; font-weight:800; cursor:pointer; margin-bottom:8px; }
+    .reconciliation-submit[data-state="saving"] { background:#facc15; color:#111; }
+    .reconciliation-submit[data-state="saved"] { background:#16803c; color:#fff; }
+    .reconciliation-submit-footer { display:flex; justify-content:flex-end; margin-top:16px; }
   </style></head><body><div class="print-only"><button onclick="window.print()">Print pick tickets</button> · Cut along the dotted lines.</div><div class="sheet">${rows}</div></body></html>`);
       printWindow.document.close();
       printWindow.focus();
@@ -5663,7 +5667,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       } catch (error) { document.getElementById('financeBftStatus').textContent = 'Bikes for Tykes finance could not load from Google Sheets.'; }
     }
 
-    function renderFinanceReconciliation(rows) {
+    function renderFinanceReconciliation(rows, submittedCount = 0) {
       const target = document.getElementById('financeReconciliationTable');
       const status = document.getElementById('financeReconciliationStatus');
       const uncleared = rows.slice(1).map((row,index) => ({row,sourceRow:index + 2})).filter(item => ['no','pending at chase'].includes(String(item.row[14] || '').trim().toLowerCase()));
@@ -5682,12 +5686,12 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       }
       updateFinanceReconciliationCount(uncleared.length);
       if (!uncleared.length) {
-        target.innerHTML = '<div class="reconciliation-empty">✓ Everything is cleared. There are no outstanding transactions to reconcile.</div>';
-        status.textContent = '0 uncleared transactions.';
+        target.innerHTML = '<div class="reconciliation-empty">✓ Everything is cleared. There are no outstanding transactions to reconcile.</div>' + (submittedCount ? '<div class="reconciliation-submit-footer"><button class="reconciliation-submit" data-state="saved" disabled>Submitted ✓</button></div>' : '');
+        status.textContent = submittedCount ? `${submittedCount} row status changes saved successfully. 0 uncleared transactions.` : '0 uncleared transactions.';
         return;
       }
       const columns = [[0,'Date'],[3,'Description'],[6,'Fund'],[7,'Activity'],[8,'Payee/Payer'],[9,'Amount'],[13,'Payment Method']];
-      target.innerHTML = `<p class="control-edit-note">PayPal and Chase card payments: the full payment and fee stay visible. Mark the net transfer Pending at Chase when Chase lists it as pending. Once it posts, clear all three rows together.</p><div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search uncleared transactions</span><input class="table-search" type="search" id="reconciliationSearch" placeholder="Search uncleared transactions…" autocomplete="off"></label></div><div class="table-search-count" id="reconciliationSearchCount"></div><div class="table-wrap"><table class="data-table"><thead><tr>${columns.map(([,label]) => `<th>${esc(label)}</th>`).join('')}<th>Bank status / clear</th></tr></thead><tbody>${uncleared.map(item => `<tr>${columns.map(([column]) => `<td>${esc(item.row[column] || '')}</td>`).join('')}<td>${paypalDetails.has(item.sourceRow) ? '<span class="reconciliation-linked">Clears with bank transfer</span>' : `${paypalBundles.has(item.sourceRow) && String(item.row[14] || '').trim().toLowerCase() !== 'pending at chase' ? `<button type="button" class="dashboard-edit-btn" data-pending-row="${item.sourceRow}">Pending at Chase</button>` : ''}${String(item.row[14] || '').trim().toLowerCase() === 'pending at chase' ? '<strong>Pending at Chase · </strong>' : ''}<label class="reconciliation-check"><input type="checkbox" data-clear-row="${item.sourceRow}"> ${paypalBundles.has(item.sourceRow) ? 'Clear all 3 after posting' : 'Mark cleared'}</label>`}</td></tr>`).join('')}</tbody></table></div>`;
+      target.innerHTML = `<p class="control-edit-note">PayPal and Chase card payments: the full payment and fee stay visible. Mark the net transfer Pending at Chase when Chase lists it as pending. Once it posts, select all three rows together. Selections are saved only when you click Submit.</p><div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search uncleared transactions</span><input class="table-search" type="search" id="reconciliationSearch" placeholder="Search uncleared transactions…" autocomplete="off"></label></div><div class="table-search-count" id="reconciliationSearchCount"></div><div class="table-wrap"><table class="data-table"><thead><tr>${columns.map(([,label]) => `<th>${esc(label)}</th>`).join('')}<th><button type="button" class="reconciliation-submit" data-reconciliation-submit>Submit</button><br>Bank status / clear</th></tr></thead><tbody>${uncleared.map(item => `<tr>${columns.map(([column]) => `<td>${esc(item.row[column] || '')}</td>`).join('')}<td>${paypalDetails.has(item.sourceRow) ? '<span class="reconciliation-linked">Clears with bank transfer</span>' : `${paypalBundles.has(item.sourceRow) && String(item.row[14] || '').trim().toLowerCase() !== 'pending at chase' ? `<button type="button" class="dashboard-edit-btn" data-pending-row="${item.sourceRow}">Pending at Chase</button>` : ''}${String(item.row[14] || '').trim().toLowerCase() === 'pending at chase' ? '<strong>Pending at Chase · </strong>' : ''}<label class="reconciliation-check"><input type="checkbox" data-clear-row="${item.sourceRow}"> ${paypalBundles.has(item.sourceRow) ? 'Clear all 3 after posting' : 'Mark cleared'}</label>`}</td></tr>`).join('')}</tbody></table></div><div class="reconciliation-submit-footer"><button type="button" class="reconciliation-submit" data-reconciliation-submit>Submit</button></div>`;
       status.textContent = `${uncleared.length} uncleared transaction${uncleared.length === 1 ? '' : 's'} require review.`;
       const search = document.getElementById('reconciliationSearch');
       search.addEventListener('input', () => {
@@ -5696,39 +5700,76 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         target.querySelectorAll('tbody tr').forEach(row => { const match = !query || row.textContent.toLowerCase().includes(query); row.hidden = !match; if (match) visible += 1; });
         document.getElementById('reconciliationSearchCount').textContent = query ? `${visible} matching transaction${visible === 1 ? '' : 's'} shown` : '';
       });
-      target.querySelectorAll('[data-pending-row]').forEach(button => button.addEventListener('click',async () => {
+      const staged = new Map();
+      const submitButtons = [...target.querySelectorAll('[data-reconciliation-submit]')];
+      const setSubmitState = (state, text) => submitButtons.forEach(button => {
+        button.dataset.state = state;
+        button.textContent = text;
+        button.disabled = state === 'saving';
+      });
+      const updateSelectionStatus = () => {
+        setSubmitState('ready','Submit');
+        status.textContent = staged.size ? `${staged.size} row status changes selected — click Submit to save.` : `${uncleared.length} uncleared transactions. Select entries, then click Submit.`;
+      };
+      if (submittedCount) {
+        setSubmitState('saved','Submitted ✓');
+        status.textContent = `${submittedCount} row status changes saved successfully. ${uncleared.length} transactions remain uncleared.`;
+      }
+      target.querySelectorAll('[data-pending-row]').forEach(button => button.addEventListener('click', () => {
         const sourceRow = Number(button.dataset.pendingRow);
-        if (!window.confirm(`Does Chase show the ${String(rows[sourceRow-1][9] || '')} transfer as pending? It will count in Chase's available balance but the three rows will stay uncleared.`)) return;
-        button.disabled = true;button.textContent = 'Saving…';
-        try {
-          await updateSheetCell(FINANCE_SPREADSHEET_ID,'Transactions-2026',sourceRow,14,'Pending at Chase');
-          ['transactions2026','control','dashboard'].forEach(tab => loadedFinanceTabs.delete(tab));
-          await loadFinanceReconciliation();
-        } catch(error) {button.disabled = false;button.textContent = 'Pending at Chase';status.textContent = 'Could not save the pending bank status. Try again.';}
+        const checkbox = target.querySelector(`[data-clear-row="${sourceRow}"]`);
+        const bundle = paypalBundles.get(sourceRow) || [sourceRow];
+        bundle.forEach(n => staged.delete(n));
+        checkbox.checked = false;
+        if (button.dataset.selected === 'true') {
+          button.dataset.selected = 'false';
+          button.textContent = 'Pending at Chase';
+        } else {
+          staged.set(sourceRow,'Pending at Chase');
+          button.dataset.selected = 'true';
+          button.textContent = 'Pending selected — not submitted';
+        }
+        updateSelectionStatus();
       }));
-      target.querySelectorAll('[data-clear-row]').forEach(checkbox => checkbox.addEventListener('change',async () => {
-        if (!checkbox.checked) return;
-        checkbox.disabled = true;
-        const label = checkbox.closest('label');
-        label.lastChild.textContent = ' Saving…';
+      target.querySelectorAll('[data-clear-row]').forEach(checkbox => checkbox.addEventListener('change', () => {
+        const sourceRow = Number(checkbox.dataset.clearRow);
+        const bundle = paypalBundles.get(sourceRow) || [sourceRow];
+        bundle.forEach(n => checkbox.checked ? staged.set(n,'Yes') : staged.delete(n));
+        const pendingButton = target.querySelector(`[data-pending-row="${sourceRow}"]`);
+        if (pendingButton) {
+          pendingButton.dataset.selected = 'false';
+          pendingButton.textContent = 'Pending at Chase';
+        }
+        updateSelectionStatus();
+      }));
+      submitButtons.forEach(button => button.addEventListener('click',async () => {
+        if (!staged.size) {status.textContent = 'Select at least one entry before submitting.';return;}
+        const changes = [...staged].map(([sourceRow,value]) => ({sourceRow,value}));
+        setSubmitState('saving','Submitting…');
+        target.querySelectorAll('[data-clear-row],[data-pending-row]').forEach(control => control.disabled = true);
+        status.textContent = `Saving ${changes.length} row status changes…`;
         try {
-          const sourceRow = Number(checkbox.dataset.clearRow);
-          const bundle = paypalBundles.get(sourceRow);
-          if (bundle) {
-            if (!window.confirm(`Has the ${String(rows[sourceRow-1][9] || '')} net deposit fully posted in Chase? This will mark its payment, fee, and transfer cleared together.`)) {
-              checkbox.checked = false;checkbox.disabled = false;label.lastChild.textContent = ' Clear all 3 after posting';return;
+          const latest = await getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID);
+          const identity = row => JSON.stringify((row || []).filter((value,index) => ![10,11,14].includes(index)));
+          for (const change of changes) {
+            const original = rows[change.sourceRow-1];
+            const current = latest[change.sourceRow-1];
+            if (identity(original) !== identity(current) ||
+                ![String(original[14] || ''),change.value].includes(String(current?.[14] || ''))) {
+              throw new Error('An entry changed since this page loaded. Refresh and review your selections before submitting.');
             }
-            await updateSheetRanges(FINANCE_SPREADSHEET_ID,bundle.map(n => ({range:`'Transactions-2026'!O${n}`,value:'Yes'})));
-          } else await updateSheetCell(FINANCE_SPREADSHEET_ID,'Transactions-2026',sourceRow,14,'Yes');
-          loadedFinanceTabs.delete('transactions2026');
-          loadedFinanceTabs.delete('control');
-          loadedFinanceTabs.delete('dashboard');
-          await loadFinanceReconciliation();
+          }
+          await updateSheetRanges(FINANCE_SPREADSHEET_ID,changes.map(change => ({range:`'Transactions-2026'!O${change.sourceRow}`,value:change.value})));
+          const verified = await getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID);
+          if (!changes.every(change => String(verified[change.sourceRow-1]?.[14] || '') === change.value)) {
+            throw new Error('Could not verify every saved status. Refresh to check the entries before retrying.');
+          }
+          ['transactions2026','control','dashboard'].forEach(tab => loadedFinanceTabs.delete(tab));
+          renderFinanceReconciliation(verified,changes.length);
         } catch (error) {
-          checkbox.checked = false;
-          checkbox.disabled = false;
-          label.lastChild.textContent = ' Mark cleared';
-          status.textContent = 'That transaction could not be updated. Please try again.';
+          setSubmitState('ready','Submit');
+          target.querySelectorAll('[data-clear-row],[data-pending-row]').forEach(control => control.disabled = false);
+          status.textContent = `Submit failed: ${error.message || 'Could not save changes. Try again.'}`;
         }
       }));
     }
