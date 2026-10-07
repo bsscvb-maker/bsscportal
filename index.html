@@ -3390,9 +3390,1754 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         }));
       }
       const newTransaction = target.querySelector('[data-new-transaction="true"]');
-      if (newTransaction) newTransaction.addEventListener('click', () => openNewTransactionForm(targetId, finalHeaders)
-... 142917 bytes omitted ...
-umber(document.getElementById('orderActionAmount').value);
+      if (newTransaction) newTransaction.addEventListener('click', () => openNewTransactionForm(targetId, finalHeaders));
+      const newDonation = target.querySelector('[data-new-bft-donation]');
+      if (newDonation) newDonation.addEventListener('click', () => openNewBftDonationForm(targetId, headers, rows));
+      if (isTransaction2026 && editMode) target.querySelectorAll('[data-pick-transaction]').forEach(checkbox => checkbox.addEventListener('change', () => {
+        const row = checkbox.closest('[data-transaction-row]');
+        if (!checkbox.checked) {
+          target.querySelector('.transaction-edit-entry')?.remove();
+          row.classList.remove('transaction-selected');
+          return;
+        }
+        target.querySelectorAll('[data-pick-transaction]').forEach(other => { if (other !== checkbox) other.checked = false; });
+        const item = indexedData.find(candidate => candidate.sourceIndex === Number(row.dataset.sourceIndex));
+        if (item) openTransactionEditForm(targetId,finalHeaders,item.row,Number(row.dataset.transactionRow),row);
+      }));
+      if (isBftTracking && editMode) target.querySelectorAll('[data-pick-bft-row]').forEach(checkbox => checkbox.addEventListener('change', () => {
+        const row = checkbox.closest('[data-transaction-row]');
+        if (!checkbox.checked) {
+          target.querySelector('.transaction-edit-entry')?.remove();
+          row.classList.remove('transaction-selected');
+          return;
+        }
+        target.querySelectorAll('[data-pick-bft-row]').forEach(other => { if (other !== checkbox) other.checked = false; });
+        const item = indexedData.find(candidate => candidate.sourceIndex === Number(row.dataset.sourceIndex));
+        if (item) openBftDonationEditForm(targetId,headers,item.row,Number(row.dataset.transactionRow),row);
+      }));
+      if (isTransaction2026) {
+        const fields = [[4,'Category'],[5,'Subcategory'],[6,'Fund'],[7,'Activity'],[8,'Payee/Payer'],[12,'Type'],[13,'Payment method'],[14,'Cleared']];
+        const controls = document.createElement('div');
+        controls.className = 'finance-filter-panel';
+        controls.innerHTML = '<details><summary>Sort & filter transactions</summary><div class="finance-filter-grid">'
+          + fields.map(([column,label]) => {
+            const values = [...new Set(indexedData.map(item => String(item.row[column] || '').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b,undefined,{numeric:true}));
+            return '<label>'+esc(label)+'<select data-finance-filter="'+column+'"><option value="">All</option>'+values.map(value => '<option value="'+esc(value)+'">'+esc(value)+'</option>').join('')+'</select></label>';
+          }).join('')
+          + '<label>Description contains<input type="search" data-finance-description placeholder="Any description"></label>'
+          + '<label>Date from<input type="date" data-finance-date-from></label><label>Date through<input type="date" data-finance-date-to></label>'
+          + '<label>Amount at least<input type="number" step="0.01" data-finance-min placeholder="Any amount"></label>'
+          + '<label>Amount at most<input type="number" step="0.01" data-finance-max placeholder="Any amount"></label>'
+          + '<label>Sort by<select data-finance-sort><option value="row-desc">Newest entry</option><option value="row-asc">Oldest entry</option><option value="date-desc">Date: newest first</option><option value="date-asc">Date: oldest first</option><option value="amount-desc">Amount: high to low</option><option value="amount-asc">Amount: low to high</option>'
+          + [[4,'Category'],[5,'Subcategory'],[6,'Fund'],[7,'Activity'],[8,'Payee/Payer'],[3,'Description']].map(([column,label]) => '<option value="'+column+'-asc">'+label+': A to Z</option><option value="'+column+'-desc">'+label+': Z to A</option>').join('')
+          + '</select></label></div><p class="finance-filter-note">Filters work together with search. The ledger has a date but no separate transaction time column.</p><button type="button" data-finance-clear-filters>Clear filters</button></details>';
+        target.querySelector('.table-tools').after(controls);
+        const rowMap = new Map(indexedData.map(item => [item.sourceIndex,item.row]));
+        const numeric = value => Number(String(value || '').replace(/[^0-9.-]/g,'')) || 0;
+        const dateValue = value => { const date = new Date(String(value || '')); return Number.isFinite(date.getTime()) ? date.getTime() : 0; };
+        const isoDate = value => { const date = new Date(String(value || '')); return Number.isFinite(date.getTime()) ? [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-') : ''; };
+        const applyFilters = () => {
+          const q = target.querySelector('[data-table-search]').value.trim().toLowerCase();
+          const filters = [...controls.querySelectorAll('[data-finance-filter]')].map(element => [Number(element.dataset.financeFilter),element.value.trim().toLowerCase()]).filter(([,value]) => value);
+          const description = controls.querySelector('[data-finance-description]').value.trim().toLowerCase();
+          const from = controls.querySelector('[data-finance-date-from]').value;
+          const to = controls.querySelector('[data-finance-date-to]').value;
+          const minField = controls.querySelector('[data-finance-min]'), maxField = controls.querySelector('[data-finance-max]');
+          const min = minField.value === '' ? null : Number(minField.value), max = maxField.value === '' ? null : Number(maxField.value);
+          const [field,direction] = controls.querySelector('[data-finance-sort]').value.split('-');
+          const tbody = target.querySelector('.data-table tbody');
+          const displayed = [...tbody.querySelectorAll('tr[data-transaction-row]')];
+          displayed.sort((a,b) => {
+            const ra = rowMap.get(Number(a.dataset.sourceIndex)), rb = rowMap.get(Number(b.dataset.sourceIndex));
+            const comparison = field === 'row' ? Number(a.dataset.sourceIndex)-Number(b.dataset.sourceIndex)
+              : field === 'date' ? dateValue(ra[0])-dateValue(rb[0])
+              : field === 'amount' ? numeric(ra[9])-numeric(rb[9])
+              : String(ra[Number(field)] || '').localeCompare(String(rb[Number(field)] || ''),undefined,{numeric:true});
+            return (direction === 'desc' ? -comparison : comparison) || Number(b.dataset.sourceIndex)-Number(a.dataset.sourceIndex);
+          });
+          displayed.forEach(element => tbody.appendChild(element));
+          let visible = 0;
+          displayed.forEach(element => {
+            const row = rowMap.get(Number(element.dataset.sourceIndex));
+            const date = isoDate(row[0]), amount = numeric(row[9]);
+            const matches = (!q || element.textContent.toLowerCase().includes(q))
+              && filters.every(([column,value]) => String(row[column] || '').trim().toLowerCase() === value)
+              && (!description || String(row[3] || '').toLowerCase().includes(description))
+              && (!from || (date && date >= from)) && (!to || (date && date <= to))
+              && (min === null || amount >= min) && (max === null || amount <= max);
+            element.hidden = !matches;
+            if (matches) visible++;
+          });
+          target.querySelector('[data-search-count]').textContent = visible+' of '+displayed.length+' transactions shown';
+          financeTransactionViewState.values = Object.fromEntries(
+            [...target.querySelectorAll('[data-table-search], .finance-filter-panel input, .finance-filter-panel select')]
+              .map(element => [element.dataset.financeFilter ? 'filter:'+element.dataset.financeFilter
+                : element.dataset.tableSearch ? 'search' : element.dataset.financeDescription !== undefined ? 'description'
+                : element.dataset.financeDateFrom !== undefined ? 'dateFrom' : element.dataset.financeDateTo !== undefined ? 'dateTo'
+                : element.dataset.financeMin !== undefined ? 'min' : element.dataset.financeMax !== undefined ? 'max' : 'sort', element.value])
+          );
+          financeTransactionViewState.open = controls.querySelector('details').open;
+          saveFinanceTransactionViewState();
+        };
+        controls.querySelector('details').addEventListener('toggle',() => { financeTransactionViewState.open = controls.querySelector('details').open; saveFinanceTransactionViewState(); });
+        controls.addEventListener('input',applyFilters);
+        controls.addEventListener('change',applyFilters);
+        controls.querySelector('[data-finance-clear-filters]').addEventListener('click',() => {
+          controls.querySelectorAll('select').forEach(select => { select.value = select.hasAttribute('data-finance-sort') ? 'row-desc' : ''; });
+          controls.querySelectorAll('input').forEach(input => { input.value = ''; });
+          target.querySelector('[data-table-search]').value = '';
+          financeTransactionViewState.values = {};
+          applyFilters();
+        });
+        target.querySelector('[data-table-search]').addEventListener('input',applyFilters);
+        const saved = financeTransactionViewState.values;
+        const restore = (selector,key) => { const element = target.querySelector(selector); if (element && saved[key] !== undefined) element.value = saved[key]; };
+        restore('[data-table-search]','search');
+        controls.querySelectorAll('[data-finance-filter]').forEach(element => { const value = saved['filter:'+element.dataset.financeFilter]; if (value !== undefined) element.value = value; });
+        restore('[data-finance-description]','description');
+        restore('[data-finance-date-from]','dateFrom'); restore('[data-finance-date-to]','dateTo');
+        restore('[data-finance-min]','min'); restore('[data-finance-max]','max'); restore('[data-finance-sort]','sort');
+        controls.querySelector('details').open = financeTransactionViewState.open;
+        applyFilters();
+      }
+      const searchInput = target.querySelector('[data-table-search]');
+      const searchCount = target.querySelector('[data-search-count]');
+      if (searchInput && !isTransaction2026) searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim().toLowerCase();
+        const pipelineStage = targetId === 'marketOrdersTable' ? (target.dataset.marketPipelineStage || '') : '';
+        const pipelineLabel = ({payment:'Awaiting Payment',unsent:'Not Yet Submitted',vendor:'With Manufacturer',pickup:'Ready for Pickup',complete:'Handed Out'})[pipelineStage] || '';
+        const bodyRows = [...target.querySelectorAll('table[data-rendered-table] > tbody > tr')];
+        let visible = 0;
+        bodyRows.forEach(row => {
+          const rowStages = (row.dataset.marketStages || '').split(/\\s+/);
+          const inStage = !pipelineStage || rowStages.includes(pipelineStage);
+          const matches = inStage && (!query || row.textContent.toLowerCase().includes(query));
+          row.hidden = !matches;
+          if (matches) visible += 1;
+        });
+        const peopleCount = target.querySelector('[data-non-renewal-count]');
+        if (peopleCount) peopleCount.textContent = `${visible} ${visible === 1 ? 'person' : 'people'}`;
+        searchCount.textContent = pipelineStage ? `${visible} ${pipelineLabel} order${visible === 1 ? '' : 's'} shown` : (query ? `${visible} matching row${visible === 1 ? '' : 's'} shown` : '');
+      });
+      target.querySelectorAll('[data-edit-cell="true"]').forEach(cell => cell.addEventListener('input', () => {
+        const value = cell.textContent.trim();
+        const key = `${cell.dataset.row}:${cell.dataset.column}`;
+        if (!tablePendingEdits[targetId]) tablePendingEdits[targetId] = new Map();
+        if (value === cell.dataset.value) {
+          tablePendingEdits[targetId].delete(key);
+          cell.classList.remove('pending-change');
+        } else {
+          tablePendingEdits[targetId].set(key, {spreadsheetId:editOptions.spreadsheetId || BFT_SPREADSHEET_ID, sheet:cell.dataset.sheet, row:Number(cell.dataset.row), column:Number(cell.dataset.column), value});
+          cell.classList.add('pending-change');
+        }
+        if (targetId === 'bftTicketsTable') recalculateTicketRow(targetId, cell);
+      }));
+      const ticketPriceField = target.querySelector('[data-ticket-price="true"][contenteditable="true"]');
+      if (ticketPriceField) ticketPriceField.addEventListener('input', () => {
+        const numericPrice = Number(ticketPriceField.textContent.replace(/[$,]/g, '').trim());
+        if (!tablePendingEdits[targetId]) tablePendingEdits[targetId] = new Map();
+        tablePendingEdits[targetId].set('1:12', {sheet:'Ticket Control Ledger', row:1, column:12, value:Number.isFinite(numericPrice) ? numericPrice : 0});
+        ticketPriceField.classList.add('pending-change');
+        target.querySelectorAll('td[data-edit-cell="true"]').forEach(cell => recalculateTicketRow(targetId, cell));
+      });
+      if (targetId === 'marketOrdersTable' && target.dataset.marketPipelineStage) applyMarketplaceOrdersPipelineFilter(target.dataset.marketPipelineStage);
+    }
+
+    function openHonoraryPersonForm(headers,original,rowNumber,options,checkbox,sourceIndex){
+      const sheet="'Honorary'",spreadsheetId=options.spreadsheetId;
+      const formulas=sourceIndex===undefined?[]:(options.formulaRows?.[sourceIndex]||[]);
+      const width=Math.max(headers.length,original.length);
+      const dialog=document.createElement('dialog');
+      dialog.className='club-dialog honorary-person-dialog';
+      dialog.innerHTML='<form><h2>'+ (rowNumber?'Edit honorary member':'Add honorary member')+'</h2><div class="honorary-person-fields">'+Array.from({length:width},(_,column)=>{
+        const label=headers[column]||'Column '+columnNumberToLetters(column+1);
+        const calculated=String(formulas[column]||'').startsWith('=');
+        return '<label>'+esc(label)+(calculated?' <small>(calculated)</small>':'')+'<input type="text" name="field'+column+'" value="'+esc(original[column]??'')+'" '+(calculated?'disabled':'')+'></label>';
+      }).join('')+'</div><p data-honorary-status role="status"></p><div class="club-toolbar"><button class="open-btn" type="submit">'+(rowNumber?'Save Changes':'Add Person')+'</button><button class="sponsor-tab" type="button" data-cancel>Cancel</button></div></form>';
+      document.body.appendChild(dialog);dialog.showModal();
+      dialog.addEventListener('close',()=>{if(checkbox)checkbox.checked=false;dialog.remove();});
+      dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();
+      const form=dialog.querySelector('form');
+      let saving=false;
+      dialog.addEventListener('cancel',event=>{if(saving)event.preventDefault();});
+      form.onsubmit=async event=>{
+        event.preventDefault();if(saving)return;saving=true;
+        const save=form.querySelector('[type=submit]'),cancel=form.querySelector('[data-cancel]');save.disabled=true;cancel.disabled=true;
+        const values=Array.from({length:width},(_,column)=>String(form.elements['field'+column].value).trim());
+        try{
+          if(!accessToken)throw new Error('Sign in before saving.');
+          if(!values.some(Boolean))throw new Error('Enter the person’s information first.');
+          if(rowNumber){
+            const range=sheet+'!A'+rowNumber+':'+columnNumberToLetters(width)+rowNumber;
+            const live=(await getSheetValues(range,spreadsheetId))[0]||[];
+            if(Array.from({length:width},(_,i)=>String(live[i]??'')).some((value,i)=>value!==String(original[i]??'')))throw new Error('This person was updated by someone else. Cancel, refresh the list, and select them again.');
+            const liveFormulas=(await getSheetValues(range,spreadsheetId,'FORMULA'))[0]||[];
+            const updates=values.map((value,column)=>({value,column})).filter(({value,column})=>!String(liveFormulas[column]||'').startsWith('=')&&value!==String(original[column]??''));
+            await updateSheetRanges(spreadsheetId,updates.map(({value,column})=>({range:sheet+'!'+columnNumberToLetters(column+1)+rowNumber,value})));
+          }else{
+            const range=sheet+'!A:'+columnNumberToLetters(width);
+            await writePortalSheetRequest('https://sheets.googleapis.com/v4/spreadsheets/'+spreadsheetId+'/values/'+encodeURIComponent(range)+':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:[values]}),signal:AbortSignal.timeout(15000)},'Added honorary member','Honorary',1);
+          }
+          dialog.close();await loadMembershipSheet('Honorary',true);
+        }catch(error){form.querySelector('[data-honorary-status]').textContent='Unable to save: '+error.message;}
+        finally{saving=false;save.disabled=false;cancel.disabled=false;}
+      };
+    }
+
+    function openBftDonationEditForm(targetId,headers,rowValues,rowNumber,selectedRow) {
+      const target = document.getElementById(targetId);
+      target.querySelector('.transaction-entry:not(.transaction-edit-entry)')?.remove();
+      target.querySelector('.transaction-edit-entry')?.remove();
+      target.querySelectorAll('.transaction-selected').forEach(row => row.classList.remove('transaction-selected'));
+      selectedRow.classList.add('transaction-selected');
+      const id = String(rowValues[0] || '').trim();
+      const order = ['Date Received','Donor Name','Donor Contact Info','Email','Donation Item / Description','Donation Type','Amount ($)','Estimated Value ($)','Donation Category','Notes','Coordinators Name','Receipt Requested (Yes/No)','Send Receipt (YES)','Receipt Status','Receipt Number','Receipt Sent Date & Time','Gross Amount','Fee','Net Amount','Message'];
+      const fields = headers.map((header,column) => ({header:String(header || '').trim(),column})).filter(field => field.header && field.column !== 0).sort((a,b) => {
+        const ai=order.indexOf(a.header),bi=order.indexOf(b.header);
+        return (ai<0?999:ai)-(bi<0?999:bi);
+      });
+      const panel = document.createElement('section');
+      panel.className = 'transaction-entry transaction-edit-entry';
+      panel.innerHTML = `<div class="transaction-entry-head"><div><h3>Edit ${esc(id || 'Donation')} · ${esc(String(rowValues[1] || 'Unknown donor'))}</h3><small>Sheet row ${rowNumber}. Only the fields you change will be saved.</small></div><button class="transaction-entry-close" type="button" aria-label="Close donation editor">✕ Close</button></div>
+        <form class="transaction-entry-form">
+          ${fields.map(field => {
+            const original = String(rowValues[field.column] ?? '');
+            const isDate = field.header === 'Date Received';
+            const isMoney = /^(Amount \(\$\)|Estimated Value \(\$\)|Gross Amount|Fee|Net Amount)$/.test(field.header);
+            const value = isDate ? transactionDateForInput(original) : isMoney ? original.replace(/[$,]/g,'').replace(/^\((.*)\)$/,'-$1') : original;
+            const selectOptions = /^(Receipt Requested \(Yes\/No\)|Send Receipt \(YES\))$/.test(field.header) ? ['','Yes','No'] : field.header === 'Donation Type' ? ['','In-Kind','Cash','PayPal','Check'] : [];
+            if (original && selectOptions.length && !selectOptions.includes(original)) selectOptions.push(original);
+            const control = selectOptions.length ? `<select id="editBftField${field.column}" name="column${field.column}" data-original="${esc(value)}">${selectOptions.map(option=>`<option value="${esc(option)}" ${option===value?'selected':''}>${esc(option || '—')}</option>`).join('')}</select>` : `<input id="editBftField${field.column}" name="column${field.column}" type="${isDate?'date':'text'}" value="${esc(value)}" data-original="${esc(value)}" autocomplete="off">`;
+            const displayLabel=field.header === 'Coordinators Name' ? 'Received by (club member)' : field.header === 'Message' ? 'Donor message' : field.header;
+            return `<div class="transaction-field"><label for="editBftField${field.column}">${esc(displayLabel)}</label>${control}</div>`;
+          }).join('')}
+          ${String(rowValues[11] || '').trim().toLowerCase() === 'yes' ? `<section class="bft-receipt-panel"><h4>Receipt request</h4><p>Prepare the acknowledgment, print or save it as a PDF, then mark it sent after delivery. Save any edits above before preparing it.</p><div class="transaction-field"><label for="bftGoodsProvided">Goods or services provided to the donor?</label><select id="bftGoodsProvided"><option value="">Choose one…</option><option value="no">No</option><option value="yes">Yes</option></select></div><div class="transaction-field"><label for="bftGoodsDescription">If yes, describe them</label><input id="bftGoodsDescription" type="text"></div><div class="transaction-field"><label for="bftGoodsValue">If yes, estimated value ($)</label><input id="bftGoodsValue" type="number" min="0" step="0.01"></div><div class="transaction-entry-actions"><button class="dashboard-edit-btn" type="button" data-prepare-bft-receipt>Prepare / Print Receipt</button><button class="dashboard-edit-btn" type="button" data-mark-bft-receipt-sent>Mark Sent</button></div></section>` : '<p class="bft-receipt-note">To prepare a receipt, set “Receipt Requested” to Yes, save, then select this row again.</p>'}
+          <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Save Changes</button></div>
+        </form>`;
+      target.querySelector('.table-tools').insertAdjacentElement('afterend',panel);
+      const close = () => {panel.remove();selectedRow.classList.remove('transaction-selected');selectedRow.querySelector('[data-pick-bft-row]').checked=false;};
+      panel.querySelector('.transaction-entry-close').addEventListener('click',close);
+      panel.querySelector('.transaction-cancel').addEventListener('click',close);
+      const changedFields = () => fields.some(field => {
+        const input=panel.querySelector(`[name="column${field.column}"]`);
+        return input && input.value.trim() !== input.dataset.original;
+      });
+      panel.querySelector('[data-prepare-bft-receipt]')?.addEventListener('click',async () => {
+        if (changedFields()) { alert('Save the donation changes first, then reopen this row to prepare the receipt.'); return; }
+        const goods=panel.querySelector('#bftGoodsProvided').value;
+        const description=panel.querySelector('#bftGoodsDescription').value.trim();
+        const goodsValue=panel.querySelector('#bftGoodsValue').value.trim();
+        if (!goods) { alert('Choose whether the donor received goods or services in return.'); return; }
+        if (goods === 'yes' && (!description || goodsValue === '' || !Number.isFinite(Number(goodsValue)))) { alert('Enter a description and estimated value of the goods or services received.'); return; }
+        const amount=Number(String(rowValues[5] || '').replace(/[$,]/g,''));
+        const isCash=Number.isFinite(amount) && amount > 0 && String(rowValues[19] || '').trim() !== 'In-Kind';
+        const donatedItem=String(rowValues[4] || '').trim();
+        if (!isCash && !donatedItem) { alert('Enter a description of the donated item before preparing the receipt.'); return; }
+        const receiptNumber=String(rowValues[14] || id).trim();
+        const donor=String(rowValues[1] || '').trim();
+        const date=String(rowValues[8] || '').trim();
+        if (!donor || !date) { alert('The donor name and date received are required.'); return; }
+        const popup=window.open('','_blank');
+        if (!popup) { alert('Allow pop-ups for this page to open the printable receipt.'); return; }
+        const button=panel.querySelector('[data-prepare-bft-receipt]');
+        button.disabled=true;button.textContent='Preparing…';
+        try {
+          const identity=await getSheetValues(`'Tracking Tab'!A${rowNumber}:A${rowNumber}`,BFT_SPREADSHEET_ID);
+          if (String(identity[0]?.[0] || '').trim() !== id) throw new Error('This row changed. Refresh and try again.');
+          await updateSheetRanges(BFT_SPREADSHEET_ID,[
+            {range:`'Tracking Tab'!M${rowNumber}`,value:'Yes'},
+            {range:`'Tracking Tab'!N${rowNumber}`,value:'Prepared'},
+            {range:`'Tracking Tab'!O${rowNumber}`,value:receiptNumber}
+          ]);
+          const goodsStatement=goods === 'no' ? 'No goods or services were provided in exchange for this contribution.' : `Goods or services provided in exchange: ${esc(description)}. Good faith estimated value: ${money(Number(goodsValue))}.`;
+          const contribution=isCash ? `Cash contribution: <strong>${money(amount)}</strong>` : `Noncash contribution: <strong>${esc(donatedItem)}</strong>. No value is assigned to this item in this acknowledgment.`;
+          popup.document.write(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Receipt ${esc(receiptNumber)}</title><style>body{font:16px/1.55 Arial,sans-serif;max-width:720px;margin:50px auto;color:#171717;padding:0 24px}header{border-bottom:4px solid #c8102e;padding-bottom:14px}h1{font-size:26px;margin:0}h2{font-size:20px;margin:28px 0 12px}dl{display:grid;grid-template-columns:160px 1fr;gap:8px 14px}dt{font-weight:bold}dd{margin:0}.print{margin:25px 0;padding:10px 16px;background:#c8102e;color:#fff;border:0;border-radius:6px;font-weight:bold;cursor:pointer}@media print{.print{display:none}body{margin:20px auto}}</style></head><body><header><h1>BoneShakers Social Club</h1><div>Bikes for Tykes Charity Concert</div></header><h2>Contribution acknowledgment</h2><dl><dt>Receipt number</dt><dd>${esc(receiptNumber)}</dd><dt>Donor</dt><dd>${esc(donor)}</dd><dt>Date received</dt><dd>${esc(date)}</dd><dt>Date prepared</dt><dd>${esc(new Date().toLocaleDateString('en-US'))}</dd></dl><p>${contribution}</p><p>${goodsStatement}</p><p>Thank you for supporting Bikes for Tykes.</p><button class="print" onclick="window.print()">Print or save as PDF</button></body></html>`);
+          popup.document.close();
+          panel.querySelector('[name="column13"]').value='Prepared';
+          panel.querySelector('[name="column14"]').value=receiptNumber;
+          panel.querySelector('[name="column12"]').value='Yes';
+          panel.querySelectorAll('[name="column12"],[name="column13"],[name="column14"]').forEach(input=>input.dataset.original=input.value);
+          button.textContent='Prepare / Print Receipt';
+          button.disabled=false;
+        } catch(error) {
+          popup.close();
+          button.textContent='Prepare / Print Receipt';button.disabled=false;
+          alert(`Receipt could not be prepared. ${error.message || 'Please try again.'}`);
+        }
+      });
+      panel.querySelector('[data-mark-bft-receipt-sent]')?.addEventListener('click',async () => {
+        if (changedFields()) { alert('Save the donation changes first, then reopen this row.'); return; }
+        if (!String(rowValues[14] || panel.querySelector('[name="column14"]')?.value || '').trim()) { alert('Prepare the receipt before marking it sent.'); return; }
+        if (!window.confirm('Mark this receipt sent only after you have delivered it to the donor. Continue?')) return;
+        const button=panel.querySelector('[data-mark-bft-receipt-sent]');
+        button.disabled=true;
+        try {
+          const identity=await getSheetValues(`'Tracking Tab'!A${rowNumber}:A${rowNumber}`,BFT_SPREADSHEET_ID);
+          if (String(identity[0]?.[0] || '').trim() !== id) throw new Error('This row changed. Refresh and try again.');
+          const timestamp=new Date().toLocaleString('en-US',{timeZone:'America/New_York'});
+          await updateSheetRanges(BFT_SPREADSHEET_ID,[
+            {range:`'Tracking Tab'!N${rowNumber}`,value:'Sent'},
+            {range:`'Tracking Tab'!P${rowNumber}`,value:timestamp}
+          ]);
+          tableEditModes[targetId]=false;
+          await loadBftData();
+          document.getElementById('bftDonationsStatus').textContent=`${id} receipt marked sent.`;
+        } catch(error) {button.disabled=false;alert(`Could not mark the receipt sent. ${error.message || 'Please try again.'}`);}
+      });
+      panel.querySelector('form').addEventListener('submit',async event => {
+        event.preventDefault();
+        const updates = fields.map(field => {
+          const input=panel.querySelector(`[name="column${field.column}"]`);
+          const value=input.value.trim();
+          if (value === input.dataset.original) return null;
+          return {range:`'Tracking Tab'!${columnNumberToLetters(field.column+1)}${rowNumber}`,value,column:field.column};
+        }).filter(Boolean);
+        const requested=panel.querySelector('[name="column11"]')?.value.trim().toLowerCase() === 'yes';
+        if (requested && !String(rowValues[13] || '').trim()) {
+          if (!updates.some(update=>update.column===12)) updates.push({range:`'Tracking Tab'!M${rowNumber}`,value:'Yes',column:12});
+          if (!updates.some(update=>update.column===13)) updates.push({range:`'Tracking Tab'!N${rowNumber}`,value:'Pending',column:13});
+          if (!updates.some(update=>update.column===14)) updates.push({range:`'Tracking Tab'!O${rowNumber}`,value:id,column:14});
+        }
+        if (!updates.length) { close(); return; }
+        const save=panel.querySelector('.transaction-save');
+        save.disabled=true;save.textContent='Saving…';
+        try {
+          const identity=await getSheetValues(`'Tracking Tab'!A${rowNumber}:A${rowNumber}`,BFT_SPREADSHEET_ID);
+          if (String(identity[0]?.[0] || '').trim() !== id) throw new Error('This row moved or changed. Refresh the Tracking Tab and select it again.');
+          await updateSheetRanges(BFT_SPREADSHEET_ID,updates);
+          const first=Math.min(...updates.map(update => update.column));
+          const last=Math.max(...updates.map(update => update.column));
+          const saved=await getSheetValues(`'Tracking Tab'!${columnNumberToLetters(first+1)}${rowNumber}:${columnNumberToLetters(last+1)}${rowNumber}`,BFT_SPREADSHEET_ID);
+          if (!saved.length || updates.some(update => {
+            const actual=String(saved[0][update.column-first] ?? '').trim();
+            const expected=String(update.value).trim();
+            if (actual===expected) return false;
+            if (/^-?[\d,.]+$/.test(expected) && Number(actual.replace(/[$,]/g,''))===Number(expected.replace(/,/g,''))) return false;
+            return transactionDateForInput(actual)!==transactionDateForInput(expected);
+          })) throw new Error('The saved values did not match. Refresh the tab to check before trying again.');
+          tableEditModes[targetId]=false;
+          await loadBftData();
+          document.getElementById('bftDonationsStatus').textContent=`${id} saved successfully.`;
+        } catch(error) {
+          save.disabled=false;save.textContent='Save Changes';
+          alert(`Changes could not be confirmed. Your entries are still in the form. ${error.message || 'Please try again.'}`);
+        }
+      });
+      panel.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+
+    function openNewBftDonationForm(targetId, headers, rows) {
+      const target = document.getElementById(targetId);
+      const existing = target.querySelector('.transaction-entry');
+      if (existing) { existing.remove(); return; }
+      const panel = document.createElement('section');
+      panel.className = 'transaction-entry';
+      const today = new Date();
+      const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0,10);
+      const fields = [
+        ['Date Received','date',true],['Donor Name','text',true],['Donor Contact Info','text',false],
+        ['Email','email',false],['Donation Item / Description','text',true],
+        ['Donation Type','select',true],['Estimated Value ($)','number',false],
+        ['Amount ($)','number',false],['Donation Category','select',true],['Notes','text',false],
+        ['Receipt Requested (Yes/No)','select',false]
+      ];
+      panel.innerHTML = `<div class="transaction-entry-head"><h3>Add New Donation or Prize</h3><button class="transaction-entry-close" type="button" aria-label="Close donation form">✕ Close</button></div>
+        <form class="transaction-entry-form">
+          ${fields.map(([label,type,required],index) => {
+            if (label === 'Donor Contact Info' || label === 'Email') return `<div class="transaction-field"><label for="bftChoice${index}">${esc(label)}</label><div class="bft-choice-control"><select id="bftChoice${index}" data-bft-choice="${esc(label)}"><option value="none">None given</option><option value="enter">Enter ${label === 'Email' ? 'email' : 'contact details'}</option></select><input id="bftDonationField${index}" data-bft-field="${esc(label)}" type="text" value="None given" class="bft-conditional-entry" style="display:none" autocomplete="off"></div></div>`;
+            if (label === 'Donation Item / Description') return `<div class="transaction-field"><label for="bftChoice${index}">${esc(label)}</label><div class="bft-choice-control"><select id="bftChoice${index}" data-bft-description required><option value="">Choose an item…</option><option value="Gift card">Gift card</option><option value="Spa pass">Spa pass</option><option value="Gift basket">Gift basket</option><option value="Service voucher">Service voucher</option><option value="Merchandise">Merchandise</option><option value="Cash donation">Cash donation</option><option value="other">Other — describe it</option></select><input id="bftDonationField${index}" data-bft-field="${esc(label)}" type="text" class="bft-conditional-entry" style="display:none" autocomplete="off" placeholder="Describe the donated item"></div></div>`;
+            return `<div class="transaction-field"><label for="bftDonationField${index}">${esc(label)}</label>${type === 'select' ? `<select id="bftDonationField${index}" data-bft-field="${esc(label)}" ${required ? 'required' : ''}>${label === 'Donation Type' ? '<option value="In-Kind">In-Kind item</option><option value="Cash">Cash</option><option value="PayPal">PayPal</option><option value="Check">Check</option>' : label === 'Donation Category' ? '<option value="Gift Card">Gift Card</option><option value="Service">Service</option><option value="Merchandise">Merchandise</option><option value="Cash">Cash</option><option value="Auction Proceeds">Auction Proceeds</option><option value="Ticket Sales">Ticket Sales</option><option value="Inventory Advance">Inventory Advance</option><option value="Reimbursement">Reimbursement</option><option value="Payout">Payout</option>' : '<option value="No">No</option><option value="Yes">Yes</option>'}</select>` : `<input id="bftDonationField${index}" data-bft-field="${esc(label)}" type="${type}" ${type === 'number' ? 'step="0.01" min="0"' : ''} ${required ? 'required' : ''} value="${type === 'date' ? localDate : ''}" autocomplete="off">`}</div>`;
+          }).join('')}
+          <p class="bft-donation-help">For donated gift cards and raffle prizes, use In-Kind, enter the estimated value, and leave Amount blank. They will not count as cash raised. If a cash gift already appears through Finance Sync, edit that existing entry instead of adding it again.</p>
+          <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Add Donation</button></div>
+        </form>`;
+      target.querySelector('.table-tools').insertAdjacentElement('afterend',panel);
+      const close = () => panel.remove();
+      panel.querySelector('.transaction-entry-close').addEventListener('click',close);
+      panel.querySelector('.transaction-cancel').addEventListener('click',close);
+      const control = label => [...panel.querySelectorAll('[data-bft-field]')].find(input => input.dataset.bftField === label);
+      panel.querySelectorAll('[data-bft-choice]').forEach(choice => {
+        const input=control(choice.dataset.bftChoice);
+        choice.addEventListener('change',() => {
+          const entering=choice.value === 'enter';
+          input.style.display=entering ? 'block' : 'none';
+          input.type=entering && choice.dataset.bftChoice === 'Email' ? 'email' : 'text';
+          input.required=entering;
+          input.value=entering ? '' : 'None given';
+          if (entering) input.focus();
+        });
+      });
+      const descriptionChoice=panel.querySelector('[data-bft-description]');
+      descriptionChoice.addEventListener('change',() => {
+        const input=control('Donation Item / Description');
+        const custom=descriptionChoice.value === 'other';
+        input.style.display=custom ? 'block' : 'none';
+        input.required=custom;
+        input.value=custom ? '' : descriptionChoice.value;
+        if (custom) input.focus();
+      });
+      const type = control('Donation Type');
+      const category = control('Donation Category');
+      const updateType = () => {
+        const inKind=type.value === 'In-Kind';
+        const estimate=control('Estimated Value ($)');
+        const amount=control('Amount ($)');
+        estimate.closest('.transaction-field').style.display=inKind ? '' : 'none';
+        amount.closest('.transaction-field').style.display=inKind ? 'none' : '';
+        estimate.required=inKind;
+        amount.required=!inKind;
+        if (inKind) {
+          if (category.value === 'Cash') category.value = 'Gift Card';
+          if (amount.value && !estimate.value) estimate.value=amount.value;
+          amount.value='';
+        } else {
+          if (category.value === 'Gift Card') category.value = 'Cash';
+          if (estimate.value && !amount.value) amount.value=estimate.value;
+          estimate.value='';
+        }
+      };
+      type.addEventListener('change',updateType);
+      updateType();
+      panel.querySelector('form').addEventListener('submit',async event => {
+        event.preventDefault();
+        const amount = control('Amount ($)').value.trim();
+        const estimate = control('Estimated Value ($)').value.trim();
+        if (type.value === 'In-Kind' && amount) { alert('An in-kind prize is not cash. Leave Amount blank and use Estimated Value.'); control('Amount ($)').focus(); return; }
+        if (type.value === 'In-Kind' && !estimate) { alert('Enter the estimated value, or enter 0 and explain in Notes.'); control('Estimated Value ($)').focus(); return; }
+        if (type.value !== 'In-Kind' && !amount) { alert('Enter the amount received.'); control('Amount ($)').focus(); return; }
+        const ids = rows.slice(3).map(row => Number(String(row[0] || '').match(/^BFTM-(\d+)$/)?.[1] || 0));
+        const nextId = 'BFTM-' + String(Math.max(0,...ids) + 1).padStart(4,'0');
+        const values = Array.from({length:22},() => '');
+        values[0] = nextId;
+        const columnByHeader = Object.fromEntries(headers.map((header,index) => [String(header || '').trim(),index]));
+        fields.forEach(([label]) => { if (columnByHeader[label] !== undefined) values[columnByHeader[label]] = control(label).value.trim(); });
+        if (!values[4]) { alert('Choose or describe the donated item.'); descriptionChoice.focus(); return; }
+        if (values[7] === 'Gift Card' && /^gift card$/i.test(values[4]) && type.value === 'In-Kind') values[4] = `Gift card — ${money(Number(estimate))}`;
+        if (values[11] === 'Yes') { values[12]='Yes'; values[13]='Pending'; values[14]=nextId; }
+        const save = panel.querySelector('.transaction-save');
+        save.disabled = true;
+        save.textContent = 'Saving…';
+        try {
+          const range = "'Tracking Tab'!A:V";
+          const url = `https://sheets.googleapis.com/v4/spreadsheets/${BFT_SPREADSHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+          await writePortalSheetRequest(url,{
+            method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
+            body:JSON.stringify({range,majorDimension:'ROWS',values:[values]})
+          },'Added a Bikes for Tykes donation','Tracking Tab',1);
+          close();
+          await loadBftData();
+          document.getElementById('bftDonationsStatus').textContent = `${nextId} added successfully.`;
+        } catch(error) {
+          save.disabled = false;
+          save.textContent = 'Add Donation';
+          alert(`The donation could not be saved. Your entries are still here. ${error.message || 'Please try again.'}`);
+        }
+      });
+      panel.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+
+    function openNewTransactionForm(targetId, headers) {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      const editPanel = target.querySelector('.transaction-edit-entry');
+      if (editPanel) editPanel.remove();
+      const existing = target.querySelector('.transaction-entry:not(.transaction-edit-entry)');
+      if (existing) { existing.remove(); return; }
+      const today = new Date();
+      const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0,10);
+      const calculated = header => /^(month|year)$/i.test(header) || /running\s*balance/i.test(header);
+      const transactionFieldOrder = ['date','payee/payer','fund','activity','category','subcategory','description','amount','type','payment method','cleared','community impact','note'];
+      const fields = headers.map((header,column) => ({header:String(header || '').trim(),column})).filter(field => field.header && !calculated(field.header)).sort((a,b) => {
+        const aOrder = transactionFieldOrder.indexOf(a.header.toLowerCase());
+        const bOrder = transactionFieldOrder.indexOf(b.header.toLowerCase());
+        return (aOrder < 0 ? 999 : aOrder) - (bOrder < 0 ? 999 : bOrder);
+      });
+      const panel = document.createElement('section');
+      panel.className = 'transaction-entry';
+      panel.innerHTML = `<div class="transaction-entry-head"><h3>Add New Transaction</h3><button class="transaction-entry-close" type="button" aria-label="Close new transaction form">✕ Close</button></div>
+        <form class="transaction-entry-form" id="newTransactionForm">
+          ${fields.map(field => {
+            const isDate = /date/i.test(field.header);
+            const isAmount = /amount|cost|revenue|expense|income/i.test(field.header);
+            const value = isDate ? localDate : '';
+            const options = financeTransactionOptions[field.header.toLowerCase()] || [];
+            const isSuggestedText = /^(description|payee\/payer)$/i.test(field.header) && options.length;
+            const suggestedPlaceholder = /^payee\/payer$/i.test(field.header) ? 'Type a new payee/payer or choose a previous one' : 'Type a description or choose a previous one';
+            const required = !/^note$/i.test(field.header) ? 'required' : '';
+            const control = isSuggestedText ? `<input id="transactionField${field.column}" name="column${field.column}" type="text" list="transactionSuggestions${field.column}" value="" autocomplete="off" ${required} placeholder="${suggestedPlaceholder}"><datalist id="transactionSuggestions${field.column}">${options.map(option => `<option value="${esc(option)}"></option>`).join('')}</datalist>` : options.length ? `<select id="transactionField${field.column}" name="column${field.column}" ${required}><option value="">Select ${esc(field.header)}…</option>${options.map(option => `<option value="${esc(option)}">${esc(option)}</option>`).join('')}</select>` : `<input id="transactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} ${required} value="${esc(value)}" autocomplete="off">`;
+            return `<div class="transaction-field"><label for="transactionField${field.column}">${esc(field.header)}</label>${control}</div>`;
+          }).join('')}
+          <section class="paypal-bundle" id="paypalBundle" aria-live="polite">
+            <h4>PayPal three-entry workflow</h4>
+            <p>Enter the customer and PayPal fee once. The portal will add the gross sale, processing fee, and internal bank transfer together. Mark entries cleared only after the deposit appears at Chase.</p>
+            <div class="paypal-bundle-grid">
+              <div class="paypal-bundle-field"><label for="paypalCustomerName">Customer / payer name</label><input id="paypalCustomerName" type="text" placeholder="Example: Debby Farland" autocomplete="off"></div>
+              <div class="paypal-bundle-field"><label for="paypalFeeAmount">PayPal processing fee</label><input id="paypalFeeAmount" type="number" min="0" step="0.01" placeholder="0.00"></div>
+              <div class="paypal-bundle-preview"><div><span>Gross sale</span><strong id="paypalGrossPreview">$0.00</strong></div><div><span>Processing fee</span><strong id="paypalFeePreview">-$0.00</strong></div><div><span>Bank transfer</span><strong id="paypalNetPreview">$0.00</strong></div></div>
+            </div>
+          </section>
+          <div class="transaction-consistency" id="transactionConsistency" role="status" aria-live="polite"></div>
+          <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Add Transaction</button></div>
+        </form>`;
+      const tools = target.querySelector('.table-tools');
+      tools.insertAdjacentElement('afterend', panel);
+      panel.querySelector('.transaction-entry-close').addEventListener('click', () => panel.remove());
+      panel.querySelector('.transaction-cancel').addEventListener('click', () => panel.remove());
+      const fieldByName = Object.fromEntries(fields.map(field => [field.header.toLowerCase(),field]));
+
+      const activityField = fieldByName.activity;
+      if (activityField) {
+        const activityControl = panel.querySelector('[name="column'+activityField.column+'"]');
+        const editor = document.createElement('div');
+        editor.innerHTML = '<button type="button" class="dashboard-edit-btn" data-add-activity>+ Add Activity</button><div data-activity-editor hidden><label for="newFinanceActivity">New activity name</label><input id="newFinanceActivity" type="text" maxlength="150" autocomplete="off"><button type="button" class="dashboard-edit-btn" data-save-activity>Save Activity</button><button type="button" data-cancel-activity>Cancel</button><small data-activity-status role="status" aria-live="polite"></small></div>';
+        activityControl.insertAdjacentElement('afterend',editor);
+        const entry = editor.querySelector('[data-activity-editor]');
+        const input = editor.querySelector('input');
+        const saveActivity = editor.querySelector('[data-save-activity]');
+        const status = editor.querySelector('[data-activity-status]');
+        editor.querySelector('[data-add-activity]').addEventListener('click',() => { entry.hidden=false; input.focus(); });
+        editor.querySelector('[data-cancel-activity]').addEventListener('click',() => { entry.hidden=true; status.textContent=''; });
+        input.addEventListener('keydown',event => { if(event.key==='Enter') { event.preventDefault(); saveActivity.click(); } });
+        saveActivity.addEventListener('click',async () => {
+          const name = input.value.trim();
+          if (!name) { status.textContent='Enter an activity name.'; input.focus(); return; }
+          saveActivity.disabled=true;
+          editor.querySelector('[data-cancel-activity]').disabled=true;
+          status.textContent='Saving activity…';
+          try {
+            const rows = await getSheetValues("'Transaction List'!E1:E",FINANCE_SPREADSHEET_ID);
+            const duplicate = rows.slice(1).map(row => String(row[0] || '').trim()).find(value => value.toLowerCase() === name.toLowerCase());
+            const selected = duplicate || name;
+            if (!duplicate) await updateSheetCell(FINANCE_SPREADSHEET_ID,'Transaction List',Math.max(2,rows.length+1),4,name);
+            financeTransactionOptions.activity = [...new Set([...(financeTransactionOptions.activity || []),selected])].sort((a,b) => a.localeCompare(b));
+            if (activityControl.tagName === 'SELECT' && ![...activityControl.options].some(option => option.value === selected)) activityControl.add(new Option(selected,selected));
+            activityControl.value=selected;
+            activityControl.dispatchEvent(new Event('change',{bubbles:true}));
+            loadedFinanceTabs.delete('transactionlist');
+            loadedFinanceTabs.delete('activity');
+            entry.hidden=true;
+            input.value='';
+            status.textContent='';
+          } catch(error) {
+            status.textContent='Activity could not be saved. '+(error.message || 'Try again.');
+          } finally {
+            saveActivity.disabled=false;
+            editor.querySelector('[data-cancel-activity]').disabled=false;
+          }
+        });
+      }
+      const guidedFields = ['fund','activity','category','subcategory'];
+      const payeeField = fieldByName['payee/payer'];
+      const paymentMethodField = fieldByName['payment method'];
+      const amountField = fieldByName['amount'];
+      const historyNotice = panel.querySelector('#transactionConsistency');
+      const paypalBundle = panel.querySelector('#paypalBundle');
+      const paypalCustomer = panel.querySelector('#paypalCustomerName');
+      const paypalFee = panel.querySelector('#paypalFeeAmount');
+      const currentValue = name => {
+        const field = fieldByName[name];
+        const control = field ? panel.querySelector(`[name="column${field.column}"]`) : null;
+        return control ? control.value.trim() : '';
+      };
+      const setValue = (name,value) => {
+        const field = fieldByName[name];
+        const control = field ? panel.querySelector(`[name="column${field.column}"]`) : null;
+        if (control && [...control.options || []].some(option => option.value === value)) control.value = value;
+      };
+      const isPayPalWorkflow = () => /paypal/i.test(currentValue('payee/payer')) || /paypal/i.test(currentValue('payment method'));
+      const updatePayPalBundle = () => {
+        const active = isPayPalWorkflow();
+        paypalBundle.classList.toggle('visible',active);
+        if (!active) return;
+        setValue('payment method','PayPal');
+        const gross = Math.abs(Number(currentValue('amount')) || 0);
+        const fee = Math.abs(Number(paypalFee.value) || 0);
+        panel.querySelector('#paypalGrossPreview').textContent = money(gross);
+        panel.querySelector('#paypalFeePreview').textContent = `-${money(fee)}`;
+        panel.querySelector('#paypalNetPreview').textContent = money(Math.max(0,gross - fee));
+      };
+      const getPayeeGuidance = () => financePayeeHistory.get(currentValue('payee/payer').toLowerCase()) || null;
+      const showPayeeGuidance = (fillBlanks = false) => {
+        const guidance = getPayeeGuidance();
+        historyNotice.className = 'transaction-consistency';
+        historyNotice.innerHTML = '';
+        if (!guidance) return null;
+        if (fillBlanks) guidedFields.forEach(name => { if (!currentValue(name) && guidance[name]) setValue(name,guidance[name]); });
+        const differences = guidedFields.filter(name => guidance[name] && currentValue(name) && currentValue(name) !== guidance[name]);
+        const summary = guidedFields.filter(name => guidance[name]).map(name => `${name.replace(/^./,letter => letter.toUpperCase())}: ${guidance[name]}`).join(' · ');
+        if (differences.length) {
+          historyNotice.classList.add('visible');
+          historyNotice.innerHTML = `<strong>This differs from prior entries for ${esc(guidance.payee)}.</strong><br>Most-used setup: ${esc(summary)}<br><button type="button" data-use-payee-history="true">Use previous choices</button>`;
+          historyNotice.querySelector('[data-use-payee-history]').addEventListener('click', () => { guidedFields.forEach(name => { if (guidance[name]) setValue(name,guidance[name]); }); showPayeeGuidance(false); });
+        } else {
+          historyNotice.classList.add('visible','good');
+          historyNotice.innerHTML = `<strong>Matches prior entries for ${esc(guidance.payee)}.</strong><br>${esc(summary)}`;
+        }
+        return {guidance,differences};
+      };
+      if (payeeField) {
+        const control = panel.querySelector(`[name="column${payeeField.column}"]`);
+        control.addEventListener('change', () => { showPayeeGuidance(true); updatePayPalBundle(); });
+        control.addEventListener('input',updatePayPalBundle);
+      }
+      if (paymentMethodField) panel.querySelector(`[name="column${paymentMethodField.column}"]`).addEventListener('change',updatePayPalBundle);
+      if (amountField) panel.querySelector(`[name="column${amountField.column}"]`).addEventListener('input',updatePayPalBundle);
+      paypalFee.addEventListener('input',updatePayPalBundle);
+      guidedFields.forEach(name => { const field = fieldByName[name]; if (field) panel.querySelector(`[name="column${field.column}"]`).addEventListener('change', () => showPayeeGuidance(false)); });
+      panel.querySelector('form').addEventListener('submit', async event => {
+        event.preventDefault();
+          const consistency = showPayeeGuidance(false);
+          if (consistency && consistency.differences.length && !window.confirm(`This transaction does not match the usual setup for ${consistency.guidance.payee}. Add it anyway?`)) return;
+          const saveButton = panel.querySelector('.transaction-save');
+          const values = Array.from({length:headers.length}, () => '');
+          fields.forEach(field => { values[field.column] = panel.querySelector(`[name="column${field.column}"]`).value.trim(); });
+          const missing = fields.find(field => !/^note$/i.test(field.header) && !values[field.column]);
+          if (missing) { const control = panel.querySelector(`[name="column${missing.column}"]`); control.setCustomValidity(`${missing.header} is required.`); control.reportValidity(); control.addEventListener('input',() => control.setCustomValidity(''),{once:true}); return; }
+          const dateColumn = headers.findIndex(header => /^date$/i.test(String(header || '').trim()));
+          const monthColumn = headers.findIndex(header => /^month$/i.test(String(header || '').trim()));
+          const yearColumn = headers.findIndex(header => /^year$/i.test(String(header || '').trim()));
+          if (dateColumn >= 0 && values[dateColumn]) {
+            const enteredDate = new Date(`${values[dateColumn]}T00:00:00`);
+            if (!Number.isNaN(enteredDate.getTime())) {
+              if (monthColumn >= 0) values[monthColumn] = enteredDate.toLocaleString('en-US',{month:'long'});
+              if (yearColumn >= 0) values[yearColumn] = enteredDate.getFullYear();
+            }
+          }
+        const paypalMode = isPayPalWorkflow();
+        const amountColumn = headers.findIndex(header => /^amount$/i.test(String(header || '').trim()));
+        const descriptionColumn = headers.findIndex(header => /^description$/i.test(String(header || '').trim()));
+        const categoryColumn = headers.findIndex(header => /^category$/i.test(String(header || '').trim()));
+        const subcategoryColumn = headers.findIndex(header => /^subcategory$/i.test(String(header || '').trim()));
+        const fundColumn = headers.findIndex(header => /^fund$/i.test(String(header || '').trim()));
+        const activityColumn = headers.findIndex(header => /^activity$/i.test(String(header || '').trim()));
+        const payeeColumn = headers.findIndex(header => /^payee\/payer$/i.test(String(header || '').trim()));
+        const typeColumn = headers.findIndex(header => /^type$/i.test(String(header || '').trim()));
+        const paymentColumn = headers.findIndex(header => /^payment method$/i.test(String(header || '').trim()));
+        const clearedColumn = headers.findIndex(header => /^cleared$/i.test(String(header || '').trim()));
+        const impactColumn = headers.findIndex(header => /^community impact$/i.test(String(header || '').trim()));
+        if (!paypalMode && amountColumn >= 0 && typeColumn >= 0) {
+          const enteredAmount = Number(values[amountColumn]);
+          const enteredType = String(values[typeColumn]).toLowerCase();
+          if ((enteredType === 'expense' && enteredAmount >= 0) || (enteredType === 'income' && enteredAmount <= 0)) {
+            alert('Expenses need a negative amount and income needs a positive amount.');
+            panel.querySelector(`[name="column${amountColumn}"]`).focus();
+            return;
+          }
+        }
+        if (paypalMode) {
+          const gross = Math.abs(Number(values[amountColumn]) || 0);
+          const fee = Math.abs(Number(paypalFee.value) || 0);
+          const customer = paypalCustomer.value.trim();
+          if (!customer) { alert('Enter the customer or payer name for the three PayPal entries.'); paypalCustomer.focus(); return; }
+          if (!(gross > 0)) { alert('Enter the gross PayPal sale amount.'); panel.querySelector(`[name="column${amountColumn}"]`).focus(); return; }
+          if (!(fee >= 0) || fee >= gross) { alert('Enter a valid PayPal fee that is less than the gross sale.'); paypalFee.focus(); return; }
+          const saleLabel = String(values[descriptionColumn] || 'PayPal Sale').replace(/\s*[–—-]\s*[^–—]+$/,'').trim() || 'PayPal Sale';
+          values[descriptionColumn] = `${saleLabel} – ${customer}`;
+          values[payeeColumn] = 'PayPal';
+          values[amountColumn] = gross;
+          values[typeColumn] = 'Income';
+          values[paymentColumn] = 'PayPal';
+          const feeRow = [...values];
+          feeRow[descriptionColumn] = `PayPal Processing Fee – ${customer}`;
+          feeRow[categoryColumn] = 'Bank Fees';
+          feeRow[subcategoryColumn] = 'Processing Fee';
+          feeRow[activityColumn] = 'Online';
+          feeRow[amountColumn] = -fee;
+          feeRow[typeColumn] = 'Expense';
+          if (impactColumn >= 0) feeRow[impactColumn] = 'FALSE';
+          const transferRow = [...values];
+          transferRow[descriptionColumn] = `PayPal to Bank Transfer – ${customer}`;
+          transferRow[categoryColumn] = 'Transfer';
+          transferRow[subcategoryColumn] = 'Internal Transfer';
+          transferRow[activityColumn] = 'Online';
+          const netTransfer = Number((gross - fee).toFixed(2));
+          transferRow[amountColumn] = netTransfer;
+          transferRow[typeColumn] = 'Transfer In';
+          if (impactColumn >= 0) transferRow[impactColumn] = 'FALSE';
+          const noteColumn = headers.findIndex(header => /^note$/i.test(String(header || '').trim()));
+          if (noteColumn >= 0) {
+            const existingNote = String(values[noteColumn] || '').trim();
+            transferRow[noteColumn] = `PayPal bank transfer: ${money(netTransfer)}${existingNote ? ` · ${existingNote}` : ''}`;
+          }
+          values._paypalRows = [values,feeRow,transferRow];
+        }
+        saveButton.disabled = true;
+        saveButton.textContent = paypalMode ? 'Adding 3 Entries…' : 'Adding…';
+        try {
+          const rowsToAppend = values._paypalRows || [values];
+          delete values._paypalRows;
+          const appendResult = rowsToAppend.length > 1 ? await appendSheetRows(FINANCE_SPREADSHEET_ID, 'Transactions-2026', rowsToAppend) : await appendSheetRow(FINANCE_SPREADSHEET_ID, 'Transactions-2026', values);
+          const updatedRange = String((appendResult.updates && appendResult.updates.updatedRange) || '');
+          const rowMatch = updatedRange.match(/![A-Z]+(\d+):[A-Z]+(\d+)$/i);
+          const firstAppendedRow = rowMatch ? Number(rowMatch[1]) : 0;
+          const lastAppendedRow = rowMatch ? Number(rowMatch[2]) : firstAppendedRow;
+          if (firstAppendedRow > 1) {
+            const runningColumn = headers.findIndex(header => /^running\s*balance$/i.test(String(header || '').trim()));
+            const totalRunningColumn = headers.findIndex(header => /^total\s*running\s*balance$/i.test(String(header || '').trim()));
+            const formulaUpdates = [];
+            for (let appendedRow = firstAppendedRow; appendedRow <= lastAppendedRow; appendedRow += 1) {
+              const bankImpact = status => `SUMIFS($J$322:$J${appendedRow},$O$322:$O${appendedRow},"${status}",$N$322:$N${appendedRow},"<>PayPal",$N$322:$N${appendedRow},"<>Chase Payments")+SUMIFS($J$322:$J${appendedRow},$O$322:$O${appendedRow},"${status}",$N$322:$N${appendedRow},"PayPal",$M$322:$M${appendedRow},"Transfer In")+SUMIFS($J$322:$J${appendedRow},$O$322:$O${appendedRow},"${status}",$N$322:$N${appendedRow},"Chase Payments",$M$322:$M${appendedRow},"Transfer In")+SUMIFS($J$322:$J${appendedRow},$O$322:$O${appendedRow},"${status}",$N$322:$N${appendedRow},"PayPal",$M$322:$M${appendedRow},"Transfer Out")+SUMIFS($J$322:$J${appendedRow},$O$322:$O${appendedRow},"${status}",$N$322:$N${appendedRow},"Chase Payments",$M$322:$M${appendedRow},"Transfer Out")`;
+              const clearedBalance = `=IF($A${appendedRow}="","",'Control-2026'!$E$30+SUM($J$317:$J$318)+$J$321-28.93+${bankImpact('Yes')})`;
+              const projectedBalance = `=IF($A${appendedRow}="","",K${appendedRow}+${bankImpact('<>Yes')})`;
+              if (runningColumn >= 0) formulaUpdates.push({range:`'Transactions-2026'!${columnNumberToLetters(runningColumn + 1)}${appendedRow}`,value:clearedBalance});
+              if (totalRunningColumn >= 0) formulaUpdates.push({range:`'Transactions-2026'!${columnNumberToLetters(totalRunningColumn + 1)}${appendedRow}`,value:projectedBalance});
+            }
+            await updateSheetRanges(FINANCE_SPREADSHEET_ID,formulaUpdates);
+          }
+          panel.remove();
+          loadedFinanceTabs.delete('control');
+          loadedFinanceTabs.delete('dashboard');
+          loadedFinanceTabs.delete('reconciliation');
+          await loadFinanceTab('transactions2026', true);
+        } catch (error) {
+          saveButton.disabled = false;
+          saveButton.textContent = 'Add Transaction';
+          alert('The transaction could not be added. Your entries are still here so you can try again.');
+        }
+      });
+      const firstEditable = panel.querySelector('input:not([type="date"])') || panel.querySelector('input');
+      if (firstEditable) firstEditable.focus();
+    }
+
+    function transactionDateForInput(value) {
+      const text = String(value || '').trim();
+      if (!text) return '';
+      if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+      const serial = /^\d{5}(?:\.\d+)?$/.test(text) ? Number(text) : NaN;
+      if (Number.isFinite(serial) && serial >= 20000 && serial <= 80000) {
+        return new Date(Date.UTC(1899,11,30) + Math.floor(serial) * 86400000).toISOString().slice(0,10);
+      }
+      const parsed = new Date(text);
+      if (Number.isNaN(parsed.getTime())) return text;
+      const local = new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0,10);
+    }
+
+    function toggleTransactionVerticalEditing(targetId) {
+      const args = tableRenderCache[targetId];
+      if (!args) return;
+      if (tableEditModes[targetId]) {
+        tableEditModes[targetId] = false;
+        renderDataTable(args.targetId,args.statusId,args.rows,args.headerRowIndex,args.maxColumns,args.editOptions);
+        return;
+      }
+      tableEditModes[targetId] = true;
+      renderDataTable(args.targetId,args.statusId,args.rows,args.headerRowIndex,args.maxColumns,args.editOptions);
+    }
+
+    function openTransactionEditForm(targetId,headers,rowValues,rowNumber,selectedRow) {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      const newPanel = target.querySelector('.transaction-entry:not(.transaction-edit-entry)');
+      if (newPanel) newPanel.remove();
+      target.querySelectorAll('.transaction-selected').forEach(row => row.classList.remove('transaction-selected'));
+      if (selectedRow) selectedRow.classList.add('transaction-selected');
+      const existing = target.querySelector('.transaction-edit-entry');
+      if (existing) existing.remove();
+      const calculated = header => /^(month|year)$/i.test(header) || /running\s*balance/i.test(header);
+      const order = ['date','payee/payer','fund','activity','category','subcategory','description','amount','type','payment method','cleared','community impact','note'];
+      const fields = headers.map((header,column) => ({header:String(header || '').trim(),column})).filter(field => field.header && !calculated(field.header)).sort((a,b) => {
+        const aOrder = order.indexOf(a.header.toLowerCase());
+        const bOrder = order.indexOf(b.header.toLowerCase());
+        return (aOrder < 0 ? 999 : aOrder) - (bOrder < 0 ? 999 : bOrder);
+      });
+      const panel = document.createElement('section');
+      panel.className = 'transaction-entry transaction-edit-entry';
+      panel.innerHTML = `<div class="transaction-entry-head"><div><h3>Edit Row ${rowNumber}: ${esc(String(rowValues[headers.findIndex(header => /^description$/i.test(String(header || '').trim()))] || 'Transaction'))}</h3><small>Confirm this is the transaction you intend to change. Calculated balance fields remain protected.</small></div><button class="transaction-entry-close" type="button" aria-label="Close transaction editor">✕ Close</button></div>
+        <form class="transaction-entry-form">
+          ${fields.map(field => {
+            const isDate = /^date$/i.test(field.header);
+            const isAmount = /^amount$/i.test(field.header);
+            const original = String(rowValues[field.column] ?? '');
+            const value = isDate ? transactionDateForInput(original) : (isAmount ? original.replace(/[$,]/g,'').replace(/^\((.*)\)$/,'-$1') : original);
+            const options = financeTransactionOptions[field.header.toLowerCase()] || [];
+            const isSuggestedText = /^(description|payee\/payer)$/i.test(field.header);
+            const placeholder = /^payee\/payer$/i.test(field.header) ? 'Type a new payee/payer or choose a previous one' : 'Type a description or choose a previous one';
+            let control;
+            const required = !/^note$/i.test(field.header) ? 'required' : '';
+            if (/^description$/i.test(field.header)) control = `<textarea id="editTransactionField${field.column}" name="column${field.column}" rows="2" data-original="${esc(value)}" autocomplete="off" ${required} placeholder="Enter or change the transaction description">${esc(value)}</textarea>`;
+            else if (isSuggestedText) control = `<input id="editTransactionField${field.column}" name="column${field.column}" type="text" ${options.length ? `list="editTransactionSuggestions${field.column}"` : ''} value="${esc(value)}" data-original="${esc(value)}" autocomplete="off" ${required} placeholder="${placeholder}">${options.length ? `<datalist id="editTransactionSuggestions${field.column}">${options.map(option => `<option value="${esc(option)}"></option>`).join('')}</datalist>` : ''}`;
+            else if (options.length) {
+              const selectable = options.includes(value) || !value ? options : [value,...options];
+              control = `<select id="editTransactionField${field.column}" name="column${field.column}" data-original="${esc(value)}" ${required}><option value="">Select ${esc(field.header)}…</option>${selectable.map(option => `<option value="${esc(option)}" ${option === value ? 'selected' : ''}>${esc(option)}</option>`).join('')}</select>`;
+            } else control = `<input id="editTransactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} ${required} value="${esc(value)}" data-original="${esc(value)}" autocomplete="off">`;
+            return `<div class="transaction-field"><label for="editTransactionField${field.column}">${esc(field.header)}</label>${control}</div>`;
+          }).join('')}
+          <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Save Changes</button></div>
+        </form>`;
+      const tools = target.querySelector('.table-tools');
+      tools.insertAdjacentElement('afterend',panel);
+      const close = () => { panel.remove(); if (selectedRow) { selectedRow.classList.remove('transaction-selected'); const checkbox = selectedRow.querySelector('[data-pick-transaction]'); if (checkbox) checkbox.checked = false; } };
+      panel.querySelector('.transaction-entry-close').addEventListener('click',close);
+      panel.querySelector('.transaction-cancel').addEventListener('click',close);
+      panel.querySelector('form').addEventListener('submit',async event => {
+        event.preventDefault();
+        const missing = fields.find(field => !/^note$/i.test(field.header) && !panel.querySelector(`[name="column${field.column}"]`).value.trim());
+        if (missing) { const control = panel.querySelector(`[name="column${missing.column}"]`); control.setCustomValidity(`${missing.header} is required.`); control.reportValidity(); control.addEventListener('input',() => control.setCustomValidity(''),{once:true}); return; }
+        const amountField = fields.find(field => /^amount$/i.test(field.header));
+        const typeField = fields.find(field => /^type$/i.test(field.header));
+        if (amountField && typeField) {
+          const amountControl = panel.querySelector(`[name="column${amountField.column}"]`);
+          const amount = Number(amountControl.value);
+          const type = panel.querySelector(`[name="column${typeField.column}"]`).value.toLowerCase();
+          if ((type === 'expense' && amount >= 0) || (type === 'income' && amount <= 0)) {
+            alert('Expenses need a negative amount and income needs a positive amount.');
+            amountControl.focus();
+            return;
+          }
+        }
+        const updates = fields.map(field => {
+          const control = panel.querySelector(`[name="column${field.column}"]`);
+          const value = control.value.trim();
+          if (value === control.dataset.original) return null;
+          return {range:`'Transactions-2026'!${columnNumberToLetters(field.column + 1)}${rowNumber}`,value};
+        }).filter(Boolean);
+        if (!updates.length) { close(); return; }
+        const saveButton = panel.querySelector('.transaction-save');
+        saveButton.disabled = true;
+        saveButton.classList.add('saving');
+        saveButton.textContent = 'Saving…';
+        try {
+          const saveResult = await updateSheetRanges(FINANCE_SPREADSHEET_ID,updates);
+          if (Number(saveResult?.totalUpdatedCells || 0) < updates.length) {
+            throw new Error('Google Sheets did not confirm every changed cell. Refresh the transaction list before trying again.');
+          }
+          saveButton.classList.remove('saving');
+          saveButton.classList.add('saved');
+          saveButton.textContent = '✓ Saved';
+          const status = document.getElementById('financeTransactions2026Status');
+          status.textContent = `Row ${rowNumber} saved successfully.`;
+          loadedFinanceTabs.delete('control');
+          loadedFinanceTabs.delete('dashboard');
+          loadedFinanceTabs.delete('reconciliation');
+          tableEditModes[targetId] = false;
+          setTimeout(() => loadFinanceTab('transactions2026',true),1800);
+        } catch (error) {
+          saveButton.disabled = false;
+          saveButton.classList.remove('saving');
+          saveButton.textContent = 'Save Changes';
+          alert(`This transaction could not be confirmed. Your changes are still in the form. ${error.message || 'Please try again.'}`);
+        }
+      });
+      panel.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+
+    function recalculateTicketRow(targetId, changedCell) {
+      const target = document.getElementById(targetId);
+      const table = target.querySelector('.ticket-ledger-table');
+      if (!table || !changedCell.closest('tr')) return;
+      const groupStart = Number(table.dataset.ticketGroupStart);
+      if (!Number.isFinite(groupStart) || Number(changedCell.dataset.column) !== groupStart + 1) return;
+      const priceField = target.querySelector('[data-ticket-price="true"]');
+      const price = Number(String(priceField ? priceField.textContent : '0').replace(/[$,]/g, '').trim());
+      const quantity = Number(changedCell.textContent.replace(/,/g, '').trim());
+      if (!Number.isFinite(price) || !Number.isFinite(quantity)) return;
+      const amountCell = changedCell.closest('tr').querySelector(`td[data-column="${groupStart + 2}"]`);
+      if (!amountCell) return;
+      const amount = price * quantity;
+      amountCell.textContent = money(amount);
+      amountCell.classList.add('pending-change');
+      if (!tablePendingEdits[targetId]) tablePendingEdits[targetId] = new Map();
+      tablePendingEdits[targetId].set(`${amountCell.dataset.row}:${amountCell.dataset.column}`, {sheet:amountCell.dataset.sheet, row:Number(amountCell.dataset.row), column:Number(amountCell.dataset.column), value:amount});
+    }
+
+    async function toggleTableEditing(targetId, button) {
+      if (!tableEditModes[targetId]) {
+        tableEditModes[targetId] = true;
+        tablePendingEdits[targetId] = new Map();
+        const args = tableRenderCache[targetId];
+        renderDataTable(args.targetId, args.statusId, args.rows, args.headerRowIndex, args.maxColumns, args.editOptions);
+        return;
+      }
+      const edits = [...(tablePendingEdits[targetId] || new Map()).values()];
+      button.disabled = true;
+      button.textContent = edits.length ? 'Saving…' : 'Closing…';
+      try {
+        for (const edit of edits) await updateSheetCell(edit.spreadsheetId || BFT_SPREADSHEET_ID, edit.sheet, edit.row, edit.column, edit.value);
+        tableEditModes[targetId] = false;
+        tablePendingEdits[targetId] = new Map();
+        if (targetId === 'membershipContent') await loadMembershipSheet(currentMembershipSheet, true);
+        else if (targetId.startsWith('finance')) await loadFinanceTab(financeTargetToKey[targetId], true);
+        else if (targetId.startsWith('market')) await loadMarketplaceData();
+        else if (targetId.startsWith('bike')) await loadBikeNightData();
+        else await loadBftData();
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = 'Done Editing';
+        alert('One or more changes could not be saved. Your unsaved cells remain highlighted so you can try again.');
+      }
+    }
+
+    async function loadBftData() {
+      const statusIds = ['bftDashboardStatus','bftTicketsStatus','bftDonationsStatus','bftFinanceStatus','bftBudgetStatus','bftInstructionsStatus'];
+      statusIds.forEach(id => document.getElementById(id).textContent = 'Loading from Google Sheets…');
+      const results = await Promise.allSettled([
+          getSheetValues("'DashBoard'!A1:G40", BFT_SPREADSHEET_ID),
+          getSheetValues("'Ticket Control Ledger'!A1:M100", BFT_SPREADSHEET_ID),
+          getSheetValues("'Tracking Tab'!A1:V1000", BFT_SPREADSHEET_ID),
+          getSheetValues("'Finance Sync'!A1:J250", BFT_SPREADSHEET_ID),
+          getSheetValues("'Purchase Budget'!A1:E46", BFT_SPREADSHEET_ID),
+          getSheetValues("'Instructions & Legend'!A1:C100", BFT_SPREADSHEET_ID)
+      ]);
+      const [dashboardResult, ticketResult, donationResult, financeResult, budgetResult, instructionResult] = results;
+      const donationRows = donationResult.status === 'fulfilled' ? donationResult.value : [];
+      if (dashboardResult.status === 'fulfilled') {
+        const dashboardRows = dashboardResult.value;
+        renderBftDashboard(dashboardRows, donationRows);
+        document.getElementById('bftDashboardStatus').textContent = 'Cash and in-kind dashboard connected to Google Sheets.';
+      } else {
+        document.getElementById('bftDashboardStatus').textContent = 'DashBoard could not be loaded from Google Sheets.';
+      }
+      const renderResult = (result, targetId, statusId, headerIndex, columns, sheetName) => {
+        if (result.status === 'fulfilled') renderDataTable(targetId, statusId, result.value, headerIndex, columns);
+        else document.getElementById(statusId).textContent = `${sheetName} could not be loaded from Google Sheets.`;
+      };
+      if (ticketResult.status === 'fulfilled') renderDataTable('bftTicketsTable', 'bftTicketsStatus', ticketResult.value, 0, 12, {sheetName:'Ticket Control Ledger'});
+      else document.getElementById('bftTicketsStatus').textContent = 'Ticket Control Ledger could not be loaded from Google Sheets.';
+      if (donationResult.status === 'fulfilled') renderDataTable('bftDonationsTable', 'bftDonationsStatus', donationResult.value, 2, 22, {sheetName:'Tracking Tab'});
+      else document.getElementById('bftDonationsStatus').textContent = 'Tracking Tab could not be loaded from Google Sheets.';
+      renderResult(financeResult, 'bftFinanceTable', 'bftFinanceStatus', 1, 10, 'Finance Sync');
+      if (budgetResult.status === 'fulfilled') renderDataTable('bftBudgetTable', 'bftBudgetStatus', budgetResult.value, 2, 3, {sheetName:'Purchase Budget'});
+      else document.getElementById('bftBudgetStatus').textContent = 'Purchase Budget could not be loaded from Google Sheets.';
+      renderResult(instructionResult, 'bftInstructionsTable', 'bftInstructionsStatus', 3, 2, 'Instructions & Legend');
+    }
+
+    function renderBikeNightDashboard(dashboardRows, scoreRows = [], rawRows = []) {
+      const at=(row,col)=>String((dashboardRows[row]&&dashboardRows[row][col])||'');
+      const yes=value=>/^(true|yes|1)$/i.test(String(value||'').trim());
+      const normalize=value=>String(value||'').replace(/\s+/g,' ').trim();
+      const parseDate=value=>{
+        const raw=String(value||'').trim(),match=raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
+        if(match){const year=Number(match[3].length===2?'20'+match[3]:match[3]);return new Date(year,Number(match[1])-1,Number(match[2]));}
+        const iso=raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if(iso)return new Date(Number(iso[1]),Number(iso[2])-1,Number(iso[3]));
+        const fallback=new Date(raw);
+        return Number.isNaN(fallback.getTime())?null:new Date(fallback.getFullYear(),fallback.getMonth(),fallback.getDate());
+      };
+      const today=new Date();today.setHours(0,0,0,0);
+      const currentMonth=today.getMonth(),currentYear=today.getFullYear();
+      const visitsByClub=new Map();
+      rawRows.slice(1).forEach(row=>{const club=normalize(row[0]);if(club&&yes(row[6]))visitsByClub.set(club,(visitsByClub.get(club)||0)+1);});
+      const events=rawRows.slice(1).map((row,index)=>{
+        const club=normalize(row[0]),date=parseDate(row[1]);
+        return club&&date?{row,sourceRow:index+2,club,date,time:normalize(row[2]),location:normalize(row[5]),planned:yes(row[7]),visits:visitsByClub.get(club)||0}:null;
+      }).filter(Boolean);
+      const upcoming=events.filter(event=>event.date>=today);
+      const unvisitedUpcoming=new Set(upcoming.filter(event=>!event.visits).map(event=>event.club));
+      const goalMatch=at(1,0).match(/goal\s*:\s*(\d+)/i),monthlyGoal=Number(goalMatch&&goalMatch[1])||2;
+      const dashboard=document.getElementById('bikeDashboard'),status=document.getElementById('bikeDashboardStatus');
+      const monthName=today.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      dashboard.innerHTML=`<div class="bike-night-dashboard bn-planner">
+        <header class="bn-hero"><div><span class="bn-kicker">BSSC · CLUB VISIT PLANNER</span><h2>Choose the Bike Nights worth showing up for.</h2><p>Compare upcoming dates, venues, and how often we have visited. Start with places we have not visited, then consider the clubs we have visited least.</p></div><div class="bn-hero-note"><strong>How to use this</strong><span>Mark <b>Plan to Attend</b> on the nights you want to shortlist. Your choices save to the club’s Bike Night workbook.</span></div></header>
+        <div class="bn-metrics"><article><span>Upcoming nights</span><strong id="bnMetricUpcoming">0</strong><small>On the current schedule</small></article><article><span>New-to-us clubs</span><strong id="bnMetricNew">0</strong><small>With a future Bike Night listed</small></article><article><span>On the proposed plan</span><strong id="bnMetricPlanned">0</strong><small>Future nights marked to attend</small></article><article><span>${esc(monthName)} plan vs goal</span><strong id="bnMetricGoal">0 / ${monthlyGoal}</strong><small>Planned nights this month · goal ${monthlyGoal}</small></article></div>
+        <div class="bn-decision-layout"><section class="bn-schedule"><div class="bn-section-head"><div><span class="bn-kicker">THE FULL LIST</span><h3 id="bnScheduleTitle">Upcoming Bike Nights</h3><p>Sorted by clubs we have visited least; use the controls to compare a different way.</p></div><span class="bn-count" id="bnResultsCount"></span></div>
+          <div class="bn-controls"><label class="bn-search">Search clubs or locations<input id="bnSearch" type="search" placeholder="Type a club, city, or venue"></label><label>Dates<select id="bnDateFilter"><option value="upcoming">All upcoming</option><option value="month">This month</option><option value="30">Next 30 days</option><option value="schedule">Everything on the schedule</option></select></label><label>Show<select id="bnVisitFilter"><option value="all">All clubs</option><option value="new">Never visited</option><option value="visited">Visited before</option><option value="planned">On my proposed plan</option></select></label><label>Sort<select id="bnSort"><option value="priority">New and least visited first</option><option value="date">Soonest first</option></select></label></div><div class="bn-event-list" id="bnEventList"></div></section>
+          <aside class="bn-plan"><div class="bn-plan-head"><span class="bn-kicker">YOUR SHORTLIST</span><div><h3>Proposed Plan</h3><span id="bnPlanCount">0 nights selected</span></div></div><div class="bn-plan-list" id="bnPlanList"></div><div class="bn-plan-guidance"><strong>What makes a strong mix?</strong><ul><li>Include at least one club we have never visited.</li><li>Balance new stops with venues members already know.</li><li>Check the day, time, and location before deciding.</li></ul><small>This list only shows details recorded in the workbook; it does not score travel distance, parking, or venue quality.</small></div></aside>
+        </div><footer class="bn-planner-footnote">Plan selections update the “Plan to Attend?” checkbox in Raw Data - Bike Nights. They are planning choices, not attendance records.</footer>
+      </div>`;
+      const eventList=document.getElementById('bnEventList'),planList=document.getElementById('bnPlanList');
+      const dateFilter=document.getElementById('bnDateFilter'),visitFilter=document.getElementById('bnVisitFilter'),sort=document.getElementById('bnSort'),search=document.getElementById('bnSearch');
+      const formatDate=date=>date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:date.getFullYear()===currentYear?undefined:'numeric'});
+      const monthShort=date=>date.toLocaleDateString('en-US',{month:'short'}).toUpperCase(),dayShort=date=>date.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase();
+      function filteredEvents(){
+        const q=normalize(search.value).toLowerCase();
+        return events.filter(event=>{
+          const future=event.date>=today,limit=new Date(today);limit.setDate(limit.getDate()+30);
+          if(dateFilter.value==='upcoming'&&!future)return false;
+          if(dateFilter.value==='month'&&!(future&&event.date.getMonth()===currentMonth&&event.date.getFullYear()===currentYear))return false;
+          if(dateFilter.value==='30'&&!(future&&event.date<=limit))return false;
+          if(visitFilter.value==='new'&&event.visits>0)return false;
+          if(visitFilter.value==='visited'&&event.visits===0)return false;
+          if(visitFilter.value==='planned'&&!event.planned)return false;
+          if(q&&!(event.club+' '+event.location+' '+event.time).toLowerCase().includes(q))return false;
+          return true;
+        }).sort((x,y)=>sort.value==='date'?x.date-y.date:x.visits-y.visits||x.date-y.date||x.club.localeCompare(y.club));
+      }
+      function attachPlanButtons(root){
+        root.querySelectorAll('[data-plan-row]').forEach(button=>button.addEventListener('click',async()=>{
+          const event=events.find(item=>item.sourceRow===Number(button.dataset.planRow));if(!event)return;
+          const next=!event.planned;button.disabled=true;button.textContent='Saving…';status.textContent='Saving your Bike Night plan…';
+          try{await updateSheetCell(BIKE_NIGHTS_SPREADSHEET_ID,'Raw Data - Bike Nights',event.sourceRow,7,next);event.planned=next;event.row[7]=next?'TRUE':'';status.textContent='Your plan was saved to Google Sheets.';renderLists();}
+          catch(error){status.textContent='Could not save that plan choice. Try again or use Edit Data in the raw workbook tab.';button.disabled=false;button.textContent=next?'＋ Plan to Attend':'✓ On Plan';}
+        }));
+      }
+      function renderLists(){
+        const visible=filteredEvents(),selected=upcoming.filter(event=>event.planned).sort((x,y)=>x.date-y.date);
+        const selectedThisMonth=selected.filter(event=>event.date.getMonth()===currentMonth&&event.date.getFullYear()===currentYear).length;
+        document.getElementById('bnMetricUpcoming').textContent=upcoming.length;
+        document.getElementById('bnMetricNew').textContent=unvisitedUpcoming.size;
+        document.getElementById('bnMetricPlanned').textContent=selected.length;
+        document.getElementById('bnMetricGoal').textContent=selectedThisMonth+' / '+monthlyGoal;
+        document.getElementById('bnResultsCount').textContent=visible.length+' of '+events.length+' nights';
+        document.getElementById('bnScheduleTitle').textContent=dateFilter.value==='schedule'?'Full Bike Night Schedule':'Upcoming Bike Nights';
+        const card=event=>`<article class="bn-event-card"><div class="bn-event-date"><strong>${monthShort(event.date)}</strong><b>${event.date.getDate()}</b><span>${dayShort(event.date)}</span></div><div class="bn-event-info"><div class="bn-event-title-row"><h4>${esc(event.club)}</h4><span class="bn-visit-pill ${event.visits===0?'new':''}">${event.visits===0?'NEVER VISITED':'VISITED '+event.visits+'×'}</span></div><div class="bn-event-details"><span><b>Time</b>${esc(event.time||'Not listed')}</span><span><b>Location</b>${esc(event.location||'Not listed')}</span><span><b>Date</b>${esc(formatDate(event.date))}</span></div></div><button type="button" class="bn-plan-button ${event.planned?'selected':''}" data-plan-row="${event.sourceRow}" aria-pressed="${event.planned}" ${event.date<today?'disabled':''}>${event.date<today?'Past event':event.planned?'✓ On Plan':'＋ Plan to Attend'}</button></article>`;
+        eventList.innerHTML=visible.length?visible.map(card).join(''):'<div class="bn-empty"><strong>No nights match these filters.</strong><span>Try All upcoming, or clear the search.</span></div>';
+        document.getElementById('bnPlanCount').textContent=selected.length+' '+(selected.length===1?'night':'nights')+' selected';
+        planList.innerHTML=selected.length?selected.map(event=>`<div class="bn-plan-item"><div><strong>${esc(event.club)}</strong><span>${esc(formatDate(event.date))} · ${esc(event.time||'Time not listed')}</span><small>${esc(event.location||'Location not listed')}</small></div><button type="button" data-plan-row="${event.sourceRow}" aria-label="Remove ${esc(event.club)} on ${esc(formatDate(event.date))} from plan">Remove</button></div>`).join(''):'<div class="bn-plan-empty"><span class="bn-plan-empty-icon">＋</span><strong>No nights selected yet</strong><p>Use “Plan to Attend” on any event to build a shortlist.</p></div>';
+        attachPlanButtons(eventList);attachPlanButtons(planList);
+      }
+      dateFilter.addEventListener('change',renderLists);visitFilter.addEventListener('change',renderLists);sort.addEventListener('change',renderLists);search.addEventListener('input',renderLists);
+      renderLists();
+    }
+    async function loadBikeNightData() {
+      ['bikeDashboardStatus','bikeScorecardStatus','bikeRawStatus'].forEach(id => document.getElementById(id).textContent = 'Loading from Google Sheets…');
+      const results = await Promise.allSettled([
+        getSheetValues("'Dashboard'!A1:L54", BIKE_NIGHTS_SPREADSHEET_ID),
+        getSheetValues("'Club Scorecard'!A1:H220", BIKE_NIGHTS_SPREADSHEET_ID),
+        getSheetValues("'Raw Data - Bike Nights'!A1:H220", BIKE_NIGHTS_SPREADSHEET_ID)
+      ]);
+      const [dashboardResult, scorecardResult, rawResult] = results;
+      if (dashboardResult.status === 'fulfilled' && rawResult.status === 'fulfilled') {
+        renderBikeNightDashboard(dashboardResult.value,scorecardResult.status === 'fulfilled' ? scorecardResult.value : [],rawResult.value);
+        document.getElementById('bikeDashboardStatus').textContent = 'Planner ready · event options and plan choices sync with Google Sheets.';
+      } else document.getElementById('bikeDashboardStatus').textContent = 'The planner could not load the event schedule. Check the Google Sheets connection and try Refresh.';
+      if (scorecardResult.status === 'fulfilled') renderDataTable('bikeScorecardTable', 'bikeScorecardStatus', scorecardResult.value, 9, 8);
+      else document.getElementById('bikeScorecardStatus').textContent = 'Club Scorecard could not be loaded from Google Sheets.';
+      if (rawResult.status === 'fulfilled') renderDataTable('bikeRawTable', 'bikeRawStatus', rawResult.value, 0, 8, {sheetName:'Raw Data - Bike Nights', spreadsheetId:BIKE_NIGHTS_SPREADSHEET_ID});
+      else document.getElementById('bikeRawStatus').textContent = 'Raw Data - Bike Nights could not be loaded from Google Sheets.';
+    }
+
+    function marketValue(rows, label) {
+      const wanted = String(label).trim().toLowerCase();
+      for (const row of rows) {
+        const index = row.findIndex(value => String(value || '').trim().toLowerCase() === wanted);
+        if (index >= 0) return String(row[index + 1] ?? '');
+      }
+      return '';
+    }
+
+    function renderMarketplaceDashboard(rows, ordersRows = [], salesRows = [], financialRows = [], period = 'all') {
+  const at=(r,c)=>String((rows[r]&&rows[r][c])||'');
+  const money=v=>Number(String(v||'').replace(/[^0-9.-]/g,''))||0;
+  const cash=v=>`$${v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  const vendorOrder=money(at(12,1)), vendorMinimum=money(at(12,6));
+  const progress=vendorMinimum?Math.min(100,Math.round(vendorOrder/vendorMinimum*100)):0;
+  const vendorNeeded=Math.max(0,vendorMinimum-vendorOrder), vendorReady=vendorMinimum>0&&vendorNeeded<=0;
+  const orders=ordersRows.slice(1).filter(r=>r[1]&&r[4]);
+  const yes=v=>/^(true|yes|1)$/i.test(String(v||'').trim());
+  const due=orders.filter(r=>/pending|cash due/i.test(String(r[12]||'')));
+  const paid=orders.filter(r=>/^paid/i.test(String(r[12]||'')));
+  const unsent=orders.filter(r=>!yes(r[13])&&!yes(r[15]));
+  const withVendor=orders.filter(r=>yes(r[13])&&!yes(r[14])&&!yes(r[15]));
+  const pickup=orders.filter(r=>yes(r[14])&&!yes(r[15]));
+  const handed=orders.filter(r=>yes(r[15]));
+  const parseDate=value=>{
+    const raw=String(value||'').trim();
+    if(!raw)return null;
+    const parsed=new Date(raw);
+    if(!Number.isNaN(parsed.getTime()))return parsed;
+    const match=raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
+    if(!match)return null;
+    const year=Number(match[3].length===2?'20'+match[3]:match[3]);
+    return new Date(year,Number(match[1])-1,Number(match[2]));
+  };
+  const today=new Date(); today.setHours(23,59,59,999);
+  const startDate=new Date(today); startDate.setHours(0,0,0,0);
+  if(period==='year')startDate.setMonth(0,1);
+  if(period==='month')startDate.setDate(1);
+  if(period==='90')startDate.setDate(startDate.getDate()-89);
+  const isInPeriod=order=>{
+    if(period==='all')return true;
+    const date=parseDate(order[0]);
+    return Boolean(date&&date>=startDate&&date<=today);
+  };
+  const periodOrders=orders.filter(isInPeriod);
+  const periodPaid=periodOrders.filter(r=>/^paid/i.test(String(r[12]||'')));
+  const periodOrderIds=new Set(periodOrders.map(r=>String(r[1]).trim()));
+  const collected=periodPaid.reduce((sum,r)=>sum+money(r[11]),0);
+  const merchandise=periodPaid.reduce((sum,r)=>sum+money(r[9]),0);
+  const financialOrders=financialRows.slice(5).filter(r=>r[0]&&r[1]);
+  const financeById=new Map(financialOrders.map(r=>[String(r[0]).trim(),r]));
+  const profit=periodPaid.reduce((sum,r)=>sum+money((financeById.get(String(r[1]).trim())||[])[10]),0);
+  const margin=collected?Math.round(profit/collected*100):0;
+  const sales=salesRows.slice(6).filter(r=>periodOrderIds.has(String(r[1]||'').trim()));
+  const pieceCount=sales.reduce((sum,r)=>sum+(Number(String(r[3]||'').replace(/,/g,''))||0),0);
+  const pendingFinance=financialOrders.filter(r=>/pending|cash due|unpaid/i.test(String(r[2]||''))||/unpaid/i.test(String(r[12]||''))).length;
+  const reconciledFinance=financialOrders.filter(r=>/^ok$/i.test(String(r[12]||''))&&money(r[11])===0).length;
+  const financeReview=financialOrders.filter(r=>(!/^ok$/i.test(String(r[12]||''))&&!/unpaid/i.test(String(r[12]||'')))||(/^ok$/i.test(String(r[12]||''))&&money(r[11])!==0)).length;
+  const owedLines=due.map(r=>String(r[4])+' — '+cash(money(r[11])));
+  const productCounts=new Map(), colorCounts=new Map();
+  for(const r of sales){
+    const item=String(r[2]||'').trim(),qty=Number(String(r[3]||'').replace(/,/g,''))||0;
+    if(!item||qty<=0)continue;
+    const variant=item.match(/\(([^()]*)\)\s*$/);
+    const product=item.replace(/\s*\([^()]*\)\s*$/,'').trim();
+    productCounts.set(product,(productCounts.get(product)||0)+qty);
+    const details=variant?variant[1].split(',').map(value=>value.trim()):[];
+    if(details.length>1){const color=details.slice(1).join(', ');colorCounts.set(color,(colorCounts.get(color)||0)+qty);}
+  }
+  const colorPalette={red:'#c8102e',black:'#252525',white:'#9aa4af',gray:'#69717a',grey:'#69717a',blue:'#3276b1',green:'#32834b',navy:'#153454',pink:'#dd6581',purple:'#7348a3',yellow:'#d4a400'};
+  const makeInsightList=(counts,useColor=false)=>{
+    const entries=[...counts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+    const max=Math.max(1,...entries.map(entry=>entry[1]));
+    return entries.length?entries.map(([name,qty])=>{
+      const accent=useColor?(colorPalette[name.toLowerCase()]||'#256b9a'):'';
+      return `<div class="market-insight-row"><span>${esc(name)}</span><div class="market-bar-track"><i style="width:${Math.max(6,Math.round(qty/max*100))}%;${accent?`background:${accent};`:''}"></i></div><strong>${qty}</strong></div>`;
+    }).join(''):'<div class="market-insight-empty">No matching sales are listed yet.</div>';
+  };
+  const productHtml=makeInsightList(productCounts),colorHtml=makeInsightList(colorCounts,true);
+  const rankedProducts=[...productCounts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+  const topProductCount=rankedProducts[0]?.[1]||0;
+  const topProductNames=rankedProducts.filter(([,qty])=>qty===topProductCount).map(([name])=>name);
+  const rankedColors=[...colorCounts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+  const topColorCount=rankedColors[0]?.[1]||0;
+  const topColorNames=rankedColors.filter(([,qty])=>qty===topColorCount).map(([name])=>name);
+  const colorUnits=[...colorCounts.values()].reduce((sum,qty)=>sum+qty,0);
+  const noColorUnits=Math.max(0,pieceCount-colorUnits);
+  const stages=[['Awaiting Payment',due.length,'Cash due at meeting','payment'],['Not Yet Submitted',unsent.length,'Orders not sent to manufacturer','unsent'],['With Manufacturer',withVendor.length,'Submitted, not ready for pickup','vendor'],['Ready for Pickup',pickup.length,'Ready, not handed out','pickup'],['Handed Out',handed.length,'Completed customer orders','complete']];
+  const stagesHtml=stages.map(([name,count,note,tone])=>`<button type="button" class="market-pipeline-card ${tone}" data-market-pipeline="${tone}" aria-label="Show ${count} ${esc(name)} orders"><span>${esc(name)}</span><strong>${count}</strong><small>${esc(note)}</small></button>`).join('');
+  const kpi=(label,value,note,cls='')=>`<div class="market-kpi ${cls}"><span>${esc(label)}</span><strong>${esc(value||'—')}</strong><small>${esc(note)}</small></div>`;
+  const periodLabel={all:'All time',year:'This year',90:'Last 90 days',month:'This month'}[period]||'All time';
+  document.getElementById('marketDashboard').innerHTML=`<div class="market-dashboard">
+    <div class="market-hero"><h2>${esc(at(0,1)||'BSSC / MARKETPLACE PERFORMANCE')}</h2><p>${esc(at(2,1)||'BOARD REPORT • Live marketplace activity • Revenue and profit reflect paid orders only')}</p></div>
+    <div class="market-executive">
+      <div class="market-period-control"><label for="marketDashboardPeriod">Sales period</label><select id="marketDashboardPeriod"><option value="all" ${period==='all'?'selected':''}>All time</option><option value="year" ${period==='year'?'selected':''}>This year</option><option value="90" ${period==='90'?'selected':''}>Last 90 days</option><option value="month" ${period==='month'?'selected':''}>This month</option></select><span>Revenue and profit use paid orders; merchandise and color rankings count all orders in this period. Cash due, vendor readiness, and pipeline stay current.</span></div>
+      <div class="market-kpi-grid">
+        ${kpi('Total Collected',cash(collected),'Money received from paid orders','revenue')}
+        ${kpi('Merchandise Collected',cash(merchandise),'Product sales before tax and fees','revenue')}
+        ${kpi('Realized Profit',cash(profit),'Profit earned on collected sales','profit')}
+        ${kpi('Profit Margin',`${margin}%`,'Realized profit divided by collected revenue','profit')}
+        ${kpi('Cash to Collect',at(6,16)||'$0.00','Outstanding cash payments','cash')}
+        ${kpi('Total Orders',String(periodOrders.length),'Orders in selected period')}
+        ${kpi('Pieces Ordered',String(pieceCount),'All orders in selected period')}
+        ${kpi('Average Paid Order',periodPaid.length?cash(collected/periodPaid.length):'$0.00',`${periodPaid.length} paid orders`)}
+        ${kpi('Top-Selling Color',topColorCount?`${topColorNames.join(' / ')} · ${topColorCount}`:'—',topColorCount?`${colorUnits} color-specific units; ${noColorUnits} items have no color option`:'No color-specific units in this period')}
+        ${kpi('Top-Selling Merchandise',topProductCount?`${topProductCount} units`:'—',topProductNames.length>1?`Tie: ${topProductNames.join(' + ')}`:topProductNames[0]||'No merchandise ordered in this period','top-product')}
+      </div>
+      <div class="market-dashboard-lower">
+        <section class="market-action-card"><h3>Vendor Order Readiness</h3><div class="market-action-body">
+          <div class="market-vendor-row"><div class="market-vendor-stat"><span>Current Vendor Order</span><strong>${esc(at(12,1)||'$0.00')}</strong></div><div class="market-vendor-stat"><span>Vendor Minimum</span><strong>${esc(at(12,6)||'$0.00')}</strong></div><div class="market-vendor-stat"><span>Still Needed</span><strong>${esc(cash(vendorNeeded))}</strong></div></div>
+          <div class="market-progress"><span style="width:${progress}%"></span></div><p class="market-progress-note">${progress}% of the vendor minimum reached</p>
+          <span class="market-status-pill ${vendorReady?'ready':''}">${vendorReady?'Ready to Submit':'On Hold'}</span>
+          <div class="market-vendor-action"><button class="market-send-vendor-order" id="marketplaceSendVendorOrder" type="button" ${MARKETPLACE_AUTOMATION_URL?'':'disabled'} data-minimum-met="${vendorReady?'true':'false'}" data-current-order="${vendorOrder}" data-vendor-minimum="${vendorMinimum}">Send Vendor Order</button><span class="market-vendor-action-note">${!MARKETPLACE_AUTOMATION_URL?'Automation connection needs to be completed.':!vendorReady?'Below minimum. An authorized override requires a password and reason.':'Sends the current vendor order email.'}</span></div>
+        </div></section>
+        <section class="market-action-card"><h3>Cash Due at Next Meeting</h3><div class="market-action-body"><span class="market-collection-label">${due.length?`${due.length} customer${due.length===1?'':'s'} to follow up`:'No cash payments outstanding'}</span><div class="market-owed-list">${owedLines.length?owedLines.map(esc).join('<br>'):'No cash due.'}</div></div></section>
+      </div>
+      <section class="market-dashboard-section"><h3>Order Pipeline</h3><div class="market-pipeline-grid">${stagesHtml}</div></section>
+      <div class="market-insights-grid">
+        <section class="market-action-card"><h3>Top-Selling Merchandise</h3><div class="market-action-body"><p class="market-insight-note">Units ordered by product type; sizes and colors are grouped together. All product categories are shown.</p>${productHtml}</div></section>
+        <section class="market-action-card"><h3>Top-Selling Colors</h3><div class="market-action-body"><p class="market-insight-note">Units ordered by color across products. ${colorUnits} color-specific units; ${noColorUnits} units from items with no color option.</p>${colorHtml}</div></section>
+        <section class="market-action-card"><h3>Financial Controls</h3><div class="market-action-body">
+          <div class="market-glance-row"><span>Orders reconciled</span><strong>${reconciledFinance}</strong></div><div class="market-glance-row"><span>Payments still due</span><strong>${pendingFinance}</strong></div><div class="market-glance-row"><span>Needs review</span><strong>${financeReview}</strong></div>
+          <p class="market-insight-note">Reconciliation compares sale, tax, fees, vendor cost, and profit for each order.</p>
+        </div></section>
+      </div>
+    </div>
+  </div>`;
+  const periodSelect=document.getElementById('marketDashboardPeriod');
+  if(periodSelect)periodSelect.addEventListener('change',()=>renderMarketplaceDashboard(rows,ordersRows,salesRows,financialRows,periodSelect.value));
+  document.querySelectorAll('#marketDashboard [data-market-pipeline]').forEach(button=>button.addEventListener('click',()=>{
+    document.querySelector('[data-market-tab="orders"]')?.click();
+    applyMarketplaceOrdersPipelineFilter(button.dataset.marketPipeline);
+    document.getElementById('marketOrdersTable')?.scrollIntoView({behavior:'smooth',block:'start'});
+  }));
+}
+
+    function renderMarketSummary(targetId, cards) {
+      document.getElementById(targetId).innerHTML = `<div class="market-subsummary">${cards.map(([label,value,cls = '']) => `<div class="market-summary-card ${esc(cls)}"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong></div>`).join('')}</div>`;
+    }
+
+    function renderManufacturerSummary(rows, ordersRows=[]) {
+  const summary=rows[2]||[], minimum=String(summary[1]||'—'), current=String(summary[3]||'—'), raw=String(summary[5]||'');
+  const amount=raw.match(/\$[\d,]+(?:\.\d{2})?/), ready=/ready/i.test(raw);
+  renderMarketSummary('marketManufacturerSummary',[
+    ['Vendor Minimum',minimum],['Current Vendor Cost',current,'warning'],
+    ['Order Status',ready?'Ready to Submit':'On Hold',ready?'success':'on-hold'],
+    ['Amount Needed',ready?'$0.00':(amount?amount[0]:'—'),ready?'success':'amount-needed']
+  ]);
+  const candidates=[],isTrue=v=>/^(true|yes|1)$/i.test(String(v||'').trim());
+  for(const order of ordersRows.slice(1)){
+    if(!order[1]||!order[4]||isTrue(order[13]))continue;
+    for(const line of String(order[8]||'').split(/\s*\|\s*/)){
+      const match=line.trim().match(/^(.*?)\s+\((.+)\)\s+x\s*(\d+)\s*$/i);if(!match)continue;
+      const details=match[2].split(',').map(v=>v.trim());
+      candidates.push({key:[match[1],details[0]||'',details.slice(1).join(', ')].map(v=>v.trim().toLowerCase()).join('|'),name:String(order[4]).trim(),quantity:Number(match[3])||1});
+    }
+  }
+  const enriched=rows.map(row=>Array.isArray(row)?[...row]:row), header=rows[4]||['ITEM TYPE','SIZE','COLOR','QTY','PRICE EACH','LINE TOTAL'];
+  enriched[4]=['CUSTOMER',...header];
+  for(let i=5;i<enriched.length;i++){
+    const row=enriched[i];if(!Array.isArray(row)||!row.some(v=>String(v||'').trim()))continue;
+    const key=row.slice(0,3).map(v=>String(v||'').trim().toLowerCase()).join('|');
+    let remaining=Number(String(row[3]||'1').replace(/,/g,''))||1;const names=[];
+    for(const candidate of candidates){if(candidate.key!==key||candidate.quantity<=0||remaining<=0)continue;const used=Math.min(candidate.quantity,remaining);candidate.quantity-=used;remaining-=used;if(!names.includes(candidate.name))names.push(candidate.name);}
+    enriched[i]=[names.join(' • ')||'Name not matched',...row];
+  }
+  renderDataTable('marketManufacturerTable','marketManufacturerStatus',enriched,4,7);
+}
+
+    function submitMarketplaceVendorOrder() {
+      const button = document.getElementById('marketplaceSendVendorOrder');
+      if (!MARKETPLACE_AUTOMATION_URL) {
+        alert('The Marketplace Automation connection is not set up yet.');
+        return;
+      }
+      if (!accessToken) {
+        alert('Please sign in to the portal before sending the vendor order.');
+        return;
+      }
+
+      const resultWindowName = 'bsscVendorOrder_' + Date.now();
+      const resultWindow = window.open('about:blank', resultWindowName);
+      if (!resultWindow) {
+        alert('Allow pop-ups for the portal so it can show the send result.');
+        return;
+      }
+
+      const minimumMet = button && button.dataset.minimumMet === 'true';
+      const fields = [['action', 'sendVendorOrder'], ['accessToken', accessToken]];
+      if (minimumMet) {
+        if (!window.confirm('Send the current vendor order email now?')) {
+          resultWindow.close();
+          return;
+        }
+      } else {
+        const formatMoney = value => Number(value || 0).toLocaleString('en-US', {
+          style: 'currency',
+          currency: 'USD',
+        });
+        const currentOrder = Number(button.dataset.currentOrder || 0);
+        const vendorMinimum = Number(button.dataset.vendorMinimum || 0);
+        if (!window.confirm(
+          `Current order: ${formatMoney(currentOrder)}. Vendor minimum: ${formatMoney(vendorMinimum)}.\\n\\nSend below minimum with a manual override?`
+        )) {
+          resultWindow.close();
+          return;
+        }
+
+        const overrideReason = window.prompt('Enter the reason for sending below the vendor minimum:');
+        if (overrideReason === null || !overrideReason.trim()) {
+          resultWindow.close();
+          alert('A reason is required. The vendor order was not sent.');
+          return;
+        }
+        const overridePassword = window.prompt('Enter the Marketplace override password:');
+        if (overridePassword === null || !overridePassword.trim()) {
+          resultWindow.close();
+          alert('The override password is required. The vendor order was not sent.');
+          return;
+        }
+        fields.push(['overrideReason', overrideReason.trim()]);
+        fields.push(['overridePassword', overridePassword.trim()]);
+      }
+
+      const requestId = 'vendor-order-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+      fields.push(['requestId', requestId]);
+
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = MARKETPLACE_AUTOMATION_URL;
+      form.target = resultWindowName;
+      form.style.display = 'none';
+      fields.forEach(([name, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+
+      marketplaceVendorOrderPopup = resultWindow;
+      marketplaceVendorOrderRequestId = requestId;
+      if (button) {
+        button.disabled = true;
+        button.classList.remove('is-complete');
+        button.classList.add('is-processing');
+        button.textContent = 'Sending...';
+      }
+      const note = document.querySelector('.market-vendor-action-note');
+      if (note) note.textContent = 'Sending vendor order...';
+      form.submit();
+      form.remove();
+    }
+
+    document.addEventListener('click', event => {
+      if (event.target.closest('#marketplaceSendVendorOrder')) submitMarketplaceVendorOrder();
+    });
+    window.addEventListener('message', event => {
+      const result = event.data || {};
+      if (event.source !== marketplaceVendorOrderPopup) return;
+      if (result.type !== 'bssc-marketplace-vendor-order-result') return;
+      if (!marketplaceVendorOrderRequestId || result.requestId !== marketplaceVendorOrderRequestId) return;
+
+      const button = document.getElementById('marketplaceSendVendorOrder');
+      const note = document.querySelector('.market-vendor-action-note');
+      if (button) {
+        button.classList.remove('is-processing');
+        if (result.success) {
+          button.classList.add('is-complete');
+          button.textContent = 'Vendor Order Sent';
+          button.disabled = true;
+        } else {
+          button.classList.remove('is-complete');
+          button.textContent = 'Send Vendor Order';
+          button.disabled = false;
+        }
+      }
+      if (note) note.textContent = result.message || (result.success ? 'Vendor order sent.' : 'Vendor order was not sent.');
+      marketplaceVendorOrderPopup = null;
+      marketplaceVendorOrderRequestId = '';
+    });
+
+
+    function renderSalesHistoryHeading(rows) {
+      const at = (row, column) => String((rows[row] && rows[row][column]) || '');
+      const stat = (label, value) => `<div class="sales-history-stat"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong></div>`;
+      document.getElementById('marketHistorySummary').innerHTML = `<div class="sales-history-heading">
+        <div class="sales-history-title">${esc(at(0,0) || at(0,1) || 'BSSC MARKETPLACE — SALES HISTORY')}</div>
+        <div class="sales-history-subtitle">${esc(at(1,0) || at(1,1) || 'Line-by-line record of each marketplace item sold. Quantity shows how many pieces were ordered for that item.')}</div>
+        <div class="sales-history-band primary">
+          ${stat(at(2,0) || 'Item Lines Sold', at(2,1))}
+          ${stat(at(2,2) || 'Total Pieces', at(2,3))}
+          ${stat(at(2,4) || 'Total Item Sales', at(2,5))}
+        </div>
+        <div class="sales-history-band secondary">
+          ${stat(at(3,0) || 'Paid / Cash-Pending Lines', at(3,1))}
+          ${stat(at(3,2) || 'Active Orders', at(3,3))}
+          ${stat(at(3,4) || 'Vendor Cost / All', at(3,5))}
+        </div>
+      </div>`;
+    }
+
+    function renderPricingConfig(rows) {
+      const at = (r,c) => String((rows[r] && rows[r][c]) || '');
+      const rowsHtml = entries => entries.map(([label,value]) => `<div class="pricing-row"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong></div>`).join('');
+      document.getElementById('marketPricingConfig').innerHTML = `<div class="pricing-config">
+        <section class="pricing-box"><h3>Marketplace Fees</h3>${rowsHtml([['Sales Tax',at(4,1)],['Credit Card Surcharge',at(5,1)],['PayPal Rate',at(6,1)],['PayPal Fixed Fee',at(7,1)]])}</section>
+        <section class="pricing-box"><h3>Cost Tiers &amp; Markup</h3><table class="pricing-rules-table"><thead><tr><th>${esc(at(3,5) || 'Cost Tier')}</th><th>${esc(at(3,6) || 'Standard Markup')}</th><th>${esc(at(3,7) || 'Pricing Rule')}</th></tr></thead><tbody>${[4,5,6,7].map(row => `<tr><td>${esc(at(row,5))}</td><td>${esc(at(row,6))}</td><td>${esc(at(row,7))}</td></tr>`).join('')}</tbody></table></section>
+      </div>`;
+    }
+
+    const MERCH_ACTIVITY_SHEET = 'Merchandise Activity';
+    let merchandiseOrders = [];
+    let merchandiseLines = [];
+    let merchandiseEvents = [];
+    let merchandiseBusy = false;
+    let merchandiseCatalog = [];
+    let lastMerchandiseTickets = [];
+
+    function merchandiseProductName(value) {
+      const name = String(value || '').trim();
+      if (/^Men's Pullover Hoodie$/i.test(name)) return 'Pullover Hoodie';
+      if (/^Men's Short Sleeve$/i.test(name)) return "Men's Short Sleeve T-Shirt";
+      if (/^Men's Long Sleeve$/i.test(name)) return "Men's Long Sleeve T-Shirt — BSSC Sleeve";
+      if (/^Women's Long Sleeve V-Neck$/i.test(name)) return "Women's V-Neck Long Sleeve";
+      return name;
+    }
+
+    function merchandiseVariant(item) {
+      const match = String(item).match(/^(.*?)\s*\(([^)]*)\)$/);
+      if (!match) return {product:merchandiseProductName(item),size:'One Size',color:''};
+      const parts = match[2].split(',').map(part => part.trim());
+      return {product:merchandiseProductName(match[1]),size:parts[0] || 'One Size',color:parts.slice(1).join(', ')};
+    }
+
+    function merchandiseOrderClosed(order) {
+      const id = String(order[1] || '');
+      return /^(Cancelled|Deleted)$/i.test(String(order[19] || '')) ||
+        merchandiseEvents.some(event => String(event[2]) === id && ['Cancelled','Deleted'].includes(String(event[1])));
+    }
+
+    function merchandiseOrderRefunds(id) {
+      return merchandiseEvents.filter(event => String(event[2]) === id && event[1] === 'Refunded')
+        .reduce((total,event) => total + (Number(event[4]) || 0),0);
+    }
+
+    function pendingMerchandiseMatches(product,size,color) {
+      const allocation = [];
+      merchandiseOrders.slice(1).map((order,index) => ({order,index}))
+        .sort((a,b) => (Date.parse(a.order[0]) || 0)-(Date.parse(b.order[0]) || 0) || a.index-b.index)
+        .forEach(({order,index}) => {
+        if (!order[1] || /^(true|yes|1)$/i.test(String(order[15] || '')) || merchandiseOrderClosed(order)) return;
+        const state = merchandiseState(order,merchandiseLines,merchandiseEvents);
+        state.items.forEach(line => {
+          const variant = merchandiseVariant(line.item);
+          if (variant.product === product && variant.size === size && variant.color.toLowerCase() === color.toLowerCase()) {
+            const needed = line.quantity-line.received;
+            if (needed > 0) allocation.push({orderId:String(order[1]),customer:String(order[4]),item:line.item,needed,sourceRow:index+2});
+          }
+        });
+      });
+      return allocation;
+    }
+
+    function availableMerchandiseStock(product,size,color) {
+      return merchandiseEvents.filter(event => ['Stock Received','Stock Assigned'].includes(event[1])).reduce((total,event) => {
+        const variant = merchandiseVariant(event[3]);
+        if (variant.product !== product || variant.size !== size || variant.color.toLowerCase() !== color.toLowerCase()) return total;
+        return total + (event[1] === 'Stock Received' ? 1 : -1) * (Number(event[4]) || 0);
+      },0);
+    }
+
+    function receiveOptions() {
+      const products = [...new Set([...merchandiseCatalog,...merchandiseLines.map(line => merchandiseVariant(line.item).product)])].filter(Boolean).sort();
+      document.getElementById('receiveProduct').innerHTML = products.map(product => `<option value="${esc(product)}">${esc(product)}</option>`).join('');
+      updateReceiveOptions();
+    }
+
+    function updateReceiveOptions() {
+      const product = document.getElementById('receiveProduct').value;
+      const isOneSize = /hat|beanie|koozie|coozie/i.test(product);
+      const observed = merchandiseLines.map(line => merchandiseVariant(line.item)).filter(v => v.product === product);
+      const sizes = isOneSize ? [...new Set(observed.map(v => v.size).concat(product === 'Flexfit Hat' ? ['S/M','L/XL'] : ['One Size']))] :
+        ['XS','S','M','L','XL','2XL','3XL','4XL','5XL'];
+      const sizeInput = document.getElementById('receiveSize'),previous = sizeInput.value;
+      sizeInput.innerHTML = sizes.map(size => `<option value="${esc(size)}">${esc(size)}</option>`).join('');
+      if (sizes.includes(previous)) sizeInput.value = previous;
+      const colors = [...new Set(observed.map(v => v.color).concat(isOneSize ? [''] : ['Red','Black','White','Gray']))];
+      const colorBox = document.getElementById('receiveColors');
+      const selected = colorBox.querySelector('input:checked')?.value;
+      colorBox.innerHTML = colors.map((color,index) => `<label><input type="radio" name="receiveColor" value="${esc(color)}" ${color === selected || (!colors.includes(selected) && index === 0) ? 'checked' : ''}> ${esc(color || 'No color')}</label>`).join('');
+      colorBox.querySelectorAll('input').forEach(input => input.addEventListener('change',previewMerchandiseAllocation));
+      previewMerchandiseAllocation();
+    }
+
+    function previewMerchandiseAllocation() {
+      const product = document.getElementById('receiveProduct').value;
+      const size = document.getElementById('receiveSize').value;
+      const color = document.querySelector('#receiveColors input:checked')?.value || '';
+      const quantity = Number(document.getElementById('receiveQuantity').value) || 0;
+      const matches = pendingMerchandiseMatches(product,size,color);
+      const needed = matches.reduce((sum,match) => sum+match.needed,0);
+      const stock = availableMerchandiseStock(product,size,color);
+      document.getElementById('receiveAllocationPreview').textContent =
+        `${needed} piece${needed === 1 ? '' : 's'} needed across ${matches.length} open order${matches.length === 1 ? '' : 's'}. ${stock} in unassigned stock.` +
+        (quantity > needed ? ` ${quantity-needed} extra will be recorded as unassigned stock.` : '');
+      document.getElementById('receiveStockPrint').disabled = !stock || !needed;
+    }
+
+    function openMerchandiseReceiving() {
+      receiveOptions();
+      document.getElementById('receiveOrderDialog').showModal();
+    }
+
+    function merchandisePrintTickets(tickets,printWindow) {
+      const rows = tickets.map(ticket => `<div class="ticket"><div class="brand">BONESHAKERS · PICK TICKET</div>
+        <strong>${esc(ticket.customer)}</strong><div class="item">${esc(ticket.item)}</div>
+        <div class="footer"><b>QTY ${ticket.quantity}</b><span>${esc(ticket.orderId)}</span></div></div>`).join('');
+      printWindow.document.open();
+      printWindow.document.write(`<!doctype html><html><head><title>Merchandise Pick Tickets</title><style>
+        @page{size:letter;margin:.35in}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;margin:0}
+        .sheet{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+        .ticket{height:1.9in;border:1px dashed #777;padding:.13in;break-inside:avoid;display:flex;flex-direction:column}
+        .brand{font-size:8pt;font-weight:800;border-bottom:1px solid #999;padding-bottom:5px;margin-bottom:7px}
+        strong{font-size:15pt;line-height:1.1}.item{font-size:11pt;margin-top:9px;line-height:1.25}
+        .footer{margin-top:auto;display:flex;justify-content:space-between;gap:5px;font-size:8pt}
+        .footer b{font-size:12pt}.print-only{display:none}
+        @media screen{body{padding:15px}.print-only{display:block;margin-bottom:15px}.print-only button{padding:10px 15px}}
+    
+
+
+  </style></head><body><div class="print-only"><button onclick="window.print()">Print pick tickets</button> · Cut along the dotted lines.</div><div class="sheet">${rows}</div></body></html>`);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => { if (!printWindow.closed) printWindow.print(); },350);
+    }
+
+    async function receiveBulkMerchandise(event) {
+      event.preventDefault();
+      if (merchandiseBusy) return;
+      const product = document.getElementById('receiveProduct').value;
+      const size = document.getElementById('receiveSize').value;
+      const color = document.querySelector('#receiveColors input:checked')?.value || '';
+      const quantity = Number(document.getElementById('receiveQuantity').value);
+      const useStock = event.submitter?.dataset.mode === 'stock';
+      if (!product || !size || !Number.isInteger(quantity) || quantity < 1) return;
+      const printWindow = window.open('', '_blank');
+      if (printWindow) printWindow.document.write('<p>Receiving merchandise and preparing tickets…</p>');
+      merchandiseBusy = true;
+      document.getElementById('receiveSavePrint').disabled = true;
+      document.getElementById('receiveStockPrint').disabled = true;
+      try {
+        await refreshMerchandiseState();
+        const matches = pendingMerchandiseMatches(product,size,color);
+        const available = availableMerchandiseStock(product,size,color);
+        if (useStock && (quantity > available || quantity > matches.reduce((sum,match) => sum+match.needed,0))) {
+          throw new Error('The requested quantity exceeds available stock or open order demand.');
+        }
+        const actor = await getPortalAuditActor(), stamp = new Date().toISOString();
+        const entries = [],tickets = [];
+        let remaining = quantity;
+        matches.forEach(match => {
+          if (remaining <= 0) return;
+          const assigned = Math.min(match.needed,remaining);
+          entries.push([stamp,'Received',match.orderId,match.item,assigned,actor,'Auto-assigned oldest open order']);
+          tickets.push({customer:match.customer,orderId:match.orderId,item:match.item,quantity:assigned});
+          remaining -= assigned;
+        });
+        if (useStock) entries.push([stamp,'Stock Assigned','',`${product} (${size}${color ? ', '+color : ''})`,quantity,actor,'Assigned to oldest open orders']);
+        else if (remaining) entries.push([stamp,'Stock Received','',`${product} (${size}${color ? ', '+color : ''})`,remaining,actor,'Unassigned stock']);
+        await appendSheetRows(MARKETPLACE_SPREADSHEET_ID,MERCH_ACTIVITY_SHEET,entries);
+        await refreshMerchandiseState();
+        const updates = [];
+        const assignedIds = new Set(tickets.map(ticket => ticket.orderId));
+        merchandiseOrders.slice(1).forEach((order,index) => {
+          if (!assignedIds.has(String(order[1]))) return;
+          const state = merchandiseState(order,merchandiseLines,merchandiseEvents);
+          if (!state.complete || state.ready) return;
+          const row = index+2;
+          updates.push({range:`'Orders'!O${row}`,value:true},
+            {range:`'Orders'!Q${row}`,value:new Date().toLocaleDateString('en-US')},
+            {range:`'Orders'!T${row}`,value:'Ready for Pickup'});
+        });
+        if (updates.length) await updateSheetRanges(MARKETPLACE_SPREADSHEET_ID,updates);
+        lastMerchandiseTickets = tickets;
+        document.getElementById('receiveOrderDialog').close();
+        document.getElementById('receiveQuantity').value = '';
+        await loadMarketplaceData();
+        if (tickets.length && printWindow) merchandisePrintTickets(tickets,printWindow);
+        else if (printWindow) {printWindow.document.body.innerHTML = '<p>All pieces were recorded as unassigned stock. No customer tickets to print.</p>'; }
+        if (!printWindow && tickets.length) alert('Items were saved. Allow pop-ups for this portal, then use Reprint Last Tickets.');
+      } catch (error) {
+        if (printWindow) printWindow.close();
+        alert('Receiving could not finish: '+error.message+' Refresh the activity log before trying again to avoid duplicate entries.');
+      } finally {
+        merchandiseBusy = false;
+        document.getElementById('receiveSavePrint').disabled = false;
+        document.getElementById('receiveStockPrint').disabled = false;
+      }
+    }
+
+    document.getElementById('receiveProduct').addEventListener('change',updateReceiveOptions);
+    document.getElementById('receiveSize').addEventListener('change',previewMerchandiseAllocation);
+    document.getElementById('receiveQuantity').addEventListener('input',previewMerchandiseAllocation);
+    document.getElementById('receiveCancel').addEventListener('click',() => document.getElementById('receiveOrderDialog').close());
+    document.getElementById('receiveOrderForm').addEventListener('submit',receiveBulkMerchandise);
+
+    function merchandiseState(order, lines, events) {
+      const items = lines.filter(line => line.orderId === order[1]).map(line => {
+        const received = events.filter(event => event[2] === line.orderId && event[3] === line.item && ['Received','Damaged'].includes(event[1]))
+          .reduce((total,event) => total + (event[1] === 'Damaged' ? -1 : 1) * (Number(event[4]) || 0), 0);
+        return {...line, received:Math.max(0,Math.min(line.quantity,received))};
+      });
+      const complete = items.length > 0 && items.every(item => item.received >= item.quantity);
+      const partial = items.some(item => item.received > 0) && !complete;
+      return {items,complete,partial,handed:/^(true|yes|1)$/i.test(String(order[15] || '')),ready:/^(true|yes|1)$/i.test(String(order[14] || ''))};
+    }
+
+    function renderMerchandiseReceiving() {
+      const target = document.getElementById('marketReceiving');
+      if (!target) return;
+      const search = target.querySelector('[data-receive-search]')?.value || '';
+      const filter = target.querySelector('[data-receive-filter]')?.value || 'open';
+      const orders = merchandiseOrders.slice(1).filter(row => row[1] && row[4]);
+      const states = orders.map(row => ({row,state:merchandiseState(row,merchandiseLines,merchandiseEvents)}));
+      const counts = {
+        waiting:states.filter(x => !merchandiseOrderClosed(x.row) && !x.state.handed && !x.state.partial && !x.state.complete && !x.state.ready).length,
+        partial:states.filter(x => !merchandiseOrderClosed(x.row) && !x.state.handed && x.state.partial).length,
+        ready:states.filter(x => !merchandiseOrderClosed(x.row) && !x.state.handed && (x.state.complete || x.state.ready)).length,
+        handed:states.filter(x => !merchandiseOrderClosed(x.row) && x.state.handed).length,
+        cancelled:states.filter(x => merchandiseOrderClosed(x.row)).length
+      };
+      const shown = states.filter(({row,state}) => {
+        const match = (String(row[1])+' '+String(row[4])+' '+String(row[8])).toLowerCase().includes(search.toLowerCase());
+        return match && (filter === 'all' || (filter === 'open' && !state.handed && !merchandiseOrderClosed(row)) || (filter === 'ready' && !state.handed && !merchandiseOrderClosed(row) && (state.complete || state.ready)) || (filter === 'handed' && state.handed) || (filter === 'cancelled' && merchandiseOrderClosed(row)));
+      });
+      target.innerHTML = `<div class="receive-summary">
+        <div>Awaiting Delivery<strong>${counts.waiting}</strong></div><div>Partially Received<strong>${counts.partial}</strong></div>
+        <div>Ready for Pickup<strong>${counts.ready}</strong></div><div>Handed Out<strong>${counts.handed}</strong></div><div>Cancelled<strong>${counts.cancelled}</strong></div></div>
+        <div class="receive-tools"><button type="button" data-receive-order>＋ Receive Order</button>${lastMerchandiseTickets.length ? '<button type="button" data-reprint-tickets>Reprint Last Tickets</button>' : ''}<input data-receive-search type="search" value="${esc(search)}" placeholder="Search customer, order, or item" aria-label="Search merchandise orders">
+        <select data-receive-filter aria-label="Filter orders"><option value="open">Open orders</option><option value="ready">Ready for pickup</option><option value="handed">Handed out</option><option value="cancelled">Cancelled / removed</option><option value="all">All orders</option></select>
+        <button type="button" data-receive-refresh>Refresh</button></div>
+        <div class="receive-message" data-receive-message hidden></div>
+        ${shown.length ? shown.map(({row,state}) => {
+          const id = String(row[1]), due = /pending|cash due/i.test(String(row[12] || ''));
+          const label = merchandiseEvents.some(event => event[2] === id && event[1] === 'Deleted') ? 'Removed' : merchandiseOrderClosed(row) ? 'Cancelled' : state.handed ? 'Handed Out' : (state.complete || state.ready ? 'Ready for Pickup' : state.partial ? 'Partially Received' : 'Awaiting Delivery');
+          return `<article class="receive-order"><header><div><h3>${esc(row[4])}</h3><small>${esc(id)} · ${esc(row[12] || 'Payment unknown')}</small></div><strong>${label}</strong></header>
+          ${state.items.length ? state.items.map(item => `<div class="receive-line"><span>${esc(item.item)}<br><small>Received ${item.received} of ${item.quantity}</small></span>
+          ${!merchandiseOrderClosed(row) && !state.handed && item.received < item.quantity ? `<label>Qty <input type="number" min="1" max="${item.quantity-item.received}" value="${item.quantity-item.received}" data-receive-qty></label><button type="button" data-receive-item data-order="${esc(id)}" data-item="${esc(item.item)}">Receive</button>` : ''}</div>`).join('') : '<p>Item details unavailable. Check Sales History before receiving this order.</p>'}
+          <div class="receive-order-actions">
+            ${due && !merchandiseOrderClosed(row) ? '<small>Payment is due before handout.</small>' : ''}
+            ${merchandiseOrderRefunds(id) ? `<small>Refund recorded: $${merchandiseOrderRefunds(id).toFixed(2)}</small>` : ''}
+            <button type="button" data-manage-order data-order="${esc(id)}">Manage Order</button>
+            ${!merchandiseOrderClosed(row) && !state.handed && (state.complete || state.ready) ? `<button type="button" data-handout-order data-order="${esc(id)}" ${due ? 'disabled title="Record payment first"' : ''}>Mark Handed Out</button>` : ''}
+          </div></article>`;
+        }).join('') : '<p>No orders match this view.</p>'}`;
+      target.querySelector('[data-receive-filter]').value = filter;
+      target.querySelector('[data-receive-search]').addEventListener('input',event => {
+        const position = event.target.selectionStart;
+        renderMerchandiseReceiving();
+        const replacement = target.querySelector('[data-receive-search]');
+        replacement.focus();
+        replacement.setSelectionRange(position,position);
+      });
+      target.querySelector('[data-receive-filter]').addEventListener('change',renderMerchandiseReceiving);
+      target.querySelector('[data-receive-order]').addEventListener('click',openMerchandiseReceiving);
+      target.querySelector('[data-reprint-tickets]')?.addEventListener('click',() => {
+        const printWindow = window.open('', '_blank');
+        if (printWindow) merchandisePrintTickets(lastMerchandiseTickets,printWindow);
+        else alert('Allow pop-ups for this portal to print the tickets.');
+      });
+      target.querySelector('[data-receive-refresh]').addEventListener('click',loadMarketplaceData);
+      target.querySelectorAll('[data-receive-item]').forEach(button => button.addEventListener('click',() => receiveMerchandiseItem(button)));
+      target.querySelectorAll('[data-handout-order]').forEach(button => button.addEventListener('click',() => handOutMerchandiseOrder(button)));
+      target.querySelectorAll('[data-manage-order]').forEach(button => button.addEventListener('click',() => openOrderAction(button.dataset.order)));
+    }
+
+    async function refreshMerchandiseState() {
+      const [orders,history,events] = await getSheetRanges([
+        "'Orders'!A1:T1000", "'Sales History'!A1:F1000", "'Merchandise Activity'!A1:G1000"
+      ],MARKETPLACE_SPREADSHEET_ID);
+      merchandiseOrders = orders;
+      merchandiseEvents = events.slice(1);
+      merchandiseLines = buildMerchandiseLines(history);
+      renderMerchandiseReceiving();
+    }
+
+    function buildMerchandiseLines(history) {
+      const lines = new Map();
+      history.slice(6).filter(row => row[1] && row[2] && Number(row[3]) > 0).forEach(row => {
+        const orderId = String(row[1]), item = String(row[2]), key = JSON.stringify([orderId,item]);
+        const current = lines.get(key) || {orderId,item,quantity:0};
+        current.quantity += Number(row[3]);
+        lines.set(key,current);
+      });
+      return [...lines.values()];
+    }
+
+    async function receiveMerchandiseItem(button) {
+      if (merchandiseBusy) return;
+      merchandiseBusy = true; button.disabled = true;
+      try {
+        await refreshMerchandiseState();
+        const id = button.dataset.order, item = button.dataset.item;
+        const order = merchandiseOrders.find(row => row[1] === id);
+        if (!order || merchandiseOrderClosed(order) || /^(true|yes|1)$/i.test(String(order[15] || ''))) throw new Error('This order is already handed out or no longer exists.');
+        const state = merchandiseState(order,merchandiseLines,merchandiseEvents);
+        const line = state.items.find(entry => entry.item === item);
+        const qty = Number(button.closest('.receive-line').querySelector('[data-receive-qty]').value);
+        if (!line || !Number.isInteger(qty) || qty < 1 || qty > line.quantity-line.received) throw new Error('Enter a quantity no greater than the pieces still needed.');
+        const actor = await getPortalAuditActor();
+        await appendSheetRow(MARKETPLACE_SPREADSHEET_ID,MERCH_ACTIVITY_SHEET,[new Date().toISOString(),'Received',id,item,qty,actor,'']);
+        await refreshMerchandiseState();
+        const updated = merchandiseOrders.find(row => row[1] === id);
+        if (merchandiseState(updated,merchandiseLines,merchandiseEvents).complete && !/^(true|yes|1)$/i.test(String(updated[14] || ''))) {
+          const rowNumber = merchandiseOrders.indexOf(updated)+1;
+          await updateSheetRanges(MARKETPLACE_SPREADSHEET_ID,[
+            {range:`'Orders'!O${rowNumber}`,value:true},
+            {range:`'Orders'!Q${rowNumber}`,value:new Date().toLocaleDateString('en-US')},
+            {range:`'Orders'!T${rowNumber}`,value:'Ready for Pickup'}
+          ]);
+        }
+        await loadMarketplaceData();
+      } catch (error) {
+        alert('Receiving could not finish: '+error.message+' Refresh the page and check the activity log before trying again.');
+      } finally { merchandiseBusy = false; }
+    }
+
+    async function handOutMerchandiseOrder(button) {
+      if (merchandiseBusy) return;
+      merchandiseBusy = true; button.disabled = true;
+      try {
+        await refreshMerchandiseState();
+        const id = button.dataset.order;
+        const rowNumber = merchandiseOrders.findIndex(row => row[1] === id)+1;
+        const order = merchandiseOrders[rowNumber-1];
+        if (rowNumber < 2 || !order) throw new Error('Order not found.');
+        const state = merchandiseState(order,merchandiseLines,merchandiseEvents);
+        if (merchandiseOrderClosed(order) || state.handed || (!state.complete && !state.ready)) throw new Error('This order is not ready for pickup.');
+        if (/pending|cash due/i.test(String(order[12] || ''))) throw new Error('Record the payment on the Orders tab first.');
+        if (!confirm('Confirm merchandise was handed to '+order[4]+'?')) return;
+        await updateSheetRanges(MARKETPLACE_SPREADSHEET_ID,[
+          {range:`'Orders'!P${rowNumber}`,value:true},
+          {range:`'Orders'!R${rowNumber}`,value:new Date().toLocaleDateString('en-US')},
+          {range:`'Orders'!T${rowNumber}`,value:'Handed Out'}
+        ]);
+        await appendSheetRow(MARKETPLACE_SPREADSHEET_ID,MERCH_ACTIVITY_SHEET,[new Date().toISOString(),'Handed Out',id,'',0,await getPortalAuditActor(),'']);
+        await loadMarketplaceData();
+      } catch (error) {
+        alert('Handout could not finish: '+error.message+' Refresh and check the order before trying again.');
+      } finally { merchandiseBusy = false; }
+    }
+
+    let managedOrderId = '';
+    function openOrderAction(id) {
+      const order = merchandiseOrders.find(row => String(row[1]) === id);
+      if (!order) return;
+      managedOrderId = id;
+      document.getElementById('orderActionContext').textContent = `${order[4]} · ${id}`;
+      const select = document.getElementById('orderActionItem');
+      select.innerHTML = merchandiseState(order,merchandiseLines,merchandiseEvents).items.map(line => `<option value="${esc(line.item)}">${esc(line.item)} · ${line.received} received</option>`).join('');
+      document.getElementById('orderActionType').value = merchandiseOrderClosed(order) ? 'Refunded' : 'Cancelled';
+      document.getElementById('orderActionOther').value = '';
+      document.getElementById('orderActionAmount').value = '';
+      updateOrderActionFields();
+      document.getElementById('orderActionDialog').showModal();
+    }
+    function updateOrderActionFields() {
+      const type = document.getElementById('orderActionType').value;
+      const choices = type === 'Cancelled' ? [
+        'Customer requested cancellation','Ordered by mistake','Duplicate order','Wrong item, size, or color',
+        'Item unavailable','Delivery taking too long','Payment not completed','Customer did not respond','Club entered order incorrectly'
+      ] : type === 'Refunded' ? [
+        'Order cancelled','Item unavailable','Wrong item, size, or color','Item damaged','Duplicate payment','Price adjustment'
+      ] : type === 'Damaged' ? [
+        'Arrived damaged','Damaged in storage','Damaged during delivery','Print or manufacturing defect','Wrong condition from vendor'
+      ] : ['Duplicate order','Test order','Order entered incorrectly','Customer details entered incorrectly'];
+      const reasonSelect = document.getElementById('orderActionReason');
+      reasonSelect.innerHTML = '<option value="">Select a reason…</option>' + choices.map(choice => `<option value="${esc(choice)}">${esc(choice)}</option>`).join('') + '<option value="Other">Other — write my own</option>';
+      updateOrderOtherField();
+      document.getElementById('orderActionItemLabel').hidden = type !== 'Damaged';
+      document.getElementById('orderActionQtyLabel').hidden = type !== 'Damaged';
+      document.getElementById('orderActionAmountLabel').hidden = type !== 'Refunded';
+      document.getElementById('orderActionAmount').required = type === 'Refunded';
+      document.getElementById('orderActionQty').required = type === 'Damaged';
+      const order = merchandiseOrders.find(row => String(row[1]) === managedOrderId);
+      const closed = order && merchandiseOrderClosed(order);
+      document.getElementById('orderActionType').querySelector('[value="Cancelled"]').disabled = Boolean(closed) || Boolean(order && /^(true|yes|1)$/i.test(String(order[15] || '')));
+      document.getElementById('orderActionType').querySelector('[value="Damaged"]').disabled = Boolean(closed);
+      document.getElementById('orderActionType').querySelector('[value="Deleted"]').disabled = merchandiseOrderRefunds(managedOrderId) > 0 || Boolean(order && /^(true|yes|1)$/i.test(String(order[15] || '')));
+    }
+    function updateOrderOtherField() {
+      const other = document.getElementById('orderActionReason').value === 'Other';
+      document.getElementById('orderActionOtherLabel').hidden = !other;
+      document.getElementById('orderActionOther').required = other;
+    }
+    document.getElementById('orderActionType').addEventListener('change',updateOrderActionFields);
+    document.getElementById('orderActionReason').addEventListener('change',updateOrderOtherField);
+    document.getElementById('orderActionClose').addEventListener('click',() => document.getElementById('orderActionDialog').close());
+    async function removeMarketplaceOrderRows(orderIndex,id,reason,actor) {
+      const metadataUrl = `https://sheets.googleapis.com/v4/spreadsheets/${MARKETPLACE_SPREADSHEET_ID}?fields=sheets.properties(sheetId,title)`;
+      const metadata = await fetchSheetRead(metadataUrl);
+      const sheetIds = Object.fromEntries((metadata.sheets || []).map(sheet => [sheet.properties.title,sheet.properties.sheetId]));
+      const required = ['Orders','Fulfillment Tracker','Order Financials','Merchandise Activity'];
+      if (required.some(name => !Number.isInteger(sheetIds[name]))) throw new Error('A required Marketplace tab is missing. Nothing was removed.');
+      const dimension = (name,startIndex) => ({deleteDimension:{range:{sheetId:sheetIds[name],dimension:'ROWS',startIndex,endIndex:startIndex+1}}});
+      const activityIndexes = merchandiseEvents.map((entry,index) => String(entry[2]) === id ? index+1 : -1)
+        .filter(index => index >= 0).sort((a,b) => b-a);
+      const requests = activityIndexes.map(index => dimension('Merchandise Activity',index));
+      requests.push(dimension('Fulfillment Tracker',orderIndex+3),dimension('Order Financials',orderIndex+4),dimension('Orders',orderIndex));
+      const order = merchandiseOrders[orderIndex];
+      const stock = merchandiseState(order,merchandiseLines,merchandiseEvents).items.filter(line => line.received > 0);
+      if (stock.length) requests.push({appendCells:{sheetId:sheetIds['Merchandise Activity'],rows:stock.map(line => ({values:[
+        {userEnteredValue:{stringValue:new Date().toISOString()}},
+        {userEnteredValue:{stringValue:'Stock Received'}},
+        {},{userEnteredValue:{stringValue:line.item}},
+        {userEnteredValue:{numberValue:line.received}},
+        {userEnteredValue:{stringValue:actor}},
+        {userEnteredValue:{stringValue:'Returned to stock after order removal'}}
+      ]})),fields:'userEnteredValue'}});
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${MARKETPLACE_SPREADSHEET_ID}:batchUpdate`;
+      await writePortalSheetRequest(url,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({requests})},'Removed Marketplace order',`Order ${id}: ${reason}`,requests.length);
+    }
+    document.getElementById('orderActionForm').addEventListener('submit',async event => {
+      event.preventDefault();
+      if (merchandiseBusy) return;
+      merchandiseBusy = true;
+      const save = document.getElementById('orderActionSave'); save.disabled = true;
+      let saved = false;
+      try {
+        await refreshMerchandiseState();
+        const id = managedOrderId, orderIndex = merchandiseOrders.findIndex(row => String(row[1]) === id);
+        if (orderIndex < 1) throw new Error('Order not found. Refresh and check its status.');
+        const order = merchandiseOrders[orderIndex];
+        const type = document.getElementById('orderActionType').value;
+        const selectedReason = document.getElementById('orderActionReason').value;
+        const reason = (selectedReason === 'Other' ? document.getElementById('orderActionOther').value : selectedReason).trim();
+        const item = type === 'Damaged' ? document.getElementById('orderActionItem').value : '';
+        const quantity = Number(document.getElementById('orderActionQty').value);
+        const amount = Number(document.getElementById('orderActionAmount').value);
         if (!reason) throw new Error('Select a reason or write your own.');
         if (type !== 'Refunded' && type !== 'Deleted' && merchandiseOrderClosed(order)) throw new Error('This order is already cancelled.');
         if (type === 'Damaged') {
