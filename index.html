@@ -1629,6 +1629,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 .finance-detail-plus{border:1px solid #64748b;border-radius:50%;width:28px;height:28px;margin-left:10px;background:white;color:#111;font-weight:700;cursor:pointer}
 .finance-breakdown-dialog{width:min(660px,calc(100vw - 32px));max-height:75vh;overflow:auto;border:0;border-radius:12px;padding:22px;color:#111;background:white;box-shadow:0 20px 60px #0005}
 .finance-breakdown-dialog::backdrop{background:#0007}.finance-breakdown-dialog header{display:flex;justify-content:space-between;align-items:center;gap:16px}.finance-breakdown-dialog h3{margin:0;font-size:20px}.finance-breakdown-dialog table{width:100%;border-collapse:collapse;font-size:14px}.finance-breakdown-dialog th,.finance-breakdown-dialog td{text-align:left;padding:9px 5px;border-bottom:1px solid #ddd}.finance-breakdown-dialog th:last-child,.finance-breakdown-dialog td:last-child{text-align:right;white-space:nowrap}.finance-breakdown-dialog button{cursor:pointer}.finance-breakdown-total{text-align:right;font-weight:bold;margin-top:14px}
+    .reconciliation-submit { background:#c8102e; color:#fff; border:0; border-radius:7px; padding:10px 24px; font-weight:800; cursor:pointer; margin-bottom:8px; }
+    .reconciliation-submit[data-state="saving"] { background:#facc15; color:#111; }
+    .reconciliation-submit[data-state="saved"] { background:#16803c; color:#fff; }
+    .reconciliation-submit-footer { display:flex; justify-content:flex-end; margin-top:16px; }
 </style>
 </head>
 <body>
@@ -4791,10 +4795,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         @media screen{body{padding:15px}.print-only{display:block;margin-bottom:15px}.print-only button{padding:10px 15px}}
     
 
-    .reconciliation-submit { background:#c8102e; color:#fff; border:0; border-radius:7px; padding:10px 24px; font-weight:800; cursor:pointer; margin-bottom:8px; }
-    .reconciliation-submit[data-state="saving"] { background:#facc15; color:#111; }
-    .reconciliation-submit[data-state="saved"] { background:#16803c; color:#fff; }
-    .reconciliation-submit-footer { display:flex; justify-content:flex-end; margin-top:16px; }
+
   </style></head><body><div class="print-only"><button onclick="window.print()">Print pick tickets</button> · Cut along the dotted lines.</div><div class="sheet">${rows}</div></body></html>`);
       printWindow.document.close();
       printWindow.focus();
