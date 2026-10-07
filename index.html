@@ -5778,6 +5778,12 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         transaction[5] = 'Ticket Sales';
         transaction[6] = 'Bikes For Tykes';
         transaction[7] = 'Bikes For Tykes Fundraiser 2026';
+      } else if (/^raffle\s*\/\s*50[-/]50 ticket sales$/.test(normalizedType)) {
+        transaction[3] = `50/50 Raffle — ${givenBy}`;
+        transaction[4] = 'Fundraising';
+        transaction[5] = '50/50';
+        transaction[6] = /bikes for tykes|big ugly/i.test(eventName) ? 'Bikes For Tykes' : 'General Fund';
+        transaction[7] = /bikes for tykes|big ugly/i.test(eventName) ? 'Bikes For Tykes Fundraiser 2026' : /bike night/i.test(eventName) ? 'Bike Night' : 'General Meeting';
       } else if (normalizedType === 'membership dues') {
         transaction[3] = 'Membership Dues Received';
         transaction[4] = 'Membership';
