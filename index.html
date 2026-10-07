@@ -3612,7 +3612,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
             return `<div class="transaction-field"><label for="editBftField${field.column}">${esc(displayLabel)}</label>${control}</div>`;
           }).join('')}
           ${String(rowValues[11] || '').trim().toLowerCase() === 'yes' ? `<section class="bft-receipt-panel"><h4>Receipt request</h4><p>Prepare the acknowledgment, print or save it as a PDF, then mark it sent after delivery. Save any edits above before preparing it.</p><div class="transaction-field"><label for="bftGoodsProvided">Goods or services provided to the donor?</label><select id="bftGoodsProvided"><option value="">Choose one…</option><option value="no">No</option><option value="yes">Yes</option></select></div><div class="transaction-field"><label for="bftGoodsDescription">If yes, describe them</label><input id="bftGoodsDescription" type="text"></div><div class="transaction-field"><label for="bftGoodsValue">If yes, estimated value ($)</label><input id="bftGoodsValue" type="number" min="0" step="0.01"></div><div class="transaction-entry-actions"><button class="dashboard-edit-btn" type="button" data-prepare-bft-receipt>Prepare / Print Receipt</button><button class="dashboard-edit-btn" type="button" data-mark-bft-receipt-sent>Mark Sent</button></div></section>` : '<p class="bft-receipt-note">To prepare a receipt, set “Receipt Requested” to Yes, save, then select this row again.</p>'}
-          <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Save Changes</button><button class="transaction-cancel" style="background:#b91c1c;color:white" type="button" data-delete-transaction>Delete Transaction</button></div>
+          <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Save Changes</button></div>
         </form>`;
       target.querySelector('.table-tools').insertAdjacentElement('afterend',panel);
       const close = () => {panel.remove();selectedRow.classList.remove('transaction-selected');selectedRow.querySelector('[data-pick-bft-row]').checked=false;};
@@ -4204,7 +4204,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
             } else control = `<input id="editTransactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} ${required} value="${esc(value)}" data-original="${esc(value)}" autocomplete="off">`;
             return `<div class="transaction-field"><label for="editTransactionField${field.column}">${esc(field.header)}</label>${control}</div>`;
           }).join('')}
-          <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Save Changes</button></div>
+          <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Save Changes</button><button class="transaction-cancel" style="background:#b91c1c;color:white" type="button" data-delete-transaction>Delete Transaction</button></div>
         </form>`;
       const tools = target.querySelector('.table-tools');
       tools.insertAdjacentElement('afterend',panel);
