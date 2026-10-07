@@ -3880,6 +3880,14 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
               <div class="paypal-bundle-preview"><div><span>Gross sale</span><strong id="paypalGrossPreview">$0.00</strong></div><div><span>Processing fee</span><strong id="paypalFeePreview">-$0.00</strong></div><div><span>Bank transfer</span><strong id="paypalNetPreview">$0.00</strong></div></div>
             </div>
           </section>
+          <section class="paypal-bundle visible" id="fundReimbursementBundle">
+            <h4>Reimburse the paying fund</h4>
+            <p>For an expense, Fund above is the account that paid. Choose the fund that should cover the cost to create the purchase and both transfer entries together.</p>
+            <label for="reimbursementFund">Fund responsible for the expense</label>
+            <select id="reimbursementFund"><option value="">Same as paying fund — no reimbursement</option><option>General Fund</option><option>Bikes For Tykes</option></select>
+            <p id="reimbursementPreview" role="status">No reimbursement selected.</p>
+            <p>Transfers are recorded as uncleared. Move the money in Chase, then mark each transfer cleared after it posts.</p>
+          </section>
           <div class="transaction-consistency" id="transactionConsistency" role="status" aria-live="polite"></div>
           <div class="transaction-entry-actions"><button class="transaction-cancel" type="button">Cancel</button><button class="transaction-save" type="submit">Add Transaction</button></div>
         </form>`;
@@ -3960,6 +3968,17 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         panel.querySelector('#paypalFeePreview').textContent = `-${money(fee)}`;
         panel.querySelector('#paypalNetPreview').textContent = money(Math.max(0,gross - fee));
       };
+      const reimbursementFund = panel.querySelector('#reimbursementFund');
+      const updateReimbursementPreview = () => {
+        const paid = currentValue('fund'), responsible = reimbursementFund.value;
+        const amount = Math.abs(Number(currentValue('amount')) || 0);
+        const active = currentValue('type').toLowerCase() === 'expense' && !isPayPalWorkflow();
+        reimbursementFund.disabled = !active;
+        panel.querySelector('#reimbursementPreview').textContent = !active ? 'Available for expenses paid directly from a fund.' : !responsible || responsible === paid ? 'No reimbursement needed.' : `Record ${money(amount)} from ${responsible} to ${paid || 'the paying fund'} with this purchase.`;
+      };
+      panel.querySelector('form').addEventListener('input', updateReimbursementPreview);
+      panel.querySelector('form').addEventListener('change', updateReimbursementPreview);
+      updateReimbursementPreview();
       const getPayeeGuidance = () => financePayeeHistory.get(currentValue('payee/payer').toLowerCase()) || null;
       const showPayeeGuidance = (fillBlanks = false) => {
         const guidance = getPayeeGuidance();
@@ -4065,10 +4084,32 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           }
           values._paypalRows = [values,feeRow,transferRow];
         }
+        let reimbursementRows = null;
+        if (reimbursementFund.value && !reimbursementFund.disabled && reimbursementFund.value !== values[fundColumn]) {
+          const responsible = reimbursementFund.value, paid = values[fundColumn];
+          const amount = Math.abs(Number(values[amountColumn]));
+          if (!Number.isFinite(amount) || !amount || String(values[typeColumn]).toLowerCase() !== 'expense') { alert('Enter a valid expense for reimbursement.'); return; }
+          if (!window.confirm(`Create this purchase plus a ${money(amount)} reimbursement from ${responsible} to ${paid}? The money must still be transferred in Chase.`)) return;
+          const noteColumn = headers.findIndex(header => /^note$/i.test(String(header || '').trim()));
+          const link = `FUND-REIMBURSEMENT-${crypto.randomUUID()}`;
+          const originalNote = noteColumn >= 0 ? String(values[noteColumn] || '') : '';
+          if (noteColumn >= 0) values[noteColumn] = `${originalNote}${originalNote ? ' · ' : ''}Expense belongs to ${responsible}; paid from ${paid}. [${link}]`;
+          const makeTransfer = (fund,sign,type) => {
+            const row = [...values];
+            row[descriptionColumn] = `${values[payeeColumn]} reimbursement — ${type.toLowerCase()}`;
+            row[categoryColumn] = 'Transfer'; row[subcategoryColumn] = 'Internal Transfer';
+            row[fundColumn] = fund; row[payeeColumn] = 'Chase'; row[amountColumn] = sign * amount;
+            row[typeColumn] = type; row[paymentColumn] = 'ACH / Bank Transfer'; row[clearedColumn] = 'No';
+            if (impactColumn >= 0) row[impactColumn] = 'FALSE';
+            if (noteColumn >= 0) row[noteColumn] = `Planned reimbursement from ${responsible} to ${paid}. Transfer in Chase and mark cleared after posting. Not additional income or expense. [${link}]`;
+            return row;
+          };
+          reimbursementRows = [values, makeTransfer(responsible,-1,'Transfer Out'), makeTransfer(paid,1,'Transfer In')];
+        }
         saveButton.disabled = true;
-        saveButton.textContent = paypalMode ? 'Adding 3 Entries…' : 'Adding…';
+        saveButton.textContent = paypalMode || reimbursementRows ? 'Adding 3 Entries…' : 'Adding…';
         try {
-          const rowsToAppend = values._paypalRows || [values];
+          const rowsToAppend = reimbursementRows || values._paypalRows || [values];
           delete values._paypalRows;
           const appendResult = rowsToAppend.length > 1 ? await appendSheetRows(FINANCE_SPREADSHEET_ID, 'Transactions-2026', rowsToAppend) : await appendSheetRow(FINANCE_SPREADSHEET_ID, 'Transactions-2026', values);
           const updatedRange = String((appendResult.updates && appendResult.updates.updatedRange) || '');
