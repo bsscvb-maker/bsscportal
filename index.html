@@ -2683,8 +2683,8 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       },'Formatted transaction dates','Transactions-2026',Number(match[2])-Number(match[1])+1);
       const updates = [];
       for (let row = Number(match[1]); row <= Number(match[2]); row += 1) {
-        updates.push({range:`'Transactions-2026'!K${row}`,value:`=IF($A${row}="","",'Control-2026'!$E$30+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"<>PayPal")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer Out")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Pending at Chase",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Pending at Chase",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer Out"))`});
-        updates.push({range:`'Transactions-2026'!L${row}`,value:`=IF($A${row}="","",K${row}+SUMIFS($J$322:$J${row},$O$322:$O${row},"No",$N$322:$N${row},"<>PayPal")+SUMIFS($J$322:$J${row},$O$322:$O${row},"No",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"No",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer Out"))`});
+        updates.push({range:`'Transactions-2026'!K${row}`,value:`=IF($A${row}="","",'Control-2026'!$E$30+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"<>PayPal",$N$322:$N${row},"<>Chase Payments")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"Chase Payments",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer Out")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"Chase Payments",$M$322:$M${row},"Transfer Out")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Pending at Chase",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Pending at Chase",$N$322:$N${row},"Chase Payments",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Pending at Chase",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer Out")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Pending at Chase",$N$322:$N${row},"Chase Payments",$M$322:$M${row},"Transfer Out"))`});
+        updates.push({range:`'Transactions-2026'!L${row}`,value:`=IF($A${row}="","",K${row}+SUMIFS($J$322:$J${row},$O$322:$O${row},"No",$N$322:$N${row},"<>PayPal",$N$322:$N${row},"<>Chase Payments")+SUMIFS($J$322:$J${row},$O$322:$O${row},"No",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"No",$N$322:$N${row},"Chase Payments",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"No",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer Out")+SUMIFS($J$322:$J${row},$O$322:$O${row},"No",$N$322:$N${row},"Chase Payments",$M$322:$M${row},"Transfer Out"))`});
       }
       await updateSheetRanges(FINANCE_SPREADSHEET_ID,updates);
     }
@@ -4039,7 +4039,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
             const totalRunningColumn = headers.findIndex(header => /^total\s*running\s*balance$/i.test(String(header || '').trim()));
             const formulaUpdates = [];
             for (let appendedRow = firstAppendedRow; appendedRow <= lastAppendedRow; appendedRow += 1) {
-              const bankImpact = status => `SUMIFS($J$322:$J${appendedRow},$O$322:$O${appendedRow},"${status}",$N$322:$N${appendedRow},"<>PayPal")+SUMIFS($J$322:$J${appendedRow},$O$322:$O${appendedRow},"${status}",$N$322:$N${appendedRow},"PayPal",$M$322:$M${appendedRow},"Transfer In")+SUMIFS($J$322:$J${appendedRow},$O$322:$O${appendedRow},"${status}",$N$322:$N${appendedRow},"PayPal",$M$322:$M${appendedRow},"Transfer Out")`;
+              const bankImpact = status => `SUMIFS($J$322:$J${appendedRow},$O$322:$O${appendedRow},"${status}",$N$322:$N${appendedRow},"<>PayPal",$N$322:$N${appendedRow},"<>Chase Payments")+SUMIFS($J$322:$J${appendedRow},$O$322:$O${appendedRow},"${status}",$N$322:$N${appendedRow},"PayPal",$M$322:$M${appendedRow},"Transfer In")+SUMIFS($J$322:$J${appendedRow},$O$322:$O${appendedRow},"${status}",$N$322:$N${appendedRow},"Chase Payments",$M$322:$M${appendedRow},"Transfer In")+SUMIFS($J$322:$J${appendedRow},$O$322:$O${appendedRow},"${status}",$N$322:$N${appendedRow},"PayPal",$M$322:$M${appendedRow},"Transfer Out")+SUMIFS($J$322:$J${appendedRow},$O$322:$O${appendedRow},"${status}",$N$322:$N${appendedRow},"Chase Payments",$M$322:$M${appendedRow},"Transfer Out")`;
               const clearedBalance = `=IF($A${appendedRow}="","",'Control-2026'!$E$30+SUM($J$317:$J$318)+$J$321-28.93+${bankImpact('Yes')})`;
               const projectedBalance = `=IF($A${appendedRow}="","",K${appendedRow}+${bankImpact('<>Yes')})`;
               if (runningColumn >= 0) formulaUpdates.push({range:`'Transactions-2026'!${columnNumberToLetters(runningColumn + 1)}${appendedRow}`,value:clearedBalance});
@@ -5298,7 +5298,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const pendingForFund = fundName => transactionRows.slice(1).reduce((totals,row) => {
         const cleared=String(row[14]||'').trim().toLowerCase(),method=String(row[13]||'').trim().toLowerCase(),type=String(row[12]||'').trim().toLowerCase();
         const fund=String(row[6]||'').trim().toLowerCase();
-        if(fund!==fundName.toLowerCase() || cleared!=='no' || (method==='paypal' && !['transfer in','transfer out'].includes(type))) return totals;
+        if(fund!==fundName.toLowerCase() || cleared!=='no' || (['paypal','chase payments'].includes(method) && !['transfer in','transfer out'].includes(type))) return totals;
         const amount=numeric(row[9]||0);
         if(!Number.isFinite(amount)) return totals;
         if(amount>0) { if(method==='paypal') totals.paypal+=amount; else totals.otherDeposits+=amount; }
@@ -5318,7 +5318,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         const cleared=String(row[14]||'').trim().toLowerCase();
         const method=String(row[13]||'').trim().toLowerCase();
         const type=String(row[12]||'').trim().toLowerCase();
-        if(fund!==fundName.toLowerCase() || cleared!=='yes' || (method==='paypal' && !['transfer in','transfer out'].includes(type))) return balance;
+        if(fund!==fundName.toLowerCase() || cleared!=='yes' || (['paypal','chase payments'].includes(method) && !['transfer in','transfer out'].includes(type))) return balance;
         const amount=numeric(row[9]||0);
         return Number.isFinite(amount)?balance+amount:balance;
       },opening);
@@ -5380,7 +5380,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const number=value=>Number(String(value||0).replace(/[$,]/g,''));
       return rows.slice(1).filter(row=>{
         const fund=String(row[6]||'').trim().toLowerCase(),status=String(row[14]||'').trim().toLowerCase(),method=String(row[13]||'').trim().toLowerCase(),type=String(row[12]||'').trim().toLowerCase(),amount=number(row[9]);
-        if(fund!==fundName.toLowerCase()||status!=='no'||!Number.isFinite(amount)||(method==='paypal'&&!['transfer in','transfer out'].includes(type))) return false;
+        if(fund!==fundName.toLowerCase()||status!=='no'||!Number.isFinite(amount)||(['paypal','chase payments'].includes(method)&&!['transfer in','transfer out'].includes(type))) return false;
         return kind==='outgoing'?amount<0:kind==='paypal'?amount>0&&method==='paypal':amount>0&&method!=='paypal';
       });
     }
@@ -5672,10 +5672,11 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       for (let index=2; index<rows.length; index++) {
         const [income,fee,transfer] = [rows[index-2],rows[index-1],rows[index]];
         if (!income || !fee || !transfer ||
-            ![income,fee,transfer].every(row => String(row[13] || '').trim().toLowerCase() === 'paypal') ||
+            !['paypal','chase payments'].includes(String(income[13] || '').trim().toLowerCase()) ||
+            ![income,fee,transfer].every(row => String(row[13] || '').trim().toLowerCase() === String(income[13] || '').trim().toLowerCase()) ||
             String(income[12] || '').trim() !== 'Income' || String(fee[12] || '').trim() !== 'Expense' ||
             String(transfer[12] || '').trim() !== 'Transfer In' ||
-            !/^PayPal Processing Fee/i.test(String(fee[3] || '')) || !/^PayPal to Bank Transfer/i.test(String(transfer[3] || ''))) continue;
+            !/^(PayPal|Chase) Processing Fee/i.test(String(fee[3] || '')) || !/^(PayPal to Bank Transfer|Chase Card Deposit)/i.test(String(transfer[3] || ''))) continue;
         paypalBundles.set(index+1,[index-1,index,index+1]);
         paypalDetails.add(index-1);paypalDetails.add(index);
       }
@@ -5686,7 +5687,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         return;
       }
       const columns = [[0,'Date'],[3,'Description'],[6,'Fund'],[7,'Activity'],[8,'Payee/Payer'],[9,'Amount'],[13,'Payment Method']];
-      target.innerHTML = `<p class="control-edit-note">PayPal: the full payment and fee stay visible. Mark the net transfer Pending at Chase when Chase lists it as pending. Once it posts, clear all three rows together.</p><div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search uncleared transactions</span><input class="table-search" type="search" id="reconciliationSearch" placeholder="Search uncleared transactions…" autocomplete="off"></label></div><div class="table-search-count" id="reconciliationSearchCount"></div><div class="table-wrap"><table class="data-table"><thead><tr>${columns.map(([,label]) => `<th>${esc(label)}</th>`).join('')}<th>Bank status / clear</th></tr></thead><tbody>${uncleared.map(item => `<tr>${columns.map(([column]) => `<td>${esc(item.row[column] || '')}</td>`).join('')}<td>${paypalDetails.has(item.sourceRow) ? '<span class="reconciliation-linked">Clears with bank transfer</span>' : `${paypalBundles.has(item.sourceRow) && String(item.row[14] || '').trim().toLowerCase() !== 'pending at chase' ? `<button type="button" class="dashboard-edit-btn" data-pending-row="${item.sourceRow}">Pending at Chase</button>` : ''}${String(item.row[14] || '').trim().toLowerCase() === 'pending at chase' ? '<strong>Pending at Chase · </strong>' : ''}<label class="reconciliation-check"><input type="checkbox" data-clear-row="${item.sourceRow}"> ${paypalBundles.has(item.sourceRow) ? 'Clear all 3 after posting' : 'Mark cleared'}</label>`}</td></tr>`).join('')}</tbody></table></div>`;
+      target.innerHTML = `<p class="control-edit-note">PayPal and Chase card payments: the full payment and fee stay visible. Mark the net transfer Pending at Chase when Chase lists it as pending. Once it posts, clear all three rows together.</p><div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search uncleared transactions</span><input class="table-search" type="search" id="reconciliationSearch" placeholder="Search uncleared transactions…" autocomplete="off"></label></div><div class="table-search-count" id="reconciliationSearchCount"></div><div class="table-wrap"><table class="data-table"><thead><tr>${columns.map(([,label]) => `<th>${esc(label)}</th>`).join('')}<th>Bank status / clear</th></tr></thead><tbody>${uncleared.map(item => `<tr>${columns.map(([column]) => `<td>${esc(item.row[column] || '')}</td>`).join('')}<td>${paypalDetails.has(item.sourceRow) ? '<span class="reconciliation-linked">Clears with bank transfer</span>' : `${paypalBundles.has(item.sourceRow) && String(item.row[14] || '').trim().toLowerCase() !== 'pending at chase' ? `<button type="button" class="dashboard-edit-btn" data-pending-row="${item.sourceRow}">Pending at Chase</button>` : ''}${String(item.row[14] || '').trim().toLowerCase() === 'pending at chase' ? '<strong>Pending at Chase · </strong>' : ''}<label class="reconciliation-check"><input type="checkbox" data-clear-row="${item.sourceRow}"> ${paypalBundles.has(item.sourceRow) ? 'Clear all 3 after posting' : 'Mark cleared'}</label>`}</td></tr>`).join('')}</tbody></table></div>`;
       status.textContent = `${uncleared.length} uncleared transaction${uncleared.length === 1 ? '' : 's'} require review.`;
       const search = document.getElementById('reconciliationSearch');
       search.addEventListener('input', () => {
@@ -5714,7 +5715,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           const sourceRow = Number(checkbox.dataset.clearRow);
           const bundle = paypalBundles.get(sourceRow);
           if (bundle) {
-            if (!window.confirm(`Has the ${String(rows[sourceRow-1][9] || '')} PayPal bank transfer fully posted in Chase? This will mark its payment, fee, and transfer cleared together.`)) {
+            if (!window.confirm(`Has the ${String(rows[sourceRow-1][9] || '')} net deposit fully posted in Chase? This will mark its payment, fee, and transfer cleared together.`)) {
               checkbox.checked = false;checkbox.disabled = false;label.lastChild.textContent = ' Clear all 3 after posting';return;
             }
             await updateSheetRanges(FINANCE_SPREADSHEET_ID,bundle.map(n => ({range:`'Transactions-2026'!O${n}`,value:'Yes'})));
@@ -5828,13 +5829,22 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       return JSON.stringify([row[0],row[5],row[6],row[9]]);
     }
 
+    function tallyCardProcessor(row) {
+      return /^paypal$/i.test(String(row[7] || '').trim()) ? 'PayPal' : 'Chase';
+    }
+
     function tallyCardTransactions(row,fee,net,payoutDate) {
       const gross = tallyTransactionFromRow(row);
       const payer = String(row[6] || '').trim() || 'Card payment';
-      gross[8] = 'PayPal';
-      gross[13] = 'PayPal';
+      const processor = tallyCardProcessor(row);
+      const method = processor === 'PayPal' ? 'PayPal' : 'Chase Payments';
+      if (!Number.isFinite(fee) || !Number.isFinite(net) || fee < 0 || net <= 0 || Math.abs(gross[9]-fee-net) > .011 || !/^\d{4}-\d{2}-\d{2}$/.test(payoutDate)) throw new Error('Enter a valid fee, net deposit, and deposit date.');
+      gross[8] = processor === 'PayPal' ? 'PayPal' : payer;
+      gross[13] = method;
+      gross[16] += ` | Processor: ${processor} | Gross ${money(gross[9])}; fee ${money(fee)}; net ${money(net)}`;
       const feeRow = [...gross];
-      feeRow[3] = 'PayPal Processing Fee – ' + payer;
+      feeRow[8] = processor;
+      feeRow[3] = processor + ' Processing Fee – ' + payer;
       feeRow[4] = 'Bank Fees';
       feeRow[5] = 'Processing Fee';
       feeRow[7] = 'Online';
@@ -5846,14 +5856,15 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       transfer[0] = (day.getMonth()+1) + '/' + day.getDate() + '/' + day.getFullYear();
       transfer[1] = day.toLocaleString('en-US',{month:'long'});
       transfer[2] = day.getFullYear();
-      transfer[3] = 'PayPal to Bank Transfer – ' + payer;
+      transfer[8] = processor;
+      transfer[3] = processor === 'PayPal' ? 'PayPal to Bank Transfer – ' + payer : 'Chase Card Deposit – ' + payer;
       transfer[4] = 'Transfer';
       transfer[5] = 'Internal Transfer';
       transfer[7] = 'Online';
       transfer[9] = net;
       transfer[12] = 'Transfer In';
       transfer[15] = false;
-      transfer[16] = 'PayPal bank transfer: ' + money(net) + ' | ' + gross[16];
+      transfer[16] = processor + ' bank transfer: ' + money(net) + ' | ' + gross[16];
       return [gross,feeRow,transfer];
     }
 
@@ -5862,7 +5873,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         const dialog = document.createElement('dialog');
         dialog.className = 'receive-modal tally-payout-dialog';
         const form = document.createElement('form');
-        form.innerHTML = '<h2>Card payout details</h2><p>Cash and check entries can transfer now. Include card payments only after PayPal shows the fee and net bank deposit.</p>';
+        form.innerHTML = '<h2>Card payout details</h2><p>Enter the actual Chase or PayPal fee and deposit date. Each selected payment creates a gross payment, fee, and net deposit entry. Entries remain uncleared until matched to the bank.</p>';
         cards.forEach((item,index) => {
           const block = document.createElement('fieldset');
           block.className = 'tally-payout-card';
@@ -5870,9 +5881,16 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           block.innerHTML = '<legend><label><input type="checkbox" data-include> Include this card payment</label></legend>' +
             '<strong>' + esc(String(item.row[6] || 'Card payer')) + '</strong><small>' + esc(String(item.row[4] || 'Payment')) +
             ' · Gross ' + esc(String(item.row[5] || '')) + ' · ' + esc(String(item.row[9] || 'No reference')) + '</small>' +
-            '<div class="tally-payout-fields"><label>Actual PayPal fee<input type="number" data-fee min="0" step="0.01" placeholder="0.00"></label>' +
-            '<label>Net bank deposit<input type="number" data-net min="0.01" step="0.01" placeholder="0.00"></label>' +
-            '<label>Deposit date<input type="date" data-date></label></div>';
+            '<div class="tally-payout-fields"><label>Actual ' + tallyCardProcessor(item.row) + ' fee<input type="number" data-fee min="0" step="0.01" placeholder="0.00" value="' + esc(item.row[12] ?? '') + '"></label>' +
+            '<label>Net bank deposit<input type="number" data-net min="0.01" step="0.01" readonly value="' + esc(item.row[13] ?? '') + '"></label>' +
+            '<label>Deposit date<input type="date" data-date value="' + esc(transactionDateForInput(item.row[14])) + '"></label></div>';
+          const updateNet = () => {
+            const feeInput = block.querySelector('[data-fee]');
+            const gross = Number(String(item.row[5] || '').replace(/[$,]/g,''));
+            block.querySelector('[data-net]').value = feeInput.value === '' ? '' : (gross - Number(feeInput.value)).toFixed(2);
+          };
+          block.querySelector('[data-fee]').addEventListener('input',updateNet);
+          updateNet();
           form.appendChild(block);
         });
         const actions = document.createElement('div');
@@ -5897,7 +5915,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
             const dateInput = block.querySelector('[data-date]');
             const gross = Number(String(item.row[5] || '').replace(/[$,]/g,''));
             const fee = Number(feeInput.value), net = Number(netInput.value);
-            if (!feeInput.value || !netInput.value || !dateInput.value || !Number.isFinite(gross) || fee < 0 || net <= 0 || Math.abs(gross-fee-net) > .011) {
+            if (!feeInput.value || !netInput.value || !dateInput.value || !Number.isFinite(gross) || !Number.isFinite(fee) || !Number.isFinite(net) || fee < 0 || net <= 0 || Math.abs(gross-fee-net) > .011) {
               alert('Enter the actual fee, net deposit, and deposit date. Gross minus fee must equal the net deposit.');
               (!feeInput.value ? feeInput : !netInput.value ? netInput : dateInput).focus();
               return;
@@ -5927,7 +5945,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       if (!latest[0] || !tallyRowsMatch(item.row,latest[0]) || String(latest[0][11] || '').trim()) {
         throw new Error('This entry changed or was already sent. Refresh Tally before editing it.');
       }
-      const range = changes ? `'Tally 2026'!B${item.sourceRow}:K${item.sourceRow}` : `'Tally 2026'!A${item.sourceRow}:O${item.sourceRow}`;
+      const range = changes ? `'Tally 2026'!B${item.sourceRow}:O${item.sourceRow}` : `'Tally 2026'!A${item.sourceRow}:O${item.sourceRow}`;
       const values = changes || Array(15).fill('');
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${FINANCE_SPREADSHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
       await writePortalSheetRequest(url,{
@@ -5948,6 +5966,26 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         ['Card Details / Transaction Reference','text',9],['Entry Time (Eastern)','text',10]
       ];
       dialog.innerHTML = `<form><h2>Edit Tally entry</h2><p>Changes here apply only to this pending entry. Confirm the event, person, and amount before saving.</p><div class="tally-edit-fields">${fields.map(([label,type,index]) => `<label>${esc(label)}<input data-tally-field="${index}" type="${type}" ${type === 'number' ? 'min="0.01" step="0.01"' : ''} value="${esc(type === 'number' ? String(item.row[index] || '').replace(/[$,]/g,'') : String(item.row[index] || ''))}" ${[1,2,4,5,7].includes(index) ? 'required' : ''}></label>`).join('')}</div><div class="receive-modal-actions"><button type="button" data-cancel>Cancel</button><button type="button" data-delete>Delete entry</button><button type="submit" data-save>Save changes</button></div></form>`;
+      const cardFields = document.createElement('div');
+      cardFields.className = 'tally-card-fees';
+      cardFields.style.cssText = 'grid-column:1/-1;display:grid;grid-template-columns:inherit;gap:12px';
+      cardFields.innerHTML = `<label>Processing fee<input data-card-fee type="number" min="0" step="0.01" value="${esc(item.row[12] ?? '')}" placeholder="0.00"></label><label>Net deposit<input data-card-net type="number" step="0.01" readonly></label><label>Deposit date<input data-card-date type="date" value="${esc(transactionDateForInput(item.row[14]))}"></label><p data-card-summary></p>`;
+      dialog.querySelector('.tally-edit-fields').appendChild(cardFields);
+      const refreshCardPreview = () => {
+        const method = dialog.querySelector('[data-tally-field="7"]').value.trim();
+        const active = /^(credit card|paypal|chase payments)$/i.test(method);
+        cardFields.style.display = active ? 'grid' : 'none';
+        const processor = /^paypal$/i.test(method) ? 'PayPal' : 'Chase';
+        const feeInput = cardFields.querySelector('[data-card-fee]');
+        feeInput.parentElement.firstChild.textContent = processor + ' processing fee';
+        const gross = Number(dialog.querySelector('[data-tally-field="5"]').value);
+        const net = Number((gross - Number(feeInput.value)).toFixed(2));
+        cardFields.querySelector('[data-card-net]').value = feeInput.value === '' ? '' : net.toFixed(2);
+        cardFields.querySelector('[data-card-summary]').textContent = feeInput.value === '' ? 'Enter the actual fee to calculate the net deposit.' : `${money(gross)} − ${money(Number(feeInput.value))} = ${money(net)} net deposit. Send to Transactions creates all three entries.`;
+      };
+      ['5','7'].forEach(index => dialog.querySelector(`[data-tally-field="${index}"]`).addEventListener('input',refreshCardPreview));
+      cardFields.querySelector('[data-card-fee]').addEventListener('input',refreshCardPreview);
+      refreshCardPreview();
       document.body.appendChild(dialog);
       dialog.addEventListener('close',() => dialog.remove());
       dialog.querySelector('[data-cancel]').addEventListener('click',() => dialog.close());
@@ -5967,6 +6005,14 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         if (!Number.isFinite(values[4]) || values[4] <= 0 || Number.isNaN(new Date(values[1] + ' 12:00:00').getTime())) {
           alert('Enter a valid event date and a positive amount.');return;
         }
+        const isCard = /^(credit card|paypal|chase payments)$/i.test(values[6]);
+        const feeValue = cardFields.querySelector('[data-card-fee]').value;
+        const fee = Number(feeValue);
+        const depositDate = cardFields.querySelector('[data-card-date]').value;
+        if (isCard && feeValue !== '' && (!Number.isFinite(fee) || fee < 0 || fee >= values[4])) {
+          alert('The processing fee must be zero or more and less than the gross payment.');return;
+        }
+        values.push('', isCard && feeValue !== '' ? fee : '', isCard && feeValue !== '' ? Number((values[4]-fee).toFixed(2)) : '', isCard ? depositDate : '');
         setBusy(true);
         try {await updatePendingTallyEntry(item,values);dialog.close();}
         catch(error) {setBusy(false);alert(error.message || 'The entry could not be saved.');}
@@ -6015,10 +6061,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       summary.style.cssText = 'padding:16px 4px;font-size:1rem;font-weight:800;text-align:right';
       summary.textContent = `Pending total: ${money(pendingTotal)}`;
       target.appendChild(summary);
-      const waitingCards = pending.filter(item => /^(credit card|paypal)$/i.test(String(item.row[7] || '').trim())).length;
-      status.textContent = pending.length ? `${pending.length} pending Tally ${pending.length === 1 ? 'entry' : 'entries'}${waitingCards ? `; ${waitingCards} card ${waitingCards === 1 ? 'payment needs' : 'payments need'} PayPal fee and bank deposit details before transfer` : ''}.` : 'All Tally entries have been sent to Transactions-2026. Pending total: $0.00.';
+      const waitingCards = pending.filter(item => /^(credit card|paypal|chase payments)$/i.test(String(item.row[7] || '').trim())).length;
+      status.textContent = pending.length ? `${pending.length} pending Tally ${pending.length === 1 ? 'entry' : 'entries'}${waitingCards ? `; ${waitingCards} card ${waitingCards === 1 ? 'payment needs' : 'payments need'} processing fee and bank deposit details before transfer` : ''}.` : 'All Tally entries have been sent to Transactions-2026. Pending total: $0.00.';
       button.addEventListener('click', async () => {
-        const cards = pending.filter(item => /^(credit card|paypal)$/i.test(String(item.row[7] || '').trim()));
+        const cards = pending.filter(item => /^(credit card|paypal|chase payments)$/i.test(String(item.row[7] || '').trim()));
         const cardDetails = cards.length ? await collectTallyCardDetails(cards) :
           (window.confirm(`Send all ${pending.length} pending Tally ${pending.length === 1 ? 'entry' : 'entries'} to Transactions-2026?`) ? new Map() : null);
         if (cardDetails === null) return;
@@ -6027,12 +6073,12 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         try {
           const latestTally = await getSheetValues("'Tally 2026'!A1:O1000",FINANCE_SPREADSHEET_ID);
           const latestPending = latestTally.slice(1).map((row,index) => ({row,sourceRow:index + 2})).filter(item => item.row.some(value => String(value || '').trim()) && !String(item.row[11] || '').trim());
-          const prepared = latestPending.filter(item => !/^(credit card|paypal)$/i.test(String(item.row[7] || '').trim()) || cardDetails.has(tallyCardKey(item.row)))
+          const prepared = latestPending.filter(item => !/^(credit card|paypal|chase payments)$/i.test(String(item.row[7] || '').trim()) || cardDetails.has(tallyCardKey(item.row)))
             .map(item => {
               const details = cardDetails.get(tallyCardKey(item.row));
               return {...item,details,transactions:details ? tallyCardTransactions(item.row,details.fee,details.net,details.date) : [tallyTransactionFromRow(item.row)]};
             });
-          if (!prepared.length) throw new Error('No payments are ready. Enter card payout details when PayPal deposits the funds.');
+          if (!prepared.length) throw new Error('No payments are ready. Enter the actual card fee and bank deposit details.');
           const foundKeys = new Set(prepared.map(item => tallyCardKey(item.row)));
           for (const key of cardDetails.keys()) if (!foundKeys.has(key)) throw new Error('A card entry changed. Refresh Tally and check it before sending.');
           const existing = await getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID);
