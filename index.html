@@ -5748,8 +5748,14 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const sameAccount=row=>String(row[6] || '').toLowerCase()===account.toLowerCase();
       if(item.duplicate)return {kind:'Duplicate bank line',choices:[],auto:false};
       if(processor && item.cents>0){
-        const candidates=[...bundles].map(([n,group])=>({n,group,row:rows[n-1],cents:bankCents(rows[n-1]?.[9])})).filter(c=>String(c.row[13]).toLowerCase()===processor && dateFits(c.row) && c.cents>0);
-        const result=bankExactSubsets(candidates,item.cents);
+        const candidates=[...bundles].map(([n,group])=>({n,group,row:rows[n-1],cents:bankCents(rows[n-1]?.[9])})).filter(c=>String(c.row[13]).toLowerCase()===processor && dateFits(c.row) && c.cents>0 && bankCents(rows[c.group[0]-1][9]) + bankCents(rows[c.group[1]-1][9])===c.cents);
+        const openCandidates=candidates.filter(c=>c.group.some(n=>!isCleared(rows[n-1])));
+        const result=bankExactSubsets(openCandidates,item.cents);
+        if(!result.solutions.length && !result.limited){
+          const previous=bankReviewSession?.matches?.find(x=>x.key===item.key)?.match?.choices || [];
+          for(const choice of previous)if(choice.net===item.cents && choice.numbers.every(n=>isCleared(rows[n-1])))result.solutions.push(choice.numbers.filter(n=>bundles.has(n)).map(n=>candidates.find(c=>c.n===n)).filter(Boolean));
+          if(!result.solutions.length)candidates.filter(c=>c.cents===item.cents && c.group.every(n=>isCleared(rows[n-1]))).forEach(c=>result.solutions.push([c]));
+        }
         const choices=result.solutions.map(group=>({numbers:group.flatMap(c=>c.group),label:group.map(c=>`${c.row[3]}: gross ${money(bankCents(rows[c.group[0]-1][9])/100)} + fee ${money(bankCents(rows[c.group[1]-1][9])/100)} = net ${money(c.cents/100)}`).join(' + '),net:group.reduce((s,c)=>s+c.cents,0),already:group.every(c=>c.group.every(n=>isCleared(rows[n-1])))}));
         return {kind:result.limited?'Search limit — review manually':choices.length===1?(choices[0].already?'Already cleared':'Exact processor deposit'):choices.length>1?'Multiple exact combinations':'No exact processor deposit',choices,auto:choices.length===1 && !result.limited && !item.pending && choices[0].numbers.every(n=>sameAccount(rows[n-1]))};
       }
