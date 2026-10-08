@@ -1710,6 +1710,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     .finance-year-comparison tbody tr:last-child th{font-weight:400}
     #financeControlTable .finance-year-comparison table tbody td.comparison-percent{color:var(--change-color)!important;font-weight:800}
     .finance-year-comparison .finance-detail-plus{width:18px;height:18px;margin-left:4px;padding:0;font-size:11px}
+
+    #financeControlTable .control-row.finance-amount-expense strong,#financeDashboard .finance-dashboard-card.finance-amount-expense strong,#financeControlTable .finance-year-comparison table tbody td.finance-amount-expense{color:#df1727!important}
+    #financeControlTable .control-row.finance-amount-positive strong,#financeDashboard .finance-dashboard-card.finance-amount-positive strong,#financeControlTable .finance-year-comparison table tbody td.finance-amount-positive{color:#008a36!important}
+    #financeControlTable .control-row.finance-amount-balance strong,#financeDashboard .finance-dashboard-card.finance-amount-balance strong,#financeControlTable .finance-year-comparison table tbody td.finance-amount-balance{color:#111113!important}
 </style>
 </head>
 <body>
@@ -5544,7 +5548,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         const numeric = Number(String(value).replace(/[$,%▲▼,()]/g,'').trim()) * (String(value).includes('(') ? -1 : 1);
         return Number.isFinite(numeric) ? (numeric < 0 ? 'alert' : (numeric > 0 ? 'good' : '')) : '';
       };
-      const card = (label,value,cls='') => `<div class="finance-dashboard-card ${cls}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
+      const card = (label,value,cls='') => `<div class="finance-dashboard-card ${cls} ${financeAmountTone(label,value)}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
       const bankAt = (r,c) => String(controlRows[r]?.[c] ?? '—').replace(/\s+/g,' ').trim();
       const reconciliation = cash.status;
       const generalMonth=financePeriodTotals('General Fund','month',transactionRows,controlRows);
@@ -5709,6 +5713,13 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       return {income:income-fees,expenses};
     }
 
+    function financeAmountTone(label,value) {
+      if(/balance|available|reserve calculation|after reserves|after reserving|chase minus|ledger total/i.test(label))return 'finance-amount-balance';
+      if(/expense|payment|spend|money spent/i.test(label))return 'finance-amount-expense';
+      const number=Number(String(value||0).replace(/[$,%(),▲▼]/g,'').trim())*(String(value).includes('(')?-1:1);
+      return Number.isFinite(number)?(number<0?'finance-amount-expense':number>0?'finance-amount-positive':'finance-amount-balance'):'';
+    }
+
     function financeYearComparison(fund,current) {
       const prior=financePriorYearTotals(fund);
       const money=value=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value||0);
@@ -5720,7 +5731,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         const color=change==null || Math.abs(change)<.005?'#34363a':(change>0?'#008a36':'#df1727');
         const percentText=percent==null?'—':(percent>0?'+':'')+percent.toFixed(1)+'%';
         const detail=kind?'<button type="button" class="finance-detail-plus" data-finance-fund="'+esc(fund)+'" data-finance-kind="'+kind+'" aria-label="Show '+esc(label)+' breakdown">+</button>':'';
-        return '<tr><th scope="row">'+esc(label)+'</th><td>'+money(after)+detail+'</td><td>'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+color+'" title="Change relative to the absolute 2025 amount">'+percentText+'</td></tr>';
+        return '<tr><th scope="row">'+esc(label)+'</th><td class="'+financeAmountTone(label,after)+'">'+money(after)+detail+'</td><td class="'+financeAmountTone(label,before)+'">'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+color+'" title="Change relative to the absolute 2025 amount">'+percentText+'</td></tr>';
       }).join('')+'</tbody></table></div>';
     }
 
@@ -5731,7 +5742,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const numeric = value => Number(String(value).replace(/[$,%(),▲▼]/g,'').trim()) * (String(value).includes('(') ? -1 : 1);
       const resultTone = value => numeric(value) < 0 ? 'tone-red' : 'tone-green';
       const editableValue = (value,row) => financeControlEditMode ? `<input class="control-edit-input" data-control-row="${row}" value="${esc(value === '—' ? '' : value)}" aria-label="Edit bank reconciliation amount">` : `<strong>${esc(value)}</strong>`;
-      const section = (title,pairs,cls='') => `<section class="control-card ${cls}"><h3>${esc(title)}</h3><div class="control-rows">${pairs.map(([label,value,bad,row,detail]) => `<div class="control-row ${bad ? 'status-bad' : ''}"><span${/^(LEDGER BALANCE AFTER RESERVING PAYMENTS|General Fund available|Bikes for Tykes available|After reserving uncleared payments)$/.test(label) ? ' style="font-weight:800"' : ''}>${esc(label)}</span>${row ? editableValue(value,row) : `<strong>${esc(value)}${detail ? `<button type="button" class="finance-detail-plus" data-finance-fund="${esc(detail[0])}" data-finance-kind="${esc(detail[1])}" aria-label="Show ${esc(label)} breakdown">+</button>` : ''}</strong>`}</div>`).join('')}</div></section>`;
+      const section = (title,pairs,cls='') => `<section class="control-card ${cls}"><h3>${esc(title)}</h3><div class="control-rows">${pairs.map(([label,value,bad,row,detail]) => `<div class="control-row ${financeAmountTone(label,value)} ${bad ? 'status-bad' : ''}"><span${/^(LEDGER BALANCE AFTER RESERVING PAYMENTS|General Fund available|Bikes for Tykes available|After reserving uncleared payments)$/.test(label) ? ' style="font-weight:800"' : ''}>${esc(label)}</span>${row ? editableValue(value,row) : `<strong>${esc(value)}${detail ? `<button type="button" class="finance-detail-plus" data-finance-fund="${esc(detail[0])}" data-finance-kind="${esc(detail[1])}" aria-label="Show ${esc(label)} breakdown">+</button>` : ''}</strong>`}</div>`).join('')}</div></section>`;
       const money = value => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value || 0);
       const monthSection = (title,balance,totals) => section(title,[['Current Fund Balance',balance],['Income After Processing Fees',money(totals.income),false,null,[/BIKES FOR TYKES/i.test(title)?'Bikes for Tykes':'General Fund','month-income']],['Other Expenses',money(totals.expenses),false,null,[/BIKES FOR TYKES/i.test(title)?'Bikes for Tykes':'General Fund','month-expense']],['Net This Month',money(totals.income-totals.expenses)]],/BIKES FOR TYKES/i.test(title)?'tone-baby-blue':'tone-green').replace('<span>Net This Month</span>','<span class="control-month-performance">Net This Month</span>');
       const generalMonth = financePeriodTotals('General Fund','month',transactionRows,rows);
