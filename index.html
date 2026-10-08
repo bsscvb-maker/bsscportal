@@ -1699,15 +1699,17 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     #financeReconciliationTable .reconciliation-toolbar { justify-content:flex-end; }
     #financeReconciliationTable .reconciliation-toolbar .table-search-wrap { margin-right:auto; }
 
-    .finance-year-comparison{margin:16px 10px 12px;padding:16px 12px 10px;border:1px solid #a9bab4;border-radius:8px;background:rgba(255,255,255,.65)}
-    .finance-year-comparison h4{margin:0 0 14px;font:800 12px/1.4 Arial,sans-serif;color:#22332b!important}
-    .finance-year-comparison table{width:100%;table-layout:fixed;border-collapse:collapse;font:13px/1.4 Arial,sans-serif;font-variant-numeric:tabular-nums}
-    .finance-year-comparison thead th{padding:0 2px 10px;font-size:11px;font-weight:700;color:#52625a!important;text-align:center;border-bottom:1px solid #cbd5d0}
-    .finance-year-comparison .comparison-label th{padding:12px 4px 5px;text-align:left;font-size:12px;color:#24332b!important;font-weight:700}
-    .finance-year-comparison .comparison-values td{padding:2px 2px 12px;text-align:center;white-space:nowrap;font-weight:700;color:#17251e!important;border-bottom:1px solid #dbe3df}
-    .finance-year-comparison .comparison-values:last-child td{border-bottom:0}
-    .finance-year-comparison .comparison-change{display:inline-block;padding:4px 6px;border-radius:5px;font-size:11px;color:var(--change-color)!important;background:var(--change-bg)}
-    .finance-year-comparison p{font:11px/1.5 Arial,sans-serif;margin:8px 0 0;color:#52625a!important}
+    .finance-year-comparison{padding:8px 10px 12px;overflow-x:auto}
+    .finance-year-comparison table{width:100%;table-layout:fixed;border-collapse:collapse;font:12px/1.4 Arial,sans-serif;font-variant-numeric:tabular-nums}
+    .finance-year-comparison thead th{padding:8px 3px;font-size:11px;font-weight:700;color:#52625a!important;text-align:right;border-bottom:1px solid #bacbc2;white-space:nowrap}
+    .finance-year-comparison thead th:first-child{text-align:left}
+    .finance-year-comparison tbody th{padding:12px 3px;text-align:left;font-weight:500;color:#17251e!important}
+    .finance-year-comparison tbody td{padding:12px 3px;text-align:right;white-space:nowrap;font-weight:700;color:#17251e!important}
+    .finance-year-comparison tbody tr{border-bottom:1px solid #d2ded7}
+    .finance-year-comparison tbody tr:last-child{border-bottom:0}
+    .finance-year-comparison tbody tr:last-child th,.finance-year-comparison tbody tr:last-child td{font-weight:800}
+    .finance-year-comparison .comparison-percent{color:var(--change-color)!important}
+    .finance-year-comparison .finance-detail-plus{width:18px;height:18px;margin-left:4px;padding:0;font-size:11px}
 </style>
 </head>
 <body>
@@ -5709,15 +5711,17 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 
     function financeYearComparison(fund,current) {
       const prior=financePriorYearTotals(fund);
-      if(!prior)return '<p class="control-edit-note">2025 comparison is unavailable.</p>';
       const money=value=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value||0);
-      const metrics=[['Income after fees',prior.income,current.income,false],['Expenses',prior.expenses,current.expenses,true],['Net result',prior.income-prior.expenses,current.income-current.expenses,false]];
-      return '<div class="finance-year-comparison"><h4>2025 Full Year vs. 2026 Year to Date</h4><table><thead><tr><th>2025 · Full Year</th><th>Change</th><th>2026 · Year to Date</th></tr></thead><tbody>'+metrics.map(([label,before,after,expense])=>{
-        const change=Math.round((after-before)*100)/100;
-        const color=change===0?'#34363a':((change>0)!==expense?'#087443':'#b42318');
-        const background=color==='#087443'?'#e0f3e8':color==='#b42318'?'#fde9e7':'#e9eeeb';
-        return '<tr class="comparison-label"><th colspan="3">'+esc(label)+'</th></tr><tr class="comparison-values"><td>'+money(before)+'</td><td><span class="comparison-change" style="--change-color:'+color+';--change-bg:'+background+'" aria-label="'+(change>0?'Increase ':change<0?'Decrease ':'No change ')+money(Math.abs(change))+'">'+(change>0?'↑ ':change<0?'↓ ':'— ')+money(Math.abs(change))+'</span></td><td>'+money(after)+'</td></tr>';
-      }).join('')+'</tbody></table><p>Full-year 2025 compared with 2026 so far.</p></div>';
+      const netLabel=fund==='General Fund'?'Net Operating Position':'Net Program Position';
+      const metrics=[['Income After Processing Fees',prior?.income,current.income,false,'ytd-income'],['Other Expenses',prior?.expenses,current.expenses,true,'ytd-expense'],[netLabel,prior?prior.income-prior.expenses:null,current.income-current.expenses,false,null]];
+      return '<div class="finance-year-comparison"><table><colgroup><col style="width:39%"><col style="width:25%"><col style="width:21%"><col style="width:15%"></colgroup><thead><tr><th scope="col">Metric</th><th scope="col">2026 (YTD)</th><th scope="col">2025</th><th scope="col">% Change</th></tr></thead><tbody>'+metrics.map(([label,before,after,expense,kind])=>{
+        const change=before==null?null:after-before;
+        const percent=before==null || before===0?(before===0 && after===0?0:null):change/Math.abs(before)*100;
+        const color=change==null || Math.abs(change)<.005?'#34363a':((change>0)!==expense?'#087443':'#b42318');
+        const percentText=percent==null?'—':(percent>0?'+':'')+percent.toFixed(1)+'%';
+        const detail=kind?'<button type="button" class="finance-detail-plus" data-finance-fund="'+esc(fund)+'" data-finance-kind="'+kind+'" aria-label="Show '+esc(label)+' breakdown">+</button>':'';
+        return '<tr><th scope="row">'+esc(label)+'</th><td>'+money(after)+detail+'</td><td>'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+color+'" title="Change relative to the absolute 2025 amount">'+percentText+'</td></tr>';
+      }).join('')+'</tbody></table></div>';
     }
 
     function renderFinanceControl(rows, transactionRows=financeControlTransactionRows) {
@@ -5759,9 +5763,9 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         </div>
         </div>
         ${monthSection('GENERAL FUND — CURRENT MONTH',at(5,1),generalMonth)}
-        ${section(at(12,0),[['Income After Processing Fees',money(generalYtd.income),false,null,['General Fund','ytd-income']],['Other Expenses',money(generalYtd.expenses),false,null,['General Fund','ytd-expense']],[at(16,0),money(generalYtd.income-generalYtd.expenses)]],'tone-green').replace('</section>',financeYearComparison('General Fund',generalYtd)+'</section>')}
+        ${section(at(12,0),[],'tone-green').replace('<div class="control-rows"></div>',financeYearComparison('General Fund',generalYtd))}
         ${monthSection('BIKES FOR TYKES — CURRENT MONTH',at(7,1),bftMonth)}
-        ${section(at(19,0),[['Income After Processing Fees',money(bftYtd.income),false,null,['Bikes for Tykes','ytd-income']],['Other Expenses',money(bftYtd.expenses),false,null,['Bikes for Tykes','ytd-expense']],[at(22,0),money(bftYtd.income-bftYtd.expenses)]],'tone-baby-blue').replace('</section>',financeYearComparison('Bikes for Tykes',bftYtd)+'</section>')}
+        ${section(at(19,0),[],'tone-baby-blue').replace('<div class="control-rows"></div>',financeYearComparison('Bikes for Tykes',bftYtd))}
         ${section(at(22,3),[['Lifetime Giving Since 2005',money(numeric(at(22,4))-financeVoidedImpact(transactionRows))],[at(26,3),at(26,4)]],'tone-community')}
         ${section(at(25,0),[['2026 Community Impact — YTD',money(impactYtd)],['2025 Community Impact — Full Year',at(25,4)],['Increase Over 2025 Full Year',money(impactIncrease)]],'tone-community')}
       </div>`;
