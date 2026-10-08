@@ -5817,7 +5817,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         ${monthSection('BIKES FOR TYKES — CURRENT MONTH',at(7,1),bftMonth)}
         ${section(at(19,0),[],'tone-baby-blue').replace('<div class="control-rows"></div>',financeYearComparison('Bikes for Tykes',bftYtd))}
         ${section(at(22,3),[['Lifetime Giving Since 2005',money(numeric(at(22,4))-financeVoidedImpact(transactionRows))],[at(26,3),at(26,4)]],'tone-community')}
-        ${section(at(25,0),[['2026 Community Impact — Year to Date',money(impactYtd)],['2025 Community Impact',at(25,4)],[Math.abs(impactIncrease)<.005?'No change from 2025':impactIncrease>0?'Increase over 2025':'Decrease from 2025',money(Math.abs(impactIncrease))]],'tone-community')}
+        ${section(at(25,0),[['2026 Community Impact',money(impactYtd)],['2025 Community Impact',at(25,4)],[Math.abs(impactIncrease)<.005?'No change from 2025':impactIncrease>0?'Increase over 2025':'Decrease from 2025',money(Math.abs(impactIncrease))]],'tone-community')}
       </div>`;
       document.querySelectorAll('#financeControlTable .finance-detail-row').forEach(row=>{
         const open=()=>showFinanceBreakdown(row.dataset.financeFund,row.dataset.financeKind);
