@@ -5441,13 +5441,22 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       }));
     }
 
+    function financeIsVoided(row) {
+      // Inspect transaction fields only, never calculated running balances.
+      return [3,4,5,12,14,16].some(index=>/\bvoid(?:ed)?\b/i.test(String(row?.[index]||'')));
+    }
+
+    function financeVoidedImpact(rows) {
+      return rows.slice(1).filter(row=>financeIsVoided(row) && /^(true|yes)$/i.test(String(row[15]||'').trim())).reduce((sum,row)=>sum+Math.abs(Number(String(row[9]||0).replace(/[$,]/g,''))),0);
+    }
+
     function financeCashSnapshot(rows,transactionRows) {
       const at=(r,c)=>String(rows[r]?.[c]||0);
       const numeric=value=>Number(String(value).replace(/[$,%(),▲▼]/g,'').trim())*(String(value).includes('(')?-1:1);
       const pendingForFund = fundName => transactionRows.slice(1).reduce((totals,row) => {
         const cleared=String(row[14]||'').trim().toLowerCase(),method=String(row[13]||'').trim().toLowerCase(),type=String(row[12]||'').trim().toLowerCase();
         const fund=String(row[6]||'').trim().toLowerCase();
-        if(fund!==fundName.toLowerCase() || !['no','pending at chase'].includes(cleared) || (['paypal','chase payments'].includes(method) && !['transfer in','transfer out'].includes(type))) return totals;
+        if(financeIsVoided(row) || fund!==fundName.toLowerCase() || !['no','pending at chase'].includes(cleared) || (['paypal','chase payments'].includes(method) && !['transfer in','transfer out'].includes(type))) return totals;
         const amount=numeric(row[9]||0);
         if(!Number.isFinite(amount)) return totals;
         if(amount>0) { if(method==='paypal') totals.paypal+=amount; else totals.otherDeposits+=amount; }
@@ -5467,7 +5476,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         const cleared=String(row[14]||'').trim().toLowerCase();
         const method=String(row[13]||'').trim().toLowerCase();
         const type=String(row[12]||'').trim().toLowerCase();
-        if(fund!==fundName.toLowerCase() || cleared!=='yes' || (['paypal','chase payments'].includes(method) && !['transfer in','transfer out'].includes(type))) return balance;
+        if(financeIsVoided(row) || fund!==fundName.toLowerCase() || cleared!=='yes' || (['paypal','chase payments'].includes(method) && !['transfer in','transfer out'].includes(type))) return balance;
         const amount=numeric(row[9]||0);
         return Number.isFinite(amount)?balance+amount:balance;
       },opening);
@@ -5487,7 +5496,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           const cleared=String(row[14]||'').trim().toLowerCase();
           const method=String(row[13]||'').trim().toLowerCase();
           const type=String(row[12]||'').trim().toLowerCase();
-          return String(row[6]||'').trim().toLowerCase()===fundName.toLowerCase() &&
+          return !financeIsVoided(row) && String(row[6]||'').trim().toLowerCase()===fundName.toLowerCase() &&
             ['no','pending at chase'].includes(cleared) &&
             (['ach / bank transfer','debit card','credit card','paypal','chase payments'].includes(method) || method==='check' && cleared==='pending at chase') &&
             (!['paypal','chase payments'].includes(method) || ['transfer in','transfer out'].includes(type));
@@ -5525,6 +5534,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const card = (label,value,cls='') => `<div class="finance-dashboard-card ${cls}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
       const bankAt = (r,c) => String(controlRows[r]?.[c] ?? '—').replace(/\s+/g,' ').trim();
       const reconciliation = cash.status;
+      const generalMonth=financePeriodTotals('General Fund','month',transactionRows,controlRows);
+      const bftMonth=financePeriodTotals('Bikes for Tykes','month',transactionRows,controlRows);
+      const generalYtd=financePeriodTotals('General Fund','ytd',transactionRows,controlRows);
+      const bftYtd=financePeriodTotals('Bikes for Tykes','ytd',transactionRows,controlRows);
       document.getElementById('financeDashboard').innerHTML = `<section class="finance-dashboard-hero">
         <div class="finance-dashboard-heading"><div><h2>${esc(at(1,1))}</h2><p>Board-level view of liquidity, financial performance, community impact, and financial control.</p></div><span class="finance-dashboard-asof live-eastern-time" data-live-eastern-clock="true"></span></div>
         <section class="finance-dashboard-section"><h3>Cash Position</h3><div class="finance-dashboard-grid">
@@ -5539,13 +5552,13 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           ${card('Pending Outgoing Payments',money(-cash.generalPending.outgoing-cash.bftPending.outgoing),'pending')}
         </div></section>
         <section class="finance-dashboard-section"><h3>Financial Performance</h3><div class="finance-dashboard-grid">
-          ${card('Net This Month',at(16,1),'financial-performance')}
-          ${card('General Fund Year to Date Net',at(6,9),'fund-general')}
-          ${card('Bikes for Tykes Year to Date Net',at(11,9),'fund-bft')}
+          ${card('Net This Month',money(generalMonth.income-generalMonth.expenses+bftMonth.income-bftMonth.expenses),'financial-performance')}
+          ${card('General Fund Year to Date Net',money(generalYtd.income-generalYtd.expenses),'fund-general')}
+          ${card('Bikes for Tykes Year to Date Net',money(bftYtd.income-bftYtd.expenses),'fund-bft')}
         </div></section>
         <section class="finance-dashboard-section"><h3>Community Impact &amp; Financial Control</h3><div class="finance-dashboard-grid">
-          ${card('Charitable Spend Year to Date',at(16,5),'community-impact')}
-          ${card('Lifetime Community Impact',at(6,5),'community-impact')}
+          ${card('Charitable Spend Year to Date',money(Number(at(16,5).replace(/[$,]/g,''))-financeVoidedImpact(transactionRows)),'community-impact')}
+          ${card('Lifetime Community Impact',money(Number(at(6,5).replace(/[$,]/g,''))-financeVoidedImpact(transactionRows)),'community-impact')}
           ${card('Bank Reconciliation Status',reconciliation,metricClass('Bank Reconciliation Status',reconciliation))}
         </div></section>
       </section>`;
@@ -5557,7 +5570,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const number=value=>Number(String(value||0).replace(/[$,]/g,''));
       return rows.slice(1).filter(row=>{
         const fund=String(row[6]||'').trim().toLowerCase(),status=String(row[14]||'').trim().toLowerCase(),method=String(row[13]||'').trim().toLowerCase(),type=String(row[12]||'').trim().toLowerCase(),amount=number(row[9]);
-        if(fund!==fundName.toLowerCase()||status!=='no'||!Number.isFinite(amount)||(['paypal','chase payments'].includes(method)&&!['transfer in','transfer out'].includes(type))) return false;
+        if(financeIsVoided(row)||fund!==fundName.toLowerCase()||status!=='no'||!Number.isFinite(amount)||(['paypal','chase payments'].includes(method)&&!['transfer in','transfer out'].includes(type))) return false;
         return kind==='outgoing'?amount<0:kind==='paypal'?amount>0&&method==='paypal':amount>0&&method!=='paypal';
       });
     }
@@ -5567,12 +5580,12 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         (/processing fee/i.test(String(row[5]||'')) || /^(PayPal|Chase) Processing Fee/i.test(String(row[3]||'')));
     }
 
-    function financePeriodBreakdownRows(fund,kind,rows=financeControlTransactionRows) {
+    function financePeriodBreakdownRows(fund,kind,rows=financeControlTransactionRows,includeVoided=false) {
       const [period,type]=kind.split('-');
       const today=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'numeric'}).formatToParts(new Date());
       const year=Number(today.find(part=>part.type==='year').value),month=Number(today.find(part=>part.type==='month').value);
       return rows.slice(1).filter(row=>{
-        if(String(row[6]||'').trim().toLowerCase()!==fund.toLowerCase())return false;
+        if((!includeVoided && financeIsVoided(row)) || String(row[6]||'').trim().toLowerCase()!==fund.toLowerCase())return false;
         const fee=financeIsProcessingFee(row);
         const rowType=String(row[12]||'').trim().toLowerCase();
         if(type==='income' ? rowType!=='income' && !fee : rowType!=='expense' || fee)return false;
@@ -5590,7 +5603,11 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       if(period==='ytd') {
         const index=fund==='General Fund'?14:20;
         // Preserve existing control adjustments; move fees from expenses to income.
-        return {income:number(controlRows[index]?.[1])-fees,expenses:number(controlRows[index+1]?.[1])-fees};
+        const allIncome=financePeriodBreakdownRows(fund,'ytd-income',rows,true);
+        const voidIncome=allIncome.filter(row=>financeIsVoided(row) && !financeIsProcessingFee(row)).reduce((sum,row)=>sum+number(row[9]),0);
+        const voidFees=allIncome.filter(row=>financeIsVoided(row) && financeIsProcessingFee(row)).reduce((sum,row)=>sum+Math.abs(number(row[9])),0);
+        const voidExpenses=financePeriodBreakdownRows(fund,'ytd-expense',rows,true).filter(financeIsVoided).reduce((sum,row)=>sum-number(row[9]),0);
+        return {income:number(controlRows[index]?.[1])-fees-voidIncome,expenses:number(controlRows[index+1]?.[1])-fees-voidFees-voidExpenses};
       }
       return {income:incomeRows.reduce((sum,row)=>sum+(financeIsProcessingFee(row)?-Math.abs(number(row[9])):number(row[9])),0),expenses:expenseRows.reduce((sum,row)=>sum+Math.abs(number(row[9])),0)};
     }
@@ -5659,7 +5676,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const bftMonth = financePeriodTotals('Bikes for Tykes','month',transactionRows,rows);
       const generalYtd = financePeriodTotals('General Fund','ytd',transactionRows,rows);
       const bftYtd = financePeriodTotals('Bikes for Tykes','ytd',transactionRows,rows);
-      const impactYtd = numeric(at(27,1));
+      const impactYtd = numeric(at(27,1))-financeVoidedImpact(transactionRows);
       const impactPriorYear = numeric(at(25,4));
       const impactIncrease = impactYtd - impactPriorYear;
       const {generalPending,bftPending,generalBank,bftBank,generalAvailable,bftAvailable,generalDifference,bftDifference,generalNeedsReconciliation,bftNeedsReconciliation,needsReconciliation,bankSplitMismatch,status,fundStatus,hasPending}=financeCashSnapshot(rows,transactionRows);
@@ -5687,8 +5704,8 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         ${section(at(12,0),[['Income After Processing Fees',money(generalYtd.income),false,null,['General Fund','ytd-income']],['Other Expenses',money(generalYtd.expenses),false,null,['General Fund','ytd-expense']],[at(16,0),money(generalYtd.income-generalYtd.expenses)]],'tone-green')}
         ${monthSection('BIKES FOR TYKES — CURRENT MONTH',at(7,1),bftMonth)}
         ${section(at(19,0),[['Income After Processing Fees',money(bftYtd.income),false,null,['Bikes for Tykes','ytd-income']],['Other Expenses',money(bftYtd.expenses),false,null,['Bikes for Tykes','ytd-expense']],[at(22,0),money(bftYtd.income-bftYtd.expenses)]],'tone-baby-blue')}
-        ${section(at(22,3),[['Lifetime Giving Since 2005',at(22,4)],[at(26,3),at(26,4)]],'tone-community')}
-        ${section(at(25,0),[['2026 Community Impact — YTD',at(27,1)],['2025 Community Impact — Full Year',at(25,4)],['Increase Over 2025 Full Year',money(impactIncrease)]],'tone-community')}
+        ${section(at(22,3),[['Lifetime Giving Since 2005',money(numeric(at(22,4))-financeVoidedImpact(transactionRows))],[at(26,3),at(26,4)]],'tone-community')}
+        ${section(at(25,0),[['2026 Community Impact — YTD',money(impactYtd)],['2025 Community Impact — Full Year',at(25,4)],['Increase Over 2025 Full Year',money(impactIncrease)]],'tone-community')}
       </div>`;
       document.querySelectorAll('#financeControlTable .finance-detail-plus').forEach(button=>button.addEventListener('click',()=>showFinanceBreakdown(button.dataset.financeFund,button.dataset.financeKind)));
       document.getElementById('financeControlEditToggle').addEventListener('click',saveFinanceControlEdits);
