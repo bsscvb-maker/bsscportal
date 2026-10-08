@@ -6010,7 +6010,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     function renderFinanceReconciliation(rows, submittedCount = 0) {
       const target = document.getElementById('financeReconciliationTable');
       const status = document.getElementById('financeReconciliationStatus');
-      const uncleared = rows.slice(1).map((row,index) => ({row,sourceRow:index + 2})).filter(item => ['no','pending at chase'].includes(String(item.row[14] || '').trim().toLowerCase()));
+      const uncleared = rows.slice(1).map((row,index) => ({row,sourceRow:index + 2})).filter(item => ['no','pending at chase'].includes(String(item.row[14] || '').trim().toLowerCase())).sort((a,b) => b.sourceRow - a.sourceRow);
       const paypalBundles = new Map();
       const paypalDetails = new Set();
       for (let index=2; index<rows.length; index++) {
