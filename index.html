@@ -1740,6 +1740,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     #financeControlTable .finance-detail-row:hover{background:rgba(0,0,0,.035)}
     #financeControlTable .finance-detail-row:focus-visible{outline:2px solid #008a36;outline-offset:-2px}
     #financeControlTable .finance-detail-chevron{display:inline-block;width:14px;margin-right:4px;color:#64748b!important;font-weight:400!important}
+
+    .membership-member-link{cursor:pointer}
+    .membership-member-link:hover{box-shadow:0 0 0 1px #64748b}
+    .membership-member-link:focus-visible{outline:2px solid #008a36;outline-offset:2px}
 </style>
 </head>
 <body>
@@ -6862,6 +6866,38 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       return '—';
     }
 
+    function dashboardMemberNames(rows,kind) {
+      const headers=(rows[0]||[]).map(value=>String(value).trim().toLowerCase());
+      const col=name=>headers.indexOf(name);
+      const value=(row,name)=>String(row[col(name)]||'').trim();
+      return rows.slice(1).filter(row=>{
+        const status=value(row,'status').toLowerCase();
+        if(kind==='prospect')return status==='prospect';
+        if(kind==='active')return status==='active';
+        if(kind==='lifer')return status==='active' && /^(lifer|life member)$/i.test(value(row,'membership type')) || status==='active' && /^(lifer|life member)$/i.test(value(row,'member classification'));
+        return !/inactive|deceased|removed/i.test(status) && !!value(row,'first name');
+      }).map(row=>({name:[value(row,'first name'),value(row,'last name')].filter(Boolean).join(' '),road:value(row,'road name')})).filter(member=>member.name).sort((a,b)=>a.name.localeCompare(b.name));
+    }
+
+    async function showDashboardMemberList(kind,year,rosterRows) {
+      const title={active:'Active Members',prospect:'Prospects',lifer:'Lifers',honorary:'Honorary Members'}[kind];
+      const dialog=document.createElement('dialog');
+      dialog.className='receive-modal year-count-members-dialog';
+      dialog.setAttribute('aria-label',title);
+      dialog.innerHTML='<div class="year-count-members-head"><h3>'+esc(title)+' — '+esc(year)+'</h3><button type="button" aria-label="Close member list">Close</button></div><div class="year-count-members-list" aria-live="polite">Loading names…</div>';
+      document.body.appendChild(dialog);
+      dialog.querySelector('button').addEventListener('click',()=>dialog.close());
+      dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close();});
+      dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+      dialog.showModal();
+      try {
+        const rows=kind==='honorary'?await getSheetValues(membershipSheetConfig.Honorary.range,MEMBERSHIP_SPREADSHEET_ID):rosterRows;
+        if(!dialog.isConnected)return;
+        const members=dashboardMemberNames(rows,kind);
+        dialog.querySelector('.year-count-members-list').innerHTML='<p><strong>'+members.length+' '+esc(title.toLowerCase())+'</strong></p>'+(members.length?'<ol>'+members.map(member=>'<li><div>'+esc(member.name)+(member.road?' <span>“'+esc(member.road)+'”</span>':'')+'</div></li>').join('')+'</ol>':'<p>No members listed.</p>');
+      }catch(error){if(dialog.isConnected)dialog.querySelector('.year-count-members-list').textContent='Names could not be loaded. Close this window and try again.';}
+    }
+
     function renderMembershipDashboard(rows, year, rosterRows = [], officerRows = []) {
       const target = document.getElementById('membershipContent');
       const status = document.getElementById('membershipStatus');
@@ -6929,7 +6965,12 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const complianceNames = missingWaivers.length ? `<div class="membership-action-callout"><strong>Waivers missing:</strong> ${missingWaivers.map(esc).join(', ')}</div>` : '';
       const rosterWithoutOldGrowth = roster.slice(1).filter(item => !/new member growth|honorary/i.test(String(item[0] || '')));
       const growthSection = `<section class="membership-highlight"><h3>${esc(year)} Membership Growth</h3><div class="membership-attendance-snapshot"><div><span>New Members &amp; Prospects</span><strong>${newForYear}</strong></div><div><span>Starting Membership</span><strong>${startingRoster}</strong></div><div><span>New-Member Share</span><strong>${(newMemberShare * 100).toFixed(1)}%</strong></div><div><span>Projected Growth</span><strong>${(projectedGrowth * 100).toFixed(1)}%</strong></div></div><div class="membership-action-callout"><strong>Assumption:</strong> all current prospects will be patched. New-member share is ${newForYear} ÷ ${projectedRoster.length}; projected growth is ${newForYear} ÷ ${startingRoster}.</div></section>`;
-      target.innerHTML = `<div class="membership-executive"><header class="membership-hero"><div><h2>${esc(cell(1,2) || `BSSC ${year} Dashboard`)}</h2><p>Membership, compliance, leadership, and participation at a glance</p></div><strong>${esc(cell(1,12))}</strong></header><div class="membership-executive-kpis"><div class="membership-executive-kpi"><span>${esc(cell(16,2))}</span><strong>${esc(cell(16,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(18,2))}</span><strong>${esc(cell(18,3))}</strong></div><div class="membership-executive-kpi"><span>Lifer Count</span><strong>${liferCount}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(19,2))}</span><strong>${esc(cell(19,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(20,2))}</span><strong>${esc(cell(20,3))}</strong></div></div><div class="membership-executive-grid">${leadershipSections}<section class="membership-highlight"><h3>Compliance &amp; Action Needed</h3><div class="membership-highlight-grid">${compactRows([...compliance,...action])}</div>${complianceNames}</section><section class="membership-highlight"><h3>${esc(cell(15,2) || 'Roster KPIs')}</h3><div class="membership-highlight-grid">${compactRows(rosterWithoutOldGrowth)}</div></section><section class="membership-highlight"><h3>${esc(cell(15,5) || 'Age & Tenure')}</h3><div class="membership-highlight-grid">${compactRows(age)}</div></section>${growthSection}<section class="membership-highlight"><h3>Next Three Upcoming Events</h3>${upcomingHtml}</section><section class="membership-highlight"><h3>Attendance Snapshot</h3><div class="membership-attendance-snapshot">${overview.map(item => `<div><span>${esc(item[0])}</span><strong>${esc(item[1] || '—')}</strong></div>`).join('')}</div>${'<button class="membership-summary-link" type="button" data-open-attendance-summary>View Full Attendance Summary</button>'}</section></div></div>`;
+      target.innerHTML = `<div class="membership-executive"><header class="membership-hero"><div><h2>${esc(cell(1,2) || `BSSC ${year} Dashboard`)}</h2><p>Membership, compliance, leadership, and participation at a glance</p></div><strong>${esc(cell(1,12))}</strong></header><div class="membership-executive-kpis"><div class="membership-executive-kpi membership-member-link" role="button" tabindex="0" data-member-list="active" aria-label="View active members"><span>${esc(cell(16,2))}</span><strong>${esc(cell(16,3))}</strong></div><div class="membership-executive-kpi membership-member-link" role="button" tabindex="0" data-member-list="prospect" aria-label="View prospect members"><span>${esc(cell(18,2))}</span><strong>${esc(cell(18,3))}</strong></div><div class="membership-executive-kpi membership-member-link" role="button" tabindex="0" data-member-list="lifer" aria-label="View lifer members"><span>Lifer Count</span><strong>${liferCount}</strong></div><div class="membership-executive-kpi membership-member-link" role="button" tabindex="0" data-member-list="honorary" aria-label="View honorary members"><span>${esc(cell(19,2))}</span><strong>${esc(cell(19,3))}</strong></div><div class="membership-executive-kpi"><span>${esc(cell(20,2))}</span><strong>${esc(cell(20,3))}</strong></div></div><div class="membership-executive-grid">${leadershipSections}<section class="membership-highlight"><h3>Compliance &amp; Action Needed</h3><div class="membership-highlight-grid">${compactRows([...compliance,...action])}</div>${complianceNames}</section><section class="membership-highlight"><h3>${esc(cell(15,2) || 'Roster KPIs')}</h3><div class="membership-highlight-grid">${compactRows(rosterWithoutOldGrowth)}</div></section><section class="membership-highlight"><h3>${esc(cell(15,5) || 'Age & Tenure')}</h3><div class="membership-highlight-grid">${compactRows(age)}</div></section>${growthSection}<section class="membership-highlight"><h3>Next Three Upcoming Events</h3>${upcomingHtml}</section><section class="membership-highlight"><h3>Attendance Snapshot</h3><div class="membership-attendance-snapshot">${overview.map(item => `<div><span>${esc(item[0])}</span><strong>${esc(item[1] || '—')}</strong></div>`).join('')}</div>${'<button class="membership-summary-link" type="button" data-open-attendance-summary>View Full Attendance Summary</button>'}</section></div></div>`;
+      target.querySelectorAll('[data-member-list]').forEach(card=>{
+        const open=()=>showDashboardMemberList(card.dataset.memberList,year,rosterRows);
+        card.addEventListener('click',open);
+        card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();open();}});
+      });
       const summaryButton = target.querySelector('[data-open-attendance-summary]');
       if (summaryButton) summaryButton.addEventListener('click',() => openMembershipSection(`${year} Attendance Summary`));
       status.textContent = `Dashboard ${year} loaded live from Google Sheets. Formula results are read-only here.`;
