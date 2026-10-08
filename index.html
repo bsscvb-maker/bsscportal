@@ -3952,7 +3952,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
             const required = !/^note$/i.test(field.header) ? 'required' : '';
             const control = isSuggestedText ? `<input id="transactionField${field.column}" name="column${field.column}" type="text" list="transactionSuggestions${field.column}" value="" autocomplete="off" ${required} placeholder="${suggestedPlaceholder}"><datalist id="transactionSuggestions${field.column}">${options.map(option => `<option value="${esc(option)}"></option>`).join('')}</datalist>` : options.length ? `<select id="transactionField${field.column}" name="column${field.column}" ${required}><option value="">Select ${esc(field.header)}…</option>${options.map(option => `<option value="${esc(option)}">${esc(option)}</option>`).join('')}</select>` : `<input id="transactionField${field.column}" name="column${field.column}" type="${isDate ? 'date' : (isAmount ? 'number' : 'text')}" ${isAmount ? 'step="0.01"' : ''} ${required} value="${esc(value)}" autocomplete="off">`;
             const label = /^fund$/i.test(field.header) ? "Paid from" : field.header;
-            const reimbursement = /^fund$/i.test(field.header) ? '<div class="transaction-field"><label for="reimbursementFund">Expense belongs to</label><select id="reimbursementFund"><option value="">Same fund</option><option>General Fund</option><option>Bikes For Tykes</option></select></div>' : '';
+            const reimbursement = /^fund$/i.test(field.header) ? '<div class="transaction-field"><label for="reimbursementFund">Expense belongs to</label><select id="reimbursementFund"><option value="">Same Fund</option><option value="Bikes For Tykes">Bikes for Tykes Fund</option><option value="General Fund">General Fund</option></select></div>' : '';
             return `<div class="transaction-field"><label for="transactionField${field.column}">${esc(label)}</label>${control}</div>${reimbursement}`;
           }).join('')}
           <section class="paypal-bundle" id="paypalBundle" aria-live="polite">
@@ -4045,13 +4045,6 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         panel.querySelector('#paypalNetPreview').textContent = money(Math.max(0,gross - fee));
       };
       const reimbursementFund = panel.querySelector('#reimbursementFund');
-      const updateReimbursementControl = () => {
-        const active = currentValue('type').toLowerCase() === 'expense' && !isPayPalWorkflow();
-        reimbursementFund.disabled = !active;
-      };
-      panel.querySelector('form').addEventListener('input', updateReimbursementControl);
-      panel.querySelector('form').addEventListener('change', updateReimbursementControl);
-      updateReimbursementControl();
       const getPayeeGuidance = () => financePayeeHistory.get(currentValue('payee/payer').toLowerCase()) || null;
       const showPayeeGuidance = (fillBlanks = false) => {
         const guidance = getPayeeGuidance();
@@ -4158,7 +4151,8 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           values._paypalRows = [values,feeRow,transferRow];
         }
         let reimbursementRows = null;
-        if (reimbursementFund.value && !reimbursementFund.disabled && reimbursementFund.value !== values[fundColumn]) {
+        if (reimbursementFund.value && reimbursementFund.value !== values[fundColumn]) {
+          if (paypalMode) { alert('For a PayPal entry, choose Same Fund or the fund selected in Paid from. Record a cross-fund expense separately.'); reimbursementFund.focus(); return; }
           const responsible = reimbursementFund.value, paid = values[fundColumn];
           const amount = Math.abs(Number(values[amountColumn]));
           if (!Number.isFinite(amount) || !amount || String(values[typeColumn]).toLowerCase() !== 'expense') { alert('Enter a valid expense for reimbursement.'); return; }
