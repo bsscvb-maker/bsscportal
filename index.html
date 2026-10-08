@@ -5562,17 +5562,42 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       });
     }
 
+    function financePeriodBreakdownRows(fund,kind,rows=financeControlTransactionRows) {
+      const [period,type]=kind.split('-');
+      const today=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'numeric'}).formatToParts(new Date());
+      const year=Number(today.find(part=>part.type==='year').value),month=Number(today.find(part=>part.type==='month').value);
+      return rows.slice(1).filter(row=>{
+        if(String(row[6]||'').trim().toLowerCase()!==fund.toLowerCase() || String(row[12]||'').trim().toLowerCase()!==type)return false;
+        if(period==='ytd')return type==='income' && fund!=='General Fund' || String(row[4]||'').trim().toLowerCase()!=='opening balance';
+        const date=new Date(row[0]);
+        return Number.isFinite(date.getTime()) && date.getFullYear()===year && date.getMonth()+1===month;
+      }).sort((a,b)=>(Date.parse(b[0])||0)-(Date.parse(a[0])||0));
+    }
+
     function showFinanceBreakdown(fund,kind) {
       let dialog=document.getElementById('financeBreakdownDialog');
       if(!dialog){dialog=document.createElement('dialog');dialog.id='financeBreakdownDialog';dialog.className='finance-breakdown-dialog';document.body.appendChild(dialog);dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close();});}
       const money=value=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value||0);
       const number=value=>Number(String(value||0).replace(/[$,]/g,''));
-      const labels={outgoing:'Uncleared outgoing payments',other:'Deposits awaiting availability',paypal:'Pending PayPal deposits',bank:'Chase available balance',available:'After reserving uncleared payments'};
+      const labels={'month-income':'Current month income','month-expense':'Current month expenses','ytd-income':'Year to date income','ytd-expense':'Year to date expenses',outgoing:'Uncleared outgoing payments',other:'Deposits awaiting availability',paypal:'Pending PayPal deposits',bank:'Chase available balance',available:'After reserving uncleared payments'};
       const cash=financeCashSnapshot(financeControlRows,financeControlTransactionRows),general=fund==='General Fund';
-      const selected=financeBreakdownRows(fund,kind==='available'?'outgoing':kind);
+      const periodDetail=/^(month|ytd)-(income|expense)$/.test(kind);
+      const selected=periodDetail?financePeriodBreakdownRows(fund,kind):financeBreakdownRows(fund,kind==='available'?'outgoing':kind);
       const total=selected.reduce((sum,row)=>sum+number(row[9]),0);
       let body;
-      if(kind==='bank')body='<p>This is the latest manually entered Chase available balance. Chase can reflect pending activity in this number.</p><p>Use Edit Bank Reconciliation to update it from Chase. The posted ledger and uncleared transaction totals below are tracked separately.</p><div class="finance-breakdown-total">'+money(number(financeControlRows[general?6:7]?.[4]))+'</div>';
+      if(periodDetail){
+        const expense=kind.endsWith('-expense'),ytd=kind.startsWith('ytd-');
+        const transactionTotal=expense?(ytd?Math.abs(total):selected.reduce((sum,row)=>sum+Math.abs(number(row[9])),0)):total;
+        const controlIndex=general?(expense?15:14):(expense?21:20);
+        const displayedTotal=ytd?number(financeControlRows[controlIndex]?.[1]):transactionTotal;
+        const adjustment=displayedTotal-transactionTotal;
+        body='<p>'+ (ytd?'Year to date':'Current month') +' '+(expense?'expenses':'income')+' for this fund. Includes cleared and uncleared entries; internal transfers are excluded.</p>'+
+          (selected.length?'<table><thead><tr><th>Date / recipient</th><th>Description</th><th>Status</th><th>Amount</th></tr></thead><tbody>'+selected.map(row=>'<tr><td>'+esc(row[0])+'<br>'+esc(row[8])+'</td><td>'+esc(row[3])+'</td><td>'+esc(row[14]||'No')+'</td><td>'+money(number(row[9]))+'</td></tr>').join('')+'</tbody></table>':'<p>No transactions in this group.</p>')+
+          '<div class="finance-breakdown-total">'+selected.length+' entries · '+money(transactionTotal)+'</div>'+
+          (Math.abs(adjustment)>=0.005?'<p>Existing control formula adjustment: <strong>'+money(adjustment)+'</strong></p>':'')+
+          '<div class="finance-breakdown-total">Card total: '+money(displayedTotal)+'</div>';
+      }
+      else if(kind==='bank')body='<p>This is the latest manually entered Chase available balance. Chase can reflect pending activity in this number.</p><p>Use Edit Bank Reconciliation to update it from Chase. The posted ledger and uncleared transaction totals below are tracked separately.</p><div class="finance-breakdown-total">'+money(number(financeControlRows[general?6:7]?.[4]))+'</div>';
       else {
         const intro=kind==='available'?'<p>Posted ledger balance '+money(general?cash.generalBank:cash.bftBank)+' minus '+money(-total)+' reserved for the payments below = <strong>'+money(general?cash.generalAvailable:cash.bftAvailable)+'</strong>. Incoming uncleared deposits are excluded.</p>':'<p>These are the recorded transactions that make up this total. Internal transfers appear once per account. Uncleared does not always mean Chase has received the transaction.</p>';
         body=intro+(selected.length?'<table><thead><tr><th>Date / recipient</th><th>Description</th><th>Amount</th></tr></thead><tbody>'+selected.map(row=>'<tr><td>'+esc(row[0])+'<br>'+esc(row[8])+'</td><td>'+esc(row[3])+'</td><td>'+money(number(row[9]))+'</td></tr>').join('')+'</tbody></table>':'<p>No transactions in this group.</p>')+'<div class="finance-breakdown-total">'+selected.length+' entries · '+money(total)+'</div>';
@@ -5590,18 +5615,11 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const editableValue = (value,row) => financeControlEditMode ? `<input class="control-edit-input" data-control-row="${row}" value="${esc(value === '—' ? '' : value)}" aria-label="Edit bank reconciliation amount">` : `<strong>${esc(value)}</strong>`;
       const section = (title,pairs,cls='') => `<section class="control-card ${cls}"><h3>${esc(title)}</h3><div class="control-rows">${pairs.map(([label,value,bad,row,detail]) => `<div class="control-row ${bad ? 'status-bad' : ''}"><span${/^(LEDGER BALANCE AFTER RESERVING PAYMENTS|General Fund available|Bikes for Tykes available|After reserving uncleared payments)$/.test(label) ? ' style="font-weight:800"' : ''}>${esc(label)}</span>${row ? editableValue(value,row) : `<strong>${esc(value)}${detail ? `<button type="button" class="finance-detail-plus" data-finance-fund="${esc(detail[0])}" data-finance-kind="${esc(detail[1])}" aria-label="Show ${esc(label)} breakdown">+</button>` : ''}</strong>`}</div>`).join('')}</div></section>`;
       const money = value => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value || 0);
-      const now = new Date();
-      const monthlyTotals = fundName => transactionRows.slice(1).reduce((totals,row) => {
-        const date = new Date(row[0]);
-        const fund = String(row[6] || '').trim().toLowerCase();
-        const type = String(row[12] || '').trim().toLowerCase();
-        const amount = Number(String(row[9] || '').replace(/[$,]/g,''));
-        if (!Number.isFinite(date.getTime()) || date.getMonth() !== now.getMonth() || date.getFullYear() !== now.getFullYear() || fund !== fundName.toLowerCase() || !Number.isFinite(amount)) return totals;
-        if (type === 'income') totals.income += amount;
-        if (type === 'expense') totals.expenses += Math.abs(amount);
-        return totals;
-      },{income:0,expenses:0});
-      const monthSection = (title,balance,totals) => section(title,[['Current Fund Balance',balance],['Current Month Income',money(totals.income)],['Current Month Expenses',money(totals.expenses)],['Net This Month',money(totals.income-totals.expenses)]],/BIKES FOR TYKES/i.test(title)?'tone-baby-blue':'tone-green').replace('<span>Net This Month</span>','<span class="control-month-performance">Net This Month</span>');
+      const monthlyTotals = fundName => ({
+        income:financePeriodBreakdownRows(fundName,'month-income',transactionRows).reduce((sum,row)=>sum+numeric(row[9]||0),0),
+        expenses:financePeriodBreakdownRows(fundName,'month-expense',transactionRows).reduce((sum,row)=>sum+Math.abs(numeric(row[9]||0)),0)
+      });
+      const monthSection = (title,balance,totals) => section(title,[['Current Fund Balance',balance],['Current Month Income',money(totals.income),false,null,[/BIKES FOR TYKES/i.test(title)?'Bikes for Tykes':'General Fund','month-income']],['Current Month Expenses',money(totals.expenses),false,null,[/BIKES FOR TYKES/i.test(title)?'Bikes for Tykes':'General Fund','month-expense']],['Net This Month',money(totals.income-totals.expenses)]],/BIKES FOR TYKES/i.test(title)?'tone-baby-blue':'tone-green').replace('<span>Net This Month</span>','<span class="control-month-performance">Net This Month</span>');
       const generalMonth = monthlyTotals('General Fund');
       const bftMonth = monthlyTotals('Bikes for Tykes');
       const impactYtd = numeric(at(27,1));
@@ -5629,9 +5647,9 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         </div>
         </div>
         ${monthSection('GENERAL FUND — CURRENT MONTH',at(5,1),generalMonth)}
-        ${section(at(12,0),[[at(14,0),at(14,1)],[at(15,0),at(15,1)],[at(16,0),at(16,1)]],'tone-green')}
+        ${section(at(12,0),[[at(14,0),at(14,1),false,null,['General Fund','ytd-income']],[at(15,0),at(15,1),false,null,['General Fund','ytd-expense']],[at(16,0),at(16,1)]],'tone-green')}
         ${monthSection('BIKES FOR TYKES — CURRENT MONTH',at(7,1),bftMonth)}
-        ${section(at(19,0),[[at(20,0),at(20,1)],[at(21,0),at(21,1)],[at(22,0),at(22,1)]],'tone-baby-blue')}
+        ${section(at(19,0),[[at(20,0),at(20,1),false,null,['Bikes for Tykes','ytd-income']],[at(21,0),at(21,1),false,null,['Bikes for Tykes','ytd-expense']],[at(22,0),at(22,1)]],'tone-baby-blue')}
         ${section(at(22,3),[['Lifetime Giving Since 2005',at(22,4)],[at(26,3),at(26,4)]],'tone-community')}
         ${section(at(25,0),[['2026 Community Impact — YTD',at(27,1)],['2025 Community Impact — Full Year',at(25,4)],['Increase Over 2025 Full Year',money(impactIncrease)]],'tone-community')}
       </div>`;
