@@ -5595,6 +5595,24 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       return {income:incomeRows.reduce((sum,row)=>sum+(financeIsProcessingFee(row)?-Math.abs(number(row[9])):number(row[9])),0),expenses:expenseRows.reduce((sum,row)=>sum+Math.abs(number(row[9])),0)};
     }
 
+    function financeNetIncomeBreakdownRows(fund,period,rows) {
+      const selected=financePeriodBreakdownRows(fund,period+'-income',rows);
+      const fees=selected.filter(financeIsProcessingFee);
+      const used=new Set();
+      const number=value=>Number(String(value||0).replace(/[$,]/g,''));
+      return selected.filter(row=>!financeIsProcessingFee(row)).map(row=>{
+        const originalIndex=rows.indexOf(row);
+        const matches=fee=>!used.has(fee) && String(fee[6]).trim().toLowerCase()===String(row[6]).trim().toLowerCase() && String(fee[13]).trim().toLowerCase()===String(row[13]).trim().toLowerCase() && String(fee[0])===String(row[0]);
+        const payer=fee=>String(fee[3]||'').replace(/^(PayPal|Chase) Processing Fee\s*[–—-]\s*/i,'').trim();
+        const samePayer=fee=>payer(fee) && (String(row[3]||'').trim().endsWith(payer(fee)) || String(row[8]||'').trim()===payer(fee));
+        const adjacent=rows[originalIndex+1];
+        const fee=fees.includes(adjacent) && matches(adjacent) && samePayer(adjacent)?adjacent:fees.find(item=>matches(item) && samePayer(item));
+        const netRow=[...row];
+        if(fee){used.add(fee);netRow[9]=Math.round((number(row[9])-Math.abs(number(fee[9])))*100)/100;}
+        return netRow;
+      });
+    }
+
     function showFinanceBreakdown(fund,kind) {
       let dialog=document.getElementById('financeBreakdownDialog');
       if(!dialog){dialog=document.createElement('dialog');dialog.id='financeBreakdownDialog';dialog.className='finance-breakdown-dialog';document.body.appendChild(dialog);dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close();});}
@@ -5603,7 +5621,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const labels={'month-income':'Current month income after processing fees','month-expense':'Other current month expenses','ytd-income':'Year to date income after processing fees','ytd-expense':'Other year to date expenses',outgoing:'Uncleared outgoing payments',other:'Deposits awaiting availability',paypal:'Pending PayPal deposits',bank:'Chase available balance',available:'After reserving uncleared payments'};
       const cash=financeCashSnapshot(financeControlRows,financeControlTransactionRows),general=fund==='General Fund';
       const periodDetail=/^(month|ytd)-(income|expense)$/.test(kind);
-      const selected=periodDetail?financePeriodBreakdownRows(fund,kind):financeBreakdownRows(fund,kind==='available'?'outgoing':kind);
+      const selected=periodDetail?(kind.endsWith('-income')?financeNetIncomeBreakdownRows(fund,kind.split('-')[0],financeControlTransactionRows):financePeriodBreakdownRows(fund,kind)):financeBreakdownRows(fund,kind==='available'?'outgoing':kind);
       const total=selected.reduce((sum,row)=>sum+(periodDetail && financeIsProcessingFee(row)?-Math.abs(number(row[9])):number(row[9])),0);
       let body;
       if(periodDetail){
@@ -5612,7 +5630,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         const totals=financePeriodTotals(fund,ytd?'ytd':'month',financeControlTransactionRows,financeControlRows);
         const displayedTotal=expense?totals.expenses:totals.income;
         const adjustment=displayedTotal-transactionTotal;
-        body='<p>'+ (ytd?'Year to date':'Current month') +' '+(expense?'other expenses':'income after processing fees')+' for this fund. Includes cleared and uncleared entries; internal transfers are excluded. '+(expense?'Processing fees are already deducted from income and are excluded here.':'Gross payments and processing fee deductions are listed below.')+'</p>'+
+        body='<p>'+ (ytd?'Year to date':'Current month') +' '+(expense?'other expenses':'income after processing fees')+' for this fund. Includes cleared and uncleared entries; internal transfers are excluded. '+(expense?'Processing fees are already deducted from income and are excluded here.':'Each payment shows the actual income retained after processing fees.')+'</p>'+
           (selected.length?'<table><thead><tr><th>Date / recipient</th><th>Description</th><th>Status</th><th>Amount</th></tr></thead><tbody>'+selected.map(row=>'<tr><td>'+esc(row[0])+'<br>'+esc(row[8])+'</td><td>'+esc(row[3])+'</td><td>'+esc(row[14]||'No')+'</td><td>'+money(financeIsProcessingFee(row)?-Math.abs(number(row[9])):number(row[9]))+'</td></tr>').join('')+'</tbody></table>':'<p>No transactions in this group.</p>')+
           '<div class="finance-breakdown-total">'+selected.length+' entries · '+money(transactionTotal)+'</div>'+
           (Math.abs(adjustment)>=0.005?'<p>Existing control formula adjustment: <strong>'+money(adjustment)+'</strong></p>':'')+
