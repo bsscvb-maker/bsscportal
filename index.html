@@ -1733,6 +1733,13 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     #financeControlTable .finance-year-comparison td.finance-amount-positive .comparison-current-amount{color:#008a36!important}
     #financeControlTable .finance-year-comparison td.finance-amount-expense .comparison-current-amount{color:#df1727!important}
     #financeControlTable .finance-year-comparison td.finance-amount-balance .comparison-current-amount{color:#111113!important}
+
+    #financeControlTable .control-row strong,
+    #financeControlTable .finance-year-comparison .comparison-current-amount{display:block;padding-right:0;text-align:right;font-variant-numeric:tabular-nums}
+    #financeControlTable .finance-detail-row{cursor:pointer}
+    #financeControlTable .finance-detail-row:hover{background:rgba(0,0,0,.035)}
+    #financeControlTable .finance-detail-row:focus-visible{outline:2px solid #008a36;outline-offset:-2px}
+    #financeControlTable .finance-detail-chevron{display:inline-block;width:14px;margin-right:4px;color:#64748b!important;font-weight:400!important}
 </style>
 </head>
 <body>
@@ -5733,6 +5740,9 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     }
 
     function financeAmountTone(label,value) {
+      if(/community impact|lifetime giving|average per year|no change from 2025/i.test(label))return 'finance-amount-balance';
+      if(/^Decrease from 2025/i.test(label))return 'finance-amount-expense';
+      if(/^Increase over 2025/i.test(label))return 'finance-amount-positive';
       if(/balance|available|reserve calculation|after reserves|after reserving|chase minus|ledger total/i.test(label))return 'finance-amount-balance';
       if(/expense|payment|spend|money spent/i.test(label))return 'finance-amount-expense';
       const number=Number(String(value||0).replace(/[$,%(),▲▼]/g,'').trim())*(String(value).includes('(')?-1:1);
@@ -5759,8 +5769,8 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         }
         const comparisonParts=comparison.match(/^(.+?) (improvement|decline|more|less|last year)$/);
         const comparisonHtml=comparisonParts?'<span class="comparison-number">'+esc(comparisonParts[1])+'</span><span class="comparison-caption">'+esc(comparisonParts[2])+'</span>':'<span class="comparison-number">'+esc(comparison)+'</span>';
-        const detail=kind?'<button type="button" class="finance-detail-plus" data-finance-fund="'+esc(fund)+'" data-finance-kind="'+kind+'" aria-label="Show '+esc(label)+' breakdown">+</button>':'';
-        return '<tr><th scope="row">'+esc(label)+'</th><td class="'+financeAmountTone(label,after)+'"><span class="comparison-current-amount">'+money(after)+detail+'</span></td><td class="'+financeAmountTone(label,before)+'">'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+color+'">'+comparisonHtml+'</td></tr>';
+        const detail=kind?' class="finance-detail-row" tabindex="0" role="button" data-finance-fund="'+esc(fund)+'" data-finance-kind="'+kind+'" aria-label="Show '+esc(label)+' breakdown"':'';
+        return '<tr'+detail+'><th scope="row">'+(kind?'<span class="finance-detail-chevron" aria-hidden="true">›</span>':'')+esc(label)+'</th><td class="'+financeAmountTone(label,after)+'"><span class="comparison-current-amount">'+money(after)+'</span></td><td class="'+financeAmountTone(label,before)+'">'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+color+'">'+comparisonHtml+'</td></tr>';
       }).join('')+'</tbody></table></div>';
     }
 
@@ -5771,7 +5781,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const numeric = value => Number(String(value).replace(/[$,%(),▲▼]/g,'').trim()) * (String(value).includes('(') ? -1 : 1);
       const resultTone = value => numeric(value) < 0 ? 'tone-red' : 'tone-green';
       const editableValue = (value,row) => financeControlEditMode ? `<input class="control-edit-input" data-control-row="${row}" value="${esc(value === '—' ? '' : value)}" aria-label="Edit bank reconciliation amount">` : `<strong>${esc(value)}</strong>`;
-      const section = (title,pairs,cls='') => `<section class="control-card ${cls}"><h3>${esc(title)}</h3><div class="control-rows">${pairs.map(([label,value,bad,row,detail]) => `<div class="control-row ${financeAmountTone(label,value)} ${bad ? 'status-bad' : ''}"><span${/^(LEDGER BALANCE AFTER RESERVING PAYMENTS|General Fund available|Bikes for Tykes available|After reserving uncleared payments)$/.test(label) ? ' style="font-weight:800"' : ''}>${esc(label)}</span>${row ? editableValue(value,row) : `<strong>${esc(value)}${detail ? `<button type="button" class="finance-detail-plus" data-finance-fund="${esc(detail[0])}" data-finance-kind="${esc(detail[1])}" aria-label="Show ${esc(label)} breakdown">+</button>` : ''}</strong>`}</div>`).join('')}</div></section>`;
+      const section = (title,pairs,cls='') => `<section class="control-card ${cls}"><h3>${esc(title)}</h3><div class="control-rows">${pairs.map(([label,value,bad,row,detail]) => `<div class="control-row ${financeAmountTone(label,value)} ${bad ? 'status-bad' : ''} ${detail ? 'finance-detail-row' : ''}"${detail ? ` tabindex="0" role="button" data-finance-fund="${esc(detail[0])}" data-finance-kind="${esc(detail[1])}" aria-label="Show ${esc(label)} breakdown"` : ''}><span${/^(LEDGER BALANCE AFTER RESERVING PAYMENTS|General Fund available|Bikes for Tykes available|After reserving uncleared payments)$/.test(label) ? ' style="font-weight:800"' : ''}>${detail ? '<span class="finance-detail-chevron" aria-hidden="true">›</span>' : ''}${esc(label)}</span>${row ? editableValue(value,row) : `<strong>${esc(value)}</strong>`}</div>`).join('')}</div></section>`;
       const money = value => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value || 0);
       const monthSection = (title,balance,totals) => section(title,[['Current Fund Balance',balance],['Income',money(totals.income),false,null,[/BIKES FOR TYKES/i.test(title)?'Bikes for Tykes':'General Fund','month-income']],['Expenses',money(totals.expenses),false,null,[/BIKES FOR TYKES/i.test(title)?'Bikes for Tykes':'General Fund','month-expense']],['Net Income',money(totals.income-totals.expenses)]],/BIKES FOR TYKES/i.test(title)?'tone-baby-blue':'tone-green').replace('<span>Net Income</span>','<span class="control-month-performance">Net Income</span>');
       const generalMonth = financePeriodTotals('General Fund','month',transactionRows,rows);
@@ -5807,9 +5817,13 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         ${monthSection('BIKES FOR TYKES — CURRENT MONTH',at(7,1),bftMonth)}
         ${section(at(19,0),[],'tone-baby-blue').replace('<div class="control-rows"></div>',financeYearComparison('Bikes for Tykes',bftYtd))}
         ${section(at(22,3),[['Lifetime Giving Since 2005',money(numeric(at(22,4))-financeVoidedImpact(transactionRows))],[at(26,3),at(26,4)]],'tone-community')}
-        ${section(at(25,0),[['2026 Community Impact — YTD',money(impactYtd)],['2025 Community Impact — Full Year',at(25,4)],['Increase Over 2025 Full Year',money(impactIncrease)]],'tone-community')}
+        ${section(at(25,0),[['2026 Community Impact — Year to Date',money(impactYtd)],['2025 Community Impact',at(25,4)],[Math.abs(impactIncrease)<.005?'No change from 2025':impactIncrease>0?'Increase over 2025':'Decrease from 2025',money(Math.abs(impactIncrease))]],'tone-community')}
       </div>`;
-      document.querySelectorAll('#financeControlTable .finance-detail-plus').forEach(button=>button.addEventListener('click',()=>showFinanceBreakdown(button.dataset.financeFund,button.dataset.financeKind)));
+      document.querySelectorAll('#financeControlTable .finance-detail-row').forEach(row=>{
+        const open=()=>showFinanceBreakdown(row.dataset.financeFund,row.dataset.financeKind);
+        row.addEventListener('click',open);
+        row.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();open();}});
+      });
       document.getElementById('financeControlEditToggle').addEventListener('click',saveFinanceControlEdits);
       startEasternClock();
       document.getElementById('financeControlStatus').textContent = 'Executive financial snapshot connected to Control-2026.';
