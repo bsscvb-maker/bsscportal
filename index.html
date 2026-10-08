@@ -1714,6 +1714,8 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     #financeControlTable .control-row.finance-amount-expense strong,#financeDashboard .finance-dashboard-card.finance-amount-expense strong,#financeControlTable .finance-year-comparison table tbody td.finance-amount-expense{color:#df1727!important}
     #financeControlTable .control-row.finance-amount-positive strong,#financeDashboard .finance-dashboard-card.finance-amount-positive strong,#financeControlTable .finance-year-comparison table tbody td.finance-amount-positive{color:#008a36!important}
     #financeControlTable .control-row.finance-amount-balance strong,#financeDashboard .finance-dashboard-card.finance-amount-balance strong,#financeControlTable .finance-year-comparison table tbody td.finance-amount-balance{color:#111113!important}
+    .finance-year-comparison thead th:last-child{white-space:normal}
+    #financeControlTable .finance-year-comparison table tbody td.comparison-percent{white-space:normal;line-height:1.35}
 </style>
 </head>
 <body>
@@ -5725,13 +5727,21 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const money=value=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value||0);
       const netLabel='Net Income';
       const metrics=[['Income After Processing Fees',prior?.income,current.income,false,'ytd-income'],['Other Expenses',prior?.expenses,current.expenses,true,'ytd-expense'],[netLabel,prior?prior.income-prior.expenses:null,current.income-current.expenses,false,null]];
-      return '<div class="finance-year-comparison"><table><colgroup><col style="width:34%"><col style="width:26%"><col style="width:23%"><col style="width:17%"></colgroup><thead><tr><th scope="col">Metric</th><th scope="col">2026</th><th scope="col">2025</th><th scope="col">% Change</th></tr></thead><tbody>'+metrics.map(([label,before,after,expense,kind])=>{
+      return '<div class="finance-year-comparison"><table><colgroup><col style="width:30%"><col style="width:23%"><col style="width:21%"><col style="width:26%"></colgroup><thead><tr><th scope="col">Metric</th><th scope="col">2026</th><th scope="col">2025</th><th scope="col">Compared with 2025</th></tr></thead><tbody>'+metrics.map(([label,before,after,expense,kind])=>{
         const change=before==null?null:after-before;
         const percent=before==null || before===0?(before===0 && after===0?0:null):change/Math.abs(before)*100;
         const color=change==null || Math.abs(change)<.005?'#34363a':(change>0?'#008a36':'#df1727');
-        const percentText=percent==null?'—':(Math.round(percent)>0?'+':'')+new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(Math.round(percent))+'%';
+        const whole=value=>new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(value);
+        let comparison='—';
+        if(change!=null) {
+          if(Math.abs(change)<.005)comparison='No change';
+          else if(kind===null)comparison='$'+whole(Math.abs(change))+(change>0?' improvement':' decline');
+          else if(!expense && before>0 && after/before>=2)comparison=whole(after/before)+'× last year';
+          else if(percent!=null)comparison=whole(Math.abs(percent))+'% '+(change>0?'more':'less');
+          else comparison='$'+whole(Math.abs(change))+' '+(change>0?'more':'less');
+        }
         const detail=kind?'<button type="button" class="finance-detail-plus" data-finance-fund="'+esc(fund)+'" data-finance-kind="'+kind+'" aria-label="Show '+esc(label)+' breakdown">+</button>':'';
-        return '<tr><th scope="row">'+esc(label)+'</th><td class="'+financeAmountTone(label,after)+'">'+money(after)+detail+'</td><td class="'+financeAmountTone(label,before)+'">'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+color+'" title="Change relative to the absolute 2025 amount">'+percentText+'</td></tr>';
+        return '<tr><th scope="row">'+esc(label)+'</th><td class="'+financeAmountTone(label,after)+'">'+money(after)+detail+'</td><td class="'+financeAmountTone(label,before)+'">'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+color+'">'+esc(comparison)+'</td></tr>';
       }).join('')+'</tbody></table></div>';
     }
 
