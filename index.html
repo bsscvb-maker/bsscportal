@@ -1728,6 +1728,8 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     #financeControlTable .finance-year-comparison .comparison-caption{display:block;margin-top:2px;font-size:.78em;font-weight:500;color:inherit!important}
     #financeControlTable .finance-year-comparison table tbody td.comparison-percent{text-align:right;padding-left:8px}
     #financeControlTable .finance-year-comparison table tbody th{vertical-align:middle;line-height:1.4}
+    #financeControlTable .finance-year-comparison table tbody td.finance-amount-positive{color:#008a36!important}
+    #financeControlTable .finance-year-comparison table tbody td.finance-amount-expense{color:#df1727!important}
 </style>
 </head>
 <body>
@@ -5738,7 +5740,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const prior=financePriorYearTotals(fund);
       const money=value=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value||0);
       const netLabel='Net Income';
-      const metrics=[['Income After Processing Fees',prior?.income,current.income,false,'ytd-income'],['Other Expenses',prior?.expenses,current.expenses,true,'ytd-expense'],[netLabel,prior?prior.income-prior.expenses:null,current.income-current.expenses,false,null]];
+      const metrics=[['Income',prior?.income,current.income,false,'ytd-income'],['Expenses',prior?.expenses,current.expenses,true,'ytd-expense'],[netLabel,prior?prior.income-prior.expenses:null,current.income-current.expenses,false,null]];
       return '<div class="finance-year-comparison"><table><colgroup><col style="width:30%"><col style="width:23%"><col style="width:21%"><col style="width:26%"></colgroup><thead><tr><th scope="col">Metric</th><th scope="col">2026</th><th scope="col">2025</th><th scope="col">Compared with 2025</th></tr></thead><tbody>'+metrics.map(([label,before,after,expense,kind])=>{
         const change=before==null?null:after-before;
         const percent=before==null || before===0?(before===0 && after===0?0:null):change/Math.abs(before)*100;
@@ -5768,7 +5770,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const editableValue = (value,row) => financeControlEditMode ? `<input class="control-edit-input" data-control-row="${row}" value="${esc(value === '—' ? '' : value)}" aria-label="Edit bank reconciliation amount">` : `<strong>${esc(value)}</strong>`;
       const section = (title,pairs,cls='') => `<section class="control-card ${cls}"><h3>${esc(title)}</h3><div class="control-rows">${pairs.map(([label,value,bad,row,detail]) => `<div class="control-row ${financeAmountTone(label,value)} ${bad ? 'status-bad' : ''}"><span${/^(LEDGER BALANCE AFTER RESERVING PAYMENTS|General Fund available|Bikes for Tykes available|After reserving uncleared payments)$/.test(label) ? ' style="font-weight:800"' : ''}>${esc(label)}</span>${row ? editableValue(value,row) : `<strong>${esc(value)}${detail ? `<button type="button" class="finance-detail-plus" data-finance-fund="${esc(detail[0])}" data-finance-kind="${esc(detail[1])}" aria-label="Show ${esc(label)} breakdown">+</button>` : ''}</strong>`}</div>`).join('')}</div></section>`;
       const money = value => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value || 0);
-      const monthSection = (title,balance,totals) => section(title,[['Current Fund Balance',balance],['Income After Processing Fees',money(totals.income),false,null,[/BIKES FOR TYKES/i.test(title)?'Bikes for Tykes':'General Fund','month-income']],['Other Expenses',money(totals.expenses),false,null,[/BIKES FOR TYKES/i.test(title)?'Bikes for Tykes':'General Fund','month-expense']],['Net This Month',money(totals.income-totals.expenses)]],/BIKES FOR TYKES/i.test(title)?'tone-baby-blue':'tone-green').replace('<span>Net This Month</span>','<span class="control-month-performance">Net This Month</span>');
+      const monthSection = (title,balance,totals) => section(title,[['Current Fund Balance',balance],['Income',money(totals.income),false,null,[/BIKES FOR TYKES/i.test(title)?'Bikes for Tykes':'General Fund','month-income']],['Expenses',money(totals.expenses),false,null,[/BIKES FOR TYKES/i.test(title)?'Bikes for Tykes':'General Fund','month-expense']],['Net Income',money(totals.income-totals.expenses)]],/BIKES FOR TYKES/i.test(title)?'tone-baby-blue':'tone-green').replace('<span>Net Income</span>','<span class="control-month-performance">Net Income</span>');
       const generalMonth = financePeriodTotals('General Fund','month',transactionRows,rows);
       const bftMonth = financePeriodTotals('Bikes for Tykes','month',transactionRows,rows);
       const generalYtd = financePeriodTotals('General Fund','ytd',transactionRows,rows);
