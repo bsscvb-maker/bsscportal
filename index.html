@@ -1670,6 +1670,17 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 #financeReconciliationTable .reconciliation-action:hover {background:#f1f5f9;border-color:#94a3b8}
 #financeReconciliationTable .reconciliation-action:focus-visible {outline:2px solid #475569;outline-offset:2px}
 #financeReconciliationTable .reconciliation-action:disabled {opacity:.5;cursor:wait}
+
+    #financeReconciliationTable .reconciliation-toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+    #financeReconciliationTable .reconciliation-toolbar .table-search-wrap { flex:1; }
+    #financeReconciliationTable .reconciliation-submit { margin:0; padding:8px 18px; font-size:13px; border-radius:5px; }
+    #financeReconciliationTable .reconciliation-filter-label { display:flex; flex-direction:column; gap:7px; }
+    #financeReconciliationTable [data-reconciliation-filter] { width:100%; min-width:75px; max-width:220px; padding:5px 7px; border:1px solid #64748b; border-radius:4px; background:#fff; color:#1e293b; font-family:inherit; font-size:12px; font-weight:400; }
+    #financeReconciliationTable .reconciliation-clear-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    #financeReconciliationTable .reconciliation-check { font-size:13px; font-weight:600; }
+    #financeReconciliationTable .reconciliation-pending-btn { width:auto; padding:5px 9px; border:1px solid #c8102e; border-radius:4px; background:#fff; color:#a30c26; font:inherit; font-size:12px; font-weight:600; white-space:nowrap; cursor:pointer; }
+    #financeReconciliationTable .reconciliation-pending-btn:hover, #financeReconciliationTable .reconciliation-pending-btn[data-selected="true"] { background:#fff1f2; }
+    #financeReconciliationTable .reconciliation-pending-status { color:#854d0e; font-size:12px; font-weight:600; }
 </style>
 </head>
 <body>
@@ -6026,15 +6037,31 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       }
       updateFinanceReconciliationCount(uncleared.length);
       const columns = [[0,'Date'],[3,'Description'],[6,'Fund'],[7,'Activity'],[8,'Payee/Payer'],[9,'Amount'],[13,'Payment Method']];
-      target.innerHTML = `<p class="control-edit-note">PayPal and Chase card payments: the full payment and fee stay visible. Mark the net transfer Pending at Chase when Chase lists it as pending. Once it posts, select all three rows together. Selections are saved only when you click Submit.</p><div class="table-tools"><label class="table-search-wrap"><span class="sr-only">Search uncleared transactions</span><input class="table-search" type="search" id="reconciliationSearch" placeholder="Search uncleared transactions…" autocomplete="off"></label></div><div class="table-search-count" id="reconciliationSearchCount"></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Row</th>${columns.map(([,label]) => `<th>${esc(label)}</th>`).join('')}<th><button type="button" class="reconciliation-submit" data-reconciliation-submit>Submit</button><br>Bank status / clear</th><th>Actions</th></tr></thead><tbody>${uncleared.map(item => `<tr><td>${item.sourceRow}</td>${columns.map(([column]) => `<td>${esc(item.row[column] || '')}</td>`).join('')}<td>${paypalDetails.has(item.sourceRow) ? '<span class="reconciliation-linked">Clears with bank transfer</span>' : `${paypalBundles.has(item.sourceRow) && String(item.row[14] || '').trim().toLowerCase() !== 'pending at chase' ? `<button type="button" class="dashboard-edit-btn" data-pending-row="${item.sourceRow}">Pending at Chase</button>` : ''}${String(item.row[14] || '').trim().toLowerCase() === 'pending at chase' ? '<strong>Pending at Chase · </strong>' : ''}<label class="reconciliation-check"><input type="checkbox" data-clear-row="${item.sourceRow}"> ${paypalBundles.has(item.sourceRow) ? 'Clear all 3 after posting' : 'Mark cleared'}</label>`}</td><td><button type="button" class="reconciliation-action" aria-label="Edit transaction row ${item.sourceRow}" data-reconciliation-edit="${item.sourceRow}">Action</button></td></tr>`).join('')}</tbody></table></div><div class="reconciliation-submit-footer"><button type="button" class="reconciliation-submit" data-reconciliation-submit>Submit</button></div>`;
+      const filterValue = (item,column) => column === -1 ? String(item.sourceRow) : column === 14 ? (paypalDetails.has(item.sourceRow) ? 'Clears with bank transfer' : String(item.row[14] || 'No')) : String(item.row[column] || '');
+      const filterHeader = (column,label) => {
+        const options = [...new Set(uncleared.map(item => filterValue(item,column)))].filter(Boolean).sort((a,b) => a.localeCompare(b,undefined,{numeric:true}));
+        return `<th><label class="reconciliation-filter-label"><span>${esc(label)}</span><select data-reconciliation-filter="${column}" aria-label="Filter ${esc(label)}"><option value="">All</option>${options.map(value => `<option value="${esc(value)}">${esc(value)}</option>`).join('')}</select></label></th>`;
+      };
+      target.innerHTML = `<p class="control-edit-note">Select entries after they post in Chase, then click Submit. PayPal and Chase card deposits clear the payment, fee, and net transfer together.</p><div class="table-tools reconciliation-toolbar"><label class="table-search-wrap"><span class="sr-only">Search uncleared transactions</span><input class="table-search" type="search" id="reconciliationSearch" placeholder="Search uncleared transactions…" autocomplete="off"></label><button type="button" class="reconciliation-action" id="reconciliationResetFilters">Reset filters</button><button type="button" class="reconciliation-submit" data-reconciliation-submit>Submit</button></div><div class="table-search-count" id="reconciliationSearchCount"></div><div class="table-wrap"><table class="data-table"><thead><tr>${filterHeader(-1,'Row')}${columns.map(([column,label]) => filterHeader(column,label)).join('')}${filterHeader(14,'Bank status / clear')}<th>Actions</th></tr></thead><tbody>${uncleared.map(item => `<tr data-reconciliation-source="${item.sourceRow}"><td>${item.sourceRow}</td>${columns.map(([column]) => `<td>${esc(item.row[column] || '')}</td>`).join('')}<td>${paypalDetails.has(item.sourceRow) ? '<span class="reconciliation-linked">Clears with bank transfer</span>' : `<div class="reconciliation-clear-actions">${String(item.row[14] || '').trim().toLowerCase() === 'pending at chase' ? '<span class="reconciliation-pending-status">Pending at Chase</span>' : ''}<label class="reconciliation-check"><input type="checkbox" data-clear-row="${item.sourceRow}"> ${paypalBundles.has(item.sourceRow) ? 'Clear all 3 after posting' : 'Mark cleared'}</label>${paypalBundles.has(item.sourceRow) && String(item.row[14] || '').trim().toLowerCase() !== 'pending at chase' ? `<button type="button" class="reconciliation-pending-btn" data-pending-row="${item.sourceRow}">Pending at Chase</button>` : ''}</div>`}</td><td><button type="button" class="reconciliation-action" aria-label="Edit transaction row ${item.sourceRow}" data-reconciliation-edit="${item.sourceRow}">Action</button></td></tr>`).join('')}</tbody></table></div><div class="reconciliation-submit-footer"><button type="button" class="reconciliation-submit" data-reconciliation-submit>Submit</button></div>`;
       status.textContent = `${uncleared.length} uncleared transaction${uncleared.length === 1 ? '' : 's'} require review.`;
       const search = document.getElementById('reconciliationSearch');
-      search.addEventListener('input', () => {
+      const filters = [...target.querySelectorAll('[data-reconciliation-filter]')];
+      const bySource = new Map(uncleared.map(item => [item.sourceRow,item]));
+      const applyFilters = () => {
         const query = search.value.trim().toLowerCase();
         let visible = 0;
-        target.querySelectorAll('tbody tr').forEach(row => { const match = !query || row.textContent.toLowerCase().includes(query); row.hidden = !match; if (match) visible += 1; });
-        document.getElementById('reconciliationSearchCount').textContent = query ? `${visible} matching transaction${visible === 1 ? '' : 's'} shown` : '';
-      });
+        target.querySelectorAll('tbody tr[data-reconciliation-source]').forEach(row => {
+          const item = bySource.get(Number(row.dataset.reconciliationSource));
+          const match = (!query || row.textContent.toLowerCase().includes(query)) && filters.every(filter => !filter.value || filterValue(item,Number(filter.dataset.reconciliationFilter)) === filter.value);
+          row.hidden = !match;
+          if (match) visible += 1;
+        });
+        document.getElementById('reconciliationSearchCount').textContent = `${visible} of ${uncleared.length} uncleared transactions shown`;
+      };
+      search.addEventListener('input',applyFilters);
+      filters.forEach(filter => filter.addEventListener('change',applyFilters));
+      document.getElementById('reconciliationResetFilters').addEventListener('click',() => { search.value = ''; filters.forEach(filter => filter.value = ''); applyFilters(); });
+      applyFilters();
       const openRowAction = async button => {
         if(staged.size && !confirm('You have unsubmitted clearing selections. Discard them to edit or delete this transaction?'))return;
         if(staged.size){staged.clear();renderFinanceReconciliation(rows);}
@@ -6075,7 +6102,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         } else {
           staged.set(sourceRow,'Pending at Chase');
           button.dataset.selected = 'true';
-          button.textContent = 'Pending selected — not submitted';
+          button.textContent = 'Pending selected';
         }
         updateSelectionStatus();
       }));
