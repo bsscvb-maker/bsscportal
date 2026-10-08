@@ -1700,11 +1700,11 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     #financeReconciliationTable .reconciliation-toolbar .table-search-wrap { margin-right:auto; }
 
     .finance-year-comparison{padding:8px 10px 12px;overflow-x:auto}
-    .finance-year-comparison table{width:100%;table-layout:fixed;border-collapse:collapse;font:12px/1.4 Arial,sans-serif;font-variant-numeric:tabular-nums}
-    .finance-year-comparison thead th{padding:8px 3px;font-size:11px;font-weight:700;color:#52625a!important;text-align:right;border-bottom:1px solid #bacbc2;white-space:nowrap}
+    .finance-year-comparison table{width:100%;table-layout:fixed;border-collapse:collapse;font:inherit;font-variant-numeric:tabular-nums}
+    .finance-year-comparison thead th{padding:8px 3px;font-size:inherit;font-weight:700;color:#52625a!important;text-align:right;border-bottom:1px solid #bacbc2;white-space:nowrap}
     .finance-year-comparison thead th:first-child{text-align:left}
-    .finance-year-comparison tbody th{padding:12px 3px;text-align:left;font-weight:500;color:#17251e!important}
-    .finance-year-comparison tbody td{padding:12px 3px;text-align:right;white-space:nowrap;font-weight:700;color:#17251e!important}
+    .finance-year-comparison tbody th{padding:8px 3px;text-align:left;font-weight:400;color:#17251e!important}
+    .finance-year-comparison tbody td{padding:8px 3px;text-align:right;white-space:nowrap;font-weight:700;color:#17251e!important}
     .finance-year-comparison tbody tr{border-bottom:1px solid #d2ded7}
     .finance-year-comparison tbody tr:last-child{border-bottom:0}
     .finance-year-comparison tbody tr:last-child th,.finance-year-comparison tbody tr:last-child td{font-weight:800}
@@ -5714,10 +5714,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const money=value=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value||0);
       const netLabel=fund==='General Fund'?'Net Operating Position':'Net Program Position';
       const metrics=[['Income After Processing Fees',prior?.income,current.income,false,'ytd-income'],['Other Expenses',prior?.expenses,current.expenses,true,'ytd-expense'],[netLabel,prior?prior.income-prior.expenses:null,current.income-current.expenses,false,null]];
-      return '<div class="finance-year-comparison"><table><colgroup><col style="width:39%"><col style="width:25%"><col style="width:21%"><col style="width:15%"></colgroup><thead><tr><th scope="col">Metric</th><th scope="col">2026 (YTD)</th><th scope="col">2025</th><th scope="col">% Change</th></tr></thead><tbody>'+metrics.map(([label,before,after,expense,kind])=>{
+      return '<div class="finance-year-comparison"><table><colgroup><col style="width:34%"><col style="width:26%"><col style="width:23%"><col style="width:17%"></colgroup><thead><tr><th scope="col">Metric</th><th scope="col">2026</th><th scope="col">2025</th><th scope="col">% Change</th></tr></thead><tbody>'+metrics.map(([label,before,after,expense,kind])=>{
         const change=before==null?null:after-before;
         const percent=before==null || before===0?(before===0 && after===0?0:null):change/Math.abs(before)*100;
-        const color=change==null || Math.abs(change)<.005?'#34363a':((change>0)!==expense?'#087443':'#b42318');
+        const color=change==null || Math.abs(change)<.005?'#34363a':(change>0?'#087443':'#b42318');
         const percentText=percent==null?'—':(percent>0?'+':'')+percent.toFixed(1)+'%';
         const detail=kind?'<button type="button" class="finance-detail-plus" data-finance-fund="'+esc(fund)+'" data-finance-kind="'+kind+'" aria-label="Show '+esc(label)+' breakdown">+</button>':'';
         return '<tr><th scope="row">'+esc(label)+'</th><td>'+money(after)+detail+'</td><td>'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+color+'" title="Change relative to the absolute 2025 amount">'+percentText+'</td></tr>';
