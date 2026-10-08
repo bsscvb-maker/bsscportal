@@ -5729,7 +5729,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         const change=before==null?null:after-before;
         const percent=before==null || before===0?(before===0 && after===0?0:null):change/Math.abs(before)*100;
         const color=change==null || Math.abs(change)<.005?'#34363a':(change>0?'#008a36':'#df1727');
-        const percentText=percent==null?'—':(percent>0?'+':'')+percent.toFixed(1)+'%';
+        const percentText=percent==null?'—':(Math.round(percent)>0?'+':'')+new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(Math.round(percent))+'%';
         const detail=kind?'<button type="button" class="finance-detail-plus" data-finance-fund="'+esc(fund)+'" data-finance-kind="'+kind+'" aria-label="Show '+esc(label)+' breakdown">+</button>':'';
         return '<tr><th scope="row">'+esc(label)+'</th><td class="'+financeAmountTone(label,after)+'">'+money(after)+detail+'</td><td class="'+financeAmountTone(label,before)+'">'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+color+'" title="Change relative to the absolute 2025 amount">'+percentText+'</td></tr>';
       }).join('')+'</tbody></table></div>';
