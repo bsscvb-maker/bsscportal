@@ -5580,12 +5580,21 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         (/processing fee/i.test(String(row[5]||'')) || /^(PayPal|Chase) Processing Fee/i.test(String(row[3]||'')));
     }
 
+    function financeExpenseFund(row) {
+      const paid=String(row[6]||'').trim();
+      if(String(row[12]||'').trim().toLowerCase()!=='expense' || financeIsProcessingFee(row))return paid;
+      const owner=String(row[16]||'').match(/expense belongs to\s+(Bikes (?:for|For) Tykes|General Fund)/i);
+      if(owner)return owner[1];
+      // Event activity identifies the cost's fund; account balances still use the paying fund.
+      return /bikes for tykes|\bbft\b/i.test(String(row[7]||''))?'Bikes for Tykes':paid;
+    }
+
     function financePeriodBreakdownRows(fund,kind,rows=financeControlTransactionRows,includeVoided=false) {
       const [period,type]=kind.split('-');
       const today=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'numeric'}).formatToParts(new Date());
       const year=Number(today.find(part=>part.type==='year').value),month=Number(today.find(part=>part.type==='month').value);
       return rows.slice(1).filter(row=>{
-        if((!includeVoided && financeIsVoided(row)) || String(row[6]||'').trim().toLowerCase()!==fund.toLowerCase())return false;
+        if((!includeVoided && financeIsVoided(row)) || financeExpenseFund(row).toLowerCase()!==fund.toLowerCase())return false;
         const fee=financeIsProcessingFee(row);
         const rowType=String(row[12]||'').trim().toLowerCase();
         if(type==='income' ? rowType!=='income' && !fee : rowType!=='expense' || fee)return false;
@@ -5607,7 +5616,13 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         const voidIncome=allIncome.filter(row=>financeIsVoided(row) && !financeIsProcessingFee(row)).reduce((sum,row)=>sum+number(row[9]),0);
         const voidFees=allIncome.filter(row=>financeIsVoided(row) && financeIsProcessingFee(row)).reduce((sum,row)=>sum+Math.abs(number(row[9])),0);
         const voidExpenses=financePeriodBreakdownRows(fund,'ytd-expense',rows,true).filter(financeIsVoided).reduce((sum,row)=>sum-number(row[9]),0);
-        return {income:number(controlRows[index]?.[1])-fees-voidIncome,expenses:number(controlRows[index+1]?.[1])-fees-voidFees-voidExpenses};
+        const allocation=rows.slice(1).filter(row=>!financeIsVoided(row) && String(row[12]||'').trim().toLowerCase()==='expense' && !financeIsProcessingFee(row)).reduce((sum,row)=>{
+          const paid=String(row[6]||'').trim().toLowerCase(),owner=financeExpenseFund(row).toLowerCase(),target=fund.toLowerCase();
+          if(paid===owner)return sum;
+          const amount=Math.abs(number(row[9]));
+          return sum+(owner===target?amount:0)-(paid===target?amount:0);
+        },0);
+        return {income:number(controlRows[index]?.[1])-fees-voidIncome,expenses:number(controlRows[index+1]?.[1])-fees-voidFees-voidExpenses+allocation};
       }
       return {income:incomeRows.reduce((sum,row)=>sum+(financeIsProcessingFee(row)?-Math.abs(number(row[9])):number(row[9])),0),expenses:expenseRows.reduce((sum,row)=>sum+Math.abs(number(row[9])),0)};
     }
