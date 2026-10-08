@@ -1698,6 +1698,16 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     #financeReconciliationTable .reconciliation-linked { font-size:11px; color:#64748b; }
     #financeReconciliationTable .reconciliation-toolbar { justify-content:flex-end; }
     #financeReconciliationTable .reconciliation-toolbar .table-search-wrap { margin-right:auto; }
+
+    .finance-year-comparison{margin:16px 10px 12px;padding:16px 12px 10px;border:1px solid #a9bab4;border-radius:8px;background:rgba(255,255,255,.65)}
+    .finance-year-comparison h4{margin:0 0 14px;font:800 12px/1.4 Arial,sans-serif;color:#22332b!important}
+    .finance-year-comparison table{width:100%;table-layout:fixed;border-collapse:collapse;font:13px/1.4 Arial,sans-serif;font-variant-numeric:tabular-nums}
+    .finance-year-comparison thead th{padding:0 2px 10px;font-size:11px;font-weight:700;color:#52625a!important;text-align:center;border-bottom:1px solid #cbd5d0}
+    .finance-year-comparison .comparison-label th{padding:12px 4px 5px;text-align:left;font-size:12px;color:#24332b!important;font-weight:700}
+    .finance-year-comparison .comparison-values td{padding:2px 2px 12px;text-align:center;white-space:nowrap;font-weight:700;color:#17251e!important;border-bottom:1px solid #dbe3df}
+    .finance-year-comparison .comparison-values:last-child td{border-bottom:0}
+    .finance-year-comparison .comparison-change{display:inline-block;padding:4px 6px;border-radius:5px;font-size:11px;color:var(--change-color)!important;background:var(--change-bg)}
+    .finance-year-comparison p{font:11px/1.5 Arial,sans-serif;margin:8px 0 0;color:#52625a!important}
 </style>
 </head>
 <body>
@@ -4940,12 +4950,6 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     
 
 
-    .finance-year-comparison{margin-top:16px;padding-top:14px;border-top:1px solid #9ba6a0;overflow-x:auto}
-    .finance-year-comparison h4{margin:0 0 10px;font-size:13px}
-    .finance-year-comparison table{width:100%;border-collapse:collapse;font-size:12px}
-    .finance-year-comparison th,.finance-year-comparison td{padding:8px 5px;border-bottom:1px solid #bac3be;text-align:right;vertical-align:top}
-    .finance-year-comparison th:first-child{text-align:left}
-    .finance-year-comparison p{font-size:11px;margin:10px 0 0;color:#34363a}
   </style></head><body><div class="print-only"><button onclick="window.print()">Print pick tickets</button> · Cut along the dotted lines.</div><div class="sheet">${rows}</div></body></html>`);
       printWindow.document.close();
       printWindow.focus();
@@ -5707,12 +5711,13 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const prior=financePriorYearTotals(fund);
       if(!prior)return '<p class="control-edit-note">2025 comparison is unavailable.</p>';
       const money=value=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value||0);
-      const metrics=[['Income after fees',prior.income,current.income,false],['Expenses',prior.expenses,current.expenses,true],['Income minus expenses',prior.income-prior.expenses,current.income-current.expenses,false]];
-      return '<div class="finance-year-comparison"><h4>2025 Full Year vs. 2026 Year to Date</h4><table><thead><tr><th>Metric</th><th>2025 full year</th><th>Change</th><th>2026 year to date</th></tr></thead><tbody>'+metrics.map(([label,before,after,expense])=>{
+      const metrics=[['Income after fees',prior.income,current.income,false],['Expenses',prior.expenses,current.expenses,true],['Net result',prior.income-prior.expenses,current.income-current.expenses,false]];
+      return '<div class="finance-year-comparison"><h4>2025 Full Year vs. 2026 Year to Date</h4><table><thead><tr><th>2025 · Full Year</th><th>Change</th><th>2026 · Year to Date</th></tr></thead><tbody>'+metrics.map(([label,before,after,expense])=>{
         const change=Math.round((after-before)*100)/100;
         const color=change===0?'#34363a':((change>0)!==expense?'#087443':'#b42318');
-        return '<tr><th scope="row">'+esc(label)+'</th><td>'+money(before)+'</td><td style="color:'+color+';font-weight:800">'+(change>0?'Increase ':change<0?'Decrease ':'No change ')+money(Math.abs(change))+'</td><td>'+money(after)+'</td></tr>';
-      }).join('')+'</tbody></table><p>2025 covers the full year; 2026 covers the year so far. Based on recorded transactions.</p></div>';
+        const background=color==='#087443'?'#e0f3e8':color==='#b42318'?'#fde9e7':'#e9eeeb';
+        return '<tr class="comparison-label"><th colspan="3">'+esc(label)+'</th></tr><tr class="comparison-values"><td>'+money(before)+'</td><td><span class="comparison-change" style="--change-color:'+color+';--change-bg:'+background+'" aria-label="'+(change>0?'Increase ':change<0?'Decrease ':'No change ')+money(Math.abs(change))+'">'+(change>0?'↑ ':change<0?'↓ ':'— ')+money(Math.abs(change))+'</span></td><td>'+money(after)+'</td></tr>';
+      }).join('')+'</tbody></table><p>Full-year 2025 compared with 2026 so far.</p></div>';
     }
 
     function renderFinanceControl(rows, transactionRows=financeControlTransactionRows) {
