@@ -1716,6 +1716,18 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     #financeControlTable .control-row.finance-amount-balance strong,#financeDashboard .finance-dashboard-card.finance-amount-balance strong,#financeControlTable .finance-year-comparison table tbody td.finance-amount-balance{color:#111113!important}
     .finance-year-comparison thead th:last-child{white-space:normal}
     #financeControlTable .finance-year-comparison table tbody td.comparison-percent{white-space:normal;line-height:1.35}
+
+    #financeControlTable .control-row strong{display:grid;grid-template-columns:max-content 28px;align-items:center;justify-content:end;gap:10px;font-variant-numeric:tabular-nums}
+    #financeControlTable .control-row strong:not(:has(.finance-detail-plus)){padding-right:0}
+    #financeControlTable .control-row strong .finance-detail-plus{margin-left:0}
+    #financeControlTable .finance-year-comparison td{vertical-align:middle}
+    #financeControlTable .finance-year-comparison .comparison-current-amount{display:grid;grid-template-columns:minmax(0,1fr) 20px;align-items:center;gap:5px;text-align:right}
+    #financeControlTable .finance-year-comparison .comparison-current-amount:not(:has(.finance-detail-plus)){padding-right:0}
+    #financeControlTable .finance-year-comparison .finance-detail-plus{margin-left:0;width:20px;height:20px}
+    #financeControlTable .finance-year-comparison .comparison-number{display:block;white-space:nowrap;font-weight:800;color:inherit!important}
+    #financeControlTable .finance-year-comparison .comparison-caption{display:block;margin-top:2px;font-size:.78em;font-weight:500;color:inherit!important}
+    #financeControlTable .finance-year-comparison table tbody td.comparison-percent{text-align:right;padding-left:8px}
+    #financeControlTable .finance-year-comparison table tbody th{vertical-align:middle;line-height:1.4}
 </style>
 </head>
 <body>
@@ -5740,8 +5752,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           else if(percent!=null)comparison=whole(Math.abs(percent))+'% '+(change>0?'more':'less');
           else comparison='$'+whole(Math.abs(change))+' '+(change>0?'more':'less');
         }
+        const comparisonParts=comparison.match(/^(.+?) (improvement|decline|more|less|last year)$/);
+        const comparisonHtml=comparisonParts?'<span class="comparison-number">'+esc(comparisonParts[1])+'</span><span class="comparison-caption">'+esc(comparisonParts[2])+'</span>':'<span class="comparison-number">'+esc(comparison)+'</span>';
         const detail=kind?'<button type="button" class="finance-detail-plus" data-finance-fund="'+esc(fund)+'" data-finance-kind="'+kind+'" aria-label="Show '+esc(label)+' breakdown">+</button>':'';
-        return '<tr><th scope="row">'+esc(label)+'</th><td class="'+financeAmountTone(label,after)+'">'+money(after)+detail+'</td><td class="'+financeAmountTone(label,before)+'">'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+color+'">'+esc(comparison)+'</td></tr>';
+        return '<tr><th scope="row">'+esc(label)+'</th><td class="'+financeAmountTone(label,after)+'"><span class="comparison-current-amount">'+money(after)+detail+'</span></td><td class="'+financeAmountTone(label,before)+'">'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+color+'">'+comparisonHtml+'</td></tr>';
       }).join('')+'</tbody></table></div>';
     }
 
