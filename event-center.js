@@ -107,7 +107,7 @@ function documents(body){body.className='hq-grid';body.innerHTML=records('Docume
 async function loadSponsors(){
  const t=state.sponsorTab;
  if(state.sponsors[t]){if(state.tab==='Sponsors')sponsors(H().querySelector('[data-hq-body]'));return;}
- try{const r=await getSheetValues(`'${t}'!A1:Z2000`,SPREADSHEET_ID);state.sponsors[t]=r;state.sponsorHeaders[t]=r[0]||[];if(state.tab==='Sponsors')sponsors(H().querySelector('[data-hq-body]'));}catch(e){status('Sponsor records could not load: '+error(e),true);}
+ try{const limit=t.startsWith('Sponsors - ')?200:2000;const r=await getSheetValues(`'${t}'!A1:Z${limit}`,SPREADSHEET_ID);state.sponsors[t]=r;state.sponsorHeaders[t]=r[0]||[];if(state.tab==='Sponsors')sponsors(H().querySelector('[data-hq-body]'));}catch(e){status('Sponsor records could not load: '+error(e),true);}
 }
 function sponsors(body){
  const stabs=['Sponsors - Current','Sponsors - Prospective','Sponsor Contributions','Sponsor Contact Log'];
@@ -147,6 +147,7 @@ function edit(key,row,mode){
    if(row&&patch[2]!==original[2])throw Error('Volunteer names cannot be renamed here because they identify station assignments. Keep the existing name; use Notes for corrections.');
    if(!row&&records(key).some(r=>r.v[2].toLowerCase()===patch[2].toLowerCase()))throw Error('That volunteer is already on the roster.');
   }
+  if(key==='Prizes'&&patch[14]==='Released'&&!(patch[10]||original[10]))throw Error('Record the winner before releasing this prize.');
   if(key==='Prizes'&&patch[14]==='Released'&&!['Confirmed paid','Donation / no payment due'].includes(patch[13]||original[13]))throw Error('Record confirmed payment or no payment due before marking a prize released.');
   if(key==='Prizes'&&mode==='winner'&&patch[12]&&!/^\$?\d+(\.\d{1,2})?$/.test(patch[12]))throw Error('Enter a valid winning amount, such as 125.00.');
   if(key==='Documents'&&patch[4]&&!safeURL(patch[4]))throw Error('Use an HTTPS document link.');
