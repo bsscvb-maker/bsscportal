@@ -5547,7 +5547,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           const type=String(row[12]||'').trim().toLowerCase();
           return !financeIsVoided(row) && String(row[6]||'').trim().toLowerCase()===fundName.toLowerCase() &&
             ['no','pending at chase'].includes(cleared) &&
-            (['ach / bank transfer','debit card','credit card','paypal','chase payments'].includes(method) || method==='check' && cleared==='pending at chase') &&
+            (['ach / bank transfer','debit card','credit card','paypal','chase payments','zelle'].includes(method) || method==='check' && cleared==='pending at chase') &&
             (!['paypal','chase payments'].includes(method) || ['transfer in','transfer out'].includes(type));
         }).map(row=>Math.round(numeric(row[9]||0)*100)).filter(amount=>Number.isFinite(amount)&&amount!==0);
         let possible=new Set([0]);
