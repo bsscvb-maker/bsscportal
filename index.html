@@ -6025,11 +6025,20 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     function renderFinanceBft(budgetRows, budgetFormulas, controlRows, transactionRows) {
       const control = (row,column) => String(controlRows[row - 1]?.[column - 1] ?? '—');
       const summary = (label,value) => '<div class="finance-dashboard-card good"><span>' + esc(label) + '</span><strong>' + esc(value) + '</strong></div>';
-      const entries = transactionRows.slice(1).filter(row => String(row[6] || '').trim().toLowerCase() === 'bikes for tykes');
+      const program = financePeriodTotals('Bikes for Tykes','ytd',transactionRows,controlRows);
+      const eventName = 'Bikes For Tykes Fundraiser 2026';
+      const eventRows = transactionRows.slice(1).filter(row => !financeIsVoided(row) && String(row[2]) === '2026' &&
+        (String(row[7] || '').trim() === eventName || financeIsProcessingFee(row) && String(row[16] || '').includes('Event: ' + eventName)));
+      const amountOf = row => Number(String(row[9] || 0).replace(/[$,]/g,'')) || 0;
+      const eventGross = eventRows.filter(row => String(row[12]).toLowerCase() === 'income' && !/opening balance|internal transfer/i.test(String(row[4]) + ' ' + String(row[5]))).reduce((sum,row) => sum + amountOf(row),0);
+      const eventFees = eventRows.filter(financeIsProcessingFee).reduce((sum,row) => sum + Math.abs(amountOf(row)),0);
+      const eventCosts = eventRows.filter(row => String(row[12]).toLowerCase() === 'expense' && !financeIsProcessingFee(row)).reduce((sum,row) => sum + Math.abs(amountOf(row)),0);
+      const eventNet = eventGross - eventFees - eventCosts;
+      const entries = transactionRows.slice(1).filter(row => !financeIsVoided(row) && String(financeExpenseFund(row) || '').trim().toLowerCase() === 'bikes for tykes');
       entries.sort((a,b) => (Date.parse(b[0]) || 0) - (Date.parse(a[0]) || 0));
       const displayRows = [['Date','Description','Subcategory','Payee / Payer','Amount','Type','Payment Method','Bank Status'], ...entries.map(row => [row[0],row[3],row[5],row[8],row[9],row[12],row[13],String(row[14] || '').trim().toLowerCase() === 'yes' ? 'Cleared' : String(row[14] || '').trim().toLowerCase() === 'pending at chase' ? 'Pending at Chase' : 'Not cleared'])];
       const target = document.getElementById('financeBftTable');
-      target.innerHTML = '<div class="bft-finance-summary bft-finance-simple">' + summary('Current Balance',control(8,5)) + summary('2026 Income',control(21,2)) + summary('2026 Expenses',control(22,2)) + '</div><div class="control-action-bar"><button class="dashboard-edit-btn" type="button" id="bftViewBudget" aria-expanded="false" aria-controls="bftFinanceBudget">View Budget</button><button class="dashboard-edit-btn" type="button" id="bftManageTransactions">Manage Transactions</button></div><section class="bft-finance-section" id="bftFinanceBudget" hidden><h3>2026 Program Budget</h3><div class="data-status" id="financeBftBudgetStatus"></div><div id="financeBftBudgetTable"></div></section><section class="bft-finance-section"><h3>Bikes for Tykes Transactions</h3><div class="data-status" id="financeBftTransactionsStatus"></div><div id="financeBftTransactionsTable"></div></section>';
+      target.innerHTML = '<div class="bft-finance-summary bft-finance-simple">' + summary('Bank Account Balance',control(8,5)) + summary('2026 Program Income — After Fees',money(program.income)) + summary('2026 Program Expenses',money(program.expenses)) + '</div><section class="bft-finance-section"><h3>2026 Bikes for Tykes Fundraiser</h3><div class="bft-finance-summary bft-finance-simple">' + summary('Fundraiser Income — After Fees',money(eventGross-eventFees)) + summary('Fundraiser Expenses — Including Unpaid',money(eventCosts)) + summary('Fundraiser Money Available',money(eventNet)) + '</div></section><div class="control-action-bar"><button class="dashboard-edit-btn" type="button" id="bftViewBudget" aria-expanded="false" aria-controls="bftFinanceBudget">View Budget</button><button class="dashboard-edit-btn" type="button" id="bftManageTransactions">Manage Transactions</button></div><section class="bft-finance-section" id="bftFinanceBudget" hidden><h3>2026 Program Budget</h3><div class="data-status" id="financeBftBudgetStatus"></div><div id="financeBftBudgetTable"></div></section><section class="bft-finance-section"><h3>Bikes for Tykes Transactions</h3><div class="data-status" id="financeBftTransactionsStatus"></div><div id="financeBftTransactionsTable"></div></section>';
       renderDataTable('financeBftTransactionsTable','financeBftTransactionsStatus',displayRows,0,8);
       let budgetRendered = false;
       target.querySelector('#bftViewBudget').addEventListener('click', event => {
@@ -6044,7 +6053,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         }
       });
       target.querySelector('#bftManageTransactions').addEventListener('click', () => document.querySelector('[data-finance-tab="transactions2026"]')?.click());
-      document.getElementById('financeBftStatus').textContent = 'Balance and 2026 totals match Control-2026. Transactions are listed newest first.';
+      document.getElementById('financeBftStatus').textContent = 'Fundraiser figures match the Bikes for Tykes Dashboard. Program expenses include purchases paid from General Fund. Transactions are listed newest first.';
     }
 
     async function loadFinanceBft() {
