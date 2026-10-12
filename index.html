@@ -3129,8 +3129,8 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
             <div class="bft-dashboard-column">
               <section class="finance-box"><h3>Cash Raised Overview</h3><div class="finance-box-body">
                 ${row('Ticket Sales (Gross):', get('Ticket Sales (Gross):'))}
-                ${row('Other Event Income (Gross):', get('Donations (Net of Processing Fees):'))}
-                ${row('Total Event Income (Gross):', get('Total Raised (Ticket Sales + Donations):'))}
+                ${row('Other Event Income (Gross):', (get('Other Event Income (Gross):') || get('Donations (Net of Processing Fees):')))}
+                ${row('Total Event Income (Gross):', (get('Total Event Income (Gross):') || get('Total Raised (Ticket Sales + Donations):')))}
                 ${row('Less Fees & Expenses:', get('Less Fees & Expenses:'))}
                 ${row('Available for Bikes for Tykes Today:', get('Available for Bikes for Tykes Today:'), true)}
                 <p class="bft-donation-help" style="margin:12px 0 0">Live from Transaction 2026 for the 2026 Bikes for Tykes fundraiser. Includes recorded pending income; excludes opening balances and transfers. Fees and event expenses are deducted once. This is net event proceeds, not the bank balance. In-kind gifts are tracked separately.</p>
