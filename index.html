@@ -3128,10 +3128,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
             </div>
             <div class="bft-dashboard-column">
               <section class="finance-box"><h3>Cash Raised Overview</h3><div class="finance-box-body">
-                ${row('Ticket Sales (Gross):', get('Ticket Sales (Gross):'))}
-                ${row('Other Event Income (Gross):', (get('Other Event Income (Gross):') || get('Donations (Net of Processing Fees):')))}
-                ${row('Total Event Income (Gross):', (get('Total Event Income (Gross):') || get('Total Raised (Ticket Sales + Donations):')))}
-                ${row('Less Fees & Expenses:', get('Less Fees & Expenses:'))}
+                ${row('Ticket Sales (After Fees):', (get('Ticket Sales (After Fees):') || get('Ticket Sales (Gross):')))}
+                ${row('Other Event Income (After Fees):', (get('Other Event Income (After Fees):') || get('Other Event Income (Gross):') || get('Donations (Net of Processing Fees):')))}
+                ${row('Total Event Income (After Fees):', (get('Total Event Income (After Fees):') || get('Total Event Income (Gross):') || get('Total Raised (Ticket Sales + Donations):')))}
+                ${row('Less Account Expenses:', (get('Less Account Expenses:') || get('Less Fees & Expenses:')))}
                 ${row('Available for Bikes for Tykes Today:', get('Available for Bikes for Tykes Today:'), true)}
                 
               </div></section>
@@ -3147,10 +3147,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
                 <div class="dashboard-progress ticket-progress"><span style="width:${percent(ticketsSoldPercent)}%"></span></div>
                 <div class="progress-label">Progress Bar</div>
               </div></section>
-              <section class="finance-box"><h3>Expenses &amp; Fees</h3><div class="finance-box-body">
+              <section class="finance-box"><h3>Account Expenses</h3><div class="finance-box-body">
                 ${row('Merchandise / Event Costs:', get('Merchandise / Event Costs:'))}
                 <div class="finance-spacer"></div>
-                ${row('Total Fees & Expenses:', get('Event Expenses:'), true)}
+                ${row('Total Account Expenses:', get('Event Expenses:'), true)}
                 <button type="button" class="bft-expense-toggle" id="bftExpenseDetailsButton" aria-haspopup="dialog">View expense details ▾</button>
               </div></section>
             </div>
