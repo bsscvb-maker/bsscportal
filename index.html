@@ -5550,6 +5550,9 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
             (['ach / bank transfer','debit card','credit card','paypal','chase payments','zelle'].includes(method) || method==='check' && cleared==='pending at chase') &&
             (!['paypal','chase payments'].includes(method) || ['transfer in','transfer out'].includes(type));
         }).map(row=>Math.round(numeric(row[9]||0)*100)).filter(amount=>Number.isFinite(amount)&&amount!==0);
+        // Check the full pending bank batch before bounded subset exploration.
+        // Itemized settlements can exceed the subset cap before their last line.
+        if(wanted===amounts.reduce((sum,value)=>sum+value,0))return true;
         let possible=new Set([0]);
         for(const amount of amounts){
           possible=new Set([...possible,...Array.from(possible,sum=>sum+amount)]);
