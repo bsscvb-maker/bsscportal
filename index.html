@@ -3104,7 +3104,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
                 ${row('Cash Raised So Far:', get('Total Raised So Far:'))}
                 ${row('Remaining to Goal:', get('Remaining to Goal:'))}
                 ${row('Progress Toward Goal:', progressTowardGoal, true)}
-                <div class="dashboard-progress"><span style="width:${percent(progressTowardGoal)}%"></span></div>
+                <div class="dashboard-progress"><span style="width:${percent(progressTowardGoal)}%;background:${percent(progressTowardGoal) >= 100 ? '#008a36' : '#c8102e'}"></span></div>
                 ${row('Goal Status:', get('Goal Status:'), true)}
               </div></section>
               <section class="finance-box"><h3>In-Kind Support</h3><div class="finance-box-body">
@@ -3150,7 +3150,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
               <section class="finance-box"><h3>Expenses &amp; Fees</h3><div class="finance-box-body">
                 ${row('Merchandise / Event Costs:', get('Merchandise / Event Costs:'))}
                 <div class="finance-spacer"></div>
-                ${row('Event Expenses:', get('Event Expenses:'), true)}
+                ${row('Total Fees & Expenses:', get('Event Expenses:'), true)}
                 <button type="button" class="bft-expense-toggle" id="bftExpenseDetailsButton" aria-haspopup="dialog">View expense details ▾</button>
               </div></section>
             </div>
@@ -3171,22 +3171,43 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       }));
     }
 
-    function showBftExpenseDetails() {
-      const expenses = bftDonationRows.slice(3).filter(row => String(row[7] || '').trim().toLowerCase() === 'event expenses');
-      const amount = row => Math.abs(Number(String(row[5] || '').replace(/[$,\s]/g, '')) || 0);
-      const total = expenses.reduce((sum, item) => sum + amount(item), 0);
-      const listed = expenses.length
-        ? `<div class="bft-expense-scroll"><table class="bft-expense-table"><thead><tr><th>Date</th><th>Expense</th><th>Vendor</th><th>Amount</th></tr></thead><tbody>${expenses.map(item => `<tr><td>${esc(item[8] || '—')}</td><td>${esc(item[4] || '—')}</td><td>${esc(item[1] || '—')}</td><td>${esc(money(amount(item)))}</td></tr>`).join('')}</tbody><tfoot><tr><th colspan="3">Total event expenses</th><th>${esc(money(total))}</th></tr></tfoot></table></div>`
-        : '<p>No Event Expenses entries were found in the Tracking Tab.</p>';
-      const dialog = document.createElement('dialog');
-      dialog.className = 'bft-expense-dialog';
-      dialog.setAttribute('aria-label', 'Bikes for Tykes expense details');
-      dialog.innerHTML = `<div class="bft-expense-dialog-header"><div><h3>Expenses &amp; Fees details</h3><p>Event expense entries from the Tracking Tab that make up the dashboard total.</p></div><button type="button" aria-label="Close expense details">Close</button></div>${listed}`;
-      document.body.appendChild(dialog);
-      dialog.querySelector('button').addEventListener('click', () => dialog.close());
-      dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
-      dialog.addEventListener('close', () => dialog.remove(), {once:true});
-      dialog.showModal();
+    async function showBftExpenseDetails() {
+      const button = document.getElementById('bftExpenseDetailsButton');
+      button.disabled = true;
+      button.textContent = 'Loading expense details…';
+      try {
+        const ledger = await getSheetValues("'Transactions-2026'!A1:Q", FINANCE_SPREADSHEET_ID);
+        const eventName = 'Bikes For Tykes Fundraiser 2026';
+        const expenses = ledger.slice(1).filter(row => {
+          const activity = String(row[7] || '').trim();
+          const fee = /processing fee/i.test(String(row[3] || '') + ' ' + String(row[5] || ''));
+          return String(row[2]) === '2026' && !financeIsVoided(row) &&
+            String(row[12] || '').trim().toLowerCase() === 'expense' &&
+            (activity === eventName || fee && String(row[16] || '').includes('Event: ' + eventName));
+        }).sort((a,b) => (Date.parse(a[0]) || 0) - (Date.parse(b[0]) || 0));
+        const amount = row => Math.abs(Number(String(row[9] || '').replace(/[$,\\s]/g, '')) || 0);
+        const fee = row => /processing fee/i.test(String(row[3] || '') + ' ' + String(row[5] || ''));
+        const costs = expenses.filter(row => !fee(row)).reduce((sum,row) => sum + amount(row),0);
+        const fees = expenses.filter(fee).reduce((sum,row) => sum + amount(row),0);
+        const total = costs + fees;
+        const listed = expenses.length
+          ? `<div class="bft-expense-scroll"><table class="bft-expense-table"><thead><tr><th>Date</th><th>Expense</th><th>Vendor</th><th>Amount</th></tr></thead><tbody>${expenses.map(item => `<tr><td>${esc(item[0] || '—')}</td><td>${esc(item[3] || '—')}${fee(item) ? ' <small>(processing fee)</small>' : ''}</td><td>${esc(item[8] || '—')}</td><td>${esc(money(amount(item)))}</td></tr>`).join('')}</tbody><tfoot><tr><th colspan="3">Merchandise / event costs</th><th>${esc(money(costs))}</th></tr><tr><th colspan="3">Processing fees</th><th>${esc(money(fees))}</th></tr><tr><th colspan="3">Total fees &amp; expenses</th><th>${esc(money(total))}</th></tr></tfoot></table></div>`
+          : '<p>No expenses recorded for this event in Transaction 2026.</p>';
+        const dialog = document.createElement('dialog');
+        dialog.className = 'bft-expense-dialog';
+        dialog.setAttribute('aria-label', 'Bikes for Tykes expense details');
+        dialog.innerHTML = `<div class="bft-expense-dialog-header"><div><h3>Expenses &amp; Fees details</h3><p>Live Transaction 2026 entries for the 2026 Bikes for Tykes fundraiser, including event-linked processing fees. Includes pending costs; excludes voided entries and transfers.</p></div><button type="button" aria-label="Close expense details">Close</button></div>${listed}`;
+        document.body.appendChild(dialog);
+        dialog.querySelector('button').addEventListener('click', () => dialog.close());
+        dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
+        dialog.addEventListener('close', () => dialog.remove(), {once:true});
+        dialog.showModal();
+      } catch (error) {
+        alert('Expense details could not load from Transaction 2026. Please try again.');
+      } finally {
+        button.disabled = false;
+        button.textContent = 'View expense details ▾';
+      }
     }
 
     async function toggleBftDashboardEditing() {
