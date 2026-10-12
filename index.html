@@ -3183,7 +3183,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           const fee = /processing fee/i.test(String(row[3] || '') + ' ' + String(row[5] || ''));
           return String(row[2]) === '2026' && !financeIsVoided(row) &&
             String(row[12] || '').trim().toLowerCase() === 'expense' &&
-            (activity === eventName || fee && String(row[16] || '').includes('Event: ' + eventName));
+            activity === eventName && !fee;
         }).sort((a,b) => (Date.parse(a[0]) || 0) - (Date.parse(b[0]) || 0));
         const amount = row => Math.abs(Number(String(row[9] || '').replace(/[$,\\s]/g, '')) || 0);
         const fee = row => /processing fee/i.test(String(row[3] || '') + ' ' + String(row[5] || ''));
@@ -3191,12 +3191,12 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         const fees = expenses.filter(fee).reduce((sum,row) => sum + amount(row),0);
         const total = costs + fees;
         const listed = expenses.length
-          ? `<div class="bft-expense-scroll"><table class="bft-expense-table"><thead><tr><th>Date</th><th>Expense</th><th>Vendor</th><th>Amount</th></tr></thead><tbody>${expenses.map(item => `<tr><td>${esc(item[0] || '—')}</td><td>${esc(item[3] || '—')}${fee(item) ? ' <small>(processing fee)</small>' : ''}</td><td>${esc(item[8] || '—')}</td><td>${esc(money(amount(item)))}</td></tr>`).join('')}</tbody><tfoot><tr><th colspan="3">Merchandise / event costs</th><th>${esc(money(costs))}</th></tr><tr><th colspan="3">Processing fees</th><th>${esc(money(fees))}</th></tr><tr><th colspan="3">Total fees &amp; expenses</th><th>${esc(money(total))}</th></tr></tfoot></table></div>`
+          ? `<div class="bft-expense-scroll"><table class="bft-expense-table"><thead><tr><th>Date</th><th>Expense</th><th>Vendor</th><th>Amount</th></tr></thead><tbody>${expenses.map(item => `<tr><td>${esc(item[0] || '—')}</td><td>${esc(item[3] || '—')}${fee(item) ? ' <small>(processing fee)</small>' : ''}</td><td>${esc(item[8] || '—')}</td><td>${esc(money(amount(item)))}</td></tr>`).join('')}</tbody><tfoot><tr><th colspan="3">Total account expenses</th><th>${esc(money(total))}</th></tr></tfoot></table></div>`
           : '<p>No expenses recorded for this event in Transaction 2026.</p>';
         const dialog = document.createElement('dialog');
         dialog.className = 'bft-expense-dialog';
         dialog.setAttribute('aria-label', 'Bikes for Tykes expense details');
-        dialog.innerHTML = `<div class="bft-expense-dialog-header"><div><h3>Expenses &amp; Fees details</h3><p>Live Transaction 2026 entries for the 2026 Bikes for Tykes fundraiser, including event-linked processing fees. Includes pending costs; excludes voided entries and transfers.</p></div><button type="button" aria-label="Close expense details">Close</button></div>${listed}`;
+        dialog.innerHTML = `<div class="bft-expense-dialog-header"><div><h3>Event expenses paid from the account</h3><p>Event expenses recorded in Transaction 2026, including pending payments.</p></div><button type="button" aria-label="Close expense details">Close</button></div>${listed}`;
         document.body.appendChild(dialog);
         dialog.querySelector('button').addEventListener('click', () => dialog.close());
         dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
