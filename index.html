@@ -2752,7 +2752,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           getSheetValues("'DashBoard'!A1:G40",BFT_SPREADSHEET_ID),
           getSheetValues("'Dashboard'!A1:V22",MARKETPLACE_SPREADSHEET_ID),
           getSheetValues("'2026'!A1:AH855",MEMBERSHIP_SPREADSHEET_ID),
-          getSheetValues("'Control-2026'!A1:H33",FINANCE_SPREADSHEET_ID)
+          getSheetValues("'Control-2026'!A1:H40",FINANCE_SPREADSHEET_ID)
         ]);
         renderOperationsOverview(results);
       } catch (error) {
@@ -2806,8 +2806,8 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       },'Formatted transaction dates','Transactions-2026',Number(match[2])-Number(match[1])+1);
       const updates = [];
       for (let row = Number(match[1]); row <= Number(match[2]); row += 1) {
-        updates.push({range:`'Transactions-2026'!K${row}`,value:`=IF($A${row}="","",'Control-2026'!$E$30+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"<>PayPal",$N$322:$N${row},"<>Chase Payments")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"Chase Payments",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer Out")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"Chase Payments",$M$322:$M${row},"Transfer Out")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Pending at Chase",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Pending at Chase",$N$322:$N${row},"Chase Payments",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Pending at Chase",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer Out")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Pending at Chase",$N$322:$N${row},"Chase Payments",$M$322:$M${row},"Transfer Out"))`});
-        updates.push({range:`'Transactions-2026'!L${row}`,value:`=IF($A${row}="","",K${row}+SUMIFS($J$322:$J${row},$O$322:$O${row},"No",$N$322:$N${row},"<>PayPal",$N$322:$N${row},"<>Chase Payments")+SUMIFS($J$322:$J${row},$O$322:$O${row},"No",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"No",$N$322:$N${row},"Chase Payments",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"No",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer Out")+SUMIFS($J$322:$J${row},$O$322:$O${row},"No",$N$322:$N${row},"Chase Payments",$M$322:$M${row},"Transfer Out"))`});
+        updates.push({range:`'Transactions-2026'!K${row}`,value:`=IF($A${row}="","",'Control-2026'!$E$30+SUM($J$317:$J$318)+$J$321-28.93+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"<>PayPal",$N$322:$N${row},"<>Chase Payments")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"Chase Payments",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer Out")+SUMIFS($J$322:$J${row},$O$322:$O${row},"Yes",$N$322:$N${row},"Chase Payments",$M$322:$M${row},"Transfer Out"))`});
+        updates.push({range:`'Transactions-2026'!L${row}`,value:`=IF($A${row}="","",K${row}+SUMIFS($J$322:$J${row},$O$322:$O${row},"<>Yes",$N$322:$N${row},"<>PayPal",$N$322:$N${row},"<>Chase Payments")+SUMIFS($J$322:$J${row},$O$322:$O${row},"<>Yes",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"<>Yes",$N$322:$N${row},"Chase Payments",$M$322:$M${row},"Transfer In")+SUMIFS($J$322:$J${row},$O$322:$O${row},"<>Yes",$N$322:$N${row},"PayPal",$M$322:$M${row},"Transfer Out")+SUMIFS($J$322:$J${row},$O$322:$O${row},"<>Yes",$N$322:$N${row},"Chase Payments",$M$322:$M${row},"Transfer Out"))`});
       }
       await updateSheetRanges(FINANCE_SPREADSHEET_ID,updates);
     }
@@ -5531,8 +5531,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         if(!Number.isFinite(amount)) return totals;
         if(amount>0) { if(method==='paypal') totals.paypal+=amount; else totals.otherDeposits+=amount; }
         if(amount<0) totals.outgoing+=Math.abs(amount);
+        if(cleared==='pending at chase') totals.bankNet+=amount;
+        else if(amount<0) totals.reserved+=Math.abs(amount);
         return totals;
-      },{outgoing:0,paypal:0,otherDeposits:0});
+      },{outgoing:0,paypal:0,otherDeposits:0,bankNet:0,reserved:0});
       const generalPending=pendingForFund('General Fund'),bftPending=pendingForFund('Bikes for Tykes');
       const hasPending = pending => pending.paypal>0 || pending.otherDeposits>0 || pending.outgoing>0;
       const bankSplitMismatch = Math.abs(numeric(at(5,4))-numeric(at(6,4))-numeric(at(7,4)))>=0.01;
@@ -5552,41 +5554,21 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       },opening);
       const generalBank=clearedFundBalance('General Fund',7839.80);
       const bftBank=clearedFundBalance('Bikes for Tykes',10079.99);
-      const generalDifference=numeric(at(6,4))-generalBank;
-      const bftDifference=numeric(at(7,4))-bftBank;
-      const generalAvailable=generalBank-generalPending.outgoing;
-      const bftAvailable=bftBank-bftPending.outgoing;
-
-      // Chase available balances can include some or all pending bank activity.
-      // Outstanding checks are excluded unless explicitly listed Pending at Chase.
-      const pendingExplainsDifference = (fundName,difference) => {
-        const wanted=Math.round(difference*100);
-        if(wanted===0)return true;
-        const amounts=transactionRows.slice(1).filter(row => {
-          const cleared=String(row[14]||'').trim().toLowerCase();
-          const method=String(row[13]||'').trim().toLowerCase();
-          const type=String(row[12]||'').trim().toLowerCase();
-          return !financeIsVoided(row) && String(row[6]||'').trim().toLowerCase()===fundName.toLowerCase() &&
-            ['no','pending at chase'].includes(cleared) &&
-            (['ach / bank transfer','debit card','credit card','paypal','chase payments','zelle'].includes(method) || method==='check' && cleared==='pending at chase') &&
-            (!['paypal','chase payments'].includes(method) || ['transfer in','transfer out'].includes(type));
-        }).map(row=>Math.round(numeric(row[9]||0)*100)).filter(amount=>Number.isFinite(amount)&&amount!==0);
-        // Check the full pending bank batch before bounded subset exploration.
-        // Itemized settlements can exceed the subset cap before their last line.
-        if(wanted===amounts.reduce((sum,value)=>sum+value,0))return true;
-        let possible=new Set([0]);
-        for(const amount of amounts){
-          possible=new Set([...possible,...Array.from(possible,sum=>sum+amount)]);
-          if(possible.has(wanted))return true;
-          if(possible.size>100000)return wanted===amounts.reduce((sum,value)=>sum+value,0);
-        }
-        return false;
-      };
-      const generalNeedsReconciliation=!pendingExplainsDifference('General Fund',generalDifference);
-      const bftNeedsReconciliation=!pendingExplainsDifference('Bikes for Tykes',bftDifference);
+      const generalChaseAvailable=numeric(at(6,4)),bftChaseAvailable=numeric(at(7,4));
+      const presentValue=(index,fallback)=>rows[index]?.[4]!==undefined && rows[index][4]!==''?numeric(rows[index][4]):fallback;
+      const generalPresent=presentValue(33,generalChaseAvailable),bftPresent=presentValue(34,bftChaseAvailable);
+      const generalExpected=generalBank+generalPending.bankNet,bftExpected=bftBank+bftPending.bankNet;
+      const generalDifference=Math.round((generalPresent-generalExpected)*100)/100;
+      const bftDifference=Math.round((bftPresent-bftExpected)*100)/100;
+      const generalAvailable=generalChaseAvailable-generalPending.reserved;
+      const bftAvailable=bftChaseAvailable-bftPending.reserved;
+      const generalNeedsReconciliation=Math.abs(generalDifference)>=0.01;
+      const bftNeedsReconciliation=Math.abs(bftDifference)>=0.01;
       const needsReconciliation=generalNeedsReconciliation || bftNeedsReconciliation;
+      const generalHold=generalPresent-generalChaseAvailable,bftHold=bftPresent-bftChaseAvailable;
       if(needsReconciliation && !bankSplitMismatch)status='NEEDS RECONCILIATION — unexplained difference';
-      return {generalPending,bftPending,generalBank,bftBank,generalAvailable,bftAvailable,generalDifference,bftDifference,generalNeedsReconciliation,bftNeedsReconciliation,needsReconciliation,bankSplitMismatch,status,fundStatus,hasPending};
+      else if(!bankSplitMismatch)status=hasPending(generalPending)||hasPending(bftPending)?'MATCHED — Chase activity still pending':'BALANCED ✓';
+      return {generalPending,bftPending,generalBank,bftBank,generalAvailable,bftAvailable,generalDifference,bftDifference,generalNeedsReconciliation,bftNeedsReconciliation,needsReconciliation,bankSplitMismatch,status,fundStatus,hasPending,generalPresent,bftPresent,generalExpected,bftExpected,generalHold,bftHold};
     }
 
     function renderFinanceDashboard(rows,controlRows,transactionRows) {
@@ -5618,11 +5600,11 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           ${card('Chase General Checking',bankAt(6,4),'fund-general')}
           ${card('Chase Bikes for Tykes Savings',bankAt(7,4),'fund-bft')}
         </div><p>Chase available balances from the latest manual bank update. These may include pending activity; they are not a live bank feed.</p></section>
-        <section class="finance-dashboard-section"><h3>Available After Reserving Uncleared Payments</h3><div class="finance-dashboard-grid">${card('Combined Reserve Calculation',money(cash.generalAvailable+cash.bftAvailable),'cash-total')}${card('General After Reserves',money(cash.generalAvailable),'fund-general')}${card('BFT After Reserves',money(cash.bftAvailable),'fund-bft')}</div><p>These match the bold available balances in Control. Posted ledger balances minus all uncleared outgoing payments; incoming uncleared deposits are excluded. This conservative snapshot also reserves outgoing internal transfers until their incoming sides clear, so the combined amount can temporarily understate club funds.</p></section>
+        <section class="finance-dashboard-section"><h3>Available After Unpaid Obligations</h3><div class="finance-dashboard-grid">${card('Combined Reserve Calculation',money(cash.generalAvailable+cash.bftAvailable),'cash-total')}${card('General After Reserves',money(cash.generalAvailable),'fund-general')}${card('BFT After Reserves',money(cash.bftAvailable),'fund-bft')}</div><p>These match Control: Chase available balances minus unpaid obligations not yet reflected by the bank. Pending bank transfers and payments are not subtracted twice. Present balances include deposits that may still be held.</p></section>
         <section class="finance-dashboard-section"><h3>Pending Transactions</h3><div class="finance-dashboard-grid">
           ${card('Pending PayPal Deposits',money(cash.generalPending.paypal+cash.bftPending.paypal),'pending')}
           ${card('Deposits Awaiting Availability',money(cash.generalPending.otherDeposits+cash.bftPending.otherDeposits),'pending')}
-          ${card('Pending Outgoing Payments',money(-cash.generalPending.outgoing-cash.bftPending.outgoing),'pending')}
+          ${card('Pending Outgoing Payments',money(-cash.generalPending.outgoing-cash.bftPending.outgoing),'pending')}${card('Chase Total Present Balance',money(cash.generalPresent+cash.bftPresent),'cash-total')}${card('Present Less Available',money(cash.generalHold+cash.bftHold),'pending')}${card('Reconciliation Difference',money(cash.generalDifference+cash.bftDifference),'cash-total')}
         </div></section>
         <section class="finance-dashboard-section"><h3>Financial Performance</h3><div class="finance-dashboard-grid">
           ${card('Net This Month',money(generalMonth.income-generalMonth.expenses+bftMonth.income-bftMonth.expenses),'financial-performance')}
@@ -5643,8 +5625,8 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const number=value=>Number(String(value||0).replace(/[$,]/g,''));
       return rows.slice(1).filter(row=>{
         const fund=String(row[6]||'').trim().toLowerCase(),status=String(row[14]||'').trim().toLowerCase(),method=String(row[13]||'').trim().toLowerCase(),type=String(row[12]||'').trim().toLowerCase(),amount=number(row[9]);
-        if(financeIsVoided(row)||fund!==fundName.toLowerCase()||status!=='no'||!Number.isFinite(amount)||(['paypal','chase payments'].includes(method)&&!['transfer in','transfer out'].includes(type))) return false;
-        return kind==='outgoing'?amount<0:kind==='paypal'?amount>0&&method==='paypal':amount>0&&method!=='paypal';
+        if(financeIsVoided(row)||fund!==fundName.toLowerCase()||!['no','pending at chase'].includes(status)||!Number.isFinite(amount)||(['paypal','chase payments'].includes(method)&&!['transfer in','transfer out'].includes(type))) return false;
+        return kind==='available'?amount<0&&status==='no':kind==='outgoing'?amount<0:kind==='paypal'?amount>0&&method==='paypal':amount>0&&method!=='paypal';
       });
     }
 
@@ -5655,7 +5637,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 
     function financeExpenseFund(row) {
       const paid=String(row[6]||'').trim();
-      if(String(row[12]||'').trim().toLowerCase()!=='expense' || financeIsProcessingFee(row))return paid;
+      const type=String(row[12]||'').trim().toLowerCase();
+      if(type==='income' && /DEPOSIT-20261012-6/.test(String(row[16]||'')))return 'General Fund';
+      if(type==='income' && /bikes for tykes|\bbft\b/i.test(String(row[7]||'')))return 'Bikes for Tykes';
+      if(type!=='expense' || financeIsProcessingFee(row))return paid;
       const owner=String(row[16]||'').match(/expense belongs to\s+(Bikes (?:for|For) Tykes|General Fund)/i);
       if(owner)return owner[1];
       // Event activity identifies the cost's fund; account balances still use the paying fund.
@@ -5726,7 +5711,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const labels={'month-income':'Current month income after processing fees','month-expense':'Other current month expenses','ytd-income':'Year to date income after processing fees','ytd-expense':'Other year to date expenses',outgoing:'Uncleared outgoing payments',other:'Deposits awaiting availability',paypal:'Pending PayPal deposits',bank:'Chase available balance',available:'After reserving uncleared payments'};
       const cash=financeCashSnapshot(financeControlRows,financeControlTransactionRows),general=fund==='General Fund';
       const periodDetail=/^(month|ytd)-(income|expense)$/.test(kind);
-      const selected=periodDetail?(kind.endsWith('-income')?financeNetIncomeBreakdownRows(fund,kind.split('-')[0],financeControlTransactionRows):financePeriodBreakdownRows(fund,kind)):financeBreakdownRows(fund,kind==='available'?'outgoing':kind);
+      const selected=periodDetail?(kind.endsWith('-income')?financeNetIncomeBreakdownRows(fund,kind.split('-')[0],financeControlTransactionRows):financePeriodBreakdownRows(fund,kind)):financeBreakdownRows(fund,kind);
       const total=selected.reduce((sum,row)=>sum+(periodDetail && financeIsProcessingFee(row)?-Math.abs(number(row[9])):number(row[9])),0);
       let body;
       if(periodDetail){
@@ -5743,7 +5728,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       }
       else if(kind==='bank')body='<p>This is the latest manually entered Chase available balance. Chase can reflect pending activity in this number.</p><p>Use Edit Bank Reconciliation to update it from Chase. The posted ledger and uncleared transaction totals below are tracked separately.</p><div class="finance-breakdown-total">'+money(number(financeControlRows[general?6:7]?.[4]))+'</div>';
       else {
-        const intro=kind==='available'?'<p>Posted ledger balance '+money(general?cash.generalBank:cash.bftBank)+' minus '+money(-total)+' reserved for the payments below = <strong>'+money(general?cash.generalAvailable:cash.bftAvailable)+'</strong>. Incoming uncleared deposits are excluded.</p>':'<p>These are the recorded transactions that make up this total. Internal transfers appear once per account. Uncleared does not always mean Chase has received the transaction.</p>';
+        const intro=kind==='available'?'<p>Chase available balance '+money(Number(String(financeControlRows[general?6:7]?.[4]||0).replace(/[$,]/g,'')))+' minus '+money(-total)+' reserved for the payments below = <strong>'+money(general?cash.generalAvailable:cash.bftAvailable)+'</strong>. Payments already pending at Chase are reflected in the bank balance and are not reserved twice.</p>':'<p>These are the recorded transactions that make up this total. Internal transfers appear once per account. Uncleared does not always mean Chase has received the transaction.</p>';
         body=intro+(selected.length?'<table><thead><tr><th>Date / recipient</th><th>Description</th><th>Amount</th></tr></thead><tbody>'+selected.map(row=>'<tr><td>'+esc(row[0])+'<br>'+esc(row[8])+'</td><td>'+esc(row[3])+'</td><td>'+money(number(row[9]))+'</td></tr>').join('')+'</tbody></table>':'<p>No transactions in this group.</p>')+'<div class="finance-breakdown-total">'+selected.length+' entries · '+money(total)+'</div>';
       }
       dialog.innerHTML='<header><h3 id="financeBreakdownTitle">'+esc(fund)+' — '+esc(labels[kind])+'</h3><button type="button" aria-label="Close breakdown">Close</button></header>'+body;
@@ -5811,7 +5796,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const numeric = value => Number(String(value).replace(/[$,%(),▲▼]/g,'').trim()) * (String(value).includes('(') ? -1 : 1);
       const resultTone = value => numeric(value) < 0 ? 'tone-red' : 'tone-green';
       const editableValue = (value,row) => financeControlEditMode ? `<input class="control-edit-input" data-control-row="${row}" value="${esc(value === '—' ? '' : value)}" aria-label="Edit bank reconciliation amount">` : `<strong>${esc(value)}</strong>`;
-      const section = (title,pairs,cls='') => `<section class="control-card ${cls}"><h3>${esc(title)}</h3><div class="control-rows">${pairs.map(([label,value,bad,row,detail]) => `<div class="control-row ${financeAmountTone(label,value)} ${bad ? 'status-bad' : ''} ${detail ? 'finance-detail-row' : ''}"${detail ? ` tabindex="0" role="button" data-finance-fund="${esc(detail[0])}" data-finance-kind="${esc(detail[1])}" aria-label="Show ${esc(label)} breakdown"` : ''}><span${/^(LEDGER BALANCE AFTER RESERVING PAYMENTS|General Fund available|Bikes for Tykes available|After reserving uncleared payments)$/.test(label) ? ' style="font-weight:800"' : ''}>${detail ? '<span class="finance-detail-chevron" aria-hidden="true">›</span>' : ''}${esc(label)}</span>${row ? editableValue(value,row) : `<strong>${esc(value)}</strong>`}</div>`).join('')}</div></section>`;
+      const section = (title,pairs,cls='') => `<section class="control-card ${cls}"><h3>${esc(title)}</h3><div class="control-rows">${pairs.map(([label,value,bad,row,detail]) => `<div class="control-row ${financeAmountTone(label,value)} ${bad ? 'status-bad' : ''} ${detail ? 'finance-detail-row' : ''}"${detail ? ` tabindex="0" role="button" data-finance-fund="${esc(detail[0])}" data-finance-kind="${esc(detail[1])}" aria-label="Show ${esc(label)} breakdown"` : ''}><span${/^(AVAILABLE AFTER UNPAID OBLIGATIONS|General Fund available|Bikes for Tykes available|After reserving uncleared payments)$/.test(label) ? ' style="font-weight:800"' : ''}>${detail ? '<span class="finance-detail-chevron" aria-hidden="true">›</span>' : ''}${esc(label)}</span>${row ? editableValue(value,row) : `<strong>${esc(value)}</strong>`}</div>`).join('')}</div></section>`;
       const money = value => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value || 0);
       const monthSection = (title,balance,totals) => section(title,[['Current Fund Balance',balance],['Income',money(totals.income),false,null,[/BIKES FOR TYKES/i.test(title)?'Bikes for Tykes':'General Fund','month-income']],['Expenses',money(totals.expenses),false,null,[/BIKES FOR TYKES/i.test(title)?'Bikes for Tykes':'General Fund','month-expense']],['Net Income',money(totals.income-totals.expenses)]],/BIKES FOR TYKES/i.test(title)?'tone-baby-blue':'tone-green').replace('<span>Net Income</span>','<span class="control-month-performance">Net Income</span>');
       const generalMonth = financePeriodTotals('General Fund','month',transactionRows,rows);
@@ -5821,23 +5806,28 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const impactYtd = numeric(at(27,1))-financeVoidedImpact(transactionRows);
       const impactPriorYear = numeric(at(25,4));
       const impactIncrease = impactYtd - impactPriorYear;
-      const {generalPending,bftPending,generalBank,bftBank,generalAvailable,bftAvailable,generalDifference,bftDifference,generalNeedsReconciliation,bftNeedsReconciliation,needsReconciliation,bankSplitMismatch,status,fundStatus,hasPending}=financeCashSnapshot(rows,transactionRows);
+      const cash=financeCashSnapshot(rows,transactionRows);
+      const {generalPending,bftPending,generalBank,bftBank,generalAvailable,bftAvailable,generalDifference,bftDifference,generalNeedsReconciliation,bftNeedsReconciliation,needsReconciliation,bankSplitMismatch,status,fundStatus,hasPending}=cash;
       const fundDetail = (title,balance,pending,available,tone='tone-green') => { const fund=title==='GENERAL FUND'?'General Fund':'Bikes for Tykes'; return section(title,[
         ['Chase available balance',at(title==='GENERAL FUND'?6:7,4)],
         ['Cleared ledger balance',money(balance)],
-        ['Chase minus cleared ledger',money(fund==='General Fund'?generalDifference:bftDifference),fund==='General Fund'?generalNeedsReconciliation:bftNeedsReconciliation],
+        ['Chase present balance',money(fund==='General Fund'?cash.generalPresent:cash.bftPresent),false,fund==='General Fund'?34:35],
+        ['Recorded bank pending activity (net)',money(pending.bankNet)],
+        ['Reconciliation difference',money(fund==='General Fund'?generalDifference:bftDifference),fund==='General Fund'?generalNeedsReconciliation:bftNeedsReconciliation],
+        ['Present less available',money(fund==='General Fund'?cash.generalHold:cash.bftHold)],
+        ['Unpaid obligations reserved',money(-pending.reserved)],
         ['Pending PayPal deposits',money(pending.paypal),false,null,[fund,'paypal']],
         ['Deposits awaiting availability',money(pending.otherDeposits),false,null,[fund,'other']],
         ['Pending outgoing payments',money(-pending.outgoing),false,null,[fund,'outgoing']],
-        ['After reserving uncleared payments',money(available)],
+        ['After reserving unpaid obligations',money(available),false,null,[fund,'available']],
         ['Status',(fund==='General Fund'?generalNeedsReconciliation:bftNeedsReconciliation)?'NEEDS RECONCILIATION':fundStatus(pending),fund==='General Fund'?generalNeedsReconciliation:bftNeedsReconciliation]
       ],tone+(hasPending(pending)?' fund-awaiting-clearance':'')); };
       document.getElementById('financeControlTable').innerHTML = `<div class="control-title"><h2>${esc(at(0,0))}</h2><span class="live-eastern-time" data-live-eastern-clock="true"></span></div>
         <div class="control-action-bar"><button class="dashboard-edit-btn ${financeControlEditMode ? 'active' : ''}" id="financeControlEditToggle" aria-pressed="${financeControlEditMode}">${financeControlEditMode ? 'Done Editing' : 'Edit Bank Reconciliation'}</button></div>
-        ${financeControlEditMode ? '<div class="control-edit-note">Enter Chase’s Total available balance, General Fund available balance, and Bikes for Tykes available balance. Use the amounts labeled Available balance on Chase. Cleared Yes/No in Transactions-2026 controls the ledger and pending breakdown.</div>' : ''}<div class="control-grid">
+        ${financeControlEditMode ? '<div class="control-edit-note">Enter Chase’s combined and per-account available balances, plus each account’s present balance. Pending at Chase means the bank has received the entry; Yes means posted. Update both bank balance types from the same Chase snapshot.</div>' : ''}<div class="control-grid">
         <div style="grid-column:1/-1;display:grid;gap:14px">
-        ${section('FUND BALANCES',[['LEDGER BALANCE AFTER RESERVING PAYMENTS',money(generalAvailable+bftAvailable)],['General Fund available',money(generalAvailable)],['Bikes for Tykes available',money(bftAvailable)],['Cleared ledger total',money(generalBank+bftBank)],['Chase minus cleared ledger',money(generalDifference+bftDifference),needsReconciliation],['Chase total available balance',at(5,4),false,6],['Chase General Fund available balance',at(6,4),false,7],['Chase Bikes for Tykes available balance',at(7,4),false,8],['Status',status,/out of balance|needs reconciliation/i.test(status)]],'tone-cash-total '+((bankSplitMismatch||needsReconciliation)?'fund-status-error':(hasPending(generalPending)||hasPending(bftPending)?'fund-awaiting-clearance':'fund-status-balanced')))}
-        <p class="control-edit-note">Chase available balances are the bank figures you entered. Ledger balances count only cleared entries; the reserved amount also subtracts uncleared outgoing payments. Differences explained by recorded pending bank activity show Pending. Only unexplained differences need reconciliation. Outstanding checks remain reserved until they post.</p><div class="control-fund-details">
+        ${section('FUND BALANCES',[['AVAILABLE AFTER UNPAID OBLIGATIONS',money(generalAvailable+bftAvailable)],['General Fund available',money(generalAvailable)],['Bikes for Tykes available',money(bftAvailable)],['Cleared ledger total',money(generalBank+bftBank)],['Chase total present balance',money(cash.generalPresent+cash.bftPresent)],['Present less available',money(cash.generalHold+cash.bftHold)],['Reconciliation difference',money(generalDifference+bftDifference),needsReconciliation],['Chase total available balance',at(5,4),false,6],['Chase General Fund available balance',at(6,4),false,7],['Chase Bikes for Tykes available balance',at(7,4),false,8],['Status',status,/out of balance|needs reconciliation/i.test(status)]],'tone-cash-total '+((bankSplitMismatch||needsReconciliation)?'fund-status-error':(hasPending(generalPending)||hasPending(bftPending)?'fund-awaiting-clearance':'fund-status-balanced')))}
+        <p class="control-edit-note">Chase present balances are compared with the cleared ledger plus every recorded bank-pending entry. Available balances may be lower while deposits are held. Only payments not yet reflected by Chase are reserved again, including outstanding checks and the unpaid charter. Internal transfer pairs do not reduce combined cash.</p><div class="control-fund-details">
         ${fundDetail('GENERAL FUND',generalBank,generalPending,generalAvailable)}
         ${fundDetail('BIKES FOR TYKES',bftBank,bftPending,bftAvailable,'tone-baby-blue')}
         </div>
@@ -5888,7 +5878,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         let [rows,transactions,controlRows] = await Promise.all([
           getSheetValues("'Dashboard-2026'!A1:AF80",FINANCE_SPREADSHEET_ID),
           getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID),
-          getSheetValues("'Control-2026'!A1:H33",FINANCE_SPREADSHEET_ID)
+          getSheetValues("'Control-2026'!A1:H40",FINANCE_SPREADSHEET_ID)
         ]);
         const restored = await restorePayPalTransferRows(transactions);
         if (restored) {
@@ -5905,7 +5895,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       document.getElementById('financeControlStatus').textContent = 'Loading control snapshot…';
       try {
         const [rows,transactions,priorYear] = await Promise.all([
-          getSheetValues("'Control-2026'!A1:H33",FINANCE_SPREADSHEET_ID),
+          getSheetValues("'Control-2026'!A1:H40",FINANCE_SPREADSHEET_ID),
           getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID),
           getSheetValues("'Transactions-2025'!A1:P1000",FINANCE_SPREADSHEET_ID).catch(()=>[])
         ]);
@@ -5920,7 +5910,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       if (financeControlRefreshInFlight || financeControlEditMode || document.hidden || !document.querySelector('[data-finance-panel="control"].active')) return;
       financeControlRefreshInFlight = true;
       try {
-        const [rows,transactions] = await Promise.all([getSheetValues("'Control-2026'!A1:H33",FINANCE_SPREADSHEET_ID),getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID)]);
+        const [rows,transactions] = await Promise.all([getSheetValues("'Control-2026'!A1:H40",FINANCE_SPREADSHEET_ID),getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID)]);
         if (JSON.stringify(rows) !== JSON.stringify(financeControlRows) || JSON.stringify(transactions) !== JSON.stringify(financeControlTransactionRows)) renderFinanceControl(rows,transactions);
       } catch (error) {
         document.getElementById('financeControlStatus').textContent = 'Could not refresh bank reconciliation. Reopen the tab to retry.';
