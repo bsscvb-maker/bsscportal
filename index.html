@@ -6023,7 +6023,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const eventGross = eventRows.filter(row => String(row[12]).toLowerCase() === 'income' && !/opening balance|internal transfer/i.test(String(row[4]) + ' ' + String(row[5]))).reduce((sum,row) => sum + amountOf(row),0);
       const eventFees = eventRows.filter(financeIsProcessingFee).reduce((sum,row) => sum + Math.abs(amountOf(row)),0);
       const eventCosts = eventRows.filter(row => String(row[12]).toLowerCase() === 'expense' && !financeIsProcessingFee(row)).reduce((sum,row) => sum + Math.abs(amountOf(row)),0);
-      const eventIncome = eventGross - eventFees + eventCosts;
+      const eventIncome = eventGross - eventFees;
       const eventNet = eventIncome - eventCosts;
       const entries = transactionRows.slice(1).filter(row => !financeIsVoided(row) && String(financeExpenseFund(row) || '').trim().toLowerCase() === 'bikes for tykes');
       entries.sort((a,b) => (Date.parse(b[0]) || 0) - (Date.parse(a[0]) || 0));
