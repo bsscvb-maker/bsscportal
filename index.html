@@ -1753,6 +1753,15 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     @media(max-width:600px){.compact-member-dialog .year-count-members-list ol{columns:2;column-gap:12px}}
     @media(max-width:380px){.compact-member-dialog .year-count-members-list ol{columns:1}}
 </style>
+
+<style>
+.budget27-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:18px 0}
+.budget27-card,.budget27-notice{background:#f5f6f7;border:1px solid #c5c9cd;border-radius:10px;padding:16px;margin:12px 0;color:#111}
+.budget27-card{border-top:5px solid #bca151}.budget27-card h3{margin:0 0 12px}.budget27-card dl{margin:0}.budget27-card dl div{display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid #ddd}.budget27-card dd{font-weight:850;margin:0}
+.budget27-income{color:#008a36}.budget27-expense{color:#d7192b}.budget27-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:16px 0}.budget27-toolbar button,.budget27-toolbar select{padding:10px;border-radius:7px;border:1px solid #aaa;font:inherit}.budget27-toolbar button{cursor:pointer}.budget27-toolbar #budget2027Save{background:#111;color:white}.budget27-table{min-width:1150px!important}.budget27-table td{vertical-align:top!important}.budget27-table input{width:125px;padding:9px;border:1px solid #9b8650;border-radius:5px;background:#fff7db;font:inherit}.budget27-table th:last-child{width:32%}
+@media(max-width:700px){.budget27-summary{grid-template-columns:1fr}}
+@media print{body.budget27-printing *{visibility:hidden}body.budget27-printing [data-finance-panel="budget2027"],body.budget27-printing [data-finance-panel="budget2027"] *{visibility:visible}body.budget27-printing [data-finance-panel="budget2027"]{position:absolute;left:0;top:0;width:100%;display:block!important}body.budget27-printing .budget27-toolbar{display:none}body.budget27-printing .table-wrap{overflow:visible;max-height:none}body.budget27-printing .budget27-table{min-width:0!important;width:100%;font-size:8pt}body.budget27-printing .budget27-table input{width:75px;border:0;background:white}}
+</style>
 </head>
 <body>
   <section class="auth-gate" id="authGate">
@@ -1939,6 +1948,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           </div><div class="bft-workspace" id="financeWorkspace">
             <div class="sponsor-tabs" aria-label="Finance sections">
               <button class="sponsor-tab active" data-finance-tab="dashboard">Dashboard</button>
+              <button class="sponsor-tab" data-finance-tab="budget2027">2027 Budget — Draft</button>
               <button class="sponsor-tab" data-finance-tab="control">Control-2026</button>
               <button class="sponsor-tab" data-finance-tab="activity">Event Costs</button>
               <button class="sponsor-tab" data-finance-tab="operating">Operating Budget</button>
@@ -1956,6 +1966,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
               <button class="sponsor-tab" data-finance-tab="eventbudgets">Event Budgets</button>
             </div>
             <section class="sponsor-panel active" data-finance-panel="dashboard"><div class="data-status" id="financeDashboardStatus">Loading financial dashboard…</div><div id="financeDashboard"></div></section>
+            <section class="sponsor-panel" data-finance-panel="budget2027"><h2>2027 Budget — Draft</h2><div class="data-status" id="financeBudget2027Status">Open this tab to review the proposed budget.</div><div id="financeBudget2027Table"></div></section>
             <section class="sponsor-panel" data-finance-panel="control"><div class="coming-soon"><h2>Control-2026</h2><div class="data-status" id="financeControlStatus">Open this tab to load the control snapshot.</div><div id="financeControlTable"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="activity"><div class="coming-soon"><h2>Event Costs</h2><div class="data-status" id="financeActivityStatus">Open this tab to review spending for a particular activity.</div><div id="financeActivitySummary"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="operating"><div class="coming-soon"><h2>Operating Budget</h2><div class="data-status" id="financeOperatingStatus">Open this tab to load the operating budget.</div><div id="financeOperatingTable"></div></div></section>
@@ -7744,7 +7755,73 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       panel.querySelector('.membership-save-top').addEventListener('click',saveMembershipSettings);
     }
 
+
+    let budget2027Rows = [], budget2027Original = [];
+    function budget2027Number(value) { return Number(String(value || '').replace(/[^0-9.-]/g,'')) || 0; }
+    function budget2027Totals(rows, fund) {
+      const selected = rows.slice(1).filter(row => row[0] === fund);
+      const total = type => selected.filter(row => row[1] === type).reduce((sum,row) => sum + budget2027Number(row[5]),0);
+      return {income:total('Income'),expense:total('Expense'),net:total('Income')-total('Expense')};
+    }
+    function updateBudget2027Summary() {
+      const money = value => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value);
+      const target = document.getElementById('budget2027Summary');
+      if (!target) return;
+      target.innerHTML = ['General Fund','Bikes for Tykes'].map(fund => {
+        const t=budget2027Totals(budget2027Rows,fund);
+        return '<section class="budget27-card"><h3>'+esc(fund)+'</h3><dl><div><dt>Proposed income</dt><dd class="budget27-income">'+money(t.income)+'</dd></div><div><dt>Planned spending</dt><dd class="budget27-expense">'+money(t.expense)+'</dd></div><div><dt>'+(t.net<0?'Funding gap':'Planned surplus')+'</dt><dd class="'+(t.net<0?'budget27-expense':'budget27-income')+'">'+money(Math.abs(t.net))+'</dd></div></dl><p>'+(fund==='General Fund'?'Resolve any gap with unrestricted income, reduced spending, or approved reserves.':'Any surplus remains earmarked for Bikes for Tykes.')+'</p></section>';
+      }).join('');
+    }
+    function renderBudget2027() {
+      const target=document.getElementById('financeBudget2027Table');
+      const money=value=>value==='' || value==null?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(budget2027Number(value));
+      target.innerHTML='<div class="budget27-notice"><strong>Proposed 2027 budget · Board review required</strong><p>Historical columns show selected matching ledger entries from 2025 and 2026 through October 13, not complete audited annual totals. Transfers, opening balances, voids and known pass-through activity are excluded. Older records have inconsistent categories. Blank BFT history means no reliable comparable total was assigned.</p><p>Income targets are gross; processing fees are budgeted separately. Bank balances and credit limits are not revenue. This plan does not create transactions or change current fund balances. 2027 renewal dues already collected in 2026 must be treated as opening resources when preparing a 2027 cash-flow plan.</p></div><div id="budget2027Summary" class="budget27-summary"></div><div class="budget27-toolbar"><label>Show <select id="budget2027Fund"><option value="">Both funds</option><option>General Fund</option><option>Bikes for Tykes</option></select></label><button type="button" id="budget2027Save">Save proposed amounts</button><button type="button" id="budget2027Reload">Reload saved draft</button><button type="button" id="budget2027Export">Export CSV</button><button type="button" id="budget2027Print">Print budget</button><span id="budget2027SaveStatus" role="status">Saved draft loaded.</span></div><div class="table-wrap"><table class="data-table budget27-table"><thead><tr><th>Fund / type</th><th>Line item</th><th>2025 matched ledger</th><th>2026 matched ledger<br>through Oct 13</th><th>2027 proposed</th><th>Timing / owner</th><th>Basis / review notes</th></tr></thead><tbody>'+budget2027Rows.slice(1).map((row,i)=>'<tr data-budget27-fund="'+esc(row[0])+'"><td>'+esc(row[0])+'<br><strong class="'+(row[1]==='Income'?'budget27-income':'budget27-expense')+'">'+esc(row[1])+'</strong></td><td>'+esc(row[2])+'</td><td>'+money(row[3])+'</td><td>'+money(row[4])+'</td><td><input type="number" min="0" max="10000000" step="0.01" value="'+budget2027Number(row[5])+'" data-budget27-row="'+(i+1)+'" aria-label="2027 proposed amount for '+esc(row[2])+'"></td><td>'+esc(row[6])+'<br>'+esc(row[7])+'</td><td>'+esc(row[8])+'</td></tr>').join('')+'</tbody></table></div><details class="budget27-notice"><summary>Sources and decisions still needed</summary><p>Reviewed Finance workbook: Transactions-2025, Transactions-2026, Operating Budget, Line-Item Budget, Operating Budget – Baseline, Club Expenses, Events &amp; Fundraising, Charities, Event Budgets, control/dashboard, transaction lists and tally headers. Tally and mirrored summaries were not added again as separate income.</p><p>BFT purchase basis: current Purchase Budget shows 100 bikes $11,444.44, 100 helmets $1,528, and 100 locks $743.04 ($13,715.48 combined). 2027 figures add price allowances. Confirm quantity, quotes, venue/band agreement and delivery needs.</p><p>Confirm paying renewal count, prepaid dues, unrestricted sponsor commitments, patch/merchandise stock, hosting renewal cycle, discretionary event participation and reserve use. One-time logo filing and unusually large assistance campaigns are not assumed to repeat. Special assistance drives should receive separate matched income/expense budgets when approved. No BFT-to-General-Fund allocation is assumed.</p></details>';
+      updateBudget2027Summary();
+      target.querySelectorAll('[data-budget27-row]').forEach(input=>input.addEventListener('input',()=>{
+        if(!input.checkValidity()) return;
+        budget2027Rows[Number(input.dataset.budget27Row)][5]=Number(input.value);
+        updateBudget2027Summary();
+        document.getElementById('budget2027SaveStatus').textContent='Unsaved proposed amounts.';
+      }));
+      document.getElementById('budget2027Fund').addEventListener('change',event=>target.querySelectorAll('[data-budget27-fund]').forEach(row=>row.hidden=!!event.target.value && row.dataset.budget27Fund!==event.target.value));
+      document.getElementById('budget2027Reload').onclick=async()=>{
+        if(JSON.stringify(budget2027Rows)!==JSON.stringify(budget2027Original) && !confirm('Discard unsaved proposed amounts and reload the saved draft?'))return;
+        await loadBudget2027();
+      };
+      document.getElementById('budget2027Save').onclick=async()=>{
+        const status=document.getElementById('budget2027SaveStatus'),button=document.getElementById('budget2027Save');
+        if([...target.querySelectorAll('[data-budget27-row]')].some(input=>!input.checkValidity())){status.textContent='Enter valid nonnegative amounts before saving.';return;}
+        button.disabled=true;
+        try{
+          const current=await getSheetValues("'Budget-2027 Draft'!A1:J100",FINANCE_SPREADSHEET_ID,'UNFORMATTED_VALUE');
+          if(JSON.stringify(current)!==JSON.stringify(budget2027Original)){status.textContent='The saved draft changed elsewhere. Reload it before saving your edits.';return;}
+          const changed=budget2027Rows.slice(1).map((row,i)=>({row,i:i+1})).filter(({row,i})=>budget2027Number(row[5])!==budget2027Number(budget2027Original[i]?.[5]));
+          if(!changed.length){status.textContent='No amount changes to save.';return;}
+          const url='https://sheets.googleapis.com/v4/spreadsheets/'+FINANCE_SPREADSHEET_ID+'/values:batchUpdate';
+          await writePortalSheetRequest(url,{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({valueInputOption:'RAW',data:changed.map(({row,i})=>({range:"'Budget-2027 Draft'!F"+(i+1),values:[[Number(row[5])]]}))})},'Updated proposed 2027 budget','Budget-2027 Draft',changed.length);
+          await loadBudget2027();
+          document.getElementById('budget2027SaveStatus').textContent='Proposed amounts saved to the shared draft.';
+        }catch(error){status.textContent='Could not save proposed amounts. Your edits remain on screen; try again.';}
+        finally{button.disabled=false;}
+      };
+      document.getElementById('budget2027Export').onclick=()=>{
+        const csv=budget2027Rows.map(row=>row.map(value=>'"'+String(value??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+        const url=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+        const a=document.createElement('a');a.href=url;a.download='BSSC-2027-Budget-Draft.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+      };
+      document.getElementById('budget2027Print').onclick=()=>{document.body.classList.add('budget27-printing');window.print();document.body.classList.remove('budget27-printing');};
+    }
+    async function loadBudget2027(){
+      const status=document.getElementById('financeBudget2027Status');status.textContent='Loading shared 2027 budget draft…';
+      try{
+        budget2027Rows=await getSheetValues("'Budget-2027 Draft'!A1:J100",FINANCE_SPREADSHEET_ID,'UNFORMATTED_VALUE');
+        budget2027Original=JSON.parse(JSON.stringify(budget2027Rows));
+        renderBudget2027();status.textContent='2027 proposal · Historical review dated October 13, 2026 · Draft, not approved';
+      }catch(error){status.textContent='Could not load the 2027 budget draft. Sign in or refresh and try again.';}
+    }
+
     async function loadFinanceTab(key, force = false) {
+      if (key === "budget2027") { await loadBudget2027(); return; }
       if (!key) return;
       if (key === 'dashboard') { if (force || !loadedFinanceTabs.has(key)) await loadFinanceDashboard(); return; }
       if (key === 'control') { if (force || !loadedFinanceTabs.has(key)) await loadFinanceControl(); return; }
