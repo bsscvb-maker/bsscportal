@@ -6045,6 +6045,9 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const incomeRows = ledger.filter(row => active(row) &&
         String(row[12] || '').trim().toLowerCase() === 'income' &&
         !/opening balance|internal transfer/i.test(String(row[4]) + ' ' + String(row[5])) &&
+        !/bank interest/i.test(String(row[3] || '')) &&
+        !(String(row[6] || '').trim().toLowerCase() === 'general fund' &&
+          String(row[4] || '').trim().toLowerCase() === 'merchandise') &&
         (belongs(row) ||
           (/^bikes for tykes$/i.test(String(row[6] || '').trim()) &&
            /bikes for tykes|pink ride/i.test(String(row[3] || '')))));
