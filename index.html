@@ -3055,7 +3055,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     function renderBftDashboard(rows, donationRows = bftDonationRows) {
       bftDashboardRows = rows;
       bftDonationRows = donationRows || [];
-      const get = label => {
+      const rawGet = label => {
         const wanted = label.replace(/\s+/g, ' ').trim().toLowerCase();
         for (const sourceRow of rows) {
           for (let i = 0; i < sourceRow.length; i += 1) {
@@ -3065,6 +3065,24 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         }
         return '';
       };
+      const cash = bftCashLedger ? bftFundraiserTotals(bftCashLedger) : null;
+      const goal = Number(String(rawGet('Goal Amount:') || 0).replace(/[$,]/g,'')) || 0;
+      const cashValues = cash ? {
+        'Ticket Sales (After Fees):': money(cash.tickets),
+        'Other Event Income (After Fees):': money(cash.other),
+        'Total Event Income (After Fees):': money(cash.income),
+        'Less Account Expenses:': money(cash.expenses),
+        'Merchandise / Event Costs:': money(cash.expenses),
+        'Event Expenses:': money(cash.expenses),
+        'Available for Bikes for Tykes Today:': money(cash.available),
+        'Projected Payout': money(cash.available),
+        'Final Bikes for Tykes Payout Amount:': money(cash.available),
+        'Total Raised So Far:': money(cash.available),
+        'Remaining to Goal:': money(goal-cash.available),
+        'Progress Toward Goal:': goal > 0 ? Math.round(cash.available/goal*100) + '%' : '0%',
+        'Goal Status:': cash.available >= goal ? 'Goal Achieved' : 'In Progress'
+      } : {};
+      const get = label => Object.prototype.hasOwnProperty.call(cashValues,label) ? cashValues[label] : rawGet(label);
       const percent = value => {
         const number = Number(String(value || '').replace('%', '').trim());
         return Number.isFinite(number) ? Math.max(0, Math.min(100, number)) : 0;
@@ -3251,6 +3269,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     let bftDashboardEditMode = false;
     let bftDashboardRows = [];
     let bftDonationRows = [];
+    let bftCashLedger = null;
     const bftDashboardPendingEdits = new Map();
 
     function applyMarketplaceOrdersPipelineFilter(stage) {
@@ -4457,16 +4476,18 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           getSheetValues("'Tracking Tab'!A1:V1000", BFT_SPREADSHEET_ID),
           getSheetValues("'Finance Sync'!A1:J250", BFT_SPREADSHEET_ID),
           getSheetValues("'Purchase Budget'!A1:E46", BFT_SPREADSHEET_ID),
-          getSheetValues("'Instructions & Legend'!A1:C100", BFT_SPREADSHEET_ID)
+          getSheetValues("'Instructions & Legend'!A1:C100", BFT_SPREADSHEET_ID),
+          getSheetValues("'Transactions-2026'!A1:Q", FINANCE_SPREADSHEET_ID)
       ]);
-      const [dashboardResult, ticketResult, donationResult, financeResult, budgetResult, instructionResult] = results;
+      const [dashboardResult, ticketResult, donationResult, financeResult, budgetResult, instructionResult, cashResult] = results;
+      bftCashLedger = cashResult.status === 'fulfilled' ? cashResult.value : null;
       const donationRows = donationResult.status === 'fulfilled' ? donationResult.value : [];
-      if (dashboardResult.status === 'fulfilled') {
+      if (dashboardResult.status === 'fulfilled' && bftCashLedger) {
         const dashboardRows = dashboardResult.value;
         renderBftDashboard(dashboardRows, donationRows);
-        document.getElementById('bftDashboardStatus').textContent = 'Cash and in-kind dashboard connected to Google Sheets.';
+        document.getElementById('bftDashboardStatus').textContent = 'Cash totals from Transactions-2026; in-kind support from Tracking Tab.';
       } else {
-        document.getElementById('bftDashboardStatus').textContent = 'DashBoard could not be loaded from Google Sheets.';
+        document.getElementById('bftDashboardStatus').textContent = 'Dashboard or Transactions-2026 could not load; cash totals are unavailable.';
       }
       const renderResult = (result, targetId, statusId, headerIndex, columns, sheetName) => {
         if (result.status === 'fulfilled') renderDataTable(targetId, statusId, result.value, headerIndex, columns);
@@ -6012,19 +6033,55 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     }
 
 
+
+    // Both BFT views use the fundraiser's payments and their linked fees from the main ledger.
+    function bftFundraiserTotals(transactionRows) {
+      const eventName = 'Bikes For Tykes Fundraiser 2026';
+      const ledger = transactionRows.slice(1);
+      const active = row => !financeIsVoided(row) && String(row[2]) === '2026';
+      const amount = row => Number(String(row[9] || 0).replace(/[$,]/g,'')) || 0;
+      const belongs = row => String(row[7] || '').trim() === eventName ||
+        String(row[16] || '').includes('Event: ' + eventName);
+      const incomeRows = ledger.filter(row => active(row) &&
+        String(row[12] || '').trim().toLowerCase() === 'income' &&
+        !/opening balance|internal transfer/i.test(String(row[4]) + ' ' + String(row[5])) &&
+        (belongs(row) ||
+          (/^bikes for tykes$/i.test(String(row[6] || '').trim()) &&
+           /bikes for tykes|pink ride/i.test(String(row[3] || '')))));
+      const incomeSet = new Set(incomeRows);
+      const linkedFees = new Set();
+      ledger.forEach((row,index) => {
+        if (!incomeSet.has(row)) return;
+        const next = ledger[index + 1];
+        // Payment/fee/transfer triplets share date, payer and payment method.
+        if (next && active(next) && financeIsProcessingFee(next) &&
+            String(next[0]) === String(row[0]) && String(next[8]) === String(row[8]) &&
+            String(next[13]) === String(row[13])) linkedFees.add(next);
+      });
+      const feeRows = ledger.filter(row => active(row) && financeIsProcessingFee(row) &&
+        (belongs(row) || linkedFees.has(row)));
+      const costRows = ledger.filter(row => active(row) && belongs(row) &&
+        String(row[12] || '').trim().toLowerCase() === 'expense' && !financeIsProcessingFee(row));
+      const gross = incomeRows.reduce((sum,row) => sum + amount(row),0);
+      const fees = feeRows.reduce((sum,row) => sum + Math.abs(amount(row)),0);
+      const expenses = costRows.reduce((sum,row) => sum + Math.abs(amount(row)),0);
+      const ticketRows = incomeRows.filter(row => /ticket sales?/i.test(String(row[5]) + ' ' + String(row[3])));
+      const ticketSet = new Set(ticketRows);
+      const ticketFees = ledger.reduce((sum,row,index) =>
+        ticketSet.has(ledger[index - 1]) && feeRows.includes(row) ? sum + Math.abs(amount(row)) : sum,0);
+      const tickets = ticketRows.reduce((sum,row) => sum + amount(row),0) - ticketFees;
+      return {gross,fees,income:gross-fees,expenses,available:gross-fees-expenses,tickets,
+        other:gross-fees-tickets};
+    }
+
     function renderFinanceBft(budgetRows, budgetFormulas, controlRows, transactionRows) {
       const control = (row,column) => String(controlRows[row - 1]?.[column - 1] ?? '—');
       const summary = (label,value) => '<div class="finance-dashboard-card good"><span>' + esc(label) + '</span><strong>' + esc(value) + '</strong></div>';
       const program = financePeriodTotals('Bikes for Tykes','ytd',transactionRows,controlRows);
-      const eventName = 'Bikes For Tykes Fundraiser 2026';
-      const eventRows = transactionRows.slice(1).filter(row => !financeIsVoided(row) && String(row[2]) === '2026' &&
-        (String(row[7] || '').trim() === eventName || financeIsProcessingFee(row) && String(row[16] || '').includes('Event: ' + eventName)));
-      const amountOf = row => Number(String(row[9] || 0).replace(/[$,]/g,'')) || 0;
-      const eventGross = eventRows.filter(row => String(row[12]).toLowerCase() === 'income' && !/opening balance|internal transfer/i.test(String(row[4]) + ' ' + String(row[5]))).reduce((sum,row) => sum + amountOf(row),0);
-      const eventFees = eventRows.filter(financeIsProcessingFee).reduce((sum,row) => sum + Math.abs(amountOf(row)),0);
-      const eventCosts = eventRows.filter(row => String(row[12]).toLowerCase() === 'expense' && !financeIsProcessingFee(row)).reduce((sum,row) => sum + Math.abs(amountOf(row)),0);
-      const eventIncome = eventGross - eventFees;
-      const eventNet = eventIncome - eventCosts;
+      const fundraiser = bftFundraiserTotals(transactionRows);
+      const eventIncome = fundraiser.income;
+      const eventCosts = fundraiser.expenses;
+      const eventNet = fundraiser.available;
       const entries = transactionRows.slice(1).filter(row => !financeIsVoided(row) && String(financeExpenseFund(row) || '').trim().toLowerCase() === 'bikes for tykes');
       entries.sort((a,b) => (Date.parse(b[0]) || 0) - (Date.parse(a[0]) || 0));
       const displayRows = [['Date','Description','Subcategory','Payee / Payer','Amount','Type','Payment Method','Bank Status'], ...entries.map(row => [row[0],row[3],row[5],row[8],row[9],row[12],row[13],String(row[14] || '').trim().toLowerCase() === 'yes' ? 'Cleared' : String(row[14] || '').trim().toLowerCase() === 'pending at chase' ? 'Pending at Chase' : 'Not cleared'])];
