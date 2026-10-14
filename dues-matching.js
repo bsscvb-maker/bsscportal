@@ -11,14 +11,14 @@ function duesSamePerson(a,b) { return duesNorm(a.name) === duesNorm(b.name) && a
 function duesExemption(person, previous, presidents) {
   const type=duesNorm(person.values[person.cols['Membership Type']]);
   const clock=Number(person.values[(person.cols['Lifer Clock Start Year'] ?? -1)]);
-  if (Number.isInteger(clock) && clock>1900 && clock<=2017) return 'Dues Exempt — Life Member';
-  if (/^(lifer|life member)$/.test(type)) return 'Dues Exempt — Life Member';
-  if (/^(honorary|honorary member)$/.test(type)) return 'Dues Exempt — Honorary Member';
   if (type === 'past president') {
     const first=duesHeader(presidents,'First Name'),last=duesHeader(presidents,'Last Name'),eligible=duesHeader(presidents,'Dues Exemption');
     const entries=presidents.slice(1).filter(r=>duesNorm([r[first],r[last]].map(v=>String(v||'').trim()).join(' '))===duesNorm(person.name));
     if (entries.length && entries.every(r=>duesNorm(r[eligible])==='eligible')) return 'Dues Exempt — Past President';
   }
+  if (Number.isInteger(clock) && clock>1900 && clock<=2017) return 'Dues Exempt — Life Member';
+  if (/^(lifer|life member)$/.test(type)) return 'Dues Exempt — Life Member';
+  if (/^(honorary|honorary member)$/.test(type)) return 'Dues Exempt — Honorary Member';
   const prior=previous.filter(p=>duesSamePerson(person,p));
   if (prior.length===1) {
     const p=prior[0],date=String(p.values[p.cols['Start Date']]||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
