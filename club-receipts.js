@@ -68,7 +68,7 @@
     dialog.innerHTML='<form><h2>Add receipt — '+esc(program)+' '+esc(year)+'</h2><div class="club-form"><label>Title<input name="title" required maxlength="200"></label><label>Receipt date<input type="date" name="date"></label><label>Vendor<input name="vendor"></label><label>Amount (optional)<input name="amount" type="number" min="0" step="0.01"></label><label>Upload PDF or photo<input name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"></label><label>Or paste a document link<input name="url" type="url" placeholder="https://drive.google.com/…"></label><label>Items purchased<textarea name="items" rows="5" placeholder="Item descriptions and prices"></textarea></label><label>Notes<textarea name="notes" rows="3"></textarea></label><label data-scan-page hidden>PDF page<select name="scanPage"></select></label><button class="sponsor-tab" type="button" data-scan-again>Read receipt again</button><details><summary>Extracted receipt text</summary><pre data-scan-text style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:250px;overflow:auto"></pre></details></div><p role="status"></p><div class="club-toolbar"><button class="open-btn" type="submit">Save receipt</button><button class="sponsor-tab" type="button" data-cancel>Cancel</button></div></form>';
     document.body.append(dialog);dialog.showModal();dialog.onclose=()=>dialog.remove();dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();
     const form=dialog.querySelector('form');
-    let scanId=0,scanning=false;
+    let scanId=0,scanning=false;const autoFilled={};
     const scanAgain=form.querySelector('[data-scan-again]'),status=form.querySelector('[role=status]'),saveButton=form.querySelector('[type=submit]');
     async function scanFile(page=1){
       const file=form.elements.file.files[0];if(!file){status.textContent='Choose a receipt file to read.';return}
@@ -78,7 +78,7 @@
         const {readReceipt}=await import('./receipt-scan.js?v=20261014-1');
         const result=await readReceipt(file,{page,progress:message=>{if(id===scanId&&dialog.isConnected)status.textContent=message}});
         if(id!==scanId||!dialog.isConnected)return;
-        for(const key of ['title','vendor','date','amount','items'])if(form.elements[key].value===before[key]&&(!before[key]||page!==1)&&result[key])form.elements[key].value=result[key];
+        for(const key of ['title','vendor','date','amount','items'])if(form.elements[key].value===before[key]&&(!before[key]||before[key]===autoFilled[key])){form.elements[key].value=result[key]||'';autoFilled[key]=result[key]||'';}
         form.querySelector('[data-scan-text]').textContent=result.text;
         const pageLabel=form.querySelector('[data-scan-page]');pageLabel.hidden=result.pages===1;
         form.elements.scanPage.innerHTML=Array.from({length:result.pages},(_,i)=>'<option value="'+(i+1)+'" '+(result.page===i+1?'selected':'')+'>Page '+(i+1)+'</option>').join('');
