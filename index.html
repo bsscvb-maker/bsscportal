@@ -1802,6 +1802,23 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 }
 </style>
 
+
+<style id="finance-readable-colors">
+/* Stable contrast for live financial values on desktop and mobile. */
+#financeDashboard .finance-dashboard-card{background:#fff!important;border:1px solid #cbd5e1!important;border-top:5px solid #475569!important;box-shadow:0 2px 8px #00000012!important}
+#financeDashboard .finance-dashboard-card span{color:#334155!important;letter-spacing:.025em;word-spacing:normal}
+#financeDashboard .finance-dashboard-card strong{color:#111827!important;font-weight:850;font-variant-numeric:tabular-nums}
+#financeDashboard .finance-dashboard-card.pending{background:#fffbeb!important;border-top-color:#a16207!important}
+#financeDashboard .finance-dashboard-card.community-impact{background:#f5f3ff!important;border-top-color:#6d28d9!important}
+#financeDashboard .finance-dashboard-card.fund-general{background:#f0fdf4!important;border-top-color:#166534!important}
+#financeDashboard .finance-dashboard-card.fund-bft{background:#eff6ff!important;border-top-color:#1e40af!important}
+#financeDashboard .finance-dashboard-card.finance-amount-positive strong{color:#166534!important}
+#financeDashboard .finance-dashboard-card.finance-amount-expense strong{color:#991b1b!important}
+#financeDashboard .finance-dashboard-card.finance-amount-balance strong{color:#111827!important}
+#financeDashboard .finance-dashboard-card.alert{background:#fff1f2!important;border-top-color:#991b1b!important}
+#financeControlTable .control-edit-input{background:#fff!important;color:#111827!important;border:2px solid #475569!important;font-weight:800;font-variant-numeric:tabular-nums}
+#financeControlTable .control-edit-input:focus{outline:3px solid #2563eb;outline-offset:2px}
+</style>
 </head>
 <body>
   <section class="auth-gate" id="authGate">
@@ -5684,7 +5701,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           ${card('Bikes for Tykes Year to Date Net',money(bftYtd.income-bftYtd.expenses),'fund-bft')}
         </div></section>
         <section class="finance-dashboard-section"><h3>Community Impact &amp; Financial Control</h3><div class="finance-dashboard-grid">
-          ${card('Charitable Spend Year to Date',money(Number(at(16,5).replace(/[$,]/g,''))-financeVoidedImpact(transactionRows)),'community-impact')}
+          ${card('Charitable Spend Year to Date',money(Number(String(controlRows[27]?.[1] || 0).replace(/[$,]/g,''))-financeVoidedImpact(transactionRows)),'community-impact')}
           ${card('Lifetime Community Impact',money(Number(at(6,5).replace(/[$,]/g,''))-financeVoidedImpact(transactionRows)),'community-impact')}
           ${card('Bank Reconciliation Status',reconciliation,metricClass('Bank Reconciliation Status',reconciliation))}
         </div></section>
