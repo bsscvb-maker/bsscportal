@@ -3142,7 +3142,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         }
         return '';
       };
-      const cash = bftCashLedger ? bftFundraiserTotals(bftCashLedger) : null;
+      const cash = bftCashLedger && bftFinanceControlRows ? bftFundraiserTotals(bftCashLedger,bftFinanceControlRows) : null;
       const goal = Number(String(rawGet('Goal Amount:') || 0).replace(/[$,]/g,'')) || 0;
       const cashValues = cash ? {
         'Ticket Sales (After Fees):': money(cash.tickets),
@@ -3224,14 +3224,15 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
             </div>
             <div class="bft-dashboard-column">
               <section class="finance-box"><h3>2026 Fundraiser Cash Overview</h3><div class="finance-box-body">
-                ${row('Ticket Sales (After Fees):', (get('Ticket Sales (After Fees):') || get('Ticket Sales (Gross):')))}
-                ${row('Other Event Income (After Fees):', (get('Other Event Income (After Fees):') || get('Other Event Income (Gross):') || get('Donations (Net of Processing Fees):')))}
-                ${row('Fundraiser Income — Settled After Fees:', (get('Total Event Income (After Fees):') || get('Total Event Income (Gross):') || get('Total Raised (Ticket Sales + Donations):')))}
-                ${row('Fundraiser Expenses — Including Unpaid:', (get('Less Account Expenses:') || get('Less Fees & Expenses:')))}
-                ${row('Fundraiser Money Available:', get('Available for Bikes for Tykes Today:'), true)}
+                ${row('BFT Bank Balance:', cash ? money(cash.bankBalance) : 'Unavailable')}
+                ${row('Starting Balance — Excluded:', cash ? money(cash.startingBalance) : 'Unavailable')}
+                ${row('Paid Fundraiser Costs Added Back to Income:', cash ? money(cash.paid) : 'Unavailable')}
                 ${row('Fundraiser Income Pending:', cash ? money(cash.pending) : 'Unavailable')}
-                ${row('Projected Available After Pending Clears:', cash ? money(cash.projectedAvailable) : 'Unavailable', true)}
-                
+                ${row('Fundraiser Income:', cash ? money(cash.income) : 'Unavailable', true)}
+                ${row('Fundraiser Expenses — Including Unpaid:', cash ? money(cash.expenses) : 'Unavailable')}
+                ${row('Fundraiser Money Available:', cash ? money(cash.available) : 'Unavailable', true)}
+                ${row('Available Excluding Pending:', cash ? money(cash.settledAvailable) : 'Unavailable')}
+                <p>Includes pending receipts. The starting $4,100 is excluded from fundraiser performance. Paid costs are added back to income and deducted once; unpaid costs remain deducted until paid.</p>
               </div></section>
               <section class="finance-box"><h3>Ticket Sales Performance</h3><div class="finance-box-body">
                 ${row('Max Tickets Available:', get('Max Tickets Available:'), false, {row:13,column:5})}
@@ -6122,7 +6123,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 
 
     // Both BFT views use the fundraiser's payments and their linked fees from the main ledger.
-    function bftFundraiserTotals(transactionRows) {
+    function bftFundraiserTotals(transactionRows,controlRows) {
       const eventName = 'Bikes For Tykes Fundraiser 2026';
       const ledger = transactionRows.slice(1);
       const active = row => !financeIsVoided(row) && String(row[2]) === '2026';
@@ -6164,9 +6165,19 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const pendingGross=pendingIncomeRows.reduce((sum,row)=>sum+amount(row),0);
       const pendingFees=ledger.reduce((sum,row,index)=>pendingIncomeRows.includes(ledger[index-1]) && feeRows.includes(row)?sum+Math.abs(amount(row)):sum,0);
       const pending=Math.round((pendingGross-pendingFees)*100)/100;
-      const settledIncome=gross-fees-pending;
-      return {gross,fees,income:settledIncome,totalIncome:gross-fees,pending,expenses,available:settledIncome-expenses,projectedAvailable:gross-fees-expenses,tickets,
-        other:settledIncome-tickets};
+      // Todd confirmed: $4,100 predates the fundraiser (before September 3).
+      // Paid event costs have already reduced BFT cash; add them back only to income.
+      // Unpaid costs stay reserved until the same transaction is marked cleared.
+      const startingBalance=4100;
+      const bankBalance=Number(String(controlRows?.[7]?.[4] ?? '').replace(/[$,]/g,''));
+      if (!controlRows || !Number.isFinite(bankBalance)) throw new Error('BFT bank balance is unavailable');
+      const unpaid=costRows.filter(row=>String(row[14]||'').trim().toLowerCase()!=='yes').reduce((sum,row)=>sum+Math.abs(amount(row)),0);
+      const paid=expenses-unpaid;
+      const settledIncome=bankBalance-startingBalance+paid;
+      const income=settledIncome+pending;
+      const available=income-expenses;
+      return {gross,fees,income,totalIncome:income,pending,expenses,available,projectedAvailable:available,
+        settledAvailable:settledIncome-expenses,startingBalance,bankBalance,paid,unpaid,tickets,other:income-tickets};
     }
 
 
@@ -6186,7 +6197,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const control = (row,column) => String(controlRows[row - 1]?.[column - 1] ?? '—');
       const summary = (label,value) => '<div class="finance-dashboard-card good"><span>' + esc(label) + '</span><strong>' + esc(value) + '</strong></div>';
       const program = financePeriodTotals('Bikes for Tykes','ytd',transactionRows,controlRows);
-      const fundraiser = bftFundraiserTotals(transactionRows);
+      const fundraiser = bftFundraiserTotals(transactionRows,controlRows);
       const eventIncome = fundraiser.income;
       const eventCosts = fundraiser.expenses;
       const eventNet = fundraiser.available;
@@ -6194,7 +6205,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       entries.sort((a,b) => (Date.parse(b[0]) || 0) - (Date.parse(a[0]) || 0));
       const displayRows = [['Date','Description','Subcategory','Payee / Payer','Amount','Type','Payment Method','Bank Status'], ...entries.map(row => [row[0],row[3],row[5],row[8],row[9],row[12],row[13],String(row[14] || '').trim().toLowerCase() === 'yes' ? 'Cleared' : String(row[14] || '').trim().toLowerCase() === 'pending at chase' ? 'Pending at Chase' : 'Not cleared'])];
       const target = document.getElementById('financeBftTable');
-      target.innerHTML = bftProgramSummary(controlRows,transactionRows) + '<section class="bft-finance-section"><h3>2026 Bikes for Tykes Fundraiser</h3><div class="bft-finance-summary bft-finance-simple">' + summary('Fundraiser Income — Settled After Fees',money(eventIncome)) + summary('Fundraiser Income Pending',money(fundraiser.pending)) + summary('Fundraiser Expenses — Including Unpaid',money(eventCosts)) + summary('Fundraiser Money Available',money(eventNet)) + summary('Projected Available After Pending Clears',money(fundraiser.projectedAvailable)) + '</div></section><div class="control-action-bar"><button class="dashboard-edit-btn" type="button" id="bftViewBudget" aria-expanded="false" aria-controls="bftFinanceBudget">View Budget</button><button class="dashboard-edit-btn" type="button" id="bftManageTransactions">Manage Transactions</button></div><section class="bft-finance-section" id="bftFinanceBudget" hidden><h3>2026 Program Budget</h3><div class="data-status" id="financeBftBudgetStatus"></div><div id="financeBftBudgetTable"></div></section><section class="bft-finance-section"><h3>Bikes for Tykes Transactions</h3><div class="data-status" id="financeBftTransactionsStatus"></div><div id="financeBftTransactionsTable"></div></section>';
+      target.innerHTML = bftProgramSummary(controlRows,transactionRows) + '<section class="bft-finance-section"><h3>2026 Bikes for Tykes Fundraiser</h3><div class="bft-finance-summary bft-finance-simple">' + summary('Fundraiser Income',money(eventIncome)) + summary('Fundraiser Income Pending',money(fundraiser.pending)) + summary('Fundraiser Expenses — Including Unpaid',money(eventCosts)) + summary('Fundraiser Money Available',money(eventNet)) + summary('Fundraiser Available Excluding Pending',money(fundraiser.settledAvailable)) + summary('Pre-Fundraiser Starting Balance — Excluded',money(fundraiser.startingBalance)) + '</div></section><div class="control-action-bar"><button class="dashboard-edit-btn" type="button" id="bftViewBudget" aria-expanded="false" aria-controls="bftFinanceBudget">View Budget</button><button class="dashboard-edit-btn" type="button" id="bftManageTransactions">Manage Transactions</button></div><section class="bft-finance-section" id="bftFinanceBudget" hidden><h3>2026 Program Budget</h3><div class="data-status" id="financeBftBudgetStatus"></div><div id="financeBftBudgetTable"></div></section><section class="bft-finance-section"><h3>Bikes for Tykes Transactions</h3><div class="data-status" id="financeBftTransactionsStatus"></div><div id="financeBftTransactionsTable"></div></section>';
       renderDataTable('financeBftTransactionsTable','financeBftTransactionsStatus',displayRows,0,8);
       let budgetRendered = false;
       target.querySelector('#bftViewBudget').addEventListener('click', event => {
