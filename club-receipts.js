@@ -65,11 +65,33 @@
   }
   function addReceipt(){
     const dialog=document.createElement('dialog');dialog.className='club-dialog';
-    dialog.innerHTML='<form><h2>Add receipt — '+esc(program)+' '+esc(year)+'</h2><div class="club-form"><label>Title<input name="title" required maxlength="200"></label><label>Receipt date<input type="date" name="date"></label><label>Vendor<input name="vendor"></label><label>Amount (optional)<input name="amount" type="number" min="0" step="0.01"></label><label>Upload PDF or photo<input name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"></label><label>Or paste a document link<input name="url" type="url" placeholder="https://drive.google.com/…"></label><label>Notes<textarea name="notes" rows="3"></textarea></label></div><p role="status"></p><div class="club-toolbar"><button class="open-btn" type="submit">Save receipt</button><button class="sponsor-tab" type="button" data-cancel>Cancel</button></div></form>';
+    dialog.innerHTML='<form><h2>Add receipt — '+esc(program)+' '+esc(year)+'</h2><div class="club-form"><label>Title<input name="title" required maxlength="200"></label><label>Receipt date<input type="date" name="date"></label><label>Vendor<input name="vendor"></label><label>Amount (optional)<input name="amount" type="number" min="0" step="0.01"></label><label>Upload PDF or photo<input name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"></label><label>Or paste a document link<input name="url" type="url" placeholder="https://drive.google.com/…"></label><label>Items purchased<textarea name="items" rows="5" placeholder="Item descriptions and prices"></textarea></label><label>Notes<textarea name="notes" rows="3"></textarea></label><label data-scan-page hidden>PDF page<select name="scanPage"></select></label><button class="sponsor-tab" type="button" data-scan-again>Read receipt again</button><details><summary>Extracted receipt text</summary><pre data-scan-text style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:250px;overflow:auto"></pre></details></div><p role="status"></p><div class="club-toolbar"><button class="open-btn" type="submit">Save receipt</button><button class="sponsor-tab" type="button" data-cancel>Cancel</button></div></form>';
     document.body.append(dialog);dialog.showModal();dialog.onclose=()=>dialog.remove();dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();
     const form=dialog.querySelector('form');
+    let scanId=0,scanning=false;
+    const scanAgain=form.querySelector('[data-scan-again]'),status=form.querySelector('[role=status]'),saveButton=form.querySelector('[type=submit]');
+    async function scanFile(page=1){
+      const file=form.elements.file.files[0];if(!file){status.textContent='Choose a receipt file to read.';return}
+      const id=++scanId,before=Object.fromEntries(['title','vendor','date','amount','items'].map(k=>[k,form.elements[k].value]));
+      scanning=true;saveButton.disabled=true;scanAgain.disabled=true;status.textContent='Reading receipt…';
+      try{
+        const {readReceipt}=await import('./receipt-scan.js?v=20261014-1');
+        const result=await readReceipt(file,{page,progress:message=>{if(id===scanId&&dialog.isConnected)status.textContent=message}});
+        if(id!==scanId||!dialog.isConnected)return;
+        for(const key of ['title','vendor','date','amount','items'])if(form.elements[key].value===before[key]&&(!before[key]||page!==1)&&result[key])form.elements[key].value=result[key];
+        form.querySelector('[data-scan-text]').textContent=result.text;
+        const pageLabel=form.querySelector('[data-scan-page]');pageLabel.hidden=result.pages===1;
+        form.elements.scanPage.innerHTML=Array.from({length:result.pages},(_,i)=>'<option value="'+(i+1)+'" '+(result.page===i+1?'selected':'')+'>Page '+(i+1)+'</option>').join('');
+        status.textContent=(result.pages>1?'Read page '+result.page+' of '+result.pages+'. Choose another page for another receipt. ':'')+'Review the suggested vendor, date, total and items before saving.'+(result.confidence<70?' Some text was unclear.':'')+(!result.amount?' Total could not be identified; enter it manually.':'');
+      }catch(error){if(id===scanId&&dialog.isConnected)status.textContent='Could not read receipt: '+error.message+' You can enter the fields manually.'}
+      finally{if(id===scanId){scanning=false;saveButton.disabled=false;scanAgain.disabled=false}}
+    }
+    form.elements.file.onchange=()=>{++scanId;form.querySelector('[data-scan-text]').textContent='';form.querySelector('[data-scan-page]').hidden=true;if(form.elements.file.files[0])scanFile();else{scanning=false;saveButton.disabled=false;scanAgain.disabled=false}};
+    scanAgain.onclick=()=>scanFile(Number(form.elements.scanPage.value)||1);
+    form.elements.scanPage.onchange=()=>scanFile(Number(form.elements.scanPage.value)||1);
+
     form.onsubmit=async e=>{
-      e.preventDefault();const button=form.querySelector('[type=submit]'),status=form.querySelector('[role=status]');button.disabled=true;
+      e.preventDefault();if(scanning)return;const button=form.querySelector('[type=submit]'),status=form.querySelector('[role=status]');button.disabled=true;
       try{
         if(!accessToken)throw new Error('Sign in before saving receipts.');
         const data=new FormData(form),file=form.elements.file.files[0];let url=data.get('url').trim();
@@ -77,7 +99,7 @@
         if(!file&&!clubSafeLink(url))throw new Error('Upload a receipt or enter a secure https:// document link.');
         if(file){status.textContent='Uploading receipt…';const token=await authorizeMinutesUpload();url=await upload(file,token);form.elements.url.value=url;form.elements.file.value='';}
         status.textContent='Saving receipt…';
-        await save(record(data.get('title').trim(),{kind:'receipt',program,year,vendor:data.get('vendor').trim(),amount:data.get('amount'),notes:data.get('notes').trim()},url,data.get('date')));
+        await save(record(data.get('title').trim(),{kind:'receipt',program,year,vendor:data.get('vendor').trim(),amount:data.get('amount'),notes:data.get('notes').trim(),items:data.get('items').trim()},url,data.get('date')));
         dialog.close();draw();
       }catch(error){status.textContent=error.message;button.disabled=false}
     };
@@ -92,8 +114,8 @@
       const years=[...new Set(['2025','2026','2027',...all.filter(r=>r.program===program).map(r=>r.year),...folders.filter(r=>r.program===program).map(r=>r.year)])].filter(Boolean).sort().reverse();
       body='<div class="records-collections">'+years.map(y=>card('Receipts '+y,all.filter(r=>r.program===program&&r.year===y).length+' documents','data-receipt-year="'+esc(y)+'"')).join('')+'</div>';
     }else{
-      const rows=all.filter(r=>r.program===program&&r.year===year&&(!query||[r.title,r.vendor,r.notes,r.date].join(' ').toLowerCase().includes(query.toLowerCase()))).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-      body='<label style="display:block;margin:18px 0">Search receipts<input type="search" data-receipt-search value="'+esc(query)+'" placeholder="Title, vendor, date or notes" style="display:block;width:100%;padding:12px"></label><div class="records-card-grid">'+rows.map(r=>'<article class="record-card"><h3>'+esc(r.title)+'</h3><p>'+esc([r.date,r.vendor,r.amount!==''&&r.amount!=null?'$'+Number(r.amount).toFixed(2):''].filter(Boolean).join(' · '))+'</p><p>'+esc(r.notes||'')+'</p><div class="record-card-actions"><a class="open-btn" href="'+esc(clubSafeLink(r.url))+'" target="_blank" rel="noopener">View receipt ↗</a></div></article>').join('')+'</div>'+(rows.length?'':'<div class="empty-state">No receipts to show. Add a receipt above.</div>');
+      const rows=all.filter(r=>r.program===program&&r.year===year&&(!query||[r.title,r.vendor,r.items,r.notes,r.date].join(' ').toLowerCase().includes(query.toLowerCase()))).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+      body='<label style="display:block;margin:18px 0">Search receipts<input type="search" data-receipt-search value="'+esc(query)+'" placeholder="Title, vendor, date or notes" style="display:block;width:100%;padding:12px"></label><div class="records-card-grid">'+rows.map(r=>'<article class="record-card"><h3>'+esc(r.title)+'</h3><p>'+esc([r.date,r.vendor,r.amount!==''&&r.amount!=null?'$'+Number(r.amount).toFixed(2):''].filter(Boolean).join(' · '))+'</p><p style="white-space:pre-line">'+esc(r.items||'')+'</p><p>'+esc(r.notes||'')+'</p><div class="record-card-actions"><a class="open-btn" href="'+esc(clubSafeLink(r.url))+'" target="_blank" rel="noopener">View receipt ↗</a></div></article>').join('')+'</div>'+(rows.length?'':'<div class="empty-state">No receipts to show. Add a receipt above.</div>');
     }
     host().innerHTML='<nav class="minutes-breadcrumb"><button class="sponsor-tab" data-receipt-back>← Back</button><button class="sponsor-tab" data-receipt-home>Club Records</button></nav><section class="records-hero"><div><h2>'+esc(program?(year?program+' — Receipts '+year:program):'Receipts')+'</h2><p>'+(year?'Charity account receipts and supporting documents.':'Choose a '+(program?'year':'receipt collection')+'.')+'</p></div><div class="records-hero-actions"><button class="open-btn" data-receipt-add>'+ (year?'Add receipt':program?'Add year':'Add collection')+'</button><button class="sponsor-tab" data-receipt-refresh>Refresh</button></div></section>'+body;
     host().querySelector('[data-receipt-home]').onclick=recordsHome;
