@@ -107,11 +107,11 @@ async function setup2027DuesReview(rows) {
     const panel=document.createElement('section');panel.className='dues-manager-launch';
     panel.style.cssText='display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;border-left:6px solid #c8102e;padding:16px 18px;';
     // Keep the preview names aligned with the records used for each count.
-    const namesTitle=members=>members===null?'Names could not be loaded. Refresh to retry.':
-      [...new Set(members.map(m=>m.name||[m.first,m.last].filter(Boolean).join(' ')).filter(Boolean))]
+    const namesTitle=(members,reasons=false)=>members===null?'Names could not be loaded. Refresh to retry.':
+      [...new Set(members.map(m=>(m.name||[m.first,m.last].filter(Boolean).join(' '))+(reasons?' - '+(duesExemption(m,context.previous,context.presidents).replace(/^Dues Exempt — /,'').replace(/^2027 Dues Covered — /,'')||'Waived — Recorded in Roster'):'')).filter(Boolean))]
         .sort((a,b)=>a.localeCompare(b)).join('\n')||'No members';
-    const colors={blue:'background:#dbeafe;color:#1e40af;border:1px solid #93c5fd',green:'background:#dcfce7;color:#166534;border:1px solid #86efac',yellow:'background:#fef3c7;color:#92400e;border:1px solid #fcd34d',red:'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5',gray:'background:#f3f4f6;color:#374151;border:1px solid #d1d5db'};
-    const badge=(label,color,members)=>'<span tabindex="0" data-dues-names="'+esc(namesTitle(members)).replace(/"/g,'&quot;')+'" aria-label="'+label+' — hover or tap for names" style="'+colors[color]+';border-radius:8px;padding:7px 10px;cursor:help">'+label+'</span>';
+    const colors={blue:'background:#dbeafe !important;color:#1e40af !important;border:1px solid #93c5fd',green:'background:#dcfce7;color:#166534;border:1px solid #86efac',yellow:'background:#fef3c7;color:#92400e;border:1px solid #fcd34d',red:'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5',gray:'background:#f3f4f6;color:#374151;border:1px solid #d1d5db'};
+    const badge=(label,color,members)=>'<span tabindex="0" data-dues-names="'+esc(namesTitle(members,color==='blue')).replace(/"/g,'&quot;')+'" aria-label="'+label+' — hover or tap for names" style="'+colors[color]+';border-radius:8px;padding:7px 10px;cursor:help">'+label+'</span>';
     const exemptMembers=eligible.filter(p=>Boolean(duesExemption(p,context.previous,context.presidents)) || /^(exempt|waived)$/.test(duesNorm(p.values[p.cols['Dues Paid']])));
     const paidMembers=eligible.filter(p=>!duesExemption(p,context.previous,context.presidents) && /^(yes|paid)$/.test(duesNorm(p.values[p.cols['Dues Paid']])));
     panel.innerHTML='<div style="min-width:0"><strong style="font-size:1.05rem">2027 Membership Dues & Renewal Progress</strong>'+
