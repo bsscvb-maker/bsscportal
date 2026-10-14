@@ -1268,7 +1268,6 @@
     select, textarea { background-color:#e7eaed; color:#222; }
 
     .non-renewal-people-count { color:#c8102e; font-size:1.35rem; font-weight:900; white-space:nowrap; flex:0 0 auto; }
-.bft-checklist-task{padding:16px 0;border-bottom:1px solid #bfc5ca}.bft-checklist-task:last-child{border-bottom:0}.bft-checklist-fields{display:grid;grid-template-columns:minmax(140px,1fr) minmax(200px,2fr);gap:14px;margin:12px 0 0 34px}.bft-checklist-fields label{font-size:.85rem;font-weight:700}.bft-checklist-fields input,.bft-checklist-fields textarea{display:block;width:100%;margin-top:5px;padding:9px;border:1px solid #aeb5bb;border-radius:7px;background:#edf0f2;color:#161616;font:inherit}@media(max-width:650px){.bft-checklist-fields{grid-template-columns:1fr;margin-left:0}}
 
     #storageWorkspace .storage-category,
     #storageWorkspace .storage-category strong,
@@ -1289,7 +1288,6 @@
     #storageEditor [data-storage-photo-preview],
     .storage-photo-viewer-body { isolation:isolate; }
     .storage-photo-viewer-body { background:#cbd2d8; border-radius:8px; }
-  .bft-checklist-categories { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; }
 
     /* Mobile-only layout refinement. Authentication markup and scripts are unchanged. */
     @media (max-width:760px) {
@@ -1959,11 +1957,9 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
               <button class="sponsor-tab active" data-bft-tab="dashboard">DashBoard</button>
               <button class="sponsor-tab" data-bft-tab="tickets">Ticket Control Ledger</button>
               <button class="sponsor-tab" data-bft-tab="donations">Tracking Tab</button>
-              <button class="sponsor-tab" data-bft-tab="instructions">Instructions &amp; Legend</button>
               <button class="sponsor-tab" data-bft-tab="finance">Finance Sync</button>
               <button class="sponsor-tab" data-bft-tab="budget">Purchase Budget</button>
 <button class="sponsor-tab" data-bft-tab="auction">Auction &amp; Raffle Plan</button>
-<button class="sponsor-tab" data-bft-tab="checklist">Working Checklist</button>
             </div>
             <section class="sponsor-panel active" data-bft-panel="dashboard">
               <div class="data-status" id="bftDashboardStatus">Sign in to load the Bikes for Tykes dashboard.</div>
@@ -1972,10 +1968,8 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
             </section>
             <section class="sponsor-panel" data-bft-panel="tickets"><div class="coming-soon"><h2>Ticket Control Ledger</h2><div class="data-status" id="bftTicketsStatus">Sign in to load ticket records.</div><div id="bftTicketsTable"></div></div></section>
             <section class="sponsor-panel" data-bft-panel="donations"><div class="coming-soon"><h2>Tracking Tab</h2><div class="data-status" id="bftDonationsStatus">Sign in to load donation records.</div><div id="bftDonationsTable"></div></div></section>
-            <section class="sponsor-panel" data-bft-panel="instructions"><div class="coming-soon"><h2>Instructions &amp; Legend</h2><div class="data-status" id="bftInstructionsStatus">Sign in to load workbook instructions.</div><div id="bftInstructionsTable"></div></div></section>
             <section class="sponsor-panel" data-bft-panel="finance"><div class="coming-soon"><h2>Finance Sync</h2><div class="data-status" id="bftFinanceStatus">Sign in to load synchronized transactions.</div><div id="bftFinanceTable"></div></div></section>
             <section class="sponsor-panel" data-bft-panel="auction"><div class="coming-soon"><h2>Auction &amp; Raffle Plan</h2><p>Bikes for Tykes 2026 · Results updated October 14, 2026.</p><p class="pilot-note">Actual proceeds include card surcharges when recorded. Profit = actual proceeds minus fees and item cost. A blank fee is awaiting confirmation.</p><section class="card" style="margin:16px 0"><h3>Live auction</h3><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Item</th><th>Est. value</th><th>Our cost</th><th>Actual proceeds</th><th>Fee</th><th>Profit</th></tr></thead><tbody><tr><td>Buckshot stool</td><td>$1,000.00</td><td>$0.00</td><td>$875.50<small style="display:block">Winning bid $850.00</small></td><td>$22.86</td><td>$852.64</td></tr><tr><td>2004 Schwinn Sting-Ray OCC motorized trike with keg sidecar</td><td>$300.00</td><td>$0.00</td><td>$540.75<small style="display:block">Winning bid $525.00</small></td><td>$14.16</td><td>$526.59</td></tr><tr><td>Custom engraved Bikes for Tykes axe</td><td>$275.00</td><td>$0.00</td><td>$515.00<small style="display:block">Winning bid $500.00</small></td><td>$13.49</td><td>$501.51</td></tr><tr><td>Mini dirt bike</td><td>$250.00</td><td>$0.00</td><td>$386.25<small style="display:block">Winning bid $375.00</small></td><td>$10.14</td><td>$376.11</td></tr><tr><td>FISHING CHARTER — Ebb Tide, up to 3 people</td><td>$550.00</td><td>$550.00<small style="display:block">UNPAID — TO BE PAID</small></td><td>$566.50<small style="display:block">Winning bid $550.00</small></td><td>$14.83</td><td>$1.67</td></tr></tbody></table></div></section><section class="card" style="margin:16px 0"><h3>Silent auction</h3><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Item</th><th>Est. value</th><th>Our cost</th><th>Actual proceeds</th><th>Fee</th><th>Profit</th></tr></thead><tbody><tr><td>Fit4Life fitness and personal training package<small style="display:block">Winner: Mika</small></td><td>$375.00</td><td>$0.00</td><td>$40.00<small style="display:block">Winning bid $40.00</small></td><td>—</td><td>Awaiting fee</td></tr><tr><td>Jungle Golf season pass #1</td><td>$200.00</td><td>$0.00</td><td>$0.00<small style="display:block">Not sold</small></td><td>$0.00</td><td>$0.00</td></tr><tr><td>Jungle Golf season pass #2</td><td>$200.00</td><td>$0.00</td><td>$0.00<small style="display:block">Not sold</small></td><td>$0.00</td><td>$0.00</td></tr><tr><td>Two-hour cleaning certificate<small style="display:block">Winner: Colleen Noble · 757-407-4415</small></td><td>$120.00</td><td>$0.00</td><td>$50.00<small style="display:block">Winning bid $50.00</small></td><td>—</td><td>Awaiting fee</td></tr><tr><td>Pack for the Ride — Viking Tactical XL backpack<small style="display:block">Winner: Toni Biffle</small></td><td>$145.99</td><td>$0.00</td><td>$75.00<small style="display:block">Winning bid $75.00</small></td><td>—</td><td>Awaiting fee</td></tr><tr><td>Harley-Davidson Garage Glory sign<small style="display:block">Winners: Frank and Timmy Mendoza</small></td><td>$120.00</td><td>$0.00</td><td>$51.50<small style="display:block">Winning bid $50.00</small></td><td>$1.44</td><td>$50.06</td></tr><tr><td>Ironclad and Ready — Harley-Davidson backpack with complete contents<small style="display:block">Winner: Chris Evers · 708-267-5799</small></td><td>$122.96</td><td>$0.00</td><td>$103.00<small style="display:block">Winning bid $100.00</small></td><td>$4.66</td><td>$98.34</td></tr><tr><td>Grindstone Muay Thai Foundations — 8-session course</td><td>$119.00</td><td>$0.00</td><td>$0.00<small style="display:block">Not sold</small></td><td>$0.00</td><td>$0.00</td></tr></tbody></table></div></section><section class="card" style="margin:16px 0"><h3>Large raffle</h3><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Item</th><th>Est. value</th><th>Our cost</th><th>Actual proceeds</th><th>Fee</th><th>Profit</th></tr></thead><tbody><tr><td>GUN RAFFLE — SIG Sauer P365 TAC PACK</td><td>$669.79</td><td>$669.79</td><td>$730.00</td><td>—</td><td>$60.21</td></tr><tr><td>Blanton’s basket</td><td>—</td><td>—</td><td>—</td><td>—</td><td>Awaiting fee</td></tr><tr><td>Buffalo Trace basket</td><td>—</td><td>—</td><td>—</td><td>—</td><td>Awaiting fee</td></tr></tbody></table></div></section><p class="pilot-note">Blanton’s and Buffalo Trace costs and results are awaiting confirmation. Silent-auction profits with unconfirmed payment fees remain pending.</p><section class="card" style="margin:16px 0"><h3>Raffle Stations 1–23</h3><p>One matching numbered display and ticket container for each basket.</p><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Station / Prize</th><th>Contents</th><th>Est. value</th></tr></thead><tbody><tr><td>1. Gear and Beer</td><td>Anniversary cooler bag #1 + Big Ugly beer four-pack + men's Harley wallet</td><td>$199.95</td></tr><tr><td>2. Cold Brews and Beach Eats</td><td>Anniversary cooler bag #2 + Big Ugly beer four-pack + The Atlantic $50 card</td><td>$210.00</td></tr><tr><td>3. Cold Brews Times Two</td><td>Anniversary cooler bag #3 + Big Ugly beer four-pack + all four Yard House $10 cards</td><td>$200.00</td></tr><tr><td>4. Style, Carry, and Dine</td><td>Harley studded crossbody purse + women's Harley shirt (Large) + Hoss's Deli $40 card</td><td>$159.94</td></tr><tr><td>5. Two Bags, One Lucky Lady</td><td>Harley hobo purse + Harley-Davidson leather bifold clutch</td><td>$189.90</td></tr><tr><td>6. Retirement on the Rocks</td><td>Retirement whiskey gift set + Johnnie Walker Double Black + Buffalo Trace Bourbon Cream</td><td>$114.96</td></tr><tr><td>7. Give Me S'more</td><td>Harley tabletop s'mores kit #1 + graham crackers, marshmallows and chocolate + Salt &amp; Honey $25 card</td><td>$79.95</td></tr><tr><td>8. The Sweet Life</td><td>Harley tabletop s'mores kit #2 + graham crackers, marshmallows and chocolate + Salt &amp; Honey $25 card</td><td>$79.95</td></tr><tr><td>9. Family Play Day</td><td>X-Shot blaster pack + Pinboys package #1</td><td>$159.97</td></tr><tr><td>10. Bowl &amp; Bite</td><td>Pinboys package #2 + Side Street Cantina $50 certificate #1</td><td>$150.00</td></tr><tr><td>11. Bowl &amp; Beach Eats</td><td>Pinboys package #3 + Chick's Oyster Bar $50 gift certificate</td><td>$150.00</td></tr><tr><td>12. Taste of the Town</td><td>Quemar $100 + two Shadowlawn Eats $25 cards + Chubbs $50 card</td><td>$200.00</td></tr><tr><td>13. Pamper &amp; Recharge</td><td>Complete hair/self-care basket + Starbucks $15 card</td><td>$101.15</td></tr><tr><td>14. Shine &amp; Dine</td><td>All three AutoBell certificates + Scotty Quixx East $50 + Side Street Cantina $50 certificate #2</td><td>$174.97</td></tr><tr><td>15. The Pub and Grub Package</td><td>Icehouse $100 + Murphy's $100</td><td>$200.00</td></tr><tr><td>16. Seafood Night Out</td><td>21st Street Seafood Raw Bar $50 + Surf Rider $50 gift card + two Shadowlawn Eats $25 cards</td><td>$150.00</td></tr><tr><td>17. Ocean Sunset Canvas</td><td>Ocean sunset photographic canvas</td><td>$60.00</td></tr><tr><td>18. Jeff Gordon NASCAR Print</td><td>Framed Jeff Gordon NASCAR print - signature authenticity unverified</td><td>$75.00</td></tr><tr><td>19. SISSTR Style</td><td>SISSTR Roamin jacket - Army - Small + pants (details/value TBD)</td><td>$112.00 + pants</td></tr><tr><td>20. Beach Style</td><td>SISSTR Wave Lover knit tank top + wraparound sunglasses + Local Beach $50 card + Scotty Quixx West $50 gift card</td><td>$155.00</td></tr><tr><td>21. Dress and Style</td><td>SISSTR Wild at Heart mini dress + round sunglasses + Toni haircut &amp; style $50 certificate</td><td>$149.50</td></tr><tr><td>22. Time to Ride</td><td>BoneShakers Harley-Davidson handmade wall clock</td><td>$100.00</td></tr><tr><td>23. Bone Shakers Crafted with a Heart</td><td>BoneShakers Bikes for Tykes handmade wooden sign</td><td>$75.00</td></tr></tbody></table></div></section></div></section>
-<section class="sponsor-panel" data-bft-panel="checklist"><div class="coming-soon"><h2>Working Checklist</h2><p>October 2026 · Event planning, assignments, setup and cleanup.</p><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:18px"><strong id="bftChecklistProgress">57 tasks</strong><label><input type="checkbox" id="bftChecklistHideDone"> Hide completed</label><button type="button" class="open-btn" id="bftChecklistRefresh">Refresh</button></div><div class="data-status" id="bftChecklistStatus" role="status">Open this tab to load the shared checklist.</div><div id="bftChecklistCategories" class="bft-checklist-categories" role="group" aria-label="Checklist categories"></div><div id="bftChecklistItems"></div></div></section>
 <section class="sponsor-panel" data-bft-panel="budget"><div class="coming-soon"><h2>Purchase Budget</h2><div class="data-status" id="bftBudgetStatus">Sign in to load the purchase budget.</div><div id="bftBudgetTable"></div></div></section>
           </div><div class="bft-workspace" id="bikeNightsWorkspace">
             <div class="sponsor-tabs" aria-label="Bike Night List sections">
@@ -2183,87 +2177,6 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     const IDLE_TIMEOUT_MS = 60 * 60 * 1000;
     let tokenClient;
     let accessToken = '';
-
-    const bftChecklistCategoryLabels = {
-      'Immediate priorities':'Immediate Priorities',
-      'Teala - next conversation':'Teala',
-      'Bill - venue arrangements':'Bill',
-      'Displays, supplies, and item assignments':'Displays & Supplies',
-      'Staffing and payment coverage':'Staffing & Payments',
-      "Tuesday's meeting - communicate expectations":'Tuesday Meeting',
-      'Wednesday - team-lead session':'Wednesday Session',
-      'Event day and cleanup':'Event & Cleanup'
-    };
-    let bftChecklistCategory = '';
-    let bftChecklistRows = [];
-    let bftChecklistLoading = false;
-    async function loadBftChecklist() {
-      const status = document.getElementById('bftChecklistStatus');
-      if (bftChecklistLoading) return;
-      if (!accessToken) { status.textContent = 'Sign in with Google, then click Refresh to load the shared checklist.'; return; }
-      bftChecklistLoading = true;
-      status.textContent = 'Loading checklist…';
-      try {
-        const rows = await getSheetValues("'Working Checklist'!A1:F200", BFT_SPREADSHEET_ID);
-        bftChecklistRows = rows.slice(1).map((row,i)=>({row,number:i+2})).filter(item=>item.row[0]);
-        renderBftChecklist();
-        status.textContent = 'Shared checklist loaded. Each change saves automatically.';
-      } catch(error) { status.textContent = 'Checklist could not load: ' + error.message; }
-      finally { bftChecklistLoading = false; }
-    }
-    function renderBftChecklist() {
-      const done = item => String(item.row[3]).toLowerCase() === 'true';
-      const selectedRows = bftChecklistRows.filter(item => !bftChecklistCategory || item.row[1] === bftChecklistCategory);
-      const total = selectedRows.length;
-      document.getElementById('bftChecklistProgress').textContent = selectedRows.filter(done).length + ' / ' + total + ' completed';
-      const hide = document.getElementById('bftChecklistHideDone').checked;
-      const groups = [...new Set(bftChecklistRows.map(item=>item.row[1]))];
-      renderBftChecklistCategories(groups);
-      document.getElementById('bftChecklistItems').innerHTML = groups.filter(group => !bftChecklistCategory || group === bftChecklistCategory).map(group=>{
-        const all = bftChecklistRows.filter(item=>item.row[1]===group);
-        const shown = all.filter(item=>!hide||!done(item));
-        if (!shown.length) return '';
-        return '<section class="card" style="margin:16px 0"><h3>' + esc(group) + ' <small style="font-weight:normal">' + all.filter(done).length + '/' + all.length + '</small></h3>' + shown.map(item=>'<div class="bft-checklist-task" data-checklist-row="' + item.number + '"><label style="display:flex;gap:12px;align-items:flex-start;font-weight:750"><input type="checkbox" data-checklist-column="3" ' + (done(item)?'checked':'') + ' style="width:22px;height:22px;flex-shrink:0"><span style="' + (done(item)?'text-decoration:line-through;color:#666':'') + '">' + esc(item.row[2]) + '</span></label><div class="bft-checklist-fields"><label>Assigned to<input type="text" data-checklist-column="4" value="' + esc(item.row[4]||'') + '" placeholder="Name"></label><label>Notes<textarea data-checklist-column="5" rows="2" placeholder="Details or follow-up">' + esc(item.row[5]||'') + '</textarea></label></div></div>').join('') + '</section>';
-      }).join('') || '<p>No tasks to show in this category. Uncheck Hide completed to see completed tasks.</p>';
-    }
-    function renderBftChecklistCategories(groups = Object.keys(bftChecklistCategoryLabels)) {
-      const categories = ['', ...groups];
-      document.getElementById('bftChecklistCategories').innerHTML = categories.map(category =>
-        '<button type="button" class="sponsor-tab' + (bftChecklistCategory === category ? ' active' : '') + '" data-checklist-category="' + esc(category) + '" aria-pressed="' + (bftChecklistCategory === category) + '">' + esc(category ? bftChecklistCategoryLabels[category] || category : 'All Tasks') + '</button>'
-      ).join('');
-    }
-    document.getElementById('bftChecklistCategories').addEventListener('click', event => {
-      const button = event.target.closest('[data-checklist-category]');
-      if (!button) return;
-      bftChecklistCategory = button.dataset.checklistCategory;
-      if (bftChecklistRows.length) renderBftChecklist();
-      else renderBftChecklistCategories();
-    });
-    renderBftChecklistCategories();
-    document.getElementById('bftChecklistItems').addEventListener('change',async event=>{
-      const input = event.target.closest('[data-checklist-column]');
-      if (!input) return;
-      const number = Number(input.closest('[data-checklist-row]').dataset.checklistRow);
-      const column = Number(input.dataset.checklistColumn);
-      const item = bftChecklistRows.find(item=>item.number===number);
-      if (!item) return;
-      const value = input.type==='checkbox' ? input.checked : input.value;
-      const status = document.getElementById('bftChecklistStatus');
-      input.disabled = true; status.textContent = 'Saving…';
-      try {
-        // RAW preserves literal notes and names.
-        const range = "'Working Checklist'!" + columnNumberToLetters(column+1) + number;
-        await writePortalSheetRequest('https://sheets.googleapis.com/v4/spreadsheets/'+BFT_SPREADSHEET_ID+'/values/'+encodeURIComponent(range)+'?valueInputOption=RAW',{method:'PUT',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:[[value]]})},'Updated working checklist',item.row[2],1);
-        item.row[column] = value;
-        status.textContent = 'Saved to the shared checklist.';
-        if (column===3) renderBftChecklist();
-      } catch(error) {
-        if(input.type==='checkbox') input.checked = String(item.row[column]).toLowerCase()==='true'; else input.value = item.row[column]||'';
-        status.textContent = 'Change was not saved: '+error.message;
-      } finally { input.disabled = false; }
-    });
-    document.getElementById('bftChecklistRefresh').addEventListener('click',loadBftChecklist);
-    document.getElementById('bftChecklistHideDone').addEventListener('change',renderBftChecklist);
 
     let marketplaceVendorOrderPopup = null;
     let marketplaceVendorOrderRequestId = '';
@@ -4585,7 +4498,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     }
 
     async function loadBftData() {
-      const statusIds = ['bftDashboardStatus','bftTicketsStatus','bftDonationsStatus','bftFinanceStatus','bftBudgetStatus','bftInstructionsStatus'];
+      const statusIds = ['bftDashboardStatus','bftTicketsStatus','bftDonationsStatus','bftFinanceStatus','bftBudgetStatus'];
       statusIds.forEach(id => document.getElementById(id).textContent = 'Loading from Google Sheets…');
       const results = await Promise.allSettled([
           getSheetValues("'DashBoard'!A1:G40", BFT_SPREADSHEET_ID),
@@ -4593,11 +4506,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
           getSheetValues("'Tracking Tab'!A1:V1000", BFT_SPREADSHEET_ID),
           getSheetValues("'Finance Sync'!A1:J250", BFT_SPREADSHEET_ID),
           getSheetValues("'Purchase Budget'!A1:E46", BFT_SPREADSHEET_ID),
-          getSheetValues("'Instructions & Legend'!A1:C100", BFT_SPREADSHEET_ID),
           getSheetValues("'Transactions-2026'!A1:Q", FINANCE_SPREADSHEET_ID),
           getSheetValues("'Control-2026'!A1:H40", FINANCE_SPREADSHEET_ID)
       ]);
-      const [dashboardResult, ticketResult, donationResult, financeResult, budgetResult, instructionResult, cashResult, controlResult] = results;
+      const [dashboardResult, ticketResult, donationResult, financeResult, budgetResult, cashResult, controlResult] = results;
       bftFinanceControlRows = controlResult.status === 'fulfilled' ? controlResult.value : null;
       bftCashLedger = cashResult.status === 'fulfilled' ? cashResult.value : null;
       const donationRows = donationResult.status === 'fulfilled' ? donationResult.value : [];
@@ -4619,7 +4531,6 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       renderResult(financeResult, 'bftFinanceTable', 'bftFinanceStatus', 1, 10, 'Finance Sync');
       if (budgetResult.status === 'fulfilled') renderDataTable('bftBudgetTable', 'bftBudgetStatus', budgetResult.value, 2, 3, {sheetName:'Purchase Budget'});
       else document.getElementById('bftBudgetStatus').textContent = 'Purchase Budget could not be loaded from Google Sheets.';
-      renderResult(instructionResult, 'bftInstructionsTable', 'bftInstructionsStatus', 3, 2, 'Instructions & Legend');
     }
 
     function renderBikeNightDashboard(dashboardRows, scoreRows = [], rawRows = []) {
@@ -8962,7 +8873,6 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         taskGrid.innerHTML = '';
         bftWorkspace.classList.add('active');
         loadBftData();
-        if (document.querySelector('[data-bft-tab="checklist"].active')) loadBftChecklist();
       } else if (key === 'bikenights') {
         taskGrid.innerHTML = '';
         bikeNightsWorkspace.classList.add('active');
@@ -9008,7 +8918,6 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     }));
     document.querySelectorAll('[data-bft-tab]').forEach(button => button.addEventListener('click', () => {
       const selected = button.dataset.bftTab;
-      if (selected === 'checklist') loadBftChecklist();
       document.querySelectorAll('[data-bft-tab]').forEach(tab => tab.classList.toggle('active', tab === button));
       document.querySelectorAll('[data-bft-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.bftPanel === selected));
     }));
