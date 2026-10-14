@@ -52,7 +52,7 @@ async function setup2027DuesReview(rows) {
     const paidCount=eligible.filter(p=>!duesExemption(p,context.previous,context.presidents) && /^(yes|paid)$/.test(duesNorm(p.values[p.cols['Dues Paid']]))).length;
     const duesComplete=paidCount+exemptCount;
     const unpaidCount=unpaid2027Dues(context).length;
-    let startingMembers=59,notReturningCount=0,notEligibleCount=0,leftToRenew=Math.max(0,startingMembers-totalRenewed),nonRenewalMembers=[],decisionRows=[];
+    let startingMembers=59,notReturningCount=0,notEligibleCount=0,leftToRenew=Math.max(0,startingMembers-totalRenewed),nonRenewalMembers=[],decisionRows=[],notReturningMembers=[],notEligibleMembers=[],allNonRenewalMembers=null;
     try {
       const results=await Promise.all([
         getSheetValues("'2026 - Non Renewal'!A1:AK1000",MEMBERSHIP_SPREADSHEET_ID),
@@ -64,9 +64,12 @@ async function setup2027DuesReview(rows) {
       nonRenewalMembers=nonRenewalRows.slice(1).filter(r=>(nrFirst>=0&&String(r[nrFirst]||'').trim())||(nrLast>=0&&String(r[nrLast]||'').trim())).map(r=>({
         first:String(r[nrFirst]||'').trim(),last:String(r[nrLast]||'').trim(),road:nrRoad>=0?String(r[nrRoad]||'').trim():''
       }));
+      allNonRenewalMembers=nonRenewalMembers.slice();
       const nonRenewalKeys=new Set(nonRenewalMembers.map(m=>duesNorm(m.first+'|'+m.last)));
       const declinedKeys=new Set(decisionRows.slice(1).filter(r=>duesNorm(r[3])==='not returning').map(r=>duesNorm(String(r[0]||'').trim()+'|'+String(r[1]||'').trim())));
       const ineligibleKeys=new Set(decisionRows.slice(1).filter(r=>['not eligible to renew','not allowed to return'].includes(duesNorm(r[3]))).map(r=>duesNorm(String(r[0]||'').trim()+'|'+String(r[1]||'').trim())));
+      notReturningMembers=nonRenewalMembers.filter(m=>declinedKeys.has(duesNorm(m.first+'|'+m.last)));
+      notEligibleMembers=nonRenewalMembers.filter(m=>ineligibleKeys.has(duesNorm(m.first+'|'+m.last)));
       notEligibleCount=[...nonRenewalKeys].filter(key=>ineligibleKeys.has(key)).length;
       notReturningCount=[...nonRenewalKeys].filter(key=>declinedKeys.has(key)).length;
       leftToRenew=Math.max(0,nonRenewalKeys.size-notReturningCount-notEligibleCount);
@@ -75,17 +78,25 @@ async function setup2027DuesReview(rows) {
     } catch(error) { leftToRenew=Math.max(0,startingMembers-totalRenewed-notReturningCount-notEligibleCount); }
     const panel=document.createElement('section');panel.className='dues-manager-launch';
     panel.style.cssText='display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;border-left:6px solid #c8102e;padding:16px 18px;';
+    // Native tooltips appear after a short hover and contain names only.
+    const namesTitle=members=>members===null?'Names could not be loaded. Refresh to retry.':
+      [...new Set(members.map(m=>m.name||[m.first,m.last].filter(Boolean).join(' ')).filter(Boolean))]
+        .sort((a,b)=>a.localeCompare(b)).join('\n')||'No members';
+    const colors={green:'background:#dcfce7;color:#166534;border:1px solid #86efac',yellow:'background:#fef3c7;color:#92400e;border:1px solid #fcd34d',red:'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5',gray:'background:#f3f4f6;color:#374151;border:1px solid #d1d5db'};
+    const badge=(label,color,members)=>'<span title="'+esc(namesTitle(members)).replace(/"/g,'&quot;')+'" style="'+colors[color]+';border-radius:8px;padding:7px 10px;cursor:help">'+label+'</span>';
+    const exemptMembers=eligible.filter(p=>Boolean(duesExemption(p,context.previous,context.presidents)) || /^(exempt|waived)$/.test(duesNorm(p.values[p.cols['Dues Paid']])));
+    const paidMembers=eligible.filter(p=>!duesExemption(p,context.previous,context.presidents) && /^(yes|paid)$/.test(duesNorm(p.values[p.cols['Dues Paid']])));
     panel.innerHTML='<div style="min-width:0"><strong style="font-size:1.05rem">2027 Membership Dues & Renewal Progress</strong>'+
       '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-weight:900">'+
-        '<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:8px;padding:7px 10px">'+totalRenewed+' RENEWED</span>'+
-        '<span style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:7px 10px">'+leftToRenew+' ELIGIBLE TO RENEW / WAITING</span>'+
-        '<span style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px">'+notReturningCount+' NOT RETURNING</span>'+
-        '<span style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:7px 10px">'+notEligibleCount+' NOT ELIGIBLE TO RENEW</span>'+
-        '<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:8px;padding:7px 10px">'+duesComplete+' / '+totalRenewed+' DUES COMPLETE</span>'+
-        '<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:8px;padding:7px 10px">'+paidCount+' PAID</span>'+
-        '<span style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px">'+exemptCount+' EXEMPT</span>'+
-        '<span style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:7px 10px">'+unpaidCount+' STILL OWES</span>'+
-        '<span style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;padding:7px 10px">'+startingMembers+' STARTING MEMBERS</span>'+
+        badge(totalRenewed+' RENEWED','green',eligible)+
+        badge(leftToRenew+' ELIGIBLE TO RENEW / WAITING','yellow',allNonRenewalMembers===null?null:nonRenewalMembers)+
+        badge(notReturningCount+' NOT RETURNING','gray',allNonRenewalMembers===null?null:notReturningMembers)+
+        badge(notEligibleCount+' NOT ELIGIBLE TO RENEW','red',allNonRenewalMembers===null?null:notEligibleMembers)+
+        badge(duesComplete+' / '+totalRenewed+' DUES COMPLETE','green',[...paidMembers,...exemptMembers])+
+        badge(paidCount+' PAID','green',paidMembers)+
+        badge(exemptCount+' EXEMPT','gray',exemptMembers)+
+        badge(unpaidCount+' STILL OWES',unpaidCount===0?'green':'red',unpaid2027Dues(context))+
+        badge(startingMembers+' STARTING MEMBERS','gray',allNonRenewalMembers===null?null:[...eligible,...allNonRenewalMembers])+
       '</div>'+
       '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin-top:12px;padding-top:12px;border-top:1px solid #b8bec4">'+
         '<label style="font-weight:800;min-width:min(360px,100%)">Update renewal status<select data-not-returning-member style="display:block;width:100%;margin-top:5px;padding:9px 10px;border:1px solid #9ca3af;border-radius:7px;background:white"><option value="">Choose a Waiting member…</option>'+nonRenewalMembers.map((m,i)=>'<option value="'+i+'">'+esc(m.first+' '+(m.road?'“'+m.road+'” ':'')+m.last)+'</option>').join('')+'</select></label>'+
