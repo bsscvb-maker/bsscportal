@@ -1762,6 +1762,46 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 @media(max-width:700px){.budget27-summary{grid-template-columns:1fr}}
 @media print{body.budget27-printing *{visibility:hidden}body.budget27-printing [data-finance-panel="budget2027"],body.budget27-printing [data-finance-panel="budget2027"] *{visibility:visible}body.budget27-printing [data-finance-panel="budget2027"]{position:absolute;left:0;top:0;width:100%;display:block!important}body.budget27-printing .budget27-toolbar{display:none}body.budget27-printing .table-wrap{overflow:visible;max-height:none}body.budget27-printing .budget27-table{min-width:0!important;width:100%;font-size:8pt}body.budget27-printing .budget27-table input{width:75px;border:0;background:white}}
 </style>
+
+<style id="budget2027-mobile">
+@media screen and (max-width:850px){
+  #financeBudget2027Table{min-width:0}
+  #financeBudget2027Table .budget27-summary{grid-template-columns:1fr;gap:8px}
+  #financeBudget2027Table .budget27-card{margin:5px 0;padding:14px}
+  #financeBudget2027Table .budget27-notice{padding:13px;font-size:.9rem;line-height:1.5;overflow-wrap:anywhere}
+  #financeBudget2027Table .budget27-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  #financeBudget2027Table .budget27-toolbar label{grid-column:1/-1;display:flex;align-items:center;gap:10px}
+  #financeBudget2027Table .budget27-toolbar select{flex:1;min-width:0}
+  #financeBudget2027Table .budget27-toolbar button,#financeBudget2027Table .budget27-toolbar select{min-height:46px;font-size:16px;white-space:normal}
+  #budget2027SaveStatus{grid-column:1/-1;line-height:1.4}
+  #financeBudget2027Table .table-wrap{overflow:visible!important;max-height:none!important;border:0;background:transparent}
+  #financeBudget2027Table .budget27-table{display:block;min-width:0!important;width:100%!important;table-layout:auto}
+  #financeBudget2027Table .budget27-table thead{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  #financeBudget2027Table .budget27-table tbody{display:block;width:100%}
+  #financeBudget2027Table .budget27-table tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;margin:14px 0;border:1px solid #b8bdc3;border-top:4px solid #bca151;border-radius:10px;background:#f5f6f7;overflow:hidden}
+  #financeBudget2027Table .budget27-table tr[hidden]{display:none!important}
+  #financeBudget2027Table .budget27-table td{display:block;width:auto!important;min-width:0;padding:12px!important;font-size:15px;line-height:1.45;text-align:left!important;overflow-wrap:anywhere;border-bottom:1px solid #d5d8db}
+  #financeBudget2027Table .budget27-table td::before{display:block;margin-bottom:5px;color:#50555c;font-size:12px;font-weight:800}
+  #financeBudget2027Table .budget27-table td:nth-child(1){grid-column:1/-1;background:#e8ebee;font-size:13px}
+  #financeBudget2027Table .budget27-table td:nth-child(2){grid-column:1/-1;font-size:18px;font-weight:800}
+  #financeBudget2027Table .budget27-table td:nth-child(3)::before{content:"2025 matched ledger"}
+  #financeBudget2027Table .budget27-table td:nth-child(4)::before{content:"2026 ledger · to Oct 13"}
+  #financeBudget2027Table .budget27-table td:nth-child(5){grid-column:1/-1;background:#fff7db}
+  #financeBudget2027Table .budget27-table td:nth-child(5)::before{content:"2027 proposed amount ($)";color:#111;font-size:14px}
+  #financeBudget2027Table .budget27-table td:nth-child(6){grid-column:1/-1}
+  #financeBudget2027Table .budget27-table td:nth-child(6)::before{content:"Timing / owner"}
+  #financeBudget2027Table .budget27-table td:nth-child(7){grid-column:1/-1;border-bottom:0;font-size:14px}
+  #financeBudget2027Table .budget27-table td:nth-child(7)::before{content:"Basis / review notes"}
+  #financeBudget2027Table .budget27-table input{display:block;box-sizing:border-box;width:100%!important;min-width:0;min-height:48px;font-size:18px;padding:11px}
+  #financeBudget2027Table .budget27-card dl div{gap:8px}
+  #financeBudget2027Table .budget27-card dd{white-space:nowrap}
+}
+@media screen and (max-width:380px){
+  #financeBudget2027Table .budget27-toolbar{grid-template-columns:1fr}
+  #financeBudget2027Table .budget27-card dl div{font-size:14px}
+}
+</style>
+
 </head>
 <body>
   <section class="auth-gate" id="authGate">
