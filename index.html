@@ -1818,6 +1818,8 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 #financeDashboard .finance-dashboard-card.alert{background:#fff1f2!important;border-top-color:#991b1b!important}
 #financeControlTable .control-edit-input{background:#fff!important;color:#111827!important;border:2px solid #475569!important;font-weight:800;font-variant-numeric:tabular-nums}
 #financeControlTable .control-edit-input:focus{outline:3px solid #2563eb;outline-offset:2px}
+#financeDashboard .finance-dashboard-card.cash-total,
+#financeDashboard .finance-dashboard-card.financial-performance{background:#fff0df!important;border-top-color:#c26918!important;border-color:#e5b887!important}
 </style>
 </head>
 <body>
@@ -5844,6 +5846,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
     }
 
     function financeAmountTone(label,value) {
+      if (/^Charitable Spend Year to Date$/i.test(label)) {
+        const amount=Number(String(value||0).replace(/[$,]/g,''));
+        return amount>0?'finance-amount-positive':amount<0?'finance-amount-expense':'finance-amount-balance';
+      }
       if(/community impact|lifetime giving|average per year|no change from 2025/i.test(label))return 'finance-amount-balance';
       if(/^Decrease from 2025/i.test(label))return 'finance-amount-expense';
       if(/^Increase over 2025/i.test(label))return 'finance-amount-positive';
