@@ -40,6 +40,34 @@ async function duesReadContext(roster) {
   const [ledger,prior,presidents]=await Promise.all([getSheetValues("'Dues Payments'!A1:O1000",MEMBERSHIP_SPREADSHEET_ID),getSheetValues("'2026'!A1:AK900",MEMBERSHIP_SPREADSHEET_ID),getSheetValues("'Past Presidents'!A1:I1000",MEMBERSHIP_SPREADSHEET_ID)]);
   return {roster,people:duesPeople(roster),ledger,previous:duesPeople(prior),presidents};
 }
+function setupDuesNamePreviews(panel) {
+  const popup=document.createElement('div');
+  popup.id='duesNamesPreview';popup.setAttribute('role','tooltip');popup.hidden=true;
+  popup.style.cssText='position:fixed;z-index:10000;box-sizing:border-box;width:max-content;max-width:min(360px,calc(100vw - 24px));max-height:320px;overflow:auto;background:#fff;color:#172033;border:1px solid #94a3b8;border-radius:10px;padding:12px 16px;box-shadow:0 8px 28px #0003;font:600 18px/1.55 Arial,sans-serif;white-space:pre-line;overflow-wrap:anywhere;';
+  panel.appendChild(popup);
+  let timer,active;
+  const hide=()=>{clearTimeout(timer);popup.hidden=true;if(active)active.removeAttribute('aria-describedby');active=null;};
+  const show=badge=>{
+    hide();if(!panel.isConnected)return;
+    active=badge;popup.textContent=badge.dataset.duesNames;popup.hidden=false;
+    badge.setAttribute('aria-describedby',popup.id);
+    const rect=badge.getBoundingClientRect(),height=popup.offsetHeight,width=popup.offsetWidth;
+    popup.style.left=Math.max(12,Math.min(rect.left,window.innerWidth-width-12))+'px';
+    popup.style.top=Math.max(12,rect.bottom+8+height<=window.innerHeight-12?rect.bottom+8:rect.top-height-8)+'px';
+  };
+  panel.querySelectorAll('[data-dues-names]').forEach(badge=>{
+    badge.addEventListener('mouseenter',()=>{hide();timer=setTimeout(()=>show(badge),600);});
+    badge.addEventListener('mouseleave',()=>{clearTimeout(timer);timer=setTimeout(hide,150);});
+    badge.addEventListener('focus',()=>show(badge));
+    badge.addEventListener('blur',hide);
+    badge.addEventListener('click',()=>show(badge));
+    badge.addEventListener('keydown',event=>{if(event.key==='Escape')hide();});
+  });
+  popup.addEventListener('mouseenter',()=>clearTimeout(timer));
+  popup.addEventListener('mouseleave',hide);
+  panel.addEventListener('wheel',event=>{if(!popup.contains(event.target))hide();},{passive:true});
+}
+
 async function setup2027DuesReview(rows) {
   const target=document.getElementById('membershipContent');
   try {
@@ -78,12 +106,12 @@ async function setup2027DuesReview(rows) {
     } catch(error) { leftToRenew=Math.max(0,startingMembers-totalRenewed-notReturningCount-notEligibleCount); }
     const panel=document.createElement('section');panel.className='dues-manager-launch';
     panel.style.cssText='display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;border-left:6px solid #c8102e;padding:16px 18px;';
-    // Native tooltips appear after a short hover and contain names only.
+    // Keep the preview names aligned with the records used for each count.
     const namesTitle=members=>members===null?'Names could not be loaded. Refresh to retry.':
       [...new Set(members.map(m=>m.name||[m.first,m.last].filter(Boolean).join(' ')).filter(Boolean))]
         .sort((a,b)=>a.localeCompare(b)).join('\n')||'No members';
-    const colors={green:'background:#dcfce7;color:#166534;border:1px solid #86efac',yellow:'background:#fef3c7;color:#92400e;border:1px solid #fcd34d',red:'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5',gray:'background:#f3f4f6;color:#374151;border:1px solid #d1d5db'};
-    const badge=(label,color,members)=>'<span title="'+esc(namesTitle(members)).replace(/"/g,'&quot;')+'" style="'+colors[color]+';border-radius:8px;padding:7px 10px;cursor:help">'+label+'</span>';
+    const colors={blue:'background:#dbeafe;color:#1e40af;border:1px solid #93c5fd',green:'background:#dcfce7;color:#166534;border:1px solid #86efac',yellow:'background:#fef3c7;color:#92400e;border:1px solid #fcd34d',red:'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5',gray:'background:#f3f4f6;color:#374151;border:1px solid #d1d5db'};
+    const badge=(label,color,members)=>'<span tabindex="0" data-dues-names="'+esc(namesTitle(members)).replace(/"/g,'&quot;')+'" aria-label="'+label+' — hover or tap for names" style="'+colors[color]+';border-radius:8px;padding:7px 10px;cursor:help">'+label+'</span>';
     const exemptMembers=eligible.filter(p=>Boolean(duesExemption(p,context.previous,context.presidents)) || /^(exempt|waived)$/.test(duesNorm(p.values[p.cols['Dues Paid']])));
     const paidMembers=eligible.filter(p=>!duesExemption(p,context.previous,context.presidents) && /^(yes|paid)$/.test(duesNorm(p.values[p.cols['Dues Paid']])));
     panel.innerHTML='<div style="min-width:0"><strong style="font-size:1.05rem">2027 Membership Dues & Renewal Progress</strong>'+
@@ -94,7 +122,7 @@ async function setup2027DuesReview(rows) {
         badge(notEligibleCount+' NOT ELIGIBLE TO RENEW','red',allNonRenewalMembers===null?null:notEligibleMembers)+
         badge(duesComplete+' / '+totalRenewed+' DUES COMPLETE','green',[...paidMembers,...exemptMembers])+
         badge(paidCount+' PAID','green',paidMembers)+
-        badge(exemptCount+' EXEMPT','gray',exemptMembers)+
+        badge(exemptCount+' EXEMPT','blue',exemptMembers)+
         badge(unpaidCount+' STILL OWES',unpaidCount===0?'green':'red',unpaid2027Dues(context))+
         badge(startingMembers+' STARTING MEMBERS','gray',allNonRenewalMembers===null?null:[...eligible,...allNonRenewalMembers])+
       '</div>'+
@@ -106,6 +134,7 @@ async function setup2027DuesReview(rows) {
       '</div></div>'+
       '<div><button type="button" class="dashboard-edit-btn" data-manage-dues>Manage Dues</button><span role="status" class="dues-review-status"></span></div>';
     target.prepend(panel);
+    setupDuesNamePreviews(panel);
     const todayET=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
     if(todayET>='2027-01-01'){
       const allNonRenewing=decisionRows.slice(1).filter(r=>['not returning','not eligible to renew','not allowed to return'].includes(duesNorm(r[3]))).map(r=>[String(r[0]||'').trim(),String(r[2]||'').trim()?('“'+String(r[2]||'').trim()+'”'):'',String(r[1]||'').trim()].filter(Boolean).join(' '));
