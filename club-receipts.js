@@ -7,12 +7,28 @@
   const shared=()=> (clubCache['Club Records']||[]).slice(1).filter(r=>r[2]==='Receipts').map(r=>({...meta(r),id:r[0],title:r[1],date:r[3],url:r[6],row:r}));
   const receipts=()=>[seed,...shared().filter(r=>r.kind==='receipt'&&r.id!==seed.id)];
   const card=(title,desc,attr)=>'<button class="collection-card" '+attr+'><span class="collection-icon" aria-hidden="true">▤</span><h3>'+esc(title)+'</h3><p>'+esc(desc)+'</p><span><b>Open →</b></span></button>';
+
+  const priorArt=recordsCollectionArt;
+  const artParts={
+    'Bylaws':['#2f7860','#e4f1eb','<rect x="68" y="21" width="89" height="119" rx="7" fill="#fff" stroke="#accbbd" stroke-width="2"/><path d="M82 40h42M82 51h57M82 62h48M82 104h55M82 116h42" stroke="#b6c9bf" stroke-width="4" stroke-linecap="round"/><circle cx="113" cy="84" r="12" fill="#2f7860"/><path d="m107 84 4 4 7-8" fill="none" stroke="#fff" stroke-width="3"/><g transform="rotate(-32 57 82)"><rect x="40" y="40" width="34" height="24" rx="4" fill="#2f7860"/><rect x="48" y="65" width="18" height="55" rx="4" fill="#53947c"/><path d="M43 43v18M70 43v18" stroke="#a1c6b4" stroke-width="3"/></g><rect x="27" y="137" width="61" height="8" rx="4" fill="#2f7860"/>'],
+    'Policies & appendices':['#a16d26','#fff0d8','<rect x="46" y="37" width="111" height="106" rx="8" fill="#e4c897"/><rect x="39" y="29" width="111" height="106" rx="8" fill="#f3deba" stroke="#c7a570" stroke-width="2"/><rect x="33" y="22" width="105" height="106" rx="7" fill="#fff" stroke="#c7a570" stroke-width="2"/><path d="M48 22v106" stroke="#a16d26" stroke-width="8"/><path d="M61 43h55M61 57h44M61 82h52M61 95h52M61 108h35" stroke="#d4bc94" stroke-width="4" stroke-linecap="round"/><path d="M138 37h20v22h-20z" fill="#a16d26"/><path d="M138 67h20v22h-20z" fill="#d39b48"/><path d="M138 97h20v22h-20z" fill="#ecc782"/><circle cx="48" cy="45" r="4" fill="#fff"/><circle cx="48" cy="104" r="4" fill="#fff"/>'],
+    'Committee records':['#3c698e','#e6eef7','<ellipse cx="100" cy="118" rx="69" ry="27" fill="#3c698e"/><ellipse cx="100" cy="111" rx="69" ry="24" fill="#6795b8"/><circle cx="100" cy="36" r="14" fill="#3c698e"/><path d="M76 84V71a24 24 0 0 1 48 0v13" fill="#3c698e"/><circle cx="44" cy="61" r="12" fill="#507f9f"/><path d="M23 101V92a21 21 0 0 1 42 0v9" fill="#507f9f"/><circle cx="156" cy="61" r="12" fill="#507f9f"/><path d="M135 101V92a21 21 0 0 1 42 0v9" fill="#507f9f"/><rect x="83" y="99" width="35" height="22" rx="2" fill="#fff" transform="rotate(-8 100 110)"/><path d="M89 106h22M89 112h16" stroke="#a4bdd0" stroke-width="2"/><path d="M47 135v13M153 135v13" stroke="#3c698e" stroke-width="6" stroke-linecap="round"/>'],
+    'Receipts':['#a23f4d','#fae6e9','<path d="M63 16h76v132l-10-7-10 7-9-7-10 7-9-7-10 7-9-7-9 7z" fill="#fff" stroke="#d6a7ae" stroke-width="2"/><circle cx="101" cy="42" r="15" fill="#a23f4d"/><path d="M106 36c-9-5-16 3-5 6s3 12-6 7M101 31v23" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><path d="M77 70h47M77 82h33M77 94h47M77 113h47" stroke="#d6a7ae" stroke-width="4" stroke-linecap="round"/><rect x="127" y="92" width="40" height="55" rx="5" fill="#a23f4d"/><rect x="133" y="98" width="28" height="12" rx="2" fill="#f8dade"/><path d="M136 119h3m9 0h3m-15 10h3m9 0h3m-15 10h3m9 0h3" stroke="#fff" stroke-width="4" stroke-linecap="round"/>'],
+    'Code of conduct':['#765184','#efe5f3','<path d="m100 18 54 20v43c0 34-29 54-54 66-25-12-54-32-54-66V38z" fill="#765184"/><path d="m100 31 41 15v34c0 26-20 42-41 53-21-11-41-27-41-53V46z" fill="none" stroke="#bba1c6" stroke-width="2"/><path d="m76 80 17 17 33-36" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>']
+  };
+  recordsCollectionArt=function(id,label,rows){
+    const key=Object.keys(artParts).find(k=>k.toLowerCase()===String(id).toLowerCase());
+    if(!key)return priorArt(id,label,rows);
+    const [color,bg,shape]=artParts[key];
+    return '<div class="dashboard-art" aria-hidden="true" style="--collection-accent:'+color+';--collection-bg:'+bg+';display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 200 164" width="200" height="164" style="max-width:100%;position:relative;z-index:1;filter:drop-shadow(0 6px 7px #00000012)"><ellipse cx="100" cy="148" rx="66" ry="6" fill="'+color+'" opacity=".10"/>'+shape+'</svg></div>';
+  };
+
   const dashboard=renderRecordsDashboard;
   renderRecordsDashboard=function(){
     dashboard();
     const grid=host().querySelector('.records-dashboard-cards');
     grid.querySelector('[data-record-collection="Receipts"]')?.remove();
-    const b=document.createElement('button');b.className='collection-card records-dashboard-card';b.innerHTML='<div class="dashboard-art"><div class="dashboard-book"><small>CLUB RECORDS</small><strong>Receipts</strong><span>PROGRAMS · YEARS</span></div></div><div class="dashboard-card-body"><h3>Receipts</h3><div class="dashboard-card-footer"><span>'+receipts().length+' documents</span><b>Explore →</b></div></div>';
+    const b=document.createElement('button');b.className='collection-card records-dashboard-card';b.innerHTML=recordsCollectionArt('Receipts','Receipts',[])+'<div class="dashboard-card-body"><h3>Receipts</h3><div class="dashboard-card-footer"><span>'+receipts().length+' documents</span><b>Explore →</b></div></div>';
     b.onclick=()=>{program='';year='';query='';draw()};grid.append(b);
   };
   async function save(row){
