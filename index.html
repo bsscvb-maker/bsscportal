@@ -1828,6 +1828,13 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 .bft-program-summary .finance-amount-expense strong{color:#991b1b!important}
 .bft-program-summary .finance-amount-balance strong{color:#111827!important}
 .bft-program-summary p{color:#334155}
+</style><style>
+.bft-summary-note{margin:12px 0 0;color:#475569;font-size:.9rem;line-height:1.5}
+#financeBftTable .bft-finance-summary .finance-dashboard-card{background:#fff!important;border-top:4px solid #475569!important}
+#financeBftTable .bft-finance-summary .finance-dashboard-card span{color:#334155!important}
+#financeBftTable .bft-finance-summary .finance-dashboard-card strong{color:#111827!important;font-variant-numeric:tabular-nums}
+#financeBftTable .bft-finance-summary .finance-dashboard-card:nth-child(2) strong{color:#991b1b!important}
+#financeBftTable .bft-finance-section:not(.bft-program-summary) .finance-dashboard-card:last-child{background:#fff0df!important;border-top-color:#c26918!important}
 </style></head>
 <body>
   <section class="auth-gate" id="authGate">
@@ -3224,15 +3231,10 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
             </div>
             <div class="bft-dashboard-column">
               <section class="finance-box"><h3>2026 Fundraiser Cash Overview</h3><div class="finance-box-body">
-                ${row('BFT Bank Balance:', cash ? money(cash.bankBalance) : 'Unavailable')}
-                ${row('Starting Balance — Excluded:', cash ? money(cash.startingBalance) : 'Unavailable')}
-                ${row('Paid Fundraiser Costs Added Back to Income:', cash ? money(cash.paid) : 'Unavailable')}
-                ${row('Fundraiser Income Pending:', cash ? money(cash.pending) : 'Unavailable')}
-                ${row('Fundraiser Income:', cash ? money(cash.income) : 'Unavailable', true)}
-                ${row('Fundraiser Expenses — Including Unpaid:', cash ? money(cash.expenses) : 'Unavailable')}
+                ${row('Fundraiser Income:', cash ? money(cash.income) : 'Unavailable')}
+                ${row('Fundraiser Expenses:', cash ? money(cash.expenses) : 'Unavailable')}
                 ${row('Fundraiser Money Available:', cash ? money(cash.available) : 'Unavailable', true)}
-                ${row('Available Excluding Pending:', cash ? money(cash.settledAvailable) : 'Unavailable')}
-                <p>Includes pending receipts. The starting $4,100 is excluded from fundraiser performance. Paid costs are added back to income and deducted once; unpaid costs remain deducted until paid.</p>
+                <p class="bft-summary-note">Includes ${cash ? money(cash.pending) : '—'} pending. Expenses include the unpaid ${cash ? money(cash.unpaid) : '—'}.</p>
               </div></section>
               <section class="finance-box"><h3>Ticket Sales Performance</h3><div class="finance-box-body">
                 ${row('Max Tickets Available:', get('Max Tickets Available:'), false, {row:13,column:5})}
@@ -6186,11 +6188,11 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const cash=financeCashSnapshot(controlRows,transactionRows);
       const bank=Number(String(controlRows[7]?.[4]||0).replace(/[$,]/g,''));
       const card=(label,value)=>'<div class="finance-dashboard-card '+financeAmountTone(label,value)+'"><span>'+esc(label)+'</span><strong>'+esc(money(value))+'</strong></div>';
-      return '<section class="bft-finance-section bft-program-summary"><h3>2026 Bikes for Tykes Program — Finance Totals</h3><div class="bft-finance-summary bft-finance-simple">'+
-        card('Bank Account Balance',bank)+card('Bank Available After Unpaid Obligations',cash.bftAvailable)+
+      return '<section class="bft-finance-section bft-program-summary"><h3>2026 Program Overview</h3><div class="bft-finance-summary bft-finance-simple">'+
+        card('Bank Account Balance',bank)+
         card('2026 Program Income — After Fees',program.income)+card('2026 Program Expenses',program.expenses)+
-        card('2026 Program Net Income',program.income-program.expenses)+
-        '</div><p>Full-year program totals match Finance and Control-2026. Fundraiser results below cover the fundraiser only; internal transfers and in-kind donations are not additional cash income.</p></section>';
+        
+        '</div><p>Bank balance includes the existing $4,100. Fundraiser totals below exclude it.</p></section>';
     }
 
     function renderFinanceBft(budgetRows, budgetFormulas, controlRows, transactionRows) {
@@ -6205,7 +6207,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       entries.sort((a,b) => (Date.parse(b[0]) || 0) - (Date.parse(a[0]) || 0));
       const displayRows = [['Date','Description','Subcategory','Payee / Payer','Amount','Type','Payment Method','Bank Status'], ...entries.map(row => [row[0],row[3],row[5],row[8],row[9],row[12],row[13],String(row[14] || '').trim().toLowerCase() === 'yes' ? 'Cleared' : String(row[14] || '').trim().toLowerCase() === 'pending at chase' ? 'Pending at Chase' : 'Not cleared'])];
       const target = document.getElementById('financeBftTable');
-      target.innerHTML = bftProgramSummary(controlRows,transactionRows) + '<section class="bft-finance-section"><h3>2026 Bikes for Tykes Fundraiser</h3><div class="bft-finance-summary bft-finance-simple">' + summary('Fundraiser Income',money(eventIncome)) + summary('Fundraiser Income Pending',money(fundraiser.pending)) + summary('Fundraiser Expenses — Including Unpaid',money(eventCosts)) + summary('Fundraiser Money Available',money(eventNet)) + summary('Fundraiser Available Excluding Pending',money(fundraiser.settledAvailable)) + summary('Pre-Fundraiser Starting Balance — Excluded',money(fundraiser.startingBalance)) + '</div></section><div class="control-action-bar"><button class="dashboard-edit-btn" type="button" id="bftViewBudget" aria-expanded="false" aria-controls="bftFinanceBudget">View Budget</button><button class="dashboard-edit-btn" type="button" id="bftManageTransactions">Manage Transactions</button></div><section class="bft-finance-section" id="bftFinanceBudget" hidden><h3>2026 Program Budget</h3><div class="data-status" id="financeBftBudgetStatus"></div><div id="financeBftBudgetTable"></div></section><section class="bft-finance-section"><h3>Bikes for Tykes Transactions</h3><div class="data-status" id="financeBftTransactionsStatus"></div><div id="financeBftTransactionsTable"></div></section>';
+      target.innerHTML = bftProgramSummary(controlRows,transactionRows) + '<section class="bft-finance-section"><h3>2026 Bikes for Tykes Fundraiser</h3><div class="bft-finance-summary bft-finance-simple">' + summary('Fundraiser Income',money(eventIncome)) + summary('Fundraiser Expenses — Including Unpaid',money(eventCosts)) + summary('Fundraiser Money Available',money(eventNet)) + '</div><p class="bft-summary-note">Includes ' + money(fundraiser.pending) + ' pending. Expenses include the unpaid ' + money(fundraiser.unpaid) + '.</p></section><div class="control-action-bar"><button class="dashboard-edit-btn" type="button" id="bftViewBudget" aria-expanded="false" aria-controls="bftFinanceBudget">View Budget</button><button class="dashboard-edit-btn" type="button" id="bftManageTransactions">Manage Transactions</button></div><section class="bft-finance-section" id="bftFinanceBudget" hidden><h3>2026 Program Budget</h3><div class="data-status" id="financeBftBudgetStatus"></div><div id="financeBftBudgetTable"></div></section><section class="bft-finance-section"><h3>Bikes for Tykes Transactions</h3><div class="data-status" id="financeBftTransactionsStatus"></div><div id="financeBftTransactionsTable"></div></section>';
       renderDataTable('financeBftTransactionsTable','financeBftTransactionsStatus',displayRows,0,8);
       let budgetRendered = false;
       target.querySelector('#bftViewBudget').addEventListener('click', event => {
