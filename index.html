@@ -1833,6 +1833,8 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 #financeBftTable .bft-finance-summary .finance-dashboard-card strong{color:#111827!important;font-variant-numeric:tabular-nums}
 #financeBftTable .bft-finance-summary .finance-dashboard-card:nth-child(2) strong{color:#991b1b!important}
 #financeBftTable .bft-finance-section:not(.bft-program-summary) .finance-dashboard-card:last-child{background:#fff0df!important;border-top-color:#c26918!important}
+</style><style>
+.purchase-overview{display:flex;flex-wrap:wrap;gap:14px;padding:18px;background:#edf5ee;border-radius:12px;text-align:left}.purchase-section{margin-top:22px;text-align:left;padding:16px;border:1px solid #bcc7ce;border-radius:12px}.purchase-section h3{margin-top:0}.purchase-edit{background:none;border:0;color:#9c2024;text-decoration:underline;cursor:pointer;font:inherit;min-height:44px}.purchase-subtotal{margin-bottom:0}.purchase-table td{white-space:normal!important;min-width:85px}.purchase-table td:nth-child(2){min-width:200px}.purchase-table td:last-child{min-width:170px}.purchase-table th{white-space:nowrap}@media(max-width:600px){.purchase-section{padding:10px}.purchase-overview{display:grid;gap:8px}.purchase-section .table-wrap{overflow-x:auto}}
 </style></head>
 <body>
   <section class="auth-gate" id="authGate">
@@ -4497,6 +4499,37 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       }
     }
 
+    function renderPurchaseBudget(rows) {
+      const target=document.getElementById('bftBudgetTable');
+      const num=v=>Number(String(v??'').replace(/[$,]/g,''))||0;
+      const value=n=>rows[n-1]||[];
+      const sections=[['Walmart cart',[5,6,7,8,9,10,11],12],['On-hand bikes',[15,16,17],18],['Helmets',[21,22],23],['Locks',[26],42],['Bike allocation',[29,30,31,32],33]];
+      target.innerHTML='<div class="purchase-overview"><strong>'+esc(String(num(value(12)[1])+num(value(18)[1])))+' total bikes</strong><span>'+esc(String(value(12)[1]))+' in cart + '+esc(String(value(18)[1]))+' on hand</span><strong>Bike cart: '+money(num(value(12)[2]))+'</strong><strong>Budget before tax: '+money(num(value(44)[2]))+'</strong></div><p>Cart supplied October 15, 2026. Helmets and locks use existing estimates. Tax, assembly, and protection plans are excluded.</p>'+sections.map(([title,lines,total])=>'<section class="purchase-section"><h3>'+title+'</h3><div class="table-wrap"><table class="data-table purchase-table"><thead><tr><th>Edit</th><th>Item</th><th>Quantity</th><th>Unit price</th><th>Line total</th><th>Notes</th></tr></thead><tbody>'+lines.map(n=>{const r=value(n),allocation=n>=29;return '<tr><td><button type="button" class="purchase-edit" data-purchase-edit="'+n+'" aria-label="Edit '+esc(r[0])+'">Edit</button></td><td>'+esc(r[0])+'</td><td>'+esc(String(r[1]??''))+'</td><td>'+(allocation?'—':money(num(r[3])))+'</td><td>'+(allocation?'—':money(num(r[2])))+'</td><td>'+esc(r[4]||'')+'</td></tr>';}).join('')+'</tbody></table></div><p class="purchase-subtotal"><strong>'+esc(value(total)[0])+': '+esc(String(value(total)[1]??''))+(title==='Bike allocation'?' bikes • YMCA: '+esc(String(value(34)[1]))+' bikes':' • '+money(num(value(total)[2])))+'</strong></p></section>').join('');
+      document.getElementById('bftBudgetStatus').textContent='Purchase breakdown loaded. Click Edit beside an item to open its editor.';
+      target.querySelectorAll('[data-purchase-edit]').forEach(button=>button.onclick=()=>editPurchaseBudgetRow(Number(button.dataset.purchaseEdit),value(Number(button.dataset.purchaseEdit))));
+    }
+    function editPurchaseBudgetRow(n,original) {
+      const allocation=n>=29,onHand=n>=15&&n<=17;
+      const numeric=v=>Number(String(v??'').replace(/[$,]/g,''))||0;
+      const dialog=document.createElement('dialog');dialog.className='club-dialog';dialog.setAttribute('aria-label','Edit purchase budget item');
+      dialog.innerHTML='<form><h2>Edit purchase budget</h2><div class="club-form"><label>Item<input name="item" required></label><label>Quantity<input name="quantity" type="number" min="0" step="1" required></label>'+(!allocation?'<label>Unit price ($)<input name="price" type="number" min="0" step="0.0001" required '+(onHand?'readonly':'')+'></label>':'')+'<label>Notes<textarea name="notes" rows="3"></textarea></label></div><p data-preview></p><p role="status" data-status></p><div class="club-toolbar"><button type="submit" class="open-btn">Save</button><button type="button" class="sponsor-tab" data-cancel>Cancel</button></div></form>';
+      document.body.appendChild(dialog);const form=dialog.querySelector('form'),status=dialog.querySelector('[data-status]');
+      form.elements.item.value=original[0]||'';form.elements.quantity.value=numeric(original[1]);form.elements.notes.value=original[4]||'';
+      if(!allocation)form.elements.price.value=onHand?0:numeric(original[3]);
+      const preview=()=>{dialog.querySelector('[data-preview]').textContent=allocation?'Allocation only; does not add bikes or purchase cost.':onHand?'Already owned • Purchase cost stays $0.00':'Line total: '+money(Number(form.elements.quantity.value)*Number(form.elements.price.value));};form.oninput=preview;preview();
+      dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();dialog.onclose=()=>dialog.remove();dialog.showModal();
+      form.onsubmit=async event=>{event.preventDefault();const save=form.querySelector('[type=submit]');save.disabled=true;status.textContent='Saving…';try{
+        const live=await getSheetValues("'Purchase Budget'!A"+n+':E'+n,BFT_SPREADSHEET_ID);
+        if(JSON.stringify(Array.from({length:5},(_,i)=>String(live[0]?.[i]??'')))!==JSON.stringify(Array.from({length:5},(_,i)=>String(original[i]??''))))throw new Error('This item changed. Close the editor and reload before editing.');
+        const quantity=Number(form.elements.quantity.value),price=onHand?0:allocation?0:Number(form.elements.price.value);
+        if(!Number.isInteger(quantity)||quantity<0||!Number.isFinite(price)||price<0)throw new Error('Enter a whole quantity and a valid price.');
+        const updates=[{range:"'Purchase Budget'!A"+n,value:form.elements.item.value.trim()},{range:"'Purchase Budget'!B"+n,value:quantity},{range:"'Purchase Budget'!E"+n,value:form.elements.notes.value.trim()}];
+        if(!allocation)updates.push({range:"'Purchase Budget'!D"+n,value:price});
+        await updateSheetRanges(BFT_SPREADSHEET_ID,updates);
+        const fresh=await getSheetValues("'Purchase Budget'!A1:E46",BFT_SPREADSHEET_ID);renderPurchaseBudget(fresh);dialog.close();
+      }catch(error){status.textContent=error.message;save.disabled=false;}};
+    }
+
     async function loadBftData() {
       const statusIds = ['bftDashboardStatus','bftTicketsStatus','bftDonationsStatus','bftFinanceStatus','bftBudgetStatus'];
       statusIds.forEach(id => document.getElementById(id).textContent = 'Loading from Google Sheets…');
@@ -4529,7 +4562,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       if (donationResult.status === 'fulfilled') renderDataTable('bftDonationsTable', 'bftDonationsStatus', donationResult.value, 2, 22, {sheetName:'Tracking Tab'});
       else document.getElementById('bftDonationsStatus').textContent = 'Tracking Tab could not be loaded from Google Sheets.';
       renderResult(financeResult, 'bftFinanceTable', 'bftFinanceStatus', 1, 10, 'Finance Sync');
-      if (budgetResult.status === 'fulfilled') renderDataTable('bftBudgetTable', 'bftBudgetStatus', budgetResult.value, 2, 3, {sheetName:'Purchase Budget'});
+      if (budgetResult.status === 'fulfilled') renderPurchaseBudget(budgetResult.value);
       else document.getElementById('bftBudgetStatus').textContent = 'Purchase Budget could not be loaded from Google Sheets.';
     }
 
