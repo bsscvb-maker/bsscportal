@@ -156,3 +156,50 @@
     const input=host().querySelector('[data-receipt-search]');if(input)input.oninput=()=>{const pos=input.selectionStart;query=input.value;draw();const next=host().querySelector('[data-receipt-search]');next.focus();try{next.setSelectionRange(pos,pos)}catch{}};
   }
 })();
+
+/* Clickable prior-year metrics use the same ledger rules as the comparison totals. */
+(() => {
+  const number=v=>Number(String(v||0).replace(/[$,()]/g,''))*(String(v).includes('(')?-1:1);
+  const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(v||0);
+  function priorItems(fund,metric){
+    const rows=financePriorYearRows;if(!rows.length)return [];
+    const headers=rows[0].map(v=>String(v||'').trim().toLowerCase()),read=(r,h)=>r[headers.indexOf(h)];
+    return rows.slice(1).map(source=>{
+      const row=Array(17).fill('');
+      for(const [index,name]of [[0,'date'],[3,'description'],[4,'category'],[5,'subcategory'],[6,'fund'],[7,'activity'],[8,'payee/payer'],[9,'amount'],[12,'type'],[13,'payment method'],[14,'cleared'],[16,'note']])row[index]=read(source,name)||'';
+      return row;
+    }).filter(row=>!financeIsVoided(row)&&!/^transfer$/i.test(row[4])&&!/^internal transfer$/i.test(row[5])&&!/^transfer/i.test(row[12])&&!/^opening balance$/i.test(row[4])&&financeExpenseFund(row).toLowerCase()===fund.toLowerCase())
+      .map(row=>{const amount=number(row[9]),income=String(row[12]).toLowerCase()==='income',fee=financeIsProcessingFee(row),expense=String(row[12]).toLowerCase()==='expense';return {row,income,fee,expense,amount}})
+      .filter(x=>Number.isFinite(x.amount)&&(metric==='income'?(x.income||x.fee):metric==='expense'?(x.expense&&!x.fee):(x.income||x.expense)))
+      .map(x=>({...x,contribution:x.income?x.amount:x.fee?-Math.abs(x.amount):metric==='expense'?Math.abs(x.amount):-Math.abs(x.amount)}));
+  }
+  function showPrior(fund,metric){
+    const label={income:'Income after processing fees',expense:'Expenses',net:'Net income'}[metric];
+    const items=priorItems(fund,metric),totals=financePriorYearTotals(fund);
+    const target=totals?(metric==='income'?totals.income:metric==='expense'?totals.expenses:totals.income-totals.expenses):0;
+    const total=items.reduce((sum,x)=>sum+x.contribution,0);
+    let dialog=document.getElementById('finance2025Breakdown');
+    if(!dialog){dialog=document.createElement('dialog');dialog.id='finance2025Breakdown';dialog.className='finance-breakdown-dialog';document.body.append(dialog);dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close()})}
+    dialog.innerHTML='<header><h3 id="finance2025Title">'+esc(fund)+' — 2025 '+esc(label)+'</h3><button type="button">Close</button></header><p>'+(metric==='net'?'Income minus processing fees and expenses.':metric==='income'?'Income received, with processing fees shown as deductions.':'Expenses excluding processing fees, which are deducted from income.')+' Internal transfers, opening balances, and voided entries are excluded.</p>'+
+      (items.length?'<table><thead><tr><th>Date / recipient</th><th>Description</th><th>Category</th><th>Amount</th></tr></thead><tbody>'+items.map(x=>'<tr><td>'+esc(x.row[0])+'<br>'+esc(x.row[8])+'</td><td>'+esc(x.row[3])+'</td><td>'+esc(x.fee?'Processing fee':x.row[4])+'</td><td style="white-space:nowrap">'+money(x.contribution)+'</td></tr>').join('')+'</tbody></table>':'<p>No matching 2025 transactions.</p>')+
+      '<div class="finance-breakdown-total">'+items.length+' entries · '+money(total)+'</div>'+(Math.abs(target-total)>.005?'<p>Difference from comparison total: '+money(target-total)+'</p>':'')+'<div class="finance-breakdown-total">2025 '+esc(label)+': '+money(target)+'</div>';
+    dialog.setAttribute('aria-labelledby','finance2025Title');dialog.querySelector('button').onclick=()=>dialog.close();dialog.showModal();
+  }
+  const original=renderFinanceControl;
+  renderFinanceControl=function(...args){
+    original(...args);
+    document.querySelectorAll('#financeControlTable .finance-year-comparison').forEach(box=>{
+      const fund=/BIKES FOR TYKES/i.test(box.closest('section')?.querySelector('h3')?.textContent||'')?'Bikes for Tykes':'General Fund';
+      box.querySelectorAll('tbody tr').forEach(row=>{
+        const cell=row.cells[2],label=row.cells[0]?.textContent.trim(),metric=label==='Income'?'income':label==='Expenses'?'expense':label==='Net Income'?'net':null;
+        if(!cell||!metric||cell.textContent.trim()==='—')return;
+        const amount=cell.textContent;cell.textContent='';
+        const button=document.createElement('button');button.type='button';button.textContent=amount;button.setAttribute('aria-label','View 2025 '+fund+' '+label+' transactions');
+        button.style.cssText='font:inherit;font-weight:inherit;color:inherit;background:transparent;border:0;padding:8px 0;cursor:pointer;text-decoration:underline;text-underline-offset:4px';
+        button.onclick=e=>{e.stopPropagation();showPrior(fund,metric)};
+        button.onkeydown=e=>{if(e.key==='Enter'||e.key===' ')e.stopPropagation()};
+        cell.append(button);
+      });
+    });
+  };
+})();
