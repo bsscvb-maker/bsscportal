@@ -1840,6 +1840,14 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 #recordsWorkspace .meeting-card-unit>h3{font-size:20px;color:var(--meeting-color,#305a9e);margin:0 0 12px;min-height:28px;display:flex;align-items:center;gap:8px}
 #recordsWorkspace .meeting-card-unit>h3>span:last-child{font-size:13px;font-weight:400;color:#64748b}
 #recordsWorkspace .meeting-thumbnail-caption strong{color:#000!important;font-weight:750}
+
+/* Stable alphabetical Club Records cards, including while supplemental code loads. */
+.records-dashboard-cards>[data-record-collection="Policies & appendices"]{order:0}
+.records-dashboard-cards>[data-record-collection="Bylaws"]{order:10}
+.records-dashboard-cards>[data-record-collection="Code of conduct"]{order:20}
+.records-dashboard-cards>[data-record-collection="Committee records"]{order:30}
+.records-dashboard-cards>[data-record-collection="minutes"]{order:40}
+.records-dashboard-cards>[data-record-collection="Receipts"]{order:50}
 </style>
 
 <style>
@@ -9412,6 +9420,6 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 </script>
 <link rel="stylesheet" href="event-center.css?v=20261011-1">
 <script src="event-center.js?v=20261011-1"></script>
-<script src="club-receipts.js?v=20261016-alphabetical-dashboard"></script>
+<script src="club-receipts.js?v=20261016-document-previews-sort"></script>
 </body>
 </html>
