@@ -85,3 +85,13 @@ if(bg.indexOf('gradient(')!==-1&&bg.indexOf('url(')===-1)el.classList.add('bssc-
 blackSurfaces(document);
 try{if(/(^|\.)(boneshakerssocialclub\.com|boneshakersocialclub\.godaddysites\.com)$/.test(parent.location.hostname))blackNativeSurfaces(parent.document);}catch(e){}
 })();
+
+/* Reserve space for GoDaddy's modern overlay navigation. */
+(function(){try{
+var d=parent.document,w=parent;
+if(d.querySelector('[data-aid="HEADER_SECTION"]')||d.getElementById('bssc-header-offset-fix'))return;
+var n=d.querySelector('nav[data-ux="Block"][data-nav-measure]');if(!n)return;
+var st=d.createElement('style');st.id='bssc-header-offset-fix';st.textContent='nav[data-ux="Block"][data-nav-measure]{position:fixed!important;top:0!important;left:0!important;width:100%!important;background:#000!important;background-image:none!important;backdrop-filter:none!important;z-index:10000!important}html{scroll-padding-top:calc(var(--bssc-header-height,246px) + 20px)}';d.head.appendChild(st);
+function size(){var h=n.getBoundingClientRect().height;n.parentElement.style.minHeight=h+'px';d.documentElement.style.setProperty('--bssc-header-height',h+'px');}
+size();new w.ResizeObserver(size).observe(n);w.addEventListener('resize',size);
+}catch(e){}})();
