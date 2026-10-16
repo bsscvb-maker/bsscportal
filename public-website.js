@@ -86,14 +86,27 @@ blackSurfaces(document);
 try{if(/(^|\.)(boneshakerssocialclub\.com|boneshakersocialclub\.godaddysites\.com)$/.test(parent.location.hostname))blackNativeSurfaces(parent.document);}catch(e){}
 })();
 
-/* Reserve space for GoDaddy's modern overlay navigation. */
+/* Keep the current GoDaddy header in flow, including after mobile navigation remounts. */
 (function(){try{
 var d=parent.document,w=parent;
-if(d.querySelector('[data-aid="HEADER_SECTION"]')||d.getElementById('bssc-header-offset-fix'))return;
+if(d.querySelector('[data-aid="HEADER_SECTION"]'))return;
+var st=d.getElementById('bssc-header-offset-fix');
+if(!st){st=d.createElement('style');st.id='bssc-header-offset-fix';d.head.appendChild(st);}
+st.textContent='nav[data-ux="Block"][data-nav-measure]{position:fixed!important;top:0!important;left:0!important;width:100%!important;background:#000!important;background-image:none!important;backdrop-filter:none!important;z-index:10000!important}html{scroll-padding-top:calc(var(--bssc-header-height,147px) + 20px)}';
+function size(){
 var n=d.querySelector('nav[data-ux="Block"][data-nav-measure]');if(!n)return;
-var st=d.createElement('style');st.id='bssc-header-offset-fix';st.textContent='nav[data-ux="Block"][data-nav-measure]{position:fixed!important;top:0!important;left:0!important;width:100%!important;background:#000!important;background-image:none!important;backdrop-filter:none!important;z-index:10000!important}html{scroll-padding-top:calc(var(--bssc-header-height,246px) + 20px)}';d.head.appendChild(st);
-function size(){var h=n.getBoundingClientRect().height;n.parentElement.style.minHeight=h+'px';d.documentElement.style.setProperty('--bssc-header-height',h+'px');}
-size();new w.ResizeObserver(size).observe(n);w.addEventListener('resize',size);
+var h=Math.ceil(n.getBoundingClientRect().height);if(!h)return;
+if(n.parentElement.style.minHeight!==h+'px')n.parentElement.style.minHeight=h+'px';
+d.documentElement.style.setProperty('--bssc-header-height',h+'px');
+if(!n.dataset.bsscHeaderMeasured){n.dataset.bsscHeaderMeasured='true';new w.ResizeObserver(size).observe(n);}
+}
+size();
+if(!d.documentElement.dataset.bsscHeaderRemountWatch){
+d.documentElement.dataset.bsscHeaderRemountWatch='true';
+var pending=false;
+new w.MutationObserver(function(){if(pending)return;pending=true;w.requestAnimationFrame(function(){pending=false;size();});}).observe(d.body,{childList:true,subtree:true});
+w.addEventListener('resize',size);
+}
 }catch(e){}})();
 
 /* Count approved public giving totals when visitors reach them. */
@@ -112,3 +125,10 @@ if('IntersectionObserver'in window){var io=new IntersectionObserver(function(ent
 (function(){try{var d=parent.document,s=d.getElementById('bssc-compact-spacing-v2');if(!s){s=d.createElement('style');s.id='bssc-compact-spacing-v2';d.head.appendChild(s)}s.textContent='nav[data-nav-measure] > [data-ux="Container"] > [data-ux="Container"]{padding-top:4px!important;padding-bottom:4px!important}img[data-aid="NAV_LOGO_IMAGE_RENDERED"]{width:128px!important;height:128px!important;max-height:128px!important;object-fit:contain!important}section[data-aid="HTML_SECTION_RENDERED"]{padding-top:0!important}@media(max-width:767px){img[data-aid="NAV_LOGO_IMAGE_RENDERED"]{width:88px!important;height:88px!important;max-height:88px!important}}';}catch(e){}})();
 
 (function(){try{var d=parent.document,s=d.getElementById('bssc-no-double-header-gap');if(!s){s=d.createElement('style');s.id='bssc-no-double-header-gap';d.head.appendChild(s)}s.textContent='body section[data-aid="HTML_SECTION_RENDERED"]{padding-top:0!important}body section[data-aid="HTML_SECTION_RENDERED"]::before{content:none!important;display:none!important;height:0!important}';}catch(e){}})();
+
+/* Mobile presentation only: preserve wording, links, artwork and counter behavior. */
+(function(){
+var s=document.createElement('style');s.id='bssc-mobile-layout-20261016';
+s.textContent='@media(max-width:600px){nav[aria-label="Explore our story"],nav[aria-label="Section navigation"]{display:flex!important;flex-wrap:wrap!important;overflow:visible!important;height:auto!important;gap:8px!important}nav[aria-label="Explore our story"]>a,nav[aria-label="Section navigation"]>a{flex:1 1 125px!important;min-width:0!important;min-height:44px!important;white-space:normal!important;text-align:center!important;justify-content:center!important}.bft-home-feature .goal .stamp{max-width:calc(100% - 32px)!important;min-width:0!important;box-sizing:border-box!important;font-size:19px!important;padding:8px 10px!important;overflow-wrap:normal!important}.bft-home-feature .goal .stamp small{font-size:8px!important;letter-spacing:1px!important}.bft-home-feature .goal{overflow:hidden!important}}@media(max-width:480px){section[aria-labelledby="impact-title"] .stats{grid-template-columns:minmax(0,1fr)!important}section[aria-labelledby="impact-title"] .stat{min-width:0!important}section[aria-labelledby="impact-title"] .num{overflow-wrap:anywhere!important}}';
+document.head.appendChild(s);
+})();
