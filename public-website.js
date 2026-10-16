@@ -65,6 +65,10 @@ if(!doc.documentElement.dataset.bsscStickyWatch){doc.documentElement.dataset.bss
 
 /* Club backgrounds: black surfaces, with existing artwork, controls and status stamps retained. */
 (function(){
+function blackNativeSurfaces(doc){
+if(doc.getElementById('bssc-black-native'))return;
+var s=doc.createElement('style');s.id='bssc-black-native';s.textContent='html,body,section[data-ux="Section"],footer[data-ux="Footer"],header[data-ux="Header"]{background-color:#000!important;background-image:none!important}';doc.head.appendChild(s);
+}
 function blackSurfaces(doc){
 if(doc.getElementById('bssc-black-surfaces'))return;
 var s=doc.createElement('style');s.id='bssc-black-surfaces';
@@ -79,5 +83,5 @@ if(bg.indexOf('gradient(')!==-1&&bg.indexOf('url(')===-1)el.classList.add('bssc-
 });
 }
 blackSurfaces(document);
-try{if(/(^|\.)(boneshakerssocialclub\.com|boneshakersocialclub\.godaddysites\.com)$/.test(parent.location.hostname))blackSurfaces(parent.document);}catch(e){}
+try{if(/(^|\.)(boneshakerssocialclub\.com|boneshakersocialclub\.godaddysites\.com)$/.test(parent.location.hostname))blackNativeSurfaces(parent.document);}catch(e){}
 })();
