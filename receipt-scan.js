@@ -18,7 +18,9 @@ export function parseReceipt(text){
   let amount='';const selected=totals.find(r=>/\b(?:grand\s+total|total\s+due|amount\s+due|balance\s+due)\b/i.test(r.line))||totals.at(-1);
   if(selected){const values=selected.values.length?selected.values:money(lines[selected.i+1]||'');if(values.length)amount=values.at(-1).toFixed(2)}
   const items=lines.filter(line=>money(line).length&&/[a-z]{2}/i.test(line)&&!/\b(?:total|tax|cash|change|visa|mastercard|debit|credit|balance|amount due|payment|tender|savings|discount|refund|phone|tel|auth|approval|card|transaction)\b/i.test(line)&&!/\d{1,2}[:/]\d{2}/.test(line)).join('\n');
-  return {vendor,date,amount,items,title:vendor?vendor+' receipt':'',text:String(text||'')};
+  const orderNumber=String(text||'').match(/\border\s*(?:number|no\.?|#|id)\s*[:#-]?\s*([a-z0-9][a-z0-9-]{3,})\b/i)?.[1]||'';
+  const invoiceNumber=String(text||'').match(/\binvoice\s*(?:number|no\.?|#|id)\s*[:#-]?\s*([a-z0-9][a-z0-9-]{3,})\b/i)?.[1]||'';
+  return {vendor,date,amount,items,orderNumber,invoiceNumber,title:vendor?vendor+' receipt':'',text:String(text||'')};
 }
 export async function readReceipt(file,{page=1,progress=()=>{}}={}){
   if(file.size>20*1024*1024)throw new Error('Choose a file under 20 MB.');
