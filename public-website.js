@@ -37,6 +37,6 @@ var partners=[
 ];
 document.querySelectorAll("[data-bssc-partners]").forEach(function(el){
 el.classList.add("bssc-partners");
-el.innerHTML='<h2>Bikes for Tykes Community Partners</h2><p>Thank you for helping put local children on two wheels.</p><div class="bssc-partner-grid">'+partners.map(function(p){return '<a class="bssc-partner-card" href="'+p.href+'" target="_blank" rel="noopener noreferrer">'+(p.img?'<img loading="lazy" src="'+p.img+'" alt="'+p.name+'">':'<span class="bssc-partner-crop" role="img" aria-label="'+p.name+'" style="background-image:url('+poster+');'+p.crop+'"></span>')+'<span>'+p.name+'</span></a>';}).join("")+'</div>';
+el.innerHTML='<h2>Bikes for Tykes Partners</h2><p>We proudly recognize these partners for sharing their time, talents, services, and resources to help put local children on two wheels.</p><div class="bssc-partner-grid">'+partners.map(function(p){return '<a class="bssc-partner-card" href="'+p.href+'" target="_blank" rel="noopener noreferrer">'+(p.img?'<img loading="lazy" src="'+p.img+'" alt="'+p.name+'">':'<span class="bssc-partner-crop" role="img" aria-label="'+p.name+'" style="background-image:url('+poster+');'+p.crop+'"></span>')+'<span>'+p.name+'</span></a>';}).join("")+'</div>';
 });
 })();
