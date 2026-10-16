@@ -40,3 +40,25 @@ el.classList.add("bssc-partners");
 el.innerHTML='<h2>Bikes for Tykes Partners</h2><p>We proudly recognize these partners for sharing their time, talents, services, and resources to help put local children on two wheels.</p><div class="bssc-partner-grid">'+partners.map(function(p){return '<a class="bssc-partner-card" href="'+p.href+'" target="_blank" rel="noopener noreferrer">'+(p.img?'<img loading="lazy" src="'+p.img+'" alt="'+p.name+'">':'<span class="bssc-partner-crop" role="img" aria-label="'+p.name+'" style="background-image:url('+poster+');'+p.crop+'"></span>')+'<span>'+p.name+'</span></a>';}).join("")+'</div>';
 });
 })();
+
+/* Keep the native motto and navigation visible without fixing the large logo. */
+(function(){
+try {
+var w=parent,doc=w.document;if(!doc.querySelector('[data-aid="HEADER_SECTION"]'))return;
+function pin(){
+var banner=doc.querySelector('[data-aid="BANNER_RENDERED"]'),nav=doc.querySelector('[data-aid="HEADER_NAV_RENDERED"]');
+if(!banner||!nav)return;
+var bar=nav.closest('nav[data-ux="Block"]');if(!bar)return;var group=bar.parentElement;
+if(!doc.getElementById('bssc-fixed-navigation-style')){
+var css=doc.createElement('style');css.id='bssc-fixed-navigation-style';css.textContent='.bssc-fixed-motto{position:fixed!important;top:0!important;left:0!important;width:100%!important;z-index:10001!important;background:#000!important}.bssc-fixed-menu{position:fixed!important;top:var(--bssc-motto-height,64px)!important;left:0!important;width:100%!important;z-index:10000!important;background:#000!important;box-shadow:0 3px 16px #0008}.bssc-fixed-menu>nav{background:#000!important}html{scroll-padding-top:calc(var(--bssc-header-height,144px) + 20px)!important}';
+doc.head.appendChild(css);
+}
+banner.classList.add('bssc-fixed-motto');group.classList.add('bssc-fixed-menu');
+var spacer=doc.getElementById('bssc-navigation-space');if(!spacer){spacer=doc.createElement('div');spacer.id='bssc-navigation-space';spacer.setAttribute('aria-hidden','true');banner.before(spacer)}
+function size(){var bh=banner.getBoundingClientRect().height,nh=group.getBoundingClientRect().height;doc.documentElement.style.setProperty('--bssc-motto-height',bh+'px');doc.documentElement.style.setProperty('--bssc-header-height',(bh+nh)+'px');spacer.style.height=(bh+nh)+'px'}
+size();if(!group.dataset.bsscPinned){group.dataset.bsscPinned='true';new w.ResizeObserver(size).observe(banner);w.addEventListener('resize',size)}
+}
+pin();
+if(!doc.documentElement.dataset.bsscStickyWatch){doc.documentElement.dataset.bsscStickyWatch='true';var scheduled;new w.MutationObserver(function(){if(scheduled)return;scheduled=w.setTimeout(function(){scheduled=null;pin()},150)}).observe(doc.body,{childList:true,subtree:true})}
+}catch(e){}
+})();
