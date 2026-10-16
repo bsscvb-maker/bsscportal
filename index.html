@@ -1816,14 +1816,15 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 #recordsWorkspace .summary-landscape-stage .strategy-generic-decisions .strategy-mini:nth-child(n){grid-column:auto;grid-row:auto}
 #recordsWorkspace .summary-landscape-stage .strategy-reference>h3{font-size:30px}
 #recordsWorkspace .summary-landscape-stage .strategy-mini p{font-size:14px}
-#recordsWorkspace .summary-thumbnail{aspect-ratio:1.414;height:auto;min-height:180px}
+#recordsWorkspace .summary-thumbnail{aspect-ratio:1200 / 849;height:auto;min-height:0;padding:0}
 
 /* Every generated summary uses one fixed A-series landscape canvas. */
 .strategy-reference.summary-paper{box-sizing:border-box;width:1200px;height:849px;min-height:849px;max-height:849px;overflow:hidden;padding:24px}
-.strategy-sheet-content{position:relative;width:1152px;transform-origin:top left;display:flow-root}
+.strategy-sheet-content{position:relative;width:1152px;transform-origin:top left;display:flex;flex-direction:column}
 .strategy-sheet-content>h3{font-size:30px;line-height:1.2;color:#000;margin:12px 0}
 .strategy-reference .strategy-fixed-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
 .strategy-reference .strategy-governance{grid-column:span 2!important}
+.strategy-sheet-content>.strategy-fixed-grid{flex:1}.strategy-sheet-content>footer{flex:none}
 </style>
 
 <style>
@@ -8625,15 +8626,21 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
         const sheet=content.parentElement;
         if(!sheet.offsetWidth)return;
         const availableHeight=sheet.clientHeight-48,availableWidth=sheet.clientWidth-48;
-        const fit=Math.min(1,availableHeight/Math.max(1,content.scrollHeight));
-        content.style.transform='scale('+fit+')';
-        content.style.left=((availableWidth-content.offsetWidth*fit)/2)+'px';
+        content.style.minHeight='0';content.style.left='0';
+        let low=.1,high=1;
+        for(let i=0;i<12;i++){
+          const trial=(low+high)/2;content.style.width=(availableWidth/trial)+'px';
+          if(content.scrollHeight*trial<=availableHeight)low=trial;else high=trial;
+        }
+        content.style.width=(availableWidth/low)+'px';
+        content.style.transform='scale('+low+')';
+        content.style.minHeight=(availableHeight/low)+'px';
       });
       document.querySelectorAll('.summary-thumbnail .summary-paper,.summary-landscape-stage .summary-paper').forEach(p=>{
         const box=p.parentElement,detail=box.classList.contains('summary-landscape-stage');
         if(box.clientWidth<24||p.offsetWidth===0||p.offsetHeight===0)return;
-        const scale=detail?Math.min(1,box.clientWidth/p.offsetWidth):Math.min((box.clientWidth-24)/p.offsetWidth,(box.clientHeight-24)/p.offsetHeight);
-        p.style.transform='scale('+scale+')';p.style.position='absolute';p.style.left=((box.clientWidth-p.offsetWidth*scale)/2)+'px';p.style.top=detail?'0':'12px';
+        const scale=detail?Math.min(1,box.clientWidth/p.offsetWidth):box.clientWidth/p.offsetWidth;
+        p.style.transform='scale('+scale+')';p.style.position='absolute';p.style.left=((box.clientWidth-p.offsetWidth*scale)/2)+'px';p.style.top='0';
         if(detail)box.style.height=Math.ceil(p.offsetHeight*scale)+'px';
       });
     }
