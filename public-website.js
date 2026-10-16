@@ -33,7 +33,7 @@ var partners=[
 {name:"Boujiee Dogs",href:"https://www.facebook.com/profile.php?id=100089664885554",img:"https://img1.wsimg.com/isteam/ip/6b7b89b2-dd4f-422d-8d29-7971f64bd923/boujiee-dogs-cocktails-sponsor-logo-transparen.png"},
 {name:"Elevation 27",href:"https://www.elevation27.com/",img:"https://img1.wsimg.com/isteam/ip/a61a7501-5b4e-4a14-8b09-6b6b40dc23cf/Elevation27.png"},
 {name:"Courthouse Horizons",href:"https://courthousehorizons.com/the-venue/",img:"https://img1.wsimg.com/isteam/ip/6b7b89b2-dd4f-422d-8d29-7971f64bd923/courthouse-horizons-sponsor-logo-transparent.png"},
-{name:"YMCA",href:"https://www.ymcashr.org/",crop:"height:100px;margin:15px 0;background-size:640% 1536%;background-position:66.8% 86.2%"}
+{name:"YMCA",href:"https://www.ymcashr.org/",crop:"height:130px;margin:0;background-size:640% 1536%;background-position:66.8% 86.2%;clip-path:inset(0 0 18px 0)"}
 ];
 document.querySelectorAll("[data-bssc-partners]").forEach(function(el){
 el.classList.add("bssc-partners");
@@ -95,3 +95,14 @@ var st=d.createElement('style');st.id='bssc-header-offset-fix';st.textContent='n
 function size(){var h=n.getBoundingClientRect().height;n.parentElement.style.minHeight=h+'px';d.documentElement.style.setProperty('--bssc-header-height',h+'px');}
 size();new w.ResizeObserver(size).observe(n);w.addEventListener('resize',size);
 }catch(e){}})();
+
+/* Count approved public giving totals when visitors reach them. */
+(function(){
+document.querySelectorAll('[data-bssc-metric="lifetime"]').forEach(function(el){
+if(el.dataset.bsscCountup)return;el.dataset.bsscCountup='true';
+var finalText=el.textContent,target=Number(finalText.replace(/[^0-9.]/g,'')),from=Math.min(432000,target);
+if(!Number.isFinite(target)||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+function run(){var start=null;function tick(now){if(start===null)start=now;var t=Math.min(1,(now-start)/5200),eased=1-Math.pow(1-t,4);el.textContent=(from+(target-from)*eased).toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2});if(t<1)requestAnimationFrame(tick);else el.textContent=finalText;}requestAnimationFrame(tick);}
+if('IntersectionObserver'in window){var io=new IntersectionObserver(function(entries){if(entries.some(function(e){return e.isIntersecting})){io.disconnect();run()}},{threshold:.4});io.observe(el);}else run();
+});
+})();
