@@ -67,7 +67,7 @@ if(!doc.documentElement.dataset.bsscStickyWatch){doc.documentElement.dataset.bss
 (function(){
 function blackNativeSurfaces(doc){
 if(doc.getElementById('bssc-black-native'))return;
-var s=doc.createElement('style');s.id='bssc-black-native';s.textContent='html,body,section[data-ux="Section"],footer[data-ux="Footer"],header[data-ux="Header"]{background-color:#000!important;background-image:none!important}';doc.head.appendChild(s);
+var s=doc.createElement('style');s.id='bssc-black-native';s.textContent='html,body,section[data-ux="Section"],footer[data-ux="Footer"],header[data-ux="Header"],nav[data-ux="Block"]{background-color:#000!important;background-image:none!important}';doc.head.appendChild(s);
 }
 function blackSurfaces(doc){
 if(doc.getElementById('bssc-black-surfaces'))return;
