@@ -62,3 +62,22 @@ pin();
 if(!doc.documentElement.dataset.bsscStickyWatch){doc.documentElement.dataset.bsscStickyWatch='true';var scheduled;new w.MutationObserver(function(){if(scheduled)return;scheduled=w.setTimeout(function(){scheduled=null;pin()},150)}).observe(doc.body,{childList:true,subtree:true})}
 }catch(e){}
 })();
+
+/* Club backgrounds: black surfaces, with existing artwork, controls and status stamps retained. */
+(function(){
+function blackSurfaces(doc){
+if(doc.getElementById('bssc-black-surfaces'))return;
+var s=doc.createElement('style');s.id='bssc-black-surfaces';
+s.textContent='.bssc-black-surface{background-color:#000!important}.bssc-black-gradient{background-image:none!important}';
+doc.head.appendChild(s);
+var view=doc.defaultView;
+doc.querySelectorAll('html,body,main,section,article,aside,header,footer,nav,div,form,fieldset,dialog,table,thead,tbody,tr,td,th').forEach(function(el){
+if(el.closest('button,[role="button"],[class*="stamp"],[class*="badge"],[class*="icon"],[class*="btn"],[class*="payment"]'))return;
+el.classList.add('bssc-black-surface');
+var bg=view.getComputedStyle(el).backgroundImage;
+if(bg.indexOf('gradient(')!==-1&&bg.indexOf('url(')===-1)el.classList.add('bssc-black-gradient');
+});
+}
+blackSurfaces(document);
+try{if(/(^|\.)(boneshakerssocialclub\.com|boneshakersocialclub\.godaddysites\.com)$/.test(parent.location.hostname))blackSurfaces(parent.document);}catch(e){}
+})();
