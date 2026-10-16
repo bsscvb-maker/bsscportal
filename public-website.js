@@ -29,10 +29,10 @@ style.textContent='.bssc-partners{padding:32px 0;max-width:1180px;margin:0 auto;
 document.head.appendChild(style);
 var poster="https://img1.wsimg.com/isteam/ip/6b7b89b2-dd4f-422d-8d29-7971f64bd923/Boneshakers%20Motorcycle%20Riders%20Poster.png";
 var partners=[
-{name:"Brothers Flooring",href:"tel:+17572280193",crop:"background-size:617% 1181%;background-position:23.3% 95.3%"},
+{name:"Brothers Flooring",href:"https://flooringcontractorportsmouthva.com/",crop:"background-size:617% 1181%;background-position:23.3% 95.3%"},
 {name:"Boujiee Dogs",href:"https://www.facebook.com/profile.php?id=100089664885554",img:"https://img1.wsimg.com/isteam/ip/6b7b89b2-dd4f-422d-8d29-7971f64bd923/boujiee-dogs-cocktails-sponsor-logo-transparen.png"},
 {name:"Elevation 27",href:"https://www.elevation27.com/",img:"https://img1.wsimg.com/isteam/ip/a61a7501-5b4e-4a14-8b09-6b6b40dc23cf/Elevation27.png"},
-{name:"Chesapeake EMS",href:"https://www.cityofchesapeake.net/1619/Public-Safety/",crop:"height:100px;margin:15px 0;background-size:640% 1536%;background-position:33.5% 85.8%"},
+{name:"Courthouse Horizons",href:"https://courthousehorizons.com/the-venue/",img:"https://img1.wsimg.com/isteam/ip/6b7b89b2-dd4f-422d-8d29-7971f64bd923/courthouse-horizons-sponsor-logo-transparent.png"},
 {name:"YMCA",href:"https://www.ymcashr.org/",crop:"height:100px;margin:15px 0;background-size:640% 1536%;background-position:66.8% 86.2%"}
 ];
 document.querySelectorAll("[data-bssc-partners]").forEach(function(el){
