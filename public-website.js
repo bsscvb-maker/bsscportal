@@ -1,7 +1,7 @@
 /* BoneShakers public website content. Update values and events here once for all connected pages. */
 (function(){
 "use strict";
-var d={lifetime:"$443,898.20",bicycles:"2,100+",since:"2005",bikeCost:"$150",buildDate:"December 5, 2026",ytd:"$53,076.00",asOf:"October 15, 2026"};
+var d={lifetime:"$443,898.20",bicycles:"2,100+",average:"123+",since:"2005",bikeCost:"$150",buildDate:"December 5, 2026",ytd:"$53,076.00",asOf:"October 15, 2026"};
 var events=[
 {date:"2026-10-17",title:"YMCA Greenbrier Trunk or Treat",time:"Time: see event details",place:"Greenbrier Family YMCA · 1033 Greenbrier Parkway, Chesapeake"},
 {date:"2026-10-20",title:"BoneShakers Bike Night",time:"7–9 PM",place:"AJ Gators · 1993 Sandbridge Road, Virginia Beach"},
@@ -14,6 +14,7 @@ var events=[
 {date:"2026-12-05",title:"Bikes for Tykes Build",time:"Time and location: see event details",place:"See the event calendar"},
 {date:"2026-12-05",title:"VB Holiday Parade",time:"3–8 PM",place:"See the event calendar"}
 ];
+document.querySelectorAll("[data-bssc-counter]").forEach(function(el){var v=d[el.dataset.bsscCounter];if(v)el.dataset.bsscTarget=v.replace(/[^0-9]/g,"");});
 document.querySelectorAll("[data-bssc-metric]").forEach(function(el){var v=d[el.dataset.bsscMetric];if(v)el.textContent=v;});
 var today=new Intl.DateTimeFormat("en-CA",{timeZone:"America/New_York",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 document.querySelectorAll("[data-bssc-events]").forEach(function(el){
@@ -31,8 +32,8 @@ var partners=[
 {name:"Brothers Flooring",href:"tel:+17572280193",crop:"background-size:617% 1181%;background-position:23.3% 95.3%"},
 {name:"Boujiee Dogs",href:"https://www.facebook.com/profile.php?id=100089664885554",img:"https://img1.wsimg.com/isteam/ip/6b7b89b2-dd4f-422d-8d29-7971f64bd923/boujiee-dogs-cocktails-sponsor-logo-transparen.png"},
 {name:"Elevation 27",href:"https://www.elevation27.com/",img:"https://img1.wsimg.com/isteam/ip/a61a7501-5b4e-4a14-8b09-6b6b40dc23cf/Elevation27.png"},
-{name:"Chesapeake EMS",href:"https://www.cityofchesapeake.net/1619/Public-Safety/",crop:"background-size:570% 1050%;background-position:33% 87.4%"},
-{name:"YMCA",href:"https://www.ymcashr.org/",crop:"background-size:570% 1050%;background-position:68% 86.2%"}
+{name:"Chesapeake EMS",href:"https://www.cityofchesapeake.net/1619/Public-Safety/",crop:"height:100px;margin:15px 0;background-size:640% 1536%;background-position:33.5% 85.8%"},
+{name:"YMCA",href:"https://www.ymcashr.org/",crop:"height:100px;margin:15px 0;background-size:640% 1536%;background-position:66.8% 86.2%"}
 ];
 document.querySelectorAll("[data-bssc-partners]").forEach(function(el){
 el.classList.add("bssc-partners");
