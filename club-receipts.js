@@ -102,6 +102,7 @@
     .collection-photo-art{height:174px!important;position:relative;overflow:hidden;padding:0!important;background:var(--collection-bg)!important}
     .collection-photo-art:after,.committee-table-art:after{display:none!important}
     .collection-photo-art>img{display:block;width:100%!important;height:100%!important;max-width:none!important;object-fit:cover;object-position:center}
+    .records-dashboard-card[data-record-collection="Code of conduct"] .collection-photo-art>img{object-position:center 25%}
     .committee-table-art{height:174px!important;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#dceaf5,#f2f7fb)!important}
     .committee-table-art>svg{height:160px;width:200px}
     .records-dashboard-card[data-record-collection="Policies & appendices"]{--collection-accent:#a16d26;--collection-bg:#fff0d8}
