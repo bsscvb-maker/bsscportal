@@ -106,3 +106,5 @@ function run(){var start=null;function tick(now){if(start===null)start=now;var t
 if('IntersectionObserver'in window){var io=new IntersectionObserver(function(entries){if(entries.some(function(e){return e.isIntersecting})){io.disconnect();run()}},{threshold:.4});io.observe(el);}else run();
 });
 })();
+
+(function(){try{var d=parent.document;if(!d.getElementById('bssc-compact-spacing')){var s=d.createElement('style');s.id='bssc-compact-spacing';s.textContent='nav[data-nav-measure] > [data-ux="Container"] > [data-ux="Container"]{padding-top:4px!important;padding-bottom:4px!important}section[data-aid="HTML_SECTION_RENDERED"]{padding-top:16px!important}';d.head.appendChild(s)}}catch(e){}})();
