@@ -88,13 +88,15 @@
     'Bylaws':'bylaws-official-v1.webp',
     'Policies & appendices':'appendix-archive-v1.webp',
     'Code of conduct':'conduct-official-v1.webp',
-    'Receipts':'receipts-desk-v1.webp'
+    'Receipts':'receipts-desk-v1.webp',
+    'Committee records':'committee-roundtable-v1.webp',
+    'minutes':'minutes-journal-v1.webp'
   };
   recordsCollectionArt=function(id,label,rows){
-    const key=Object.keys(artParts).find(k=>k.toLowerCase()===String(id).toLowerCase());
+    const key=Object.keys(collectionPhotos).find(k=>k.toLowerCase()===String(id).toLowerCase());
     if(!key)return priorArt(id,label,rows);
-    const [color,bg,art]=artParts[key];
-    if(key==='Committee records')return '<div class="dashboard-art committee-table-art" aria-hidden="true" style="--collection-accent:'+color+';--collection-bg:'+bg+'"><svg viewBox="0 0 200 165" xmlns="http://www.w3.org/2000/svg">'+art+'</svg></div>';
+    const [color,bg]=artParts[key]||['#2563a6','#dceafa'];
+
     return '<div class="dashboard-art collection-photo-art" aria-hidden="true" style="--collection-accent:'+color+';--collection-bg:'+bg+'"><img src="assets/club-records/'+collectionPhotos[key]+'" alt="" decoding="async"></div>';
   };
   const documentPreviewStyle=document.createElement('style');
