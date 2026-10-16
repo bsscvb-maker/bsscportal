@@ -33,7 +33,7 @@ var partners=[
 {name:"Boujiee Dogs",href:"https://www.facebook.com/profile.php?id=100089664885554",img:"https://img1.wsimg.com/isteam/ip/6b7b89b2-dd4f-422d-8d29-7971f64bd923/boujiee-dogs-cocktails-sponsor-logo-transparen.png"},
 {name:"Elevation 27",href:"https://www.elevation27.com/",img:"https://img1.wsimg.com/isteam/ip/a61a7501-5b4e-4a14-8b09-6b6b40dc23cf/Elevation27.png"},
 {name:"Courthouse Horizons",href:"https://courthousehorizons.com/the-venue/",img:"https://img1.wsimg.com/isteam/ip/6b7b89b2-dd4f-422d-8d29-7971f64bd923/courthouse-horizons-sponsor-logo-transparent.png"},
-{name:"YMCA",href:"https://www.ymcashr.org/",crop:"height:130px;margin:0;background-size:640% 1536%;background-position:66.8% 86.2%;clip-path:inset(0 0 18px 0)"}
+{name:"YMCA",href:"https://www.ymcashr.org/",crop:"height:130px;margin:0;background-size:674% 1850%;background-position:66.2% 85.15%;clip-path:none"}
 ];
 document.querySelectorAll("[data-bssc-partners]").forEach(function(el){
 el.classList.add("bssc-partners");
