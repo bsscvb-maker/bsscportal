@@ -1809,7 +1809,7 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 
 /* Preserve the same landscape sheet on thumbnails and full meeting views. */
 #recordsWorkspace .summary-landscape-stage{position:relative;width:100%;overflow:hidden}
-#recordsWorkspace .summary-landscape-stage .strategy-reference,#recordsWorkspace .summary-thumbnail .strategy-reference{box-sizing:border-box;width:1200px;min-height:849px;transform-origin:top left;padding:24px}
+#recordsWorkspace .summary-landscape-stage .strategy-reference,#recordsWorkspace .summary-thumbnail .strategy-reference{box-sizing:border-box;width:1200px;height:849px;min-height:849px;max-height:849px;overflow:hidden;transform-origin:top left;padding:24px}
 #recordsWorkspace .summary-landscape-stage .strategy-fixed-grid,#recordsWorkspace .summary-thumbnail .strategy-fixed-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 #recordsWorkspace .summary-landscape-stage .strategy-governance,#recordsWorkspace .summary-thumbnail .strategy-governance{grid-column:span 2}
 #recordsWorkspace .summary-landscape-stage .strategy-decision-grid{grid-template-columns:1fr 1fr}
@@ -1817,6 +1817,13 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 #recordsWorkspace .summary-landscape-stage .strategy-reference>h3{font-size:30px}
 #recordsWorkspace .summary-landscape-stage .strategy-mini p{font-size:14px}
 #recordsWorkspace .summary-thumbnail{aspect-ratio:1.414;height:auto;min-height:180px}
+
+/* Every generated summary uses one fixed A-series landscape canvas. */
+.strategy-reference.summary-paper{box-sizing:border-box;width:1200px;height:849px;min-height:849px;max-height:849px;overflow:hidden;padding:24px}
+.strategy-sheet-content{position:relative;width:1152px;transform-origin:top left;display:flow-root}
+.strategy-sheet-content>h3{font-size:30px;line-height:1.2;color:#000;margin:12px 0}
+.strategy-reference .strategy-fixed-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.strategy-reference .strategy-governance{grid-column:span 2!important}
 </style>
 
 <style>
@@ -8611,9 +8618,17 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       const money='<div class="strategy-cash"><span>'+(uniformTreasury?'TOTAL BALANCE':total?'TOTAL CASH POSITION':giving?'2026 COMMUNITY GIVING':'FINANCIAL SNAPSHOT')+'</span><strong>'+esc(uniformTreasury?(total||'Not recorded'):(total||giving||'Not recorded'))+'</strong><div class="strategy-funds">'+funds.filter(([,value])=>uniformTreasury||value).map(([label,value])=>'<div>'+label+'<b>'+esc(value||'Not recorded')+'</b></div>').join('')+'</div></div>'+(target?'<div class="strategy-target">Target Purchase Need <b>'+esc(target)+'</b></div>':'')+'<div class="strategy-money-notes">'+treasury.filter(t=>!(total&&/General:.*total:|Total cash:/i.test(t))).map(t=>'<p>'+esc(t)+'</p>').join('')+'</div>';
       const head=(symbol,title,badge)=>'<div class="strategy-panel-head"><span class="strategy-symbol">'+symbol+'</span><h4>'+title+'</h4><span class="strategy-badge">'+esc(badge)+'</span></div>';
       const labels=key=>september?(key==='Decisions'?(board?['Two-Year Board Terms','Officer-Role Continuity','One-Piece Patch Redesign']:['Membership Vote','2027 Renewals']):key==='Membership & Roster'?(board?['Membership Snapshot','2027 Renewal Window','Attendance Threshold']:['Membership Snapshot','2026 Member Growth']):key==='Events & Operations'?(board?['Elevation 27 Fundraiser','Autism School Event','Fall & Spring Planning']:['Elevation 27 Fundraiser','September Events','Atlantic City Ride']):board?['Source Patch Vendor & Prepare Mock-Up','Launch Renewals & Contact Members','Prepare Mini Bike for Auction']:['Concert Tickets & Auction Donations','Christmas Party Planning','Complete Marketplace Pricing']):[];
-      return '<div class="summary-paper strategy-reference"><div class="strategy-kickers"><span>'+(eventTitle||(board?'Board':'General'))+' Meeting Summary</span><span>'+esc(minutesDate(v[3]))+'</span><span>Strategic Overview</span></div><h3>Bone Shakers '+(eventTitle||(board?'Board':'General Meeting'))+' Strategic Summary</h3><p class="strategy-subtitle">'+esc(d.focus)+'</p><div class="strategy-fixed-grid"><section class="strategy-panel strategy-governance">'+head('◇','Key Governance &amp; Club Decisions','Meeting Decisions')+'<div class="strategy-decision-grid '+(september?'':'strategy-generic-decisions')+'">'+items('Decisions',labels('Decisions'))+'</div><div class="strategy-panel-foot">Decisions and motions recorded at this meeting.</div></section><section class="strategy-panel strategy-treasury">'+head('$',uniformTreasury?'Treasury &amp; Bikes for Tykes':'Treasury &amp; BFT Goal','Financial Snapshot')+money+'</section><section class="strategy-panel strategy-membership">'+head('♧','Membership &amp; Roster','Roster Snapshot')+items('Membership & Roster',labels('Membership & Roster'))+'<div class="strategy-panel-foot">Membership figures reflect this meeting’s record.</div></section><section class="strategy-panel strategy-events">'+head('▦','Event Operations','Upcoming Events')+items('Events & Operations',labels('Events & Operations'))+'</section><section class="strategy-panel strategy-actions">'+head('☑','Immediate Action Items','Recorded Follow-Ups')+items('Action Items',labels('Action Items'))+'<div class="strategy-panel-foot">Follow-up actions recorded at the meeting; completion is not implied.</div></section></div><footer>Meeting snapshot · See the PDF minutes for the official record.</footer></div>';
+      return '<div class="summary-paper strategy-reference"><div class="strategy-sheet-content"><div class="strategy-kickers"><span>'+(eventTitle||(board?'Board':'General'))+' Meeting Summary</span><span>'+esc(minutesDate(v[3]))+'</span><span>Strategic Overview</span></div><h3>Bone Shakers '+(eventTitle||(board?'Board':'General Meeting'))+' Strategic Summary</h3><p class="strategy-subtitle">'+esc(d.focus)+'</p><div class="strategy-fixed-grid"><section class="strategy-panel strategy-governance">'+head('◇','Key Governance &amp; Club Decisions','Meeting Decisions')+'<div class="strategy-decision-grid '+(september?'':'strategy-generic-decisions')+'">'+items('Decisions',labels('Decisions'))+'</div><div class="strategy-panel-foot">Decisions and motions recorded at this meeting.</div></section><section class="strategy-panel strategy-treasury">'+head('$',uniformTreasury?'Treasury &amp; Bikes for Tykes':'Treasury &amp; BFT Goal','Financial Snapshot')+money+'</section><section class="strategy-panel strategy-membership">'+head('♧','Membership &amp; Roster','Roster Snapshot')+items('Membership & Roster',labels('Membership & Roster'))+'<div class="strategy-panel-foot">Membership figures reflect this meeting’s record.</div></section><section class="strategy-panel strategy-events">'+head('▦','Event Operations','Upcoming Events')+items('Events & Operations',labels('Events & Operations'))+'</section><section class="strategy-panel strategy-actions">'+head('☑','Immediate Action Items','Recorded Follow-Ups')+items('Action Items',labels('Action Items'))+'<div class="strategy-panel-foot">Follow-up actions recorded at the meeting; completion is not implied.</div></section></div><footer>Meeting snapshot · See the PDF minutes for the official record.</footer></div></div>';
     }
     function fitSummaryThumbnails(){
+      document.querySelectorAll('.strategy-reference .strategy-sheet-content').forEach(content=>{
+        const sheet=content.parentElement;
+        if(!sheet.offsetWidth)return;
+        const availableHeight=sheet.clientHeight-48,availableWidth=sheet.clientWidth-48;
+        const fit=Math.min(1,availableHeight/Math.max(1,content.scrollHeight));
+        content.style.transform='scale('+fit+')';
+        content.style.left=((availableWidth-content.offsetWidth*fit)/2)+'px';
+      });
       document.querySelectorAll('.summary-thumbnail .summary-paper,.summary-landscape-stage .summary-paper').forEach(p=>{
         const box=p.parentElement,detail=box.classList.contains('summary-landscape-stage');
         if(box.clientWidth<24||p.offsetWidth===0||p.offsetHeight===0)return;
