@@ -97,6 +97,7 @@
     grid.querySelector('[data-record-collection="Receipts"]')?.remove();
     const b=document.createElement('button');b.className='collection-card records-dashboard-card';b.innerHTML=recordsCollectionArt('Receipts','Receipts',[])+'<div class="dashboard-card-body"><h3>Receipts</h3><div class="dashboard-card-footer"><span>'+receipts().length+' documents</span><b>Explore →</b></div></div>';
     b.onclick=()=>{program='';year='';query='';draw()};grid.append(b);
+    [...grid.children].sort((a,b)=>String(a.querySelector('h3')?.textContent||'').localeCompare(String(b.querySelector('h3')?.textContent||''),undefined,{sensitivity:'base',numeric:true})).forEach(card=>grid.append(card));
   };
   async function save(row){
     if(!accessToken)throw new Error('Sign in before saving receipts.');
