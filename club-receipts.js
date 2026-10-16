@@ -84,42 +84,32 @@
     'Code of conduct':['#765184','#efe5f3','<path d="m100 18 54 20v43c0 34-29 54-54 66-25-12-54-32-54-66V38z" fill="#765184"/><path d="m100 31 41 15v34c0 26-20 42-41 53-21-11-41-27-41-53V46z" fill="none" stroke="#bba1c6" stroke-width="2"/><path d="m76 80 17 17 33-36" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>']
   };
 
+  const collectionPhotos={
+    'Bylaws':'bylaws-official-v1.webp',
+    'Policies & appendices':'appendix-archive-v1.webp',
+    'Code of conduct':'conduct-official-v1.webp',
+    'Receipts':'receipts-desk-v1.webp'
+  };
   recordsCollectionArt=function(id,label,rows){
     const key=Object.keys(artParts).find(k=>k.toLowerCase()===String(id).toLowerCase());
     if(!key)return priorArt(id,label,rows);
-    const [color,bg]=artParts[key];
-    let title=label,subtitle='BoneShakers Social Club',body='';
-    if(key==='Receipts'){
-      title='Receipts & Invoices';subtitle='Club purchase documentation';
-      const sample=receipts().filter(r=>r.vendor).slice(0,4);
-      body='<div class="document-preview-columns"><span>VENDOR / DOCUMENT</span><span>AMOUNT</span></div>'+sample.map(r=>'<div class="document-preview-receipt"><strong>'+esc(r.vendor)+'</strong><span>'+esc(r.amount!==''&&r.amount!=null?'$'+Number(r.amount).toFixed(2):'On file')+'</span></div>').join('')+'<div class="document-preview-note">Original receipts · Order references · Supporting records</div>';
-    }else{
-      let source='',section='';
-      if(key==='Bylaws'){source=typeof BSSC_BYLAWS_TEXT==='string'?BSSC_BYLAWS_TEXT:'';section='Governing document';}
-      if(key==='Code of conduct'){source=typeof BSSC_CODE_OF_CONDUCT_TEXT==='string'?BSSC_CODE_OF_CONDUCT_TEXT:'';section='Member standards & responsibilities';}
-      if(key==='Policies & appendices'){source=typeof BSSC_APPENDIX_TEXT==='object'?(BSSC_APPENDIX_TEXT.A||Object.values(BSSC_APPENDIX_TEXT)[0]||''):'';section='Policies & operating procedures';}
-      const excerpt=String(source).replace(/\u0002/g,' ').split(/\r?\n/).map(t=>t.trim()).filter(t=>t.length>45&&!/^https?:/.test(t)).slice(0,4);
-      body='<div class="document-preview-section">'+esc(section)+'</div>'+excerpt.map((t,i)=>'<div class="document-preview-paragraph"><b>'+String(i+1).padStart(2,'0')+'</b><p>'+esc(t.slice(0,240))+'</p></div>').join('');
-    }
-    return '<div class="dashboard-art document-preview-art" aria-hidden="true" style="--collection-accent:'+color+';--collection-bg:'+bg+'"><div class="document-preview-sheet"><div class="document-preview-masthead"><strong>BSSC</strong><span>CLUB RECORDS</span></div><div class="document-preview-rule"></div><div class="document-preview-title">'+esc(title)+'</div><div class="document-preview-subtitle">'+esc(subtitle)+'</div>'+body+'<div class="document-preview-footer">BONESHAKERS SOCIAL CLUB <span>DOCUMENT ARCHIVE</span></div></div></div>';
+    const [color,bg,art]=artParts[key];
+    if(key==='Committee records')return '<div class="dashboard-art committee-table-art" aria-hidden="true" style="--collection-accent:'+color+';--collection-bg:'+bg+'"><svg viewBox="0 0 200 165" xmlns="http://www.w3.org/2000/svg">'+art+'</svg></div>';
+    return '<div class="dashboard-art collection-photo-art" aria-hidden="true" style="--collection-accent:'+color+';--collection-bg:'+bg+'"><img src="assets/club-records/'+collectionPhotos[key]+'" alt="" decoding="async"></div>';
   };
   const documentPreviewStyle=document.createElement('style');
   documentPreviewStyle.textContent=`
-    .document-preview-art{height:174px;position:relative;overflow:hidden;background:linear-gradient(135deg,var(--collection-bg),#f7f9fb)!important}
-    .document-preview-art:after{display:none}
-    .document-preview-sheet{position:absolute;box-sizing:border-box;width:620px;min-height:430px;padding:28px 32px;background:#fff;color:#172334;left:50%;top:13px;transform:translateX(-50%) rotate(-3deg) scale(.39);transform-origin:top center;border:1px solid #cbd5e1;box-shadow:7px 12px 22px #12233735;font-family:Arial,sans-serif;text-align:left}
-    .document-preview-masthead{display:flex;justify-content:space-between;align-items:center}.document-preview-masthead strong{font-size:26px;letter-spacing:1px;color:var(--collection-accent)}.document-preview-masthead span{font-size:10px;letter-spacing:2px;color:#64748b}
-    .document-preview-rule{height:4px;background:var(--collection-accent);margin:12px 0 18px}.document-preview-title{font-size:30px;line-height:1.15;font-weight:800;color:#142438}.document-preview-subtitle{font-size:12px;color:#64748b;margin:9px 0 18px}
-    .document-preview-section{font-size:14px;font-weight:750;border-bottom:1px solid #d6dfe8;padding-bottom:9px;margin-bottom:13px;color:var(--collection-accent)}
-    .document-preview-paragraph{display:flex;gap:12px;margin:12px 0}.document-preview-paragraph>b{font-size:12px;color:var(--collection-accent);padding-top:3px}.document-preview-paragraph p{font-size:11px;line-height:1.5;margin:0!important;min-height:0!important;color:#445369}
-    .document-preview-footer{border-top:1px solid #d7e0e9;padding-top:10px;margin-top:20px;font-size:8px;letter-spacing:1px;color:#64748b;display:flex;justify-content:space-between}
-    .document-preview-columns,.document-preview-receipt{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid #dde4eb;font-size:13px}.document-preview-columns{background:#f1f5f9;padding:10px;font-size:10px;font-weight:700;letter-spacing:1px}.document-preview-note{font-size:11px;color:#64748b;margin-top:18px}
-    .records-dashboard-cards>[data-record-collection="Policies & appendices"]{order:0}
-    .records-dashboard-cards>[data-record-collection="Bylaws"]{order:10}
-    .records-dashboard-cards>[data-record-collection="Code of conduct"]{order:20}
-    .records-dashboard-cards>[data-record-collection="Committee records"]{order:30}
-    .records-dashboard-cards>[data-record-collection="minutes"]{order:40}
-    .records-dashboard-cards>[data-record-collection="Receipts"]{order:50}
+    .collection-photo-art{height:174px!important;position:relative;overflow:hidden;padding:0!important;background:var(--collection-bg)!important}
+    .collection-photo-art:after,.committee-table-art:after{display:none!important}
+    .collection-photo-art>img{display:block;width:100%!important;height:100%!important;max-width:none!important;object-fit:cover;object-position:center}
+    .committee-table-art{height:174px!important;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#dceaf5,#f2f7fb)!important}
+    .committee-table-art>svg{height:160px;width:200px}
+    .records-dashboard-card[data-record-collection="Policies & appendices"]{--collection-accent:#a16d26;--collection-bg:#fff0d8}
+    .records-dashboard-card[data-record-collection="Bylaws"]{--collection-accent:#2f7860;--collection-bg:#e4f1eb}
+    .records-dashboard-card[data-record-collection="Code of conduct"]{--collection-accent:#765184;--collection-bg:#efe5f3}
+    .records-dashboard-card[data-record-collection="Committee records"]{--collection-accent:#3c698e;--collection-bg:#e6eef7}
+    .records-dashboard-card[data-record-collection="minutes"]{--collection-accent:#2563a6;--collection-bg:#dceafa}
+    .records-dashboard-card[data-record-collection="Receipts"]{--collection-accent:#a23f4d;--collection-bg:#fae6e9}
   `;document.head.append(documentPreviewStyle);
 
   const dashboard=renderRecordsDashboard;
@@ -129,7 +119,7 @@
     grid.querySelector('[data-record-collection="Receipts"]')?.remove();
     const b=document.createElement('button');b.className='collection-card records-dashboard-card';b.dataset.recordCollection='Receipts';b.innerHTML=recordsCollectionArt('Receipts','Receipts',[])+'<div class="dashboard-card-body"><h3>Receipts</h3><div class="dashboard-card-footer"><span>'+receipts().length+' documents</span><b>Explore →</b></div></div>';
     b.onclick=()=>{program='';year='';query='';draw()};grid.append(b);
-    [...grid.children].sort((a,b)=>String(a.querySelector('h3')?.textContent||'').localeCompare(String(b.querySelector('h3')?.textContent||''),undefined,{sensitivity:'base',numeric:true})).forEach((card,i)=>{card.style.order=String(i);grid.append(card)});
+    [...grid.children].sort((a,b)=>String(a.querySelector(':scope > .dashboard-card-body > h3')?.textContent||'').localeCompare(String(b.querySelector(':scope > .dashboard-card-body > h3')?.textContent||''),undefined,{sensitivity:'base',numeric:true})).forEach((card,i)=>{card.style.order=String(i);grid.append(card)});
   };
   async function save(row){
     if(!accessToken)throw new Error('Sign in before saving receipts.');
