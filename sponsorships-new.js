@@ -39,6 +39,30 @@ function amount(v){const s=text(v).replace(/^'/,'').replace(/[$,\s]/g,'');return
 function money(v){const n=amount(v);return n===null?'Not recorded':new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n)}
 function norm(v){return text(v).toLowerCase().replace(/[^a-z0-9]/g,'')}
 function missingName(v){return /^(donor not recorded|name not recorded|no name|unknown buyer|cash|cash donor|paypal|chase credit card)$/i.test(text(v))}
+
+const supportCategories=['Club sponsorship payment','Cash donation','Fundraiser proceeds','Cash + noncash support','Gift card / gift certificate','Service','Experience / admission','Class / training','Item','Ongoing partner support','Noncash support — details missing','Support not specified'];
+function supportCategory(r){
+ const description=text(r.description),d=description.toLowerCase(),k=text(r.kind).toLowerCase();
+ const hasCash=amount(r.cash)>0,hasNoncash=amount(r.inKind)>0||/in.kind/.test(k);
+ if(hasCash&&hasNoncash)return 'Cash + noncash support';
+ if(hasCash){
+  if(/sponsor|renewal/.test(d+' '+text(r.program).toLowerCase()))return 'Club sponsorship payment';
+  if(/raffle|auction|ticket|cash deposit|cash donations.*(?:pink ride|ballyhoo)|pink ride.*cash|ballyhoo.*cash/.test(d))return 'Fundraiser proceeds';
+  return 'Cash donation';
+ }
+ if(/details (?:not yet recorded|to verify)|in.kind support/.test(d)||!description){
+  return /club sponsorship|community partner/i.test(r.program+' '+r.level)?'Ongoing partner support':hasNoncash?'Noncash support — details missing':'Support not specified';
+ }
+ if(/cleaning|come.?clean|haircut|hair.?style|styling|photograph(?:y|er) service|maintenance|repair service|design service|printing service|storage space|meeting (?:space|room)|venue use/.test(d+' '+k))return 'Service';
+ if(/course|session|training|lesson|muay thai|framework.*package|fitness|wellness/.test(d+' '+k))return 'Class / training';
+ if(/admission|golf|bowling|pinboys|charter|experience|outing|tour\b/.test(d+' '+k))return 'Experience / admission';
+ if(/gift.?card|gift.?cert|certificate|voucher|restaurant|dining|meal|food.*(?:credit|card)/.test(d+' '+k))return 'Gift card / gift certificate';
+ // A restaurant name alone describes the tracker certificate, rather than a physical product.
+ if(/icehouse restaurant|the atlantic|yard house|shadowlawn eats|murphy.s irish pub|quemar cocina|surf rider|hoss.s deli|21st street seafood|side street cantina|salt & honey|scotty quixx|local beach/.test(d)&&norm(description)===norm(r.business))return 'Gift card / gift certificate';
+ if(hasNoncash||/shirt|purse|bag|backpack|whiskey|whisky|bourbon|beer|stool|bike|axe|canvas|basket|print|sunglass|jacket|tank top|dress|clock|sign|wallet|blaster/.test(d))return 'Item';
+ return 'Support not specified';
+}
+
 function prepare(r){
  r.originalName=r.name;r.business=r.tab==='Tracking Tab'?text(r.raw[23]):'';
  r.review=[];r.nameBasis='Recorded donor';
@@ -53,7 +77,7 @@ function prepare(r){
  )){
  r.name=r.business;r.nameBasis='Business donor'; 
  }
- r.support=amount(r.cash)>0&&amount(r.inKind)>0?'Money + items / services':amount(r.cash)>0?'Money':/in.kind/i.test(r.kind)||amount(r.inKind)>0?'Items / services':'Needs review';
+ r.support=supportCategory(r);
  if(r.name==='Donor unconfirmed')r.review.push('Confirm who donated; business / brand is context only');
  if(r.tab==='Tracking Tab'&&/^chase credit card$/i.test(r.originalName))r.method='Credit card (source: Chase)';
  if(r.tab==='Tracking Tab'&&/^paypal$/i.test(r.originalName))r.method='PayPal';
@@ -89,7 +113,7 @@ function reconcile(input){
  ['date','contact','email','phone','program','level','expiration','owner','business'].forEach(k=>{if(!text(same[k]))same[k]=r[k]});
  same.review=[...new Set([...same.review,...r.review])];
  });
- gifts.forEach(g=>{if(!g.date)g.review.push('Received date not recorded');g.review=[...new Set(g.review)];});
+ gifts.forEach(g=>{g.support=supportCategory(g);if(!g.date)g.review.push('Received date not recorded');g.review=[...new Set(g.review)];});
  return {gifts,profiles,excluded};
 }
 let view='gifts';
@@ -113,8 +137,8 @@ function exportCsv(){
 function draw(){
  host.innerHTML='<div class="sn-head"><div><h2>Sponsorships New</h2><p>Gifts are separate from sponsor profiles. Matching copies of a gift appear once.</p></div><div><button class="sponsor-tab" data-sn-export '+(loading?'disabled':'')+'>Export CSV</button> <button class="sponsor-tab" data-sn-refresh '+(loading?'disabled':'')+'>Refresh records</button></div></div>'+
  '<div class="sn-controls"><button class="sponsor-tab" data-sn-view="gifts" '+(view==='gifts'?'style="background:#8a1735;color:white"':'')+'>Gifts received</button><button class="sponsor-tab" data-sn-view="profiles" '+(view==='profiles'?'style="background:#8a1735;color:white"':'')+'>Sponsor profiles / requests</button></div>'+
- '<p class="sn-note">Money means a positive cash contribution recorded in the source. Items / services are noncash support; their estimated value is not money received. “Not recorded” is not zero. Named business donors do not require an individual contact. A product brand alone does not identify its donor. Conflicting names or values are flagged rather than silently corrected. Source details retain every original entry. Ticket sales, listed expenses, voids, bank interest and club-funded prizes are excluded from gifts.</p>'+
- '<div class="sn-controls"><input data-sn-search aria-label="Search" placeholder="Search donor, business, item or notes…" value="'+esc(q)+'"><select data-sn-source aria-label="Source"><option value="">All sources</option>'+sourceSpecs.map(s=>'<option '+(selected===s.name?'selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select><select data-sn-type aria-label="Support given"><option value="">All support</option>'+['Money','Items / services','Money + items / services','Needs review'].map(t=>'<option '+(type===t?'selected':'')+'>'+t+'</option>').join('')+'</select><select data-sn-year aria-label="Year"><option value="">All years / unknown dates</option>'+[...new Set(records.map(r=>(r.date.match(/\b20\d{2}\b/)||[])[0]).filter(Boolean))].sort().reverse().map(y=>'<option '+(year===y?'selected':'')+'>'+y+'</option>').join('')+'</select></div><p class="sn-status" data-sn-status role="status"></p><div class="sn-table-wrap"><table class="sn-table" style="min-width:1500px"><thead><tr>'+['Donor / business','Contact person','Support given','Money recorded','Item / service value','Received date','What they gave','Quantity','Review notes','Source details'].map(t=>'<th>'+t+'</th>').join('')+'</tr></thead><tbody data-sn-body></tbody></table></div>';
+ '<p class="sn-note">Support given describes the contribution: sponsorship payment, cash donation, fundraiser proceeds, item, service, certificate, experience, training, or partner support. Categories use the recorded description and contribution type. Item and service values are estimates, not money received. “Not recorded” is not zero. Named business donors do not require an individual contact. A product brand alone does not identify its donor. Conflicting names or values are flagged rather than silently corrected. Source details retain every original entry. Ticket sales, listed expenses, voids, bank interest and club-funded prizes are excluded from gifts.</p>'+
+ '<div class="sn-controls"><input data-sn-search aria-label="Search" placeholder="Search donor, business, item or notes…" value="'+esc(q)+'"><select data-sn-source aria-label="Source"><option value="">All sources</option>'+sourceSpecs.map(s=>'<option '+(selected===s.name?'selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select><select data-sn-type aria-label="Support given"><option value="">All support</option>'+[...supportCategories,'Needs review'].map(t=>'<option '+(type===t?'selected':'')+'>'+t+'</option>').join('')+'</select><select data-sn-year aria-label="Year"><option value="">All years / unknown dates</option>'+[...new Set(records.map(r=>(r.date.match(/\b20\d{2}\b/)||[])[0]).filter(Boolean))].sort().reverse().map(y=>'<option '+(year===y?'selected':'')+'>'+y+'</option>').join('')+'</select></div><p class="sn-status" data-sn-status role="status"></p><div class="sn-table-wrap"><table class="sn-table" style="min-width:1500px"><thead><tr>'+['Donor / business','Contact person','Support given','Money recorded','Item / service value','Received date','What they gave','Quantity','Review notes','Source details'].map(t=>'<th>'+t+'</th>').join('')+'</tr></thead><tbody data-sn-body></tbody></table></div>';
  host.querySelector('[data-sn-export]').onclick=exportCsv;
  host.querySelector('[data-sn-refresh]').onclick=()=>load(true);
  host.querySelectorAll('[data-sn-view]').forEach(b=>b.onclick=()=>{view=b.dataset.snView;draw()});
