@@ -1,14 +1,19 @@
-/* Public Ride Partners contact cards. */
+/* Accessible public Cornerstone phone cards. */
 (function(){
 const cards=Array.from(document.querySelectorAll('[data-bssc-donor-art="Cornerstone Masonry"]'));
 if(!cards.length)return;
-const style=document.createElement('style');style.textContent='[data-bssc-donor-art="Cornerstone Masonry"]{cursor:pointer}#rp-corner-contact{box-sizing:border-box;width:min(440px,calc(100% - 32px));max-width:calc(100% - 32px);padding:28px;background:#000;color:#fff;border:1px solid #c1352e;border-radius:12px;font:16px/1.5 Arial,sans-serif}#rp-corner-contact::backdrop{background:rgba(0,0,0,.8)}#rp-corner-contact h2{font-size:25px;line-height:1.2;margin:0 35px 12px 0}#rp-corner-contact p{color:#ccc;margin:0 0 20px}#rp-corner-contact a{display:block;padding:14px 16px;margin:12px 0;border:1px solid #555;border-radius:8px;background:#101010;color:#fff;text-decoration:none}#rp-corner-contact a:hover{border-color:#c1352e}#rp-corner-contact strong{display:block}#rp-corner-contact a span{font-size:22px;color:#ff867b}#rp-corner-close{position:absolute;right:12px;top:10px;width:40px;height:40px;border:1px solid #666;border-radius:6px;background:#000;color:#fff;font-size:26px;cursor:pointer}#rp-corner-contact :focus-visible,[data-bssc-donor-art="Cornerstone Masonry"]:focus-visible{outline:3px solid #ffaaa0;outline-offset:3px}';
+const style=document.createElement('style');
+style.textContent='[data-bssc-donor-art="Cornerstone Masonry"]{cursor:pointer;position:relative}.rp-phone-face{position:absolute;inset:0;z-index:3;background:#000;color:#fff;padding:22px 8px 6px;display:flex;flex-direction:column;justify-content:center;gap:8px;text-align:center;box-sizing:border-box}.rp-phone-face[hidden]{display:none!important}.rp-phone-face a{display:block;text-decoration:none;color:#fff;border:1px solid #444;border-radius:5px;padding:4px 2px;line-height:1.2}.rp-phone-face a:hover{border-color:#c1352e}.rp-phone-face strong{display:block;font:700 12px/1.3 Arial,sans-serif}.rp-phone-face a span{display:block;color:#ff9188;font:700 17px/1.3 Arial,sans-serif}.rp-phone-close{position:absolute;right:3px;top:2px;width:25px;height:24px;border:0;background:#000;color:#fff;font:22px/1 Arial,sans-serif;cursor:pointer}.rp-phone-face :focus-visible{outline:2px solid #ffaaa0;outline-offset:1px}@media(min-width:600px){.rp-phone-face strong{font-size:14px}.rp-phone-face a span{font-size:20px}}';
 document.head.appendChild(style);
-const dialog=document.createElement('dialog');dialog.id='rp-corner-contact';dialog.setAttribute('aria-labelledby','rp-corner-title');dialog.innerHTML='<button id="rp-corner-close" type="button" aria-label="Close contact details">×</button><h2 id="rp-corner-title">Cornerstone Masonry</h2><p>Choose a contact below to call.</p><a href="tel:+17577293912"><strong>Jamie Crawford</strong><span>(757) 729-3912</span></a><a href="tel:+17573644462"><strong>Ray Bennet</strong><span>(757) 364-4462</span></a>';
-document.body.appendChild(dialog);
-let trigger;
-function place(){try{const host=window.frameElement;if(!host)return;const p=window.parent;let top=0,bottom=p.innerHeight;for(let a=host.parentElement;a;a=a.parentElement){const css=p.getComputedStyle(a);if(/auto|scroll|hidden|clip/.test(css.overflowY)){const r=a.getBoundingClientRect();if(r.height>0){top=Math.max(top,r.top);bottom=Math.min(bottom,r.bottom);}}}const r=host.getBoundingClientRect(),h=dialog.offsetHeight;const target=Math.min(bottom-h-12,Math.max(top+150,(top+bottom-h)/2));dialog.style.top=Math.max(12,target-r.top)+'px';}catch(e){}}
-function open(card){trigger=card;dialog.style.position='absolute';dialog.style.bottom='auto';dialog.style.margin='0 auto';dialog.showModal();place();requestAnimationFrame(place);}
-cards.forEach(card=>{card.setAttribute('role','button');card.setAttribute('tabindex','0');card.setAttribute('aria-label','Contact Cornerstone Masonry');card.setAttribute('aria-haspopup','dialog');card.addEventListener('click',()=>open(card));card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open(card);}});});
-dialog.querySelector('button').addEventListener('click',()=>dialog.close());dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});dialog.addEventListener('close',()=>trigger?.focus());
+cards.forEach(card=>{
+card.setAttribute('role','button');card.setAttribute('tabindex','0');card.setAttribute('aria-label','Show Cornerstone Masonry phone numbers');card.setAttribute('aria-expanded','false');
+const panel=document.createElement('div');panel.className='rp-phone-face';panel.hidden=true;panel.setAttribute('role','group');panel.setAttribute('aria-label','Cornerstone Masonry phone numbers');
+panel.innerHTML='<button type="button" class="rp-phone-close" aria-label="Close phone numbers">×</button><a href="tel:+17577293912"><strong>Jamie Crawford</strong><span>(757) 729-3912</span></a><a href="tel:+17573644462"><strong>Ray Bennet</strong><span>(757) 364-4462</span></a>';
+card.appendChild(panel);
+function open(){panel.hidden=false;card.setAttribute('aria-expanded','true');}
+function close(){panel.hidden=true;card.setAttribute('aria-expanded','false');card.focus({preventScroll:true});}
+card.addEventListener('click',e=>{if(!panel.contains(e.target))open();});
+card.addEventListener('keydown',e=>{if(e.target===card&&(e.key==='Enter'||e.key===' ')){e.preventDefault();open();}if(e.key==='Escape'&&!panel.hidden){e.preventDefault();close();}});
+panel.querySelector('button').addEventListener('click',e=>{e.stopPropagation();close();});
+});
 })();
