@@ -2872,12 +2872,12 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         `<article class="operations-kpi"><span>Cash on Hand</span><strong>${esc(String(financeRows[6]?.[1] || '—'))}</strong><div class="operations-fund-breakdown"><div>Bikes for Tykes <b>${esc(fundBalance(financeRows[11]?.[5]))}</b></div><div>General Fund <b>${esc(fundBalance(financeRows[11]?.[1]))}</b></div></div></article>`,
         `<article class="operations-kpi"><span>Lifetime Community Impact</span><strong>${esc(String(financeRows[6]?.[5] || '—'))}</strong><div class="operations-fund-breakdown"><div>2025 Full Year <b>${esc(fundBalance(impactRows[25]?.[4]))}</b></div><div>2026 Year to Date <b>${esc(fundBalance(impactRows[27]?.[1]))}</b></div></div></article>`,
         card('Bikes for Tykes Raised to Date · 2026',bftRaised,bftGoal ? `${bftProgress || 'Progress not shown'} of ${bftGoal} goal` : 'Bikes for Tykes · Dashboard'),
-        card('Marketplace Cash to Collect',marketplaceDue || '$0.00')
+        card('Marketplace Cash to Collect',marketplaceDue || 'Unavailable',marketplaceDue ? 'Outstanding marketplace payments' : 'Marketplace data did not load · Refresh to retry')
       ];
       target.innerHTML = cards.join('');
       const successful = results.filter(result => result.status === 'fulfilled').length;
       const total = results.length;
-      if (status) status.textContent = successful === total ? 'All four workbooks refreshed' : `${successful} of ${total} data sources refreshed`;
+      if (status) status.textContent = successful === total ? 'All six data sources refreshed' : `${successful} of ${total} data sources refreshed · Some totals unavailable`;
       if (freshness) freshness.textContent = `Last refreshed ${new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',timeZoneName:'short'})}.`;
       operationsOverviewLoadedAt = Date.now();
     }
