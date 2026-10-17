@@ -7,7 +7,7 @@ document.head.appendChild(style);
 const dialog=document.createElement('dialog');dialog.id='rp-corner-contact';dialog.setAttribute('aria-labelledby','rp-corner-title');dialog.innerHTML='<button id="rp-corner-close" type="button" aria-label="Close contact details">×</button><h2 id="rp-corner-title">Cornerstone Masonry</h2><p>Choose a contact below to call.</p><a href="tel:+17577293912"><strong>Jamie Crawford</strong><span>(757) 729-3912</span></a><a href="tel:+17573644462"><strong>Ray Bennet</strong><span>(757) 364-4462</span></a>';
 document.body.appendChild(dialog);
 let trigger;
-function open(card){trigger=card;dialog.showModal();}
+function open(card){trigger=card;dialog.style.position='absolute';dialog.style.top=Math.max(16,card.getBoundingClientRect().top+window.scrollY-60)+'px';dialog.style.bottom='auto';dialog.style.margin='0 auto';dialog.showModal();dialog.scrollIntoView({block:'center',inline:'nearest'});}
 cards.forEach(card=>{card.setAttribute('role','button');card.setAttribute('tabindex','0');card.setAttribute('aria-label','Contact Cornerstone Masonry');card.setAttribute('aria-haspopup','dialog');card.addEventListener('click',()=>open(card));card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open(card);}});});
 dialog.querySelector('button').addEventListener('click',()=>dialog.close());dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});dialog.addEventListener('close',()=>trigger?.focus());
 })();
