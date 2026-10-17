@@ -1,0 +1,13 @@
+/* Public Ride Partners contact cards. */
+(function(){
+const cards=Array.from(document.querySelectorAll('[data-bssc-donor-art="Cornerstone Masonry"]'));
+if(!cards.length)return;
+const style=document.createElement('style');style.textContent='[data-bssc-donor-art="Cornerstone Masonry"]{cursor:pointer}#rp-corner-contact{box-sizing:border-box;width:min(440px,calc(100% - 32px));max-width:calc(100% - 32px);padding:28px;background:#000;color:#fff;border:1px solid #c1352e;border-radius:12px;font:16px/1.5 Arial,sans-serif}#rp-corner-contact::backdrop{background:rgba(0,0,0,.8)}#rp-corner-contact h2{font-size:25px;line-height:1.2;margin:0 35px 12px 0}#rp-corner-contact p{color:#ccc;margin:0 0 20px}#rp-corner-contact a{display:block;padding:14px 16px;margin:12px 0;border:1px solid #555;border-radius:8px;background:#101010;color:#fff;text-decoration:none}#rp-corner-contact a:hover{border-color:#c1352e}#rp-corner-contact strong{display:block}#rp-corner-contact a span{font-size:22px;color:#ff867b}#rp-corner-close{position:absolute;right:12px;top:10px;width:40px;height:40px;border:1px solid #666;border-radius:6px;background:#000;color:#fff;font-size:26px;cursor:pointer}#rp-corner-contact :focus-visible,[data-bssc-donor-art="Cornerstone Masonry"]:focus-visible{outline:3px solid #ffaaa0;outline-offset:3px}';
+document.head.appendChild(style);
+const dialog=document.createElement('dialog');dialog.id='rp-corner-contact';dialog.setAttribute('aria-labelledby','rp-corner-title');dialog.innerHTML='<button id="rp-corner-close" type="button" aria-label="Close contact details">×</button><h2 id="rp-corner-title">Cornerstone Masonry</h2><p>Choose a contact below to call.</p><a href="tel:+17577293912"><strong>Jamie Crawford</strong><span>(757) 729-3912</span></a><a href="tel:+17573644462"><strong>Ray Bennet</strong><span>(757) 364-4462</span></a>';
+document.body.appendChild(dialog);
+let trigger;
+function open(card){trigger=card;dialog.showModal();}
+cards.forEach(card=>{card.setAttribute('role','button');card.setAttribute('tabindex','0');card.setAttribute('aria-label','Contact Cornerstone Masonry');card.setAttribute('aria-haspopup','dialog');card.addEventListener('click',()=>open(card));card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open(card);}});});
+dialog.querySelector('button').addEventListener('click',()=>dialog.close());dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});dialog.addEventListener('close',()=>trigger?.focus());
+})();
