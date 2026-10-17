@@ -135,7 +135,7 @@ document.head.appendChild(s);
 
 /* Keep Contact after Support in the desktop menu; member resources remain under More. */
 (function(){try{
-var d=parent.document;if(!d.querySelector('[data-aid="NAV_RENDERED"]'))return;
+var d=parent.document;
 var s=d.createElement('style');s.id='bssc-contact-main-navigation';
 s.textContent='@media(min-width:1024px){nav[data-nav-measure]>[data-ux="Container"]>[data-ux="Container"]{padding-left:24px!important;padding-right:24px!important}nav[data-nav-measure]>[data-ux="Container"]>[data-ux="Container"]>[data-ux="Block"]:first-child{flex:0 0 144px!important}nav[data-nav-measure]>[data-ux="Container"]>[data-ux="Container"]>[data-ux="Block"]:nth-child(2){flex:1 1 auto!important;min-width:0!important}[data-aid="NAV_RENDERED"]>ul>li{padding-left:10px!important;padding-right:10px!important}[data-aid="NAV_RENDERED"]>ul>li:first-child{padding-left:0!important}[data-aid="NAV_RENDERED"]>ul>li:nth-child(-n+8),[data-aid="NAV_RENDERED"]>ul>li:last-child{display:inline-block!important;visibility:visible!important}[data-aid="NAV_RENDERED"]>ul>li:nth-child(n+9):not(:last-child){display:none!important}[data-aid="NAV_RENDERED"]>ul>li:last-child>ul>li:nth-child(-n+8){display:none!important}[data-aid="NAV_RENDERED"]>ul>li:last-child>ul>li:nth-child(n+9){display:block!important}}';
 d.head.appendChild(s);
