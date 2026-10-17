@@ -2199,7 +2199,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
             <section class="sponsor-panel" data-finance-panel="events"><div class="coming-soon"><h2>Events &amp; Fundraising</h2><div class="data-status" id="financeEventsStatus">Open this tab to load events and fundraising.</div><div id="financeEventsTable"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="charities"><div class="coming-soon"><h2>Charities</h2><div class="data-status" id="financeCharitiesStatus">Open this tab to load charity reporting.</div><div id="financeCharitiesTable"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="eventbudgets"><div class="coming-soon"><h2>Event Budgets</h2><div class="data-status" id="financeEventBudgetsStatus">Open this tab to load event budgets.</div><div id="financeEventBudgetsTable"></div></div></section>
-          </div><div class="club-workspace" id="volunteersWorkspace"></div><div class="club-workspace" id="recordsWorkspace"></div><div class="club-workspace" id="trackerWorkspace"><iframe id="taskTrackerFrame" title="BSSC Task Tracker" style="width:100%;height:calc(100vh - 210px);min-height:650px;border:0;border-radius:14px;background:#f3f5f7"></iframe></div><div class="club-workspace" id="storageWorkspace"></div><div class="admin-workspace" id="adminWorkspace">
+          </div><div class="club-workspace" id="volunteersWorkspace"></div><div class="club-workspace" id="recordsWorkspace"></div><div class="club-workspace" id="trackerWorkspace"><iframe id="taskTrackerFrame" title="BSSC Task Tracker" style="width:100%;height:calc(100vh - 210px);min-height:650px;border:0;border-radius:14px;background:#000"></iframe></div><div class="club-workspace" id="storageWorkspace"></div><div class="admin-workspace" id="adminWorkspace">
             <div class="admin-overview">
               <div class="admin-stat good"><span>Live Modules</span><strong>8</strong></div>
               <div class="admin-stat"><span>Modules in Build</span><strong>0</strong></div>
@@ -9209,7 +9209,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const recordsWorkspace=document.getElementById('recordsWorkspace');
       const taskGrid = document.getElementById('detailTasks');
       [membershipWorkspace,sponsorWorkspace,bftWorkspace,bikeNightsWorkspace,marketplaceWorkspace,financeWorkspace,adminWorkspace,volunteersWorkspace,recordsWorkspace,document.getElementById("storageWorkspace"),document.getElementById("trackerWorkspace")].forEach(workspace => workspace.classList.remove('active'));
-      if (key === 'tracker') { taskGrid.innerHTML='';document.getElementById('trackerWorkspace').classList.add('active');const frame=document.getElementById('taskTrackerFrame');if(!frame.getAttribute('src'))frame.src='task-tracker.html?v=20261016';
+      if (key === 'tracker') { taskGrid.innerHTML='';document.getElementById('trackerWorkspace').classList.add('active');const frame=document.getElementById('taskTrackerFrame');if(!frame.getAttribute('src'))frame.src='task-tracker.html?v=20261017-black-2154';
       } else if (key === 'storage') { taskGrid.innerHTML='';document.getElementById('storageWorkspace').classList.add('active');loadStorage();
       } else if (key === 'records' || key === 'volunteers') {
         taskGrid.innerHTML='';
