@@ -84,19 +84,37 @@ function prepare(r){
  r.members=[{...r}];return r;
 }
 function giftToken(r){const m=r.reference.match(/BFTIK-(\d+)/i)||r.reference.match(/BFT Charity Tracker item\s*(\d+)/i);return m?'BFTIK-'+m[1].padStart(4,'0'):''}
+
+function receivedDateKey(value){
+ const s=text(value),us=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/),iso=s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T].*)?$/);
+ if(us)return us[3]+'-'+us[1].padStart(2,'0')+'-'+us[2].padStart(2,'0');
+ if(iso)return iso[1]+'-'+iso[2]+'-'+iso[3];
+ return s;
+}
+function donorKey(name){
+ const n=norm(name);
+ if(/stuart/i.test(name)&&/s[yi]l[vb][ai]/i.test(name)&&/jordan/i.test(name))return 'stuartandsylviajordan';
+ return n;
+}
+function excludeUnusableGift(r){
+ if(/^(?:teresa|theresa)\s+stevens$/i.test(text(r.name)))return true;
+ return r.name==='Donor unconfirmed'&&/^(?:bikes?\s+(?:for\s+tykes|protect)\s+donation|cash donation received)(?:\s*[-–—]\s*(?:no name|unknown))?$/i.test(text(r.description));
+}
+
 function reconcile(input){
  const profiles=[],gifts=[];let excluded=0;
  input.forEach(source=>{
  const r=prepare({...source,raw:source.raw.slice()});
+ if(excludeUnusableGift(r)){excluded++;return}
  if(/register|request form/i.test(r.source)){profiles.push(r);return}
  if(/\bVOID\b|bank interest|club.funded prize|planned club purchase|^club purchase$/i.test([r.description,r.method,r.name].join(' '))||amount(r.cash)<0){excluded++;return}
  const token=giftToken(r);
  const same=gifts.find(g=>{
  if(g.members.some(x=>x.source===r.source))return false;
  if(token&&giftToken(g)===token)return true;
- const sameDonor=norm(g.name)===norm(r.name)&&g.name!=='Donor unconfirmed';
- const sameCash=amount(g.cash)>0&&amount(g.cash)===amount(r.cash)&&g.date&&g.date===r.date;
- const sameItem=norm(g.description)===norm(r.description)&&amount(g.inKind)>0&&amount(g.inKind)===amount(r.inKind)&&(!g.date||!r.date||g.date===r.date);
+ const sameDonor=donorKey(g.name)===donorKey(r.name)&&g.name!=='Donor unconfirmed';
+ const sameCash=amount(g.cash)>0&&amount(g.cash)===amount(r.cash)&&g.date&&receivedDateKey(g.date)===receivedDateKey(r.date);
+ const sameItem=norm(g.description)===norm(r.description)&&amount(g.inKind)>0&&amount(g.inKind)===amount(r.inKind)&&(!g.date||!r.date||receivedDateKey(g.date)===receivedDateKey(r.date));
  return sameDonor&&(sameCash||sameItem);
  });
  if(!same){gifts.push(r);return}
