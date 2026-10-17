@@ -9,7 +9,7 @@ const sourceSpecs=[
  {name:'BFT original donation tracker',book:BFT_SPREADSHEET_ID,tab:'Tracking Tab',range:'A1:AB1000',header:2,kind:'bft'}
 ];
 // Ticket sales, processing fees, and listed expenses are finance activity, excluded from this sponsorship review only.
-const excludedFinanceReceiptIds=new Set(["BFTCC-0034","BFTCC-0019","BFTCC-0002","BFTCC-0012","BFTCC-0013","BFTCC-0007","BFTCC-0018","BFTCC-0063","BFTCC-0030","BFTCC-0014","BFTCC-0016","BFTCC-0020","BFTCC-0060","BFTCC-0015","BFTCC-0017","BFTCC-0009","BFTCC-0038","BFTCC-0064","BFTCC-0035","BFTCC-0008","BFTCC-0025","BFTCC-0027","BFTCC-0006","BFTCC-0010","BFTCC-0037","BFTCC-0039","BFTCC-0041","BFTCC-0043","BFTCC-0045","BFTCC-0051","BFTCC-0053","BFTCC-0055","BFTCC-0057","BFTCC-0059","BFTCC-0004","BFTCC-0003","BFTCC-0061","BFTCC-0048","BFTCC-0046","BFTIK-0040","BFTIK-0041","BFTIK-0047","BFTIK-0046","BFTIK-0024","BFTIK-0036"]);
+const excludedFinanceReceiptIds=new Set(["BFTCC-0034","BFTCC-0019","BFTCC-0002","BFTCC-0012","BFTCC-0013","BFTCC-0007","BFTCC-0018","BFTCC-0063","BFTCC-0030","BFTCC-0014","BFTCC-0016","BFTCC-0020","BFTCC-0060","BFTCC-0015","BFTCC-0017","BFTCC-0009","BFTCC-0038","BFTCC-0064","BFTCC-0035","BFTCC-0008","BFTCC-0025","BFTCC-0027","BFTCC-0006","BFTCC-0010","BFTCC-0037","BFTCC-0039","BFTCC-0041","BFTCC-0043","BFTCC-0045","BFTCC-0051","BFTCC-0053","BFTCC-0055","BFTCC-0057","BFTCC-0059","BFTCC-0004","BFTCC-0003","BFTCC-0061","BFTCC-0048","BFTCC-0046","BFTIK-0040","BFTIK-0041","BFTIK-0047","BFTIK-0046","BFTIK-0024","BFTIK-0036","BFTCC-0044"]);
 const excludedSponsorEntries=[
  {tab:'Sponsors - Prospective',name:'Arthur Murray'},
  {tab:'Sponsors - Current',name:'Boujiee Dogs & Cocktails'},
@@ -101,6 +101,7 @@ function donorKey(name){
 }
 const excludedReviewDescriptions=new Set(["Ballyhoo’s – Cash Donations","Cash Deposit","Pink Ride – Raffle Basket – Cash Donations","1•SEA California Polarized Sunglasses – Round","1•SEA California Polarized Sunglasses – Wraparound","BoneShakers Bikes for Tykes Handmade Wooden Sign","BoneShakers Harley-Davidson Handmade Wall Clock","Buckshot stool","Framed Jeff Gordon / DuPont No. 24 NASCAR collectible print"].map(norm));
 function excludeUnusableGift(r){
+ if(donorKey(r.name)==='walkkulik'&&amount(r.cash)===20&&receivedDateKey(r.date)==='2026-09-27')return true;
  if(excludedReviewDescriptions.has(norm(r.description)))return true;
  if(/^(?:teresa|theresa)\s+stevens$/i.test(text(r.name)))return true;
  return r.name==='Donor unconfirmed'&&/^(?:bikes?\s+(?:for\s+tykes|protect)\s+donation|cash donation received)(?:\s*[-–—]\s*(?:no name|unknown))?$/i.test(text(r.description));
