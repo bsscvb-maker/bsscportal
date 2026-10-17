@@ -53,6 +53,7 @@ function renewalMonthEnd(value){
  return new Intl.DateTimeFormat('en-US',{month:'long',day:'numeric',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(p.year+1,p.month,0)));
 }
 function formatPhone(value){const original=text(value);let digits=original.replace(/\D/g,'');if(digits.length===11&&digits[0]==='1')digits=digits.slice(1);return digits.length===10?digits.slice(0,3)+'-'+digits.slice(3,6)+'-'+digits.slice(6):original}
+function exportMoney(value){return amount(value)===null?'':money(value)}
 function norm(v){return text(v).toLowerCase().replace(/[^a-z0-9]/g,'')}
 function missingName(v){return /^(donor not recorded|name not recorded|no name|unknown buyer|cash|cash donor|paypal|chase credit card)$/i.test(text(v))}
 
@@ -210,7 +211,7 @@ function visibleRecords(){
 }
 function exportCsv(){
  const headers=['Donor / business','Person/Business','Contact person','Email','Phone','Support given','Money given (before fees)','Items / services estimated value','Month received','What they gave','Quantity','Program','Payment method','Processing fee','Net received'];
- const data=visibleRecords().map(r=>[r.name==='Donor unconfirmed'?'':r.name,r.personType,r.contact,r.email,r.phone,r.support,r.cash,r.inKind,receivedMonth(r.date),r.description,r.quantity,r.program,r.method,r.fee,r.net]);
+ const data=visibleRecords().map(r=>[r.name==='Donor unconfirmed'?'':r.name,r.personType,r.contact,r.email,r.phone,r.support,exportMoney(r.cash),exportMoney(r.inKind),receivedMonth(r.date),r.description,r.quantity,r.program,r.method,exportMoney(r.fee),exportMoney(r.net)]);
  const cell=v=>{v=String(v??'');if(/^\s*[=+@-]/.test(v)&&!/^\s*-?\d+(\.\d+)?\s*$/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'};
  const csv='\uFEFF'+[headers,...data].map(row=>row.map(cell).join(',')).join('\r\n');
  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download='BSSC-Sponsorships-New-'+view+'-'+new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'})+'.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
