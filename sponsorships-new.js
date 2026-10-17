@@ -124,7 +124,7 @@ function reconcile(input){
  const a=text(before[field]),b=text(r[field]);
  const hasA=field==='cash'||field==='inKind'?amount(a)>0:!!a;
  const hasB=field==='cash'||field==='inKind'?amount(b)>0:!!b;
- if(hasA&&hasB&&(field==='cash'||field==='inKind'?amount(a)!==amount(b):norm(a)!==norm(b)))same.review.push(label+' differs between sources: '+a+' / '+b);
+ if(hasA&&hasB&&(field==='cash'||field==='inKind'?amount(a)!==amount(b):field==='date'?receivedDateKey(a)!==receivedDateKey(b):donorKey(a)!==donorKey(b)))same.review.push(label+' differs between sources: '+a+' / '+b);
  });
  // The original item tracker supplies the item identity. Preserve disagreements for review.
  if(r.tab==='Tracking Tab'&&token){['name','originalName','nameBasis','description','cash','inKind','business','method','quantity'].forEach(k=>same[k]=r[k]);}
