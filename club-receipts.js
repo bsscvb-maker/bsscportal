@@ -32,7 +32,7 @@
       const y=yearMatch[1],currentYear=portalCurrentYear(),current=y===currentYear;
       return '<button class="collection-card receipt-year-card '+(current?'year-current':'year-historical')+'" style="--receipt-accent:'+theme.color+';--receipt-tint:'+theme.tint+'" '+attr+'><div class="year-card-top"><span class="year-status">'+(current?'Current Year':y>currentYear?'Upcoming Year':'Historical Archive')+'</span><span class="year-collection-icon" aria-hidden="true">▤</span></div><h3 class="year-number">'+esc(y)+'</h3><p class="year-meeting-count">'+esc(desc)+'</p><span class="year-card-footer">Open receipts <b aria-hidden="true">→</b></span></button>';
     }
-    return '<button class="collection-card receipt-collection-card" style="'+(theme.kind==='pinkride'?'background:#ffe2ef!important;border-color:#e54895!important;':'')+'--receipt-accent:'+theme.color+';--receipt-tint:'+theme.tint+'" '+attr+'><div class="receipt-collection-art">'+receiptCollectionPicture(theme.kind)+'</div><div class="receipt-collection-copy"><h3>'+esc(title)+'</h3><p>'+esc(desc)+'</p><span>Open collection <b aria-hidden="true">→</b></span></div></button>';
+    return '<button class="collection-card receipt-collection-card" style="'+(theme.kind==='pinkride'?'background:#ffe2ef!important;border-color:#e54895!important;':'')+'--receipt-accent:'+theme.color+';--receipt-tint:'+theme.tint+'" '+attr+'><div class="receipt-collection-art">'+(theme.kind==='bikes'?'<img class="receipt-program-logo" src="assets/bft-logo.webp" alt="BoneShakers Bikes for Tykes">':receiptCollectionPicture(theme.kind))+'</div><div class="receipt-collection-copy"><h3>'+esc(title)+'</h3><p>'+esc(desc)+'</p><span>Open collection <b aria-hidden="true">→</b></span></div></button>';
   };
 
 

@@ -1,0 +1,12 @@
+
+.brand-mark.portal-skull-mark,.avatar.portal-skull-avatar{background:transparent!important;border:0!important;border-radius:0!important;overflow:visible!important;flex-shrink:0}
+.brand-mark.portal-skull-mark{width:52px;height:58px}.portal-skull-mark img,.portal-skull-avatar img{width:100%;height:100%;object-fit:contain;display:block}
+body.portal-authenticated .avatar.portal-skull-avatar{display:grid!important;width:43px;height:48px}.user .portal-skull-avatar{width:43px;height:48px}
+#dashboard .home-view-switch>div{padding-left:78px;min-height:74px;position:relative}
+#dashboard .home-view-switch>div:before{content:'';position:absolute;left:0;top:0;width:62px;height:74px;background:url('assets/club-skull.webp') center/contain no-repeat}
+.portal-program-brand{display:flex;align-items:center;gap:24px;padding:18px 24px;margin:0 0 18px;border:1px solid #3b4148;border-radius:14px;background:linear-gradient(110deg,#121418,#21252b);color:#fff}
+.portal-program-brand img{width:190px;max-width:35%;height:100px;object-fit:contain}.portal-program-brand strong{display:block;font-size:20px;letter-spacing:-.02em}.portal-program-brand span{display:block;color:#b6bec9;font-size:12px;margin-top:5px}
+.records-hero.dashboard-records-header>div:first-child{padding-left:67px;position:relative;min-height:63px}
+.records-hero.dashboard-records-header>div:first-child:before{content:'';position:absolute;left:0;top:0;width:51px;height:63px;background:url('assets/club-skull.webp') center/contain no-repeat}
+.receipt-collection-art .receipt-program-logo{display:block;width:94%;height:94%;object-fit:contain;padding:12px}
+@media(max-width:650px){.brand-mark.portal-skull-mark{width:43px;height:48px}.portal-program-brand{padding:14px;gap:14px}.portal-program-brand img{width:135px;height:76px;max-width:42%}.portal-program-brand strong{font-size:15px}.portal-program-brand span{font-size:10px}#dashboard .home-view-switch>div{padding-left:60px}#dashboard .home-view-switch>div:before{width:47px;height:62px}}
