@@ -25,7 +25,11 @@
     return '<svg viewBox="0 0 320 180" aria-hidden="true"><ellipse cx="159" cy="157" rx="132" ry="9" fill="currentColor" fill-opacity=".08"/>'+scenes[kind]+paper+'</svg>';
   }
   const card=(title,desc,attr)=>{
-    const theme=receiptCollectionTheme(program||title);
+    const theme=receiptCollectionTheme(program||title),yearMatch=attr.match(/data-receipt-year="(\d{4})"/);
+    if(yearMatch){
+      const y=yearMatch[1],currentYear=portalCurrentYear(),current=y===currentYear;
+      return '<button class="collection-card receipt-year-card '+(current?'year-current':'year-historical')+'" style="--receipt-accent:'+theme.color+';--receipt-tint:'+theme.tint+'" '+attr+'><div class="year-card-top"><span class="year-status">'+(current?'Current Year':y>currentYear?'Upcoming Year':'Historical Archive')+'</span><span class="year-collection-icon" aria-hidden="true">▤</span></div><h3 class="year-number">'+esc(y)+'</h3><p class="year-meeting-count">'+esc(desc)+'</p><span class="year-card-footer">Open receipts <b aria-hidden="true">→</b></span></button>';
+    }
     return '<button class="collection-card receipt-collection-card" style="--receipt-accent:'+theme.color+';--receipt-tint:'+theme.tint+'" '+attr+'><div class="receipt-collection-art">'+receiptCollectionPicture(theme.kind)+'</div><div class="receipt-collection-copy"><h3>'+esc(title)+'</h3><p>'+esc(desc)+'</p><span>Open collection <b aria-hidden="true">→</b></span></div></button>';
   };
 
@@ -231,7 +235,7 @@
       const names=[...new Set(['Bikes for Tykes',...all.map(r=>r.program),...folders.map(r=>r.program)])].filter(Boolean).sort();
       body='<div class="records-collections">'+names.map(p=>card(p,all.filter(r=>r.program===p).length+' receipts','data-receipt-program="'+esc(p)+'"')).join('')+'</div>';
     }else if(!year){
-      const years=[...new Set(['2025','2026','2027',...all.filter(r=>r.program===program).map(r=>r.year),...folders.filter(r=>r.program===program).map(r=>r.year)])].filter(Boolean).sort().reverse();
+      const years=[...new Set(['2025','2026','2027',portalCurrentYear(),...all.filter(r=>r.program===program).map(r=>r.year),...folders.filter(r=>r.program===program).map(r=>r.year)])].filter(Boolean).sort().reverse();
       body='<div class="records-collections">'+years.map(y=>card('Receipts '+y,all.filter(r=>r.program===program&&r.year===y).length+' documents','data-receipt-year="'+esc(y)+'"')).join('')+'</div>';
     }else{
       const rows=all.filter(r=>r.program===program&&r.year===year&&(!query||[r.title,r.vendor,r.items,r.notes,r.date,receiptReference(r,'orderNumber'),receiptReference(r,'invoiceNumber')].join(' ').toLowerCase().includes(query.toLowerCase()))).sort((a,b)=>String(a.vendor||a.title||'').localeCompare(String(b.vendor||b.title||''),undefined,{sensitivity:'base',numeric:true})||String(a.title||'').localeCompare(String(b.title||''),undefined,{sensitivity:'base',numeric:true})||String(b.date||'').localeCompare(String(a.date||'')));
