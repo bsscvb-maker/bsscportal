@@ -117,6 +117,7 @@ function applyReviewedGift(g){
  if(!match)return;
  const fields=['name','personType','contact','email','phone','support','cash','inKind','date','description','quantity','program','method'];
  fields.forEach((field,i)=>g[field]=text(match[i]));
+ g.fee=text(match[14]);g.net=text(match[15]);g.transactionId=text(match[16]);
  g.nameBasis='Todd’s reviewed file';
  g.review=g.review.filter(note=>!note.startsWith('Donor differs')&&!note.startsWith('Money amount differs')&&!note.startsWith('Item / service value differs')&&!note.startsWith('Received date differs')&&!note.startsWith('Confirm who donated'));
 }
@@ -127,6 +128,22 @@ function applyReviewedProfile(p){
  const supports=[...new Set(matches.map(row=>text(row[5])))];
  if(supports.length===1)p.support=supports[0];
  for(const [field,column] of [['contact',2],['email',3],['phone',4]]){const value=matches.find(row=>text(row[column]));if(value)p[field]=text(value[column])}
+}
+
+
+function includeReviewedPaypal(gifts){
+ const columns=['name','personType','contact','email','phone','support','cash','inKind','date','description','quantity','program','method'];
+ reviewedRows.forEach(row=>{
+ let keys=[];try{keys=JSON.parse(row[13]||'[]')}catch(e){return}
+ const key=keys.find(k=>k.startsWith('PayPal|'));if(!key)return;
+ const txn=key.slice(7);
+ if(gifts.some(g=>g.transactionId===txn||g.members.some(m=>m.reference?.includes(txn))))return;
+ const fields=Object.fromEntries(columns.map((field,i)=>[field,text(row[i])]));
+ const headers=['Transaction ID',...columns,'Source keys','Processing fee','Net received','PayPal transaction ID'];
+ const record=prepare({...fields,id:'PayPal:'+txn,source:'PayPal transaction history',book:SPREADSHEET_ID,tab:'PayPal',row:reviewedRows.indexOf(row)+2,headers,raw:[txn,...row],reference:txn,kind:'Donation',level:'',status:'Completed',notes:'Imported from Todd’s PayPal history. Amount given is gross, before processing fees.',owner:'',expiration:'',business:''});
+ Object.assign(record,fields,{fee:text(row[14]),net:text(row[15]),transactionId:txn,nameBasis:'PayPal history confirmed by Todd'});
+ gifts.push(record);
+ });
 }
 
 function reconcile(input){
@@ -160,6 +177,7 @@ function reconcile(input){
  same.review=[...new Set([...same.review,...r.review])];
  });
  gifts.forEach(g=>{g.support=supportCategory(g);applyReviewedGift(g);if(!g.date)g.review.push('Received date not recorded');g.review=[...new Set(g.review)];});
+ includeReviewedPaypal(gifts);
  profiles.forEach(applyReviewedProfile);
  return {gifts,profiles,excluded};
 }
@@ -175,8 +193,8 @@ function visibleRecords(){
  ).sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base'})||a.description.localeCompare(b.description));
 }
 function exportCsv(){
- const headers=['Donor / business','Person/Business','Contact person','Email','Phone','Support given','Money received (recorded)','Items / services estimated value','Date received','What they gave','Quantity','Program','Payment method'];
- const data=visibleRecords().map(r=>[r.name==='Donor unconfirmed'?'':r.name,r.personType,r.contact,r.email,r.phone,r.support,r.cash,r.inKind,r.date,r.description,r.quantity,r.program,r.method]);
+ const headers=['Donor / business','Person/Business','Contact person','Email','Phone','Support given','Money given (before fees)','Items / services estimated value','Date received','What they gave','Quantity','Program','Payment method','Processing fee','Net received'];
+ const data=visibleRecords().map(r=>[r.name==='Donor unconfirmed'?'':r.name,r.personType,r.contact,r.email,r.phone,r.support,r.cash,r.inKind,r.date,r.description,r.quantity,r.program,r.method,r.fee,r.net]);
  const cell=v=>{v=String(v??'');if(/^\s*[=+@-]/.test(v)&&!/^\s*-?\d+(\.\d+)?\s*$/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'};
  const csv='\uFEFF'+[headers,...data].map(row=>row.map(cell).join(',')).join('\r\n');
  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download='BSSC-Sponsorships-New-'+view+'-'+new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'})+'.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -184,8 +202,8 @@ function exportCsv(){
 function draw(){
  host.innerHTML='<div class="sn-head"><div><h2>Sponsorships New</h2><p>Gifts are separate from sponsor profiles. Matching copies of a gift appear once.</p></div><div><button class="sponsor-tab" data-sn-export '+(loading||!reviewedReady?'disabled':'')+'>Export CSV</button> <button class="sponsor-tab" data-sn-refresh '+(loading?'disabled':'')+'>Refresh records</button></div></div>'+
  '<div class="sn-controls"><button class="sponsor-tab" data-sn-view="gifts" '+(view==='gifts'?'style="background:#8a1735;color:white"':'')+'>Gifts received</button><button class="sponsor-tab" data-sn-view="profiles" '+(view==='profiles'?'style="background:#8a1735;color:white"':'')+'>Sponsor profiles / requests</button></div>'+
- '<p class="sn-note">Your reviewed file supplies donor names, Person/Business, Support given, contacts, amounts, dates, and descriptions. Original records remain available under Source details. Item and service values are estimates, not money received. “Not recorded” is not zero. Named business donors do not require an individual contact. A product brand alone does not identify its donor. Conflicting names or values are flagged rather than silently corrected. Source details retain every original entry. Ticket sales, listed expenses, voids, bank interest and club-funded prizes are excluded from gifts.</p>'+
- '<div class="sn-controls"><input data-sn-search aria-label="Search" placeholder="Search donor, business, item or notes…" value="'+esc(q)+'"><select data-sn-source aria-label="Source"><option value="">All sources</option>'+sourceSpecs.map(s=>'<option '+(selected===s.name?'selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select><select data-sn-person aria-label="Person or business"><option value="">All people / businesses</option>'+['Person','Business','Restaurant'].map(p=>'<option '+(personType===p?'selected':'')+'>'+p+'</option>').join('')+'</select><select data-sn-type aria-label="Support given"><option value="">All support</option>'+[...supportCategories,'Needs review'].map(t=>'<option '+(type===t?'selected':'')+'>'+t+'</option>').join('')+'</select><select data-sn-year aria-label="Year"><option value="">All years / unknown dates</option>'+[...new Set(records.map(r=>(r.date.match(/\b20\d{2}\b/)||[])[0]).filter(Boolean))].sort().reverse().map(y=>'<option '+(year===y?'selected':'')+'>'+y+'</option>').join('')+'</select></div><p class="sn-status" data-sn-status role="status"></p><div class="sn-table-wrap"><table class="sn-table" style="min-width:1500px"><thead><tr>'+['Donor / business','Person/Business','Contact person','Email','Phone','Support given','Money recorded','Item / service value','Received date','What they gave','Quantity','Review notes','Source details'].map(t=>'<th>'+t+'</th>').join('')+'</tr></thead><tbody data-sn-body></tbody></table></div>';
+ '<p class="sn-note">Your reviewed file supplies donor names, Person/Business, Support given, contacts, amounts, dates, and descriptions. Original records remain available under Source details. Money given is before processing fees; PayPal imports show fees and net received separately. Item and service values are estimates, not money received. “Not recorded” is not zero. Named business donors do not require an individual contact. A product brand alone does not identify its donor. Conflicting names or values are flagged rather than silently corrected. Source details retain every original entry. Ticket sales, listed expenses, voids, bank interest and club-funded prizes are excluded from gifts.</p>'+
+ '<div class="sn-controls"><input data-sn-search aria-label="Search" placeholder="Search donor, business, item or notes…" value="'+esc(q)+'"><select data-sn-source aria-label="Source"><option value="">All sources</option>'+[...sourceSpecs,{name:'PayPal transaction history'}].map(s=>'<option '+(selected===s.name?'selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select><select data-sn-person aria-label="Person or business"><option value="">All people / businesses</option>'+['Person','Business','Restaurant'].map(p=>'<option '+(personType===p?'selected':'')+'>'+p+'</option>').join('')+'</select><select data-sn-type aria-label="Support given"><option value="">All support</option>'+[...supportCategories,'Needs review'].map(t=>'<option '+(type===t?'selected':'')+'>'+t+'</option>').join('')+'</select><select data-sn-year aria-label="Year"><option value="">All years / unknown dates</option>'+[...new Set(records.map(r=>(r.date.match(/\b20\d{2}\b/)||[])[0]).filter(Boolean))].sort().reverse().map(y=>'<option '+(year===y?'selected':'')+'>'+y+'</option>').join('')+'</select></div><p class="sn-status" data-sn-status role="status"></p><div class="sn-table-wrap"><table class="sn-table" style="min-width:1500px"><thead><tr>'+['Donor / business','Person/Business','Contact person','Email','Phone','Support given','Money given','Processing fee','Net received','Item / service value','Received date','What they gave','Quantity','Review notes','Source details'].map(t=>'<th>'+t+'</th>').join('')+'</tr></thead><tbody data-sn-body></tbody></table></div>';
  host.querySelector('[data-sn-export]').onclick=exportCsv;
  host.querySelector('[data-sn-refresh]').onclick=()=>load(true);
  host.querySelectorAll('[data-sn-view]').forEach(b=>b.onclick=()=>{view=b.dataset.snView;draw()});
@@ -197,8 +215,8 @@ function draw(){
 }
 function drawRows(){
  const visible=visibleRecords(),data=reviewData();
- host.querySelector('[data-sn-status]').textContent=loading?'Loading records…':visible.length+' visible '+(view==='gifts'?'gifts':'profiles / requests')+' · '+data.gifts.length+' gift records after combining '+(records.length-data.profiles.length-data.excluded-data.gifts.length)+' duplicate copies · '+(sourceSpecs.length-failed.length)+' of '+sourceSpecs.length+' sources loaded'+(failed.length?' · Unavailable: '+failed.join(', '):'')+(reviewError?' · Reviewed file unavailable: '+reviewError:' · Reviewed file applied');
- host.querySelector('[data-sn-body]').innerHTML=visible.map((r,i)=>'<tr><td>'+esc(r.name)+'<div class="sn-source">'+esc(r.nameBasis)+'</div></td><td>'+esc(r.personType||'—')+'</td><td>'+esc(r.contact||'—')+'</td><td>'+esc(r.email||'—')+'</td><td>'+esc(r.phone||'—')+'</td><td>'+esc(r.support)+(view==='profiles'?'<div class="sn-source">Profile amount; not an additional gift</div>':'')+'</td><td class="sn-amount">'+(amount(r.cash)>0?esc(money(r.cash)):amount(r.cash)===0?'$0.00 recorded':'Not recorded')+'</td><td class="sn-amount">'+esc(money(r.inKind))+'</td><td>'+esc(r.date||'Not recorded')+'</td><td>'+esc(r.description||r.level||'Details not recorded')+'</td><td>'+esc(r.quantity||'—')+'</td><td class="'+(r.review.length?'sn-warn':'')+'">'+esc(r.review.join('\n')||'—')+'</td><td class="sn-actions"><button data-sn-raw="'+i+'">View '+r.members.length+' source '+(r.members.length===1?'record':'records')+'</button></td></tr>').join('')||'<tr><td colspan="13" class="sn-empty">'+(loading?'Loading…':'No matching records.')+'</td></tr>';
+ host.querySelector('[data-sn-status]').textContent=loading?'Loading records…':visible.length+' visible '+(view==='gifts'?'gifts':'profiles / requests')+' · '+data.gifts.length+' gift records after combining '+(records.length-data.profiles.length-data.excluded-data.gifts.filter(g=>g.source!=='PayPal transaction history').length)+' duplicate copies · '+(sourceSpecs.length-failed.length)+' of '+sourceSpecs.length+' sources loaded'+(failed.length?' · Unavailable: '+failed.join(', '):'')+(reviewError?' · Reviewed file unavailable: '+reviewError:' · Reviewed file applied');
+ host.querySelector('[data-sn-body]').innerHTML=visible.map((r,i)=>'<tr><td>'+esc(r.name)+'<div class="sn-source">'+esc(r.nameBasis)+'</div></td><td>'+esc(r.personType||'—')+'</td><td>'+esc(r.contact||'—')+'</td><td>'+esc(r.email||'—')+'</td><td>'+esc(r.phone||'—')+'</td><td>'+esc(r.support)+(view==='profiles'?'<div class="sn-source">Profile amount; not an additional gift</div>':'')+'</td><td class="sn-amount">'+(amount(r.cash)>0?esc(money(r.cash)):amount(r.cash)===0?'$0.00 recorded':'Not recorded')+'</td><td class="sn-amount">'+esc(r.fee?money(r.fee):'—')+'</td><td class="sn-amount">'+esc(r.net?money(r.net):'—')+'</td><td class="sn-amount">'+esc(money(r.inKind))+'</td><td>'+esc(r.date||'Not recorded')+'</td><td>'+esc(r.description||r.level||'Details not recorded')+'</td><td>'+esc(r.quantity||'—')+'</td><td class="'+(r.review.length?'sn-warn':'')+'">'+esc(r.review.join('\n')||'—')+'</td><td class="sn-actions"><button data-sn-raw="'+i+'">View '+r.members.length+' source '+(r.members.length===1?'record':'records')+'</button></td></tr>').join('')||'<tr><td colspan="15" class="sn-empty">'+(loading?'Loading…':'No matching records.')+'</td></tr>';
  host.querySelectorAll('[data-sn-raw]').forEach(b=>b.onclick=()=>showRaw(visible[Number(b.dataset.snRaw)]));
 }
 function showRaw(r){
@@ -210,7 +228,7 @@ function showRaw(r){
 async function load(force=false){
  if(loading||loaded&&!force)return;
  loading=true;draw();const current=++version;
- const results=await Promise.allSettled([...sourceSpecs.map(s=>getSheetValues("'"+s.tab+"'!"+s.range,s.book)),getSheetValues("'Sponsorships New Reviewed'!A1:N1000",SPREADSHEET_ID)]);
+ const results=await Promise.allSettled([...sourceSpecs.map(s=>getSheetValues("'"+s.tab+"'!"+s.range,s.book)),getSheetValues("'Sponsorships New Reviewed'!A1:Q1000",SPREADSHEET_ID)]);
  if(current!==version)return;
  const reviewed=results.pop();reviewError='';reviewedReady=reviewed.status==='fulfilled';
  if(reviewedReady){reviewedRows=reviewed.value.slice(1).filter(row=>row[0]&&row[13]);}
