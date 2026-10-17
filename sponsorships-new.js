@@ -1,6 +1,6 @@
 /* Read-only review of original sponsor and donation records. */
 (()=>{'use strict';
-const key='sponsorsnew';modules[key]={title:'Sponsorships New',description:'Original sponsor and supporter records · All statuses and years · Read-only review',tasks:[]};
+const key='sponsorsnew';modules[key]={title:'Sponsorships New',description:'Gifts, sponsor profiles, and source records · Duplicates combined · Review conflicts',tasks:[]};
 const sourceSpecs=[
  {name:'Contribution history',book:SPREADSHEET_ID,tab:'Sponsor Contributions',range:'A1:R2000',header:0,kind:'gifts'},
  {name:'Current sponsor register',book:SPREADSHEET_ID,tab:'Sponsors - Current',range:'A1:Z200',header:0,kind:'register'},
@@ -34,24 +34,100 @@ function rowRecord(spec,row,index,headers){const r=row,record={id:spec.name+':'+
  if(spec.kind==='requests')Object.assign(record,{name:r[3]||r[1],contact:r[1],email:r[2],phone:r[4],level:r[5],cash:r[6],date:r[13],status:[r[10],r[14]?'Paid: '+r[14]:''].filter(Boolean).join(' · '),notes:['Submitted: '+(r[0]||'Not recorded'),'Requested documentation: '+(r[7]||'Not recorded'),r[8]||''].join('\n'),reference:r[9],kind:'Request / pledge — not confirmed received'});
  if(spec.kind==='bft')Object.assign(record,{name:r[1]||r[23],contact:r[2],email:r[3],description:r[4],cash:r[5],inKind:r[6],kind:[r[7],r[19]].filter(Boolean).join(' · '),date:r[8],notes:[r[9],r[20],r[27]].filter(Boolean).join('\n'),owner:r[10],method:r[19],quantity:r[21],program:'Bikes for Tykes',reference:[r[0],r[23]?'Business / source: '+r[23]:'',r[26]?'Certificate: '+r[26]:''].filter(Boolean).join(' · '),status:r[13],expiration:r[25]});
  Object.keys(record).forEach(k=>{if(!['raw','headers','row'].includes(k))record[k]=text(record[k])});record.name||='Name not recorded';return record}
-function classify(r){const s=(r.kind+' '+r.description).toLowerCase();if(/expense|refund/.test(s)||/^-/.test(r.cash.replace(/[$,\s]/g,'')))return 'Expense / adjustment';if(/ticket|auction proceeds|raffle.*sales/.test(s))return 'Sales / fundraising activity';if(/request|pledge|none yet/.test(s))return 'Prospect / request';if(/in.kind|certificate|service|item/.test(s)||(!r.cash&&r.inKind))return 'In-kind / services';return 'Cash / other support'}
-function money(v){if(!text(v))return 'Not recorded';const n=Number(String(v).replace(/[$,]/g,''));return Number.isFinite(n)?new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n):v}
 
-function visibleRecords(){return records.filter(r=>(!selected||r.source===selected)&&(!type||classify(r)===type)&&(!year||r.date.includes(year))&&(!q||[...r.raw,r.source].join(' ').toLowerCase().includes(q.toLowerCase()))).sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base'})||a.source.localeCompare(b.source)||Number(a.row)-Number(b.row))}
-function exportCsv(){
- const rows=visibleRecords();
- const headers=['Sponsor / donor','Cash amount (source)','In-kind value (source)','Date received (source)','Record type','Source status','Level','Description','Program','Contact','Email','Phone','Payment method','Quantity','Reference','Expiration','Owner / coordinator','Notes','Source','Source tab','Original row','All original fields'];
- const cell=value=>{let v=String(value??'');if(/^[\s]*[=+@-]/.test(v)&&!/^\s*-?\d+(\.\d+)?\s*$/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'};
- const data=rows.map(r=>[r.name,r.cash,r.inKind,r.date,classify(r),r.status,r.level,r.description,r.program,r.contact,r.email,r.phone,r.method,r.quantity,r.reference,r.expiration,r.owner,r.notes,r.source,r.tab,r.row,JSON.stringify(Array.from({length:Math.max(r.headers.length,r.raw.length)},(_,i)=>({field:r.headers[i]||'Column '+(i+1),value:r.raw[i]??''})))]);
- const csv='\uFEFF'+[headers,...data].map(row=>row.map(cell).join(',')).join('\r\n');
- const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
- const link=document.createElement('a');link.href=url;link.download='BSSC-Sponsorships-New-'+new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'})+'.csv';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+function amount(v){const s=text(v).replace(/^'/,'').replace(/[$,\s]/g,'');return s!==''&&Number.isFinite(Number(s))?Number(s):null}
+function money(v){const n=amount(v);return n===null?'Not recorded':new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n)}
+function norm(v){return text(v).toLowerCase().replace(/[^a-z0-9]/g,'')}
+function missingName(v){return /^(donor not recorded|name not recorded|no name|unknown buyer|cash|cash donor|paypal|chase credit card)$/i.test(text(v))}
+function prepare(r){
+ r.originalName=r.name;r.business=r.tab==='Tracking Tab'?text(r.raw[23]):'';
+ r.review=[];r.nameBasis='Recorded donor';
+ if(missingName(r.name)){
+  const match=r.description.match(/donation\s*[-–—]\s*(.+)$/i);
+  if(match&&!missingName(match[1])){r.name=text(match[1]);r.nameBasis='Named in donation description'}
+  else{r.name='Donor unconfirmed';r.nameBasis='Donor missing in source'}
+ }
+ r.support=amount(r.cash)>0&&amount(r.inKind)>0?'Money + items / services':amount(r.cash)>0?'Money':/in.kind/i.test(r.kind)||amount(r.inKind)>0?'Items / services':'Needs review';
+ if(r.name==='Donor unconfirmed')r.review.push('Confirm who donated; business / brand is context only');
+ if(r.tab==='Tracking Tab'&&/^chase credit card$/i.test(r.originalName))r.method='Credit card (source: Chase)';
+ if(r.tab==='Tracking Tab'&&/^paypal$/i.test(r.originalName))r.method='PayPal';
+ r.members=[{...r}];return r;
 }
-
-function draw(){host.innerHTML='<div class="sn-head"><div><h2>Sponsorships New</h2><p>Original records, all years and statuses. Selected ticket-sale, expense, and sponsor-register/request entries are excluded from this review and its exports.</p></div><div><button class="sponsor-tab" data-sn-export '+(loading?'disabled':'')+'>Export CSV</button> <button class="sponsor-tab" data-sn-refresh '+(loading?'disabled':'')+'>Refresh records</button></div></div><p class="sn-note">Each row is one original source entry, not necessarily one unique sponsor. The same gift may appear in multiple sources—do not add these rows together. Register/request amounts can be pledges rather than received gifts. Blank amounts and dates mean “not recorded”; cash and in-kind values remain separate. Contact names, source businesses, and estimates are preserved as entered.</p><div class="sn-controls"><input data-sn-search aria-label="Search all sponsor records" placeholder="Search name, business, item, email, notes…" value="'+esc(q)+'"><select data-sn-source aria-label="Source"><option value="">All original sources</option>'+sourceSpecs.map(s=>'<option '+(selected===s.name?'selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select><select data-sn-type aria-label="Record type"><option value="">All record types</option>'+['Cash / other support','In-kind / services','Prospect / request','Sales / fundraising activity','Expense / adjustment'].map(s=>'<option '+(type===s?'selected':'')+'>'+esc(s)+'</option>').join('')+'</select><select data-sn-year aria-label="Year"><option value="">All years / unknown dates</option>'+[...new Set(records.map(r=>(r.date.match(/\b20\d{2}\b/)||[])[0]).filter(Boolean))].sort().reverse().map(y=>'<option '+(year===y?'selected':'')+'>'+y+'</option>').join('')+'</select></div><p class="sn-status" data-sn-status role="status"></p><div class="sn-table-wrap"><table class="sn-table"><thead><tr>'+['Sponsor / donor','Cash amount (source)','In-kind value (source)','Date received (source)','Record type','Source status / level','What they gave / description','Program','Contact','Email','Phone','Payment method','Quantity','Source business / reference','Expiration','Owner / coordinator','Notes','Original record'].map(t=>'<th>'+esc(t)+'</th>').join('')+'</tr></thead><tbody data-sn-body></tbody></table></div>';
- host.querySelector('[data-sn-export]').onclick=exportCsv;host.querySelector('[data-sn-refresh]').onclick=()=>load(true);const search=host.querySelector('[data-sn-search]');search.oninput=()=>{q=search.value;drawRows()};host.querySelector('[data-sn-source]').onchange=e=>{selected=e.target.value;drawRows()};host.querySelector('[data-sn-type]').onchange=e=>{type=e.target.value;drawRows()};host.querySelector('[data-sn-year]').onchange=e=>{year=e.target.value;drawRows()};drawRows()}
-function drawRows(){const visible=visibleRecords();const status=host.querySelector('[data-sn-status]');status.textContent=loading?'Loading original records…':visible.length+' visible source entries · '+records.length+' total · '+(sourceSpecs.length-failed.length)+' of '+sourceSpecs.length+' sources loaded'+(failed.length?' · Unavailable: '+failed.join(', '):'');status.classList.toggle('sn-warn',!!failed.length);host.querySelector('[data-sn-body]').innerHTML=visible.map(r=>'<tr><td>'+esc(r.name)+'<div class="sn-source">'+esc(r.source)+' · row '+r.row+'</div></td>'+[money(r.cash),money(r.inKind),r.date||'Not recorded',classify(r),[r.status,r.level].filter(Boolean).join(' · ')||'Not recorded',r.description,r.program,r.contact,r.email,r.phone,r.method,r.quantity,r.reference,r.expiration,r.owner,r.notes].map((v,i)=>'<td'+(i<2?' class="sn-amount"':'')+'>'+esc(v||'—')+'</td>').join('')+'<td class="sn-actions"><button data-sn-raw="'+esc(r.id)+'">All original fields</button></td></tr>').join('')||'<tr><td colspan="18" class="sn-empty">'+(loading?'Loading…':'No matching records. Try clearing the filters.')+'</td></tr>';host.querySelectorAll('[data-sn-raw]').forEach(b=>b.onclick=()=>showRaw(records.find(r=>r.id===b.dataset.snRaw)))}
-function showRaw(r){const dialog=document.createElement('dialog');dialog.className='sn-raw';dialog.innerHTML='<div class="sn-head"><div><h2>'+esc(r.name)+'</h2><p>'+esc(r.source)+' · '+esc(r.tab)+' · original row '+r.row+'</p></div><button class="sponsor-tab" data-close>Close</button></div><dl>'+Array.from({length:Math.max(r.headers.length,r.raw.length)},(_,i)=>'<dt>'+esc(r.headers[i]||'Column '+(i+1))+'</dt><dd>'+esc(text(r.raw[i])||'Not recorded')+'</dd>').join('')+'</dl>';document.body.append(dialog);dialog.querySelector('[data-close]').onclick=()=>dialog.close();dialog.onclose=()=>dialog.remove();dialog.showModal()}
+function giftToken(r){const m=r.reference.match(/BFTIK-(\d+)/i)||r.reference.match(/BFT Charity Tracker item\s*(\d+)/i);return m?'BFTIK-'+m[1].padStart(4,'0'):''}
+function reconcile(input){
+ const profiles=[],gifts=[];let excluded=0;
+ input.forEach(source=>{
+ const r=prepare({...source,raw:source.raw.slice()});
+ if(/register|request form/i.test(r.source)){profiles.push(r);return}
+ if(/\bVOID\b|bank interest|club.funded prize|planned club purchase|^club purchase$/i.test([r.description,r.method,r.name].join(' '))||amount(r.cash)<0){excluded++;return}
+ const token=giftToken(r);
+ const same=gifts.find(g=>{
+ if(g.members.some(x=>x.source===r.source))return false;
+ if(token&&giftToken(g)===token)return true;
+ const sameDonor=norm(g.name)===norm(r.name)&&g.name!=='Donor unconfirmed';
+ const sameCash=amount(g.cash)>0&&amount(g.cash)===amount(r.cash)&&g.date&&g.date===r.date;
+ const sameItem=norm(g.description)===norm(r.description)&&amount(g.inKind)>0&&amount(g.inKind)===amount(r.inKind)&&(!g.date||!r.date||g.date===r.date);
+ return sameDonor&&(sameCash||sameItem);
+ });
+ if(!same){gifts.push(r);return}
+ const before={...same};same.members.push(r);
+ const fieldPairs=[['name','Donor'],['cash','Money amount'],['inKind','Item / service value'],['date','Received date']];
+ fieldPairs.forEach(([field,label])=>{
+ const a=text(before[field]),b=text(r[field]);
+ const hasA=field==='cash'||field==='inKind'?amount(a)>0:!!a;
+ const hasB=field==='cash'||field==='inKind'?amount(b)>0:!!b;
+ if(hasA&&hasB&&(field==='cash'||field==='inKind'?amount(a)!==amount(b):norm(a)!==norm(b)))same.review.push(label+' differs between sources: '+a+' / '+b);
+ });
+ // The original item tracker supplies the item identity. Preserve disagreements for review.
+ if(r.tab==='Tracking Tab'&&token){['name','originalName','nameBasis','description','cash','inKind','business','method','quantity'].forEach(k=>same[k]=r[k]);}
+ ['date','contact','email','phone','program','level','expiration','owner','business'].forEach(k=>{if(!text(same[k]))same[k]=r[k]});
+ same.review=[...new Set([...same.review,...r.review])];
+ });
+ gifts.forEach(g=>{if(!g.date)g.review.push('Received date not recorded');g.review=[...new Set(g.review)];});
+ return {gifts,profiles,excluded};
+}
+let view='gifts';
+function reviewData(){return reconcile(records)}
+function classify(r){return r.support||prepare({...r,raw:r.raw||[]}).support}
+function visibleRecords(){
+ const data=reviewData();return (view==='profiles'?data.profiles:data.gifts).filter(r=>
+ (!selected||r.members.some(m=>m.source===selected))&&
+ (!type||(type==='Needs review'?r.review.length>0:r.support===type))&&
+ (!year||r.date.includes(year))&&
+ (!q||[r.name,r.business,r.nameBasis,...r.members.flatMap(m=>[...m.raw,m.name,m.description,m.reference,m.source]),...r.review].join(' ').toLowerCase().includes(q.toLowerCase()))
+ ).sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base'})||a.description.localeCompare(b.description));
+}
+function exportCsv(){
+ const headers=['Donor','Name basis','Business / brand (not necessarily donor)','Support given','Money recorded','Item / service estimated value','Received date','What they gave','Quantity','Program','Payment method','Needs review','Source records','Contact','Email','Phone','Original source details'];
+ const data=visibleRecords().map(r=>[r.name,r.nameBasis,r.business,r.support,r.cash,r.inKind,r.date,r.description,r.quantity,r.program,r.method,r.review.join('; '),r.members.map(m=>m.source+' row '+m.row).join('; '),r.contact,r.email,r.phone,JSON.stringify(r.members.map(m=>({source:m.source,tab:m.tab,row:m.row,fields:m.headers.map((field,i)=>({field,value:m.raw[i]??''}))})))]);
+ const cell=v=>{v=String(v??'');if(/^\s*[=+@-]/.test(v)&&!/^\s*-?\d+(\.\d+)?\s*$/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'};
+ const csv='\uFEFF'+[headers,...data].map(row=>row.map(cell).join(',')).join('\r\n');
+ const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download='BSSC-Sponsorships-New-'+view+'-'+new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'})+'.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function draw(){
+ host.innerHTML='<div class="sn-head"><div><h2>Sponsorships New</h2><p>Gifts are separate from sponsor profiles. Matching copies of a gift appear once.</p></div><div><button class="sponsor-tab" data-sn-export '+(loading?'disabled':'')+'>Export CSV</button> <button class="sponsor-tab" data-sn-refresh '+(loading?'disabled':'')+'>Refresh records</button></div></div>'+
+ '<div class="sn-controls"><button class="sponsor-tab" data-sn-view="gifts" '+(view==='gifts'?'style="background:#8a1735;color:white"':'')+'>Gifts received</button><button class="sponsor-tab" data-sn-view="profiles" '+(view==='profiles'?'style="background:#8a1735;color:white"':'')+'>Sponsor profiles / requests</button></div>'+
+ '<p class="sn-note">Money means a positive cash contribution recorded in the source. Items / services are noncash support; their estimated value is not money received. “Not recorded” is not zero. Business / brand identifies the item source, not a confirmed donor. Conflicting names or values are flagged rather than silently corrected. Source details retain every original entry. Ticket sales, listed expenses, voids, bank interest and club-funded prizes are excluded from gifts.</p>'+
+ '<div class="sn-controls"><input data-sn-search aria-label="Search" placeholder="Search donor, business, item or notes…" value="'+esc(q)+'"><select data-sn-source aria-label="Source"><option value="">All sources</option>'+sourceSpecs.map(s=>'<option '+(selected===s.name?'selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select><select data-sn-type aria-label="Support given"><option value="">All support</option>'+['Money','Items / services','Money + items / services','Needs review'].map(t=>'<option '+(type===t?'selected':'')+'>'+t+'</option>').join('')+'</select><select data-sn-year aria-label="Year"><option value="">All years / unknown dates</option>'+[...new Set(records.map(r=>(r.date.match(/\b20\d{2}\b/)||[])[0]).filter(Boolean))].sort().reverse().map(y=>'<option '+(year===y?'selected':'')+'>'+y+'</option>').join('')+'</select></div><p class="sn-status" data-sn-status role="status"></p><div class="sn-table-wrap"><table class="sn-table" style="min-width:1500px"><thead><tr>'+['Donor / identity','Business / brand','Support given','Money recorded','Item / service value','Received date','What they gave','Quantity','Review notes','Source details'].map(t=>'<th>'+t+'</th>').join('')+'</tr></thead><tbody data-sn-body></tbody></table></div>';
+ host.querySelector('[data-sn-export]').onclick=exportCsv;
+ host.querySelector('[data-sn-refresh]').onclick=()=>load(true);
+ host.querySelectorAll('[data-sn-view]').forEach(b=>b.onclick=()=>{view=b.dataset.snView;draw()});
+ host.querySelector('[data-sn-search]').oninput=e=>{q=e.target.value;drawRows()};
+ host.querySelector('[data-sn-source]').onchange=e=>{selected=e.target.value;drawRows()};
+ host.querySelector('[data-sn-type]').onchange=e=>{type=e.target.value;drawRows()};
+ host.querySelector('[data-sn-year]').onchange=e=>{year=e.target.value;drawRows()};drawRows();
+}
+function drawRows(){
+ const visible=visibleRecords(),data=reviewData();
+ host.querySelector('[data-sn-status]').textContent=loading?'Loading records…':visible.length+' visible '+(view==='gifts'?'gifts':'profiles / requests')+' · '+data.gifts.length+' gift records after combining '+(records.length-data.profiles.length-data.excluded-data.gifts.length)+' duplicate copies · '+(sourceSpecs.length-failed.length)+' of '+sourceSpecs.length+' sources loaded'+(failed.length?' · Unavailable: '+failed.join(', '):'');
+ host.querySelector('[data-sn-body]').innerHTML=visible.map((r,i)=>'<tr><td>'+esc(r.name)+'<div class="sn-source">'+esc(r.nameBasis)+'</div></td><td>'+esc(r.business||'—')+'</td><td>'+esc(r.support)+(view==='profiles'?'<div class="sn-source">Profile amount; not an additional gift</div>':'')+'</td><td class="sn-amount">'+(amount(r.cash)>0?esc(money(r.cash)):amount(r.cash)===0?'$0.00 recorded':'Not recorded')+'</td><td class="sn-amount">'+esc(money(r.inKind))+'</td><td>'+esc(r.date||'Not recorded')+'</td><td>'+esc(r.description||r.level||'Details not recorded')+'</td><td>'+esc(r.quantity||'—')+'</td><td class="'+(r.review.length?'sn-warn':'')+'">'+esc(r.review.join('\n')||'—')+'</td><td class="sn-actions"><button data-sn-raw="'+i+'">View '+r.members.length+' source '+(r.members.length===1?'record':'records')+'</button></td></tr>').join('')||'<tr><td colspan="10" class="sn-empty">'+(loading?'Loading…':'No matching records.')+'</td></tr>';
+ host.querySelectorAll('[data-sn-raw]').forEach(b=>b.onclick=()=>showRaw(visible[Number(b.dataset.snRaw)]));
+}
+function showRaw(r){
+ const dialog=document.createElement('dialog');dialog.className='sn-raw';
+ dialog.innerHTML='<div class="sn-head"><div><h2>'+esc(r.name)+'</h2><p>'+esc(r.description)+'</p></div><button class="sponsor-tab" data-close>Close</button></div><p class="sn-warn">'+esc(r.review.join(' · '))+'</p>'+r.members.map(m=>'<h3>'+esc(m.source)+' · '+esc(m.tab)+' · row '+m.row+'</h3><dl>'+Array.from({length:Math.max(m.headers.length,m.raw.length)},(_,i)=>'<dt>'+esc(m.headers[i]||'Column '+(i+1))+'</dt><dd>'+esc(text(m.raw[i])||'Not recorded')+'</dd>').join('')+'</dl>').join('');
+ document.body.append(dialog);dialog.querySelector('[data-close]').onclick=()=>dialog.close();dialog.onclose=()=>dialog.remove();dialog.showModal();
+}
 async function load(force=false){if(loading||loaded&&!force)return;loading=true;draw();const current=++version;const results=await Promise.allSettled(sourceSpecs.map(s=>getSheetValues("'"+s.tab+"'!"+s.range,s.book)));if(current!==version)return;records=[];failed=[];results.forEach((r,i)=>{const spec=sourceSpecs[i];if(r.status!=='fulfilled'){failed.push(spec.name);return}const rows=r.value,headers=rows[spec.header]||[];rows.slice(spec.header+1).forEach((row,j)=>{if(row.some(v=>text(v))&&(spec.kind!=='bft'||text(row[0]))&&includeSponsorRecord(spec,row))records.push(rowRecord(spec,row,spec.header+j+2,headers))})});loading=false;loaded=true;draw()}
 const originalShow=showModule;showModule=function(moduleKey){host.hidden=true;originalShow(moduleKey);if(moduleKey===key){document.getElementById('detailTasks').innerHTML='';host.hidden=false;load()}};
 })();
