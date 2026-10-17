@@ -9210,7 +9210,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const recordsWorkspace=document.getElementById('recordsWorkspace');
       const taskGrid = document.getElementById('detailTasks');
       [membershipWorkspace,sponsorWorkspace,bftWorkspace,bikeNightsWorkspace,marketplaceWorkspace,financeWorkspace,adminWorkspace,volunteersWorkspace,recordsWorkspace,document.getElementById("storageWorkspace"),document.getElementById("trackerWorkspace")].forEach(workspace => workspace.classList.remove('active'));
-      if (key === 'tracker') { taskGrid.innerHTML='';document.getElementById('trackerWorkspace').classList.add('active');const frame=document.getElementById('taskTrackerFrame');if(!frame.getAttribute('src'))frame.src='task-tracker-visible-edit.html?v='+Date.now();
+      if (key === 'tracker') { taskGrid.innerHTML='';document.getElementById('trackerWorkspace').classList.add('active');const frame=document.getElementById('taskTrackerFrame');if(!frame.getAttribute('src'))frame.src='task-tracker-command.html?v='+Date.now();
       } else if (key === 'storage') { taskGrid.innerHTML='';document.getElementById('storageWorkspace').classList.add('active');loadStorage();
       } else if (key === 'records' || key === 'volunteers') {
         taskGrid.innerHTML='';
