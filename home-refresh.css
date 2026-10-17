@@ -20,3 +20,28 @@ body.bssc-home-refresh #dashboard .status.live-status{background:#e0f2e6!importa
 body.bssc-home-refresh #dashboard .status.live-status.checking{background:#e9ebf0!important;color:#596171!important;border-color:#ccd1dc!important}
 body.bssc-home-refresh #dashboard .status.live-status.error{background:#ffe3e7!important;color:#9a2539!important;border-color:#edb2bd!important}
 @media(max-width:760px){body.bssc-home-refresh #dashboard .module{padding:0 15px 15px!important}body.bssc-home-refresh #dashboard .module-top{margin:0 -15px!important;padding:15px!important;min-height:90px!important}body.bssc-home-refresh #dashboard .module h2{font-size:15px!important}}
+
+/* Visual club navigation. The original content returns in Classic view. */
+.home-tile-art{display:none}
+body.bssc-home-refresh #dashboard .module-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:22px!important}
+body.bssc-home-refresh #dashboard .module{grid-column:auto!important;padding:0 0 16px!important;background:#17181c!important;border:1px solid #37383d!important;border-radius:17px!important;min-height:0!important;overflow:hidden!important}
+body.bssc-home-refresh #dashboard .home-tile-art{display:block;position:relative;height:185px;width:100%;background-size:300% 400%;background-repeat:no-repeat;background-color:#151515}
+body.bssc-home-refresh #dashboard .home-tile-art:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#17181c 0%,transparent 44%);pointer-events:none}
+body.bssc-home-refresh #dashboard .module-top{background:transparent!important;min-height:0!important;padding:3px 19px 12px!important;margin:0!important;border:0!important;gap:10px!important}
+body.bssc-home-refresh #dashboard .module-identity{gap:10px!important}
+body.bssc-home-refresh #dashboard .module h2{color:#fff!important;font-size:19px!important;letter-spacing:-.025em!important}
+body.bssc-home-refresh #dashboard .module-icon{width:33px!important;height:33px!important;border-radius:9px!important;background:#27282d!important;color:var(--home-accent)!important;box-shadow:none!important}
+body.bssc-home-refresh #dashboard .module-icon svg{width:20px!important;height:20px!important}
+body.bssc-home-refresh #dashboard .module p{display:none!important}
+body.bssc-home-refresh #dashboard .module footer{padding:0 19px!important;margin-top:auto!important}
+body.bssc-home-refresh #dashboard .module footer .open-btn{background:#25262b!important;border:1px solid #414249!important;min-height:38px!important;padding:8px 12px!important;color:#eee!important}
+body.bssc-home-refresh #dashboard .module footer .open-btn:hover{background:#35363d!important}
+body.bssc-home-refresh #dashboard .status.live-status{background:#1e3327!important;color:#99d9ae!important;border-color:#365443!important}
+body.bssc-home-refresh #dashboard .status.live-status.checking{background:#282b33!important;color:#c5cad4!important;border-color:#454b59!important}
+body.bssc-home-refresh #dashboard .status.live-status.error{background:#45242c!important;color:#ffb8c8!important;border-color:#854655!important}
+@media(min-width:1700px){body.bssc-home-refresh #dashboard .home-tile-art{height:205px}}
+@media(max-width:1100px){body.bssc-home-refresh #dashboard .module-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:760px){body.bssc-home-refresh #dashboard .module{padding:0 0 13px!important}body.bssc-home-refresh #dashboard .home-tile-art{height:135px}body.bssc-home-refresh #dashboard .module-top{padding:3px 13px 10px!important;margin:0!important;flex-wrap:wrap!important}body.bssc-home-refresh #dashboard .module h2{font-size:15px!important}body.bssc-home-refresh #dashboard .module footer{padding:0 13px!important}body.bssc-home-refresh #dashboard .module-identity{flex-wrap:nowrap!important}}
+@media(max-width:420px){body.bssc-home-refresh #dashboard .module-grid{grid-template-columns:1fr!important}body.bssc-home-refresh #dashboard .home-tile-art{height:180px}}
+
+body.bssc-home-refresh #dashboard .home-tile-art{background-size:cover!important;background-position:center 48%!important}
