@@ -63,6 +63,8 @@ function supportCategory(r){
  return 'Support not specified';
 }
 
+const confirmedItemDonors=[{"id":"BFTIK-0022","name":"Debby and John Farland","description":"Buffalo Trace Bourbon Cream Liqueur — 750 mL"},{"id":"BFTIK-0014","name":"Ironclad Harley-Davidson","description":"Harley-Davidson 120th Anniversary Backpack / Cooler Bag – Black"},{"id":"BFTIK-0020","name":"Ironclad Harley-Davidson","description":"Harley-Davidson Embossed Bar & Shield Leather Billfold Wallet – Black"},{"id":"BFTIK-0052","name":"Ironclad Harley-Davidson","description":"Harley-Davidson Leather Bifold Clutch - Black"},{"id":"BFTIK-0019","name":"Ironclad Harley-Davidson","description":"Harley-Davidson Tabletop S'mores Kit"},{"id":"BFTIK-0016","name":"Ironclad Harley-Davidson","description":"Harley-Davidson Trade Cycles Leather-Texture Dealer Sign"},{"id":"BFTIK-0013","name":"Ironclad Harley-Davidson","description":"Harley-Davidson Women's Canvas & Leather Hobo Purse – Black"},{"id":"BFTIK-0018","name":"Ironclad Harley-Davidson","description":"Harley-Davidson Women's Studded Crossbody Bag – Black"},{"id":"BFTIK-0021","name":"Debby and John Farland","description":"Johnnie Walker Double Black Blended Scotch Whisky — 750 mL"},{"id":"BFTIK-0042","name":"SISSTR","description":"SISSTR Roamin Jacket – Army – Size S"},{"id":"BFTIK-0043","name":"SISSTR","description":"SISSTR Wave Lover Knit Tank Top – Multi"},{"id":"BFTIK-0044","name":"SISSTR","description":"SISSTR Wild at Heart Woven Mini Dress – Coconut"},{"id":"BFTIK-0017","name":"Viking Bags","description":"Viking Bags American Flag Motorcycle Backpack / Luggage Bag"},{"id":"BFTIK-0012","name":"Debby and John Farland","description":"Vintage 'The Legend Has Retired' 2026 Whiskey Gift Set"},{"id":"BFTIK-0015","name":"Debby and John Farland","description":"ZURU X-Shot Excel Ultimate Shootout Blaster Pack"}];
+function applyConfirmedItemDonor(r){const id=(r.reference.match(/BFTIK-\d+/i)||[])[0];const correction=confirmedItemDonors.find(x=>(id&&x.id===id.toUpperCase())||norm(x.description)===norm(r.description));if(correction){r.name=correction.name;r.nameBasis='Donor confirmed by Todd';}}
 function prepare(r){
  r.originalName=r.name;r.business=r.tab==='Tracking Tab'?text(r.raw[23]):'';
  r.review=[];r.nameBasis='Recorded donor';
@@ -77,6 +79,7 @@ function prepare(r){
  )){
  r.name=r.business;r.nameBasis='Business donor'; 
  }
+ applyConfirmedItemDonor(r);
  r.support=supportCategory(r);
  if(r.name==='Donor unconfirmed')r.review.push('Confirm who donated; business / brand is context only');
  if(r.tab==='Tracking Tab'&&/^chase credit card$/i.test(r.originalName))r.method='Credit card (source: Chase)';
