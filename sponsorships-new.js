@@ -37,6 +37,7 @@ function rowRecord(spec,row,index,headers){const r=row,record={id:spec.name+':'+
 
 function amount(v){const s=text(v).replace(/^'/,'').replace(/[$,\s]/g,'');return s!==''&&Number.isFinite(Number(s))?Number(s):null}
 function money(v){const n=amount(v);return n===null?'Not recorded':new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n)}
+function formatPhone(value){const original=text(value);let digits=original.replace(/\D/g,'');if(digits.length===11&&digits[0]==='1')digits=digits.slice(1);return digits.length===10?digits.slice(0,3)+'-'+digits.slice(3,6)+'-'+digits.slice(6):original}
 function norm(v){return text(v).toLowerCase().replace(/[^a-z0-9]/g,'')}
 function missingName(v){return /^(donor not recorded|name not recorded|no name|unknown buyer|cash|cash donor|paypal|chase credit card)$/i.test(text(v))}
 
@@ -182,7 +183,7 @@ function reconcile(input){
  return {gifts,profiles,excluded};
 }
 let view='gifts';
-function reviewData(){return reconcile(records)}
+function reviewData(){const data=reconcile(records);[...data.gifts,...data.profiles].forEach(r=>r.phone=formatPhone(r.phone));return data}
 function classify(r){return r.support||prepare({...r,raw:r.raw||[]}).support}
 function visibleRecords(){
  const data=reviewData();return (view==='profiles'?data.profiles:data.gifts).filter(r=>
