@@ -5376,6 +5376,47 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 .att26-dashboard{font-size:16px}.att26-dashboard .att26-kicker{font-size:12px;color:#565e69}.att26-dashboard .att26-panel{padding:24px}.att26-dashboard .att26-main-grid{grid-template-columns:1fr;gap:22px}.att26-dashboard .att26-panel-heading h3{font-size:24px}.att26-dashboard .att26-panel-heading p{font-size:15px;color:#454d59;line-height:1.6}.att26-dashboard .att26-stat-card>span{font-size:15px}.att26-dashboard .att26-stat-card>small{font-size:14px;color:#454d59}.att26-dashboard .att26-event-browser{grid-template-columns:minmax(280px,.8fr) minmax(0,1.5fr);gap:22px}.att26-dashboard .att26-event-list{max-height:760px;padding:8px}.att26-dashboard .att26-event-option{min-height:78px;padding:14px 12px;gap:14px}.att26-dashboard .att26-event-name b{font-size:16px;white-space:normal;line-height:1.4}.att26-dashboard .att26-event-name small,.att26-dashboard .att26-event-result small{font-size:13px;color:#424b57}.att26-dashboard .att26-event-result b{font-size:18px}.att26-dashboard .att26-event-detail{padding:24px}.att26-dashboard .att26-detail-title{flex-wrap:wrap;gap:16px}.att26-dashboard .att26-detail-title h3{font-size:26px}.att26-dashboard .att26-detail-title p{font-size:16px;color:#454d59}.att26-dashboard .att26-log-pill{font-size:14px;line-height:1.7;border-radius:10px;padding:9px 12px}.att26-log-pill time,.att26-log-pill small{font-size:13px;font-weight:700}.att26-dashboard .att26-detail-groups{grid-template-columns:1fr;gap:22px}.att26-dashboard .att26-detail-groups h4{font-size:18px}.att26-dashboard .att26-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.att26-dashboard .att26-metric{padding:16px;background:#f5f6f8;border:1px solid #c9cfd7;border-radius:10px}.att26-dashboard .att26-metric span,.att26-dashboard .att26-detail-primary span{font-size:15px;color:#424b57;line-height:1.5}.att26-dashboard .att26-metric strong{font-size:27px}.att26-dashboard .att26-detail-primary{gap:14px}.att26-dashboard .att26-detail-primary strong{font-size:30px}.att26-dashboard .att26-member-legend li,.att26-dashboard .att26-ride-row{font-size:16px}.att26-dashboard .att26-member-legend small,.att26-dashboard .att26-recent-item small{font-size:14px;color:#454d59}.att26-dashboard .att26-search{font-size:15px;color:#454d59}.att26-dashboard .att26-search input{font-size:16px;min-height:46px}.att26-dashboard .att26-recent-item b,.att26-dashboard .att26-insight{font-size:16px}@media(max-width:1100px){.att26-dashboard .att26-event-browser{grid-template-columns:1fr}.att26-dashboard .att26-event-list{max-height:400px}}@media(max-width:600px){.att26-dashboard .att26-panel,.att26-dashboard .att26-event-detail{padding:16px}.att26-dashboard .att26-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.att26-dashboard .att26-detail-primary{grid-template-columns:1fr}.att26-dashboard .att26-panel-heading{flex-wrap:wrap}.att26-dashboard .att26-search{width:100%}}
 
 .att26-dashboard .att26-explorer>.att26-panel-heading{padding:24px;margin:-24px -24px 24px;background:#15171b;border-top:6px solid #c8102e;border-radius:12px 12px 0 0}.att26-dashboard .att26-explorer>.att26-panel-heading h3{font-size:clamp(28px,3vw,40px);color:white;line-height:1.2;margin:8px 0 12px}.att26-dashboard .att26-explorer>.att26-panel-heading .att26-kicker{color:#ff9bae;font-size:14px;letter-spacing:.12em}.att26-dashboard .att26-explorer>.att26-panel-heading p,.att26-dashboard .att26-explorer>.att26-panel-heading .att26-search{color:#e2e5eb;font-size:16px}@media(max-width:600px){.att26-dashboard .att26-explorer>.att26-panel-heading{margin:-16px -16px 20px;padding:20px 16px}}
+
+/* Attendance uses the page width and readable labels throughout. */
+.content:has(.att26-dashboard){max-width:none;padding-left:24px;padding-right:24px}
+#membershipContent:has(.att26-dashboard){max-width:none;width:100%}
+.att26-dashboard{width:100%;max-width:none}
+.att26-dashboard .att26-event-browser{grid-template-columns:minmax(310px,0.8fr) minmax(0,1.7fr);gap:24px;align-items:start}
+.att26-dashboard .att26-event-detail{padding:28px}
+.att26-dashboard .att26-event-option{min-height:106px;padding:20px 16px;gap:18px}
+.att26-dashboard .att26-event-name b{font-size:20px;line-height:1.45;white-space:normal;overflow:visible;text-overflow:clip}
+.att26-dashboard .att26-event-name small{font-size:17px;line-height:1.5;color:#343d49}
+.att26-dashboard .att26-event-result b{font-size:28px}
+.att26-dashboard .att26-event-result small{font-size:15px;line-height:1.5}
+.att26-dashboard .att26-detail-title h3{font-size:32px;line-height:1.3}
+.att26-dashboard .att26-detail-title p{font-size:20px}
+.att26-dashboard .att26-detail-title .att26-kicker{font-size:15px}
+.att26-dashboard .att26-detail-primary{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:22px;margin-bottom:28px}
+.att26-dashboard .att26-detail-primary>div{padding:20px 16px}
+.att26-dashboard .att26-detail-primary span{font-size:18px;white-space:normal;line-height:1.5}
+.att26-dashboard .att26-detail-primary strong,.att26-dashboard .att26-detail-primary>div:first-child strong{font-size:42px;line-height:1.2;margin-top:10px}
+.att26-dashboard .att26-detail-groups section h4{font-size:22px;letter-spacing:.03em;margin-bottom:16px;color:#242a33}
+.att26-dashboard .att26-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.att26-dashboard .att26-metric{padding:22px;min-height:116px}
+.att26-dashboard .att26-metric>span{font-size:19px;line-height:1.5;white-space:normal;overflow:visible;text-overflow:clip;color:#343d49}
+.att26-dashboard .att26-metric>strong{font-size:38px;line-height:1.2;margin-top:10px}
+.att26-dashboard .att26-metric>small{font-size:16px;color:#454d59}
+.att26-dashboard .att26-log-pill{font-size:17px;padding:12px 16px}
+.att26-dashboard .att26-log-pill time,.att26-dashboard .att26-log-pill small{font-size:16px}
+.att26-dashboard .att26-member-legend li>span,.att26-dashboard .att26-member-legend li>strong{font-size:20px}
+.att26-dashboard .att26-member-legend li>small{font-size:18px}
+.att26-dashboard .att26-member-legend li{padding:12px 0}
+.att26-dashboard .att26-ride-row{grid-template-columns:minmax(190px,.65fr) minmax(80px,1fr) 70px;gap:16px;padding:14px 0}
+.att26-dashboard .att26-ride-row>span{font-size:20px;color:#343d49}
+.att26-dashboard .att26-ride-row>strong{font-size:28px}
+.att26-dashboard .att26-ride-key{font-size:16px}
+.att26-dashboard .att26-guest-compare>div span,.att26-dashboard .att26-insight b,.att26-dashboard .att26-insight span{font-size:18px}
+.att26-dashboard .att26-guest-compare>div strong{font-size:42px}
+.att26-dashboard .att26-recent-item b{font-size:19px}
+.att26-dashboard .att26-recent-item small{font-size:17px}
+.att26-dashboard .att26-recent-item>strong{font-size:28px}
+@media(max-width:1200px){.att26-dashboard .att26-event-browser{grid-template-columns:1fr}.att26-dashboard .att26-event-list{max-height:430px}}
+@media(max-width:650px){.content:has(.att26-dashboard){padding-left:12px;padding-right:12px}.att26-dashboard .att26-event-detail{padding:18px}.att26-dashboard .att26-detail-primary{grid-template-columns:1fr}.att26-dashboard .att26-detail-grid{grid-template-columns:1fr}.att26-dashboard .att26-ride-row{grid-template-columns:minmax(125px,1fr) minmax(40px,.6fr) 50px;gap:10px}.att26-dashboard .att26-ride-row>span{font-size:18px}}
   </style></head><body><div class="print-only"><button onclick="window.print()">Print pick tickets</button> · Cut along the dotted lines.</div><div class="sheet">${rows}</div></body></html>`);
       printWindow.document.close();
       printWindow.focus();
