@@ -7820,7 +7820,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           modal.querySelector('.attendance-entry-done').addEventListener('click',close);document.getElementById('membershipStatus').textContent='Attendance updated for '+event.label+'.';loadMembershipSheet(returnSheet,true);
         }catch(error){save.disabled=false;save.textContent='Review &amp; save';alert('Attendance was not saved. Review the event and try again.');}
       });
-      if(selectedEventColumn!==null){select.value=String(selectedEventColumn);select.dispatchEvent(new Event('change'));if(select.value){modal.querySelector('#attendanceEntryTitle').textContent='Edit attendance';next.click();modal.querySelector('.attendance-entry-save').focus();}else select.focus();}else select.focus();
+      if(selectedEventColumn!==null){select.value=String(selectedEventColumn);select.dispatchEvent(new Event('change'));if(select.value){modal.querySelector('#attendanceEntryTitle').textContent='Edit attendance';next.click();roster.scrollTop=0;modal.querySelector('.attendance-person-check')?.focus({preventScroll:true});}else select.focus();}else select.focus();
     }
 
 
