@@ -34,7 +34,7 @@ function salesRows(rows){return rows.map((r,i)=>i?r.map((v,j)=>j===2?activityNam
 function filtered(key){const rows=data[key]||[];return [rows[0]||[],...rows.slice(1).filter(r=>(key!=='Sales'||view!=='Silent Auction'||r[2]==='Silent Auction')&&(!search||r.join(' ').toLowerCase().includes(search.toLowerCase()))&&(key!=='Sales'||!activity||activityKey(r)===activity)&&(key==='Sales'||!raffle||(key==='Payments'?r[0]===(raffle==='Gun'?'Gun':'Alcohol'):(raffle==='Alcohol'?r[0]!=='Gun':r[0]===raffle))))];}
 function table(rows,currency=[],activities=false){
  const silent=rows[0]?.includes('Estimated value')&&rows[0]?.includes('Winner');
- const fifty=rows[0]?.[0]==='Sale ID'&&rows.slice(1).some(r=>r[2]==='50/50 Raffle');
+ const fifty=rows[0]?.[0]==='Sale ID'&&rows.length>1&&rows.slice(1).every(r=>r[2]==='50/50 Raffle');
  const fitted=silent||fifty;const originals=rows;
  if(silent){rows=[['Item / winner','Value','Proceeds','Cost','Fees','Profit / loss','Net'],...rows.slice(1).map(r=>[r[0],r[3],r[4],r[5],r[6],r[7],r[8]])];currency=[1,2,3,4,5,6];}
  if(fifty){rows=[['Entry','Received','Fees','Net','Payout','Profit / loss'],...rows.slice(1).map(r=>[r[3],r[4],r[5],r[6],r[8],r[9]])];currency=[1,2,3,4,5];}
