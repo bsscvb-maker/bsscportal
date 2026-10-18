@@ -379,3 +379,8 @@ dialog.ec-card-dialog:not([open]){display:none}
 .att26-dashboard .att26-members-panel .att26-member-legend li>strong{font-size:22px}
 .att26-dashboard .att26-members-panel .att26-member-legend li>small{font-size:13.4px}
 @media(max-width:600px){.att26-dashboard .att26-members-panel .att26-member-legend li>span{font-size:11.4px}.att26-dashboard .att26-members-panel .att26-member-legend li>strong{font-size:19.4px}.att26-dashboard .att26-members-panel .att26-member-legend li>small{font-size:12px}}
+
+.ec-dialog-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-shrink:0}
+.ec-edit-attendance{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:11px 17px;border:1px solid #f45d78;border-radius:9px;background:#c8102e;color:#fff;font:inherit;font-size:17px;font-weight:850;cursor:pointer;white-space:nowrap}
+.ec-edit-attendance:hover{background:#e0183b}
+@media(max-width:700px){.ec-dialog-toolbar{flex-wrap:wrap}.ec-dialog-actions{width:100%;justify-content:space-between}.ec-edit-attendance{flex:1;justify-content:center;font-size:16px}}
