@@ -359,3 +359,23 @@ dialog.ec-card-dialog:not([open]){display:none}
 .ec-clean-event.is-category-latest>footer .ec-card-green{color:#b6ffd2}
 @media(max-width:1250px){.ec-event-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.ec-category-grid,.ec-event-card-grid{grid-template-columns:1fr}.ec-category-home,.ec-event-card-grid{padding:20px}.ec-category-card{min-height:285px;padding:24px}.ec-category-card h3{font-size:30px}.ec-category-breadcrumb{padding-left:20px;padding-right:20px}.ec-category-switches{padding-left:20px;padding-right:20px}}
+
+/* Reduce typography only in the participation and membership profile cards. */
+.att26-dashboard .att26-trend-panel .att26-kicker,
+.att26-dashboard .att26-members-panel .att26-kicker{font-size:9px}
+.att26-dashboard .att26-trend-panel .att26-panel-heading h3,
+.att26-dashboard .att26-members-panel .att26-panel-heading h3{font-size:18px}
+.att26-dashboard .att26-trend-panel .att26-panel-heading p,
+.att26-dashboard .att26-members-panel .att26-panel-heading p{font-size:12px}
+.att26-dashboard .att26-trend-panel .att26-halves{font-size:12px}
+.att26-dashboard .att26-trend-panel .att26-chart-legend{font-size:12px}
+.att26-dashboard .att26-trend-panel .att26-chart-legend>span{font-size:11px}
+.att26-dashboard .att26-trend-panel svg text[font-weight="900"]{font-size:12.7px}
+.att26-dashboard .att26-members-panel .att26-member-total{font-size:28px}
+.att26-dashboard .att26-members-panel .att26-member-total small{font-size:11.4px}
+.att26-dashboard .att26-members-panel .att26-donut>div strong{font-size:45.5px}
+.att26-dashboard .att26-members-panel .att26-donut>div small{font-size:12px}
+.att26-dashboard .att26-members-panel .att26-member-legend li>span{font-size:13.4px}
+.att26-dashboard .att26-members-panel .att26-member-legend li>strong{font-size:22px}
+.att26-dashboard .att26-members-panel .att26-member-legend li>small{font-size:13.4px}
+@media(max-width:600px){.att26-dashboard .att26-members-panel .att26-member-legend li>span{font-size:11.4px}.att26-dashboard .att26-members-panel .att26-member-legend li>strong{font-size:19.4px}.att26-dashboard .att26-members-panel .att26-member-legend li>small{font-size:12px}}
