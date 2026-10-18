@@ -7709,7 +7709,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 
     async function renderMembershipAttendanceDashboard(rows, year = '2026') {
       let attendanceTimes=[];
-      try{attendanceTimes=await getSheetValues("'Attendance Update Times'!A1:C128",MEMBERSHIP_SPREADSHEET_ID);}catch(error){}
+      try{attendanceTimes=await getSheetValues("'Attendance Update Times'!A1:E128",MEMBERSHIP_SPREADSHEET_ID);}catch(error){}
       const formatAttendanceTime=value=>{const date=new Date(value);return Number.isNaN(date.getTime())?'Update time unavailable':date.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'});};
 
       const target=document.getElementById('membershipContent'),status=document.getElementById('membershipStatus');
@@ -7724,7 +7724,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         const parts=raw.split('\n').map(v=>v.trim()).filter(Boolean);
         const title=(parts.shift()||'').replaceAll('  ',' ').trim();
         if(!title || /(?:750.*ride|ride.*750)/i.test(title))continue;
-        const e={title,date:parts.join(' '),column:col,updatedAt:(attendanceTimes[col+(is2027?64:0)]||[])[2]||''};
+        const e={title,date:parts.join(' '),column:col,updatedAt:(attendanceTimes[col+(is2027?64:0)]||[])[2]||'',loggedAt:(attendanceTimes[col+(is2027?64:0)]||[])[3]||'',timeSource:(attendanceTimes[col+(is2027?64:0)]||[])[4]||''};
         [['membersYes',68],['membersNo',69],['attendance',70],['guestOriginal',75],['guests',76],['total',77],['guestExposure',78],['motorcycles',80],['guestMotorcycles',81],['vehicles',82],['guestVehicles',83],['motorcycleDensity',85],['vehicleShare',86]].forEach(item=>e[item[0]]=String((rows[(is2027 ? rowMap[item[1]] : item[1])-1]||[])[col-1]??'').trim());
         e.recorded=Boolean(e.membersYes||e.membersNo||e.total);
         events.push(e);
@@ -7768,7 +7768,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         const guest=num(e.guestOriginal||e.guests),people=club+guest;
         const bikes=num(e.motorcycles)+num(e.guestMotorcycles),cages=num(e.vehicles)+num(e.guestVehicles);
         const coreValue=num(e.attendance),coreClass=coreValue>=75?'att26-core-strong':'';
-        return '<div class="att26-detail-title"><div><span class="att26-kicker">SELECTED EVENT</span><h3>'+esc(e.title)+'</h3><p>'+esc(e.date||'Date not listed')+'</p></div><span class="att26-log-pill '+(e.recorded?'logged':'not-logged')+'">'+(e.updatedAt?'Attendance updated<br><time>'+esc(formatAttendanceTime(e.updatedAt))+'</time>':e.recorded?'Attendance logged<br><small>Update time not recorded</small>':'No attendance entered')+'</span></div>'+
+        return '<div class="att26-detail-title"><div><span class="att26-kicker">SELECTED EVENT</span><h3>'+esc(e.title)+'</h3><p>'+esc(e.date||'Date not listed')+'</p></div><span class="att26-log-pill '+(e.recorded?'logged':'not-logged')+'">'+(e.updatedAt?(e.loggedAt?'First attendance entry<br><time>'+esc(formatAttendanceTime(e.loggedAt))+'</time><br>':'')+'Attendance updated<br><time>'+esc(formatAttendanceTime(e.updatedAt))+'</time>'+(e.timeSource?'<br><small>Recovered from attendance cell history · minute precision</small>':''):e.recorded?'Attendance logged<br><small>Update time not recorded</small>':'No attendance entered')+'</span></div>'+
           '<section class="att26-quick-turnout" aria-label="Event turnout at a glance">'+metric('Total people',String(people),'Club attendees + guests')+metric('Club attendees',String(club),'All roster groups marked present')+metric('Guests',String(guest),'Guest count entered')+metric('Motorcycles',String(bikes),'Members + guests')+metric('Cages',String(cages),'Members + guests')+'<div class="att26-metric '+coreClass+'"><span>Core attendance</span><strong>'+esc(e.attendance||'—')+'</strong><small>'+(coreValue>=75?'Strong turnout · 75%+ display target':'75% display target · not an industry benchmark')+'</small></div></section>'+
           '<details class="att26-supporting-details"><summary>Guest calculations &amp; vehicle breakdown</summary><div class="att26-detail-grid">'+metric('Member motorcycles',e.motorcycles)+metric('Guest motorcycles',e.guestMotorcycles)+metric('Member cages',e.vehicles)+metric('Guest cages',e.guestVehicles)+metric('Adjusted guests',e.guests,'Workbook calculation')+metric('Guest exposure',e.guestExposure,'Workbook calculation')+metric('Workbook attendance total',e.total,'Workbook formula; quick total includes every roster group')+'</div></details>';
       };
