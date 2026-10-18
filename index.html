@@ -5434,6 +5434,33 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 .att26-dashboard .att26-supporting-details>summary{cursor:pointer;font-size:19px;font-weight:800;padding:8px}
 .att26-dashboard .att26-supporting-details .att26-detail-grid{margin-top:18px}
 @media(max-width:650px){.att26-dashboard .att26-quick-turnout{grid-template-columns:1fr}.att26-dashboard .att26-quick-turnout .att26-metric:first-child{grid-column:auto}}
+
+/* Distinct, readable dashboard panels for people, vehicles and activity. */
+.att26-dashboard .att26-event-detail{background:#eef1f4}
+.att26-dashboard .att26-detail-title h3{font-size:36px}
+.att26-dashboard .att26-detail-title p{font-size:23px}
+.att26-dashboard .att26-quick-turnout{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.att26-dashboard .att26-quick-turnout>.att26-metric:first-child{grid-column:1/-1}
+.att26-dashboard .att26-quick-turnout .att26-metric>span,.att26-dashboard .att26-event-section .att26-metric>span{font-size:22px;line-height:1.4}
+.att26-dashboard .att26-quick-turnout .att26-metric>strong,.att26-dashboard .att26-event-section .att26-metric>strong{font-size:44px}
+.att26-dashboard .att26-event-section{margin-top:26px;padding:24px;border:1px solid #bdc6d1;border-top:5px solid #272d37;border-radius:14px;background:#fff;text-align:center}
+.att26-dashboard .att26-event-section>header{margin-bottom:22px}
+.att26-dashboard .att26-event-section>header>span{font-size:15px;font-weight:850;letter-spacing:.12em;color:#596373}
+.att26-dashboard .att26-event-section h4{margin:7px 0 0;font-size:30px;color:#171b22}
+.att26-dashboard .att26-guests-section{border-top-color:#3275aa}
+.att26-dashboard .att26-vehicles-section{border-top-color:#c8102e}
+.att26-dashboard .att26-activity-section{border-top-color:#378159}
+.att26-dashboard .att26-guests-section .att26-detail-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.att26-dashboard .att26-vehicle-totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:20px}
+.att26-dashboard .att26-vehicle-totals>.att26-metric{background:#fff0f3;border-color:#e3a8b4}
+.att26-dashboard .att26-activity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.att26-dashboard .att26-activity-item{display:grid;align-content:center;gap:12px;padding:24px 16px;border:1px solid #c8d2cb;border-radius:12px;background:#f0f6f2}
+.att26-dashboard .att26-activity-item>span{font-size:21px;color:#344b3e;font-weight:800}
+.att26-dashboard .att26-activity-item>strong{font-size:26px;color:#192c21;line-height:1.3}
+.att26-dashboard .att26-activity-item>time{font-size:24px;color:#215b38;font-weight:850}
+@media(max-width:1500px){.att26-dashboard .att26-event-browser{grid-template-columns:1fr}.att26-dashboard .att26-event-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:380px}}
+@media(max-width:800px){.att26-dashboard .att26-quick-turnout{grid-template-columns:repeat(2,minmax(0,1fr))}.att26-dashboard .att26-guests-section .att26-detail-grid{grid-template-columns:1fr}.att26-dashboard .att26-event-section{padding:18px}}
+@media(max-width:600px){.att26-dashboard .att26-event-list,.att26-dashboard .att26-activity-grid,.att26-dashboard .att26-vehicle-totals{grid-template-columns:1fr}.att26-dashboard .att26-quick-turnout{grid-template-columns:1fr}}
   </style></head><body><div class="print-only"><button onclick="window.print()">Print pick tickets</button> · Cut along the dotted lines.</div><div class="sheet">${rows}</div></body></html>`);
       printWindow.document.close();
       printWindow.focus();
@@ -7768,9 +7795,12 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         const guest=num(e.guestOriginal||e.guests),people=club+guest;
         const bikes=num(e.motorcycles)+num(e.guestMotorcycles),cages=num(e.vehicles)+num(e.guestVehicles);
         const coreValue=num(e.attendance),coreClass=coreValue>=75?'att26-core-strong':'';
-        return '<div class="att26-detail-title"><div><span class="att26-kicker">SELECTED EVENT</span><h3>'+esc(e.title)+'</h3><p>'+esc(e.date||'Date not listed')+'</p></div><span class="att26-log-pill '+(e.recorded?'logged':'not-logged')+'">'+(e.updatedAt?(e.loggedAt?'First attendance entry<br><time>'+esc(formatAttendanceTime(e.loggedAt))+'</time><br>':'')+'Attendance updated<br><time>'+esc(formatAttendanceTime(e.updatedAt))+'</time>'+(e.timeSource?'<br><small>Recovered from attendance cell history · minute precision</small>':''):e.recorded?'Attendance logged<br><small>Update time not recorded</small>':'No attendance entered')+'</span></div>'+
-          '<section class="att26-quick-turnout" aria-label="Event turnout at a glance">'+metric('Total people',String(people),'Club attendees + guests')+metric('Club attendees',String(club),'All roster groups marked present')+metric('Guests',String(guest),'Guest count entered')+metric('Motorcycles',String(bikes),'Members + guests')+metric('Cages',String(cages),'Members + guests')+'<div class="att26-metric '+coreClass+'"><span>Core attendance</span><strong>'+esc(e.attendance||'—')+'</strong><small>'+(coreValue>=75?'Strong turnout · 75%+ display target':'75% display target · not an industry benchmark')+'</small></div></section>'+
-          '<details class="att26-supporting-details"><summary>Guest calculations &amp; vehicle breakdown</summary><div class="att26-detail-grid">'+metric('Member motorcycles',e.motorcycles)+metric('Guest motorcycles',e.guestMotorcycles)+metric('Member cages',e.vehicles)+metric('Guest cages',e.guestVehicles)+metric('Adjusted guests',e.guests,'Workbook calculation')+metric('Guest exposure',e.guestExposure,'Workbook calculation')+metric('Workbook attendance total',e.total,'Workbook formula; quick total includes every roster group')+'</div></details>';
+        const activityItem=(label,value)=>{const date=new Date(value);const valid=value&&!Number.isNaN(date.getTime());return '<div class="att26-activity-item"><span>'+label+'</span><strong>'+(valid?esc(date.toLocaleDateString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric'})):'Not recorded')+'</strong>'+(valid?'<time>'+esc(date.toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',timeZoneName:'short'}))+'</time>':'')+'</div>';};
+        return '<div class="att26-detail-title"><div><span class="att26-kicker">EVENT DASHBOARD</span><h3>'+esc(e.title)+'</h3><p>'+esc(e.date||'Date not listed')+'</p></div></div>'+
+          '<section class="att26-quick-turnout" aria-label="Event turnout at a glance">'+metric('Total people',String(people))+metric('Club attendees',String(club))+metric('Guests',String(guest))+'<div class="att26-metric '+coreClass+'"><span>Core attendance</span><strong>'+esc(e.attendance||'—')+'</strong></div></section>'+
+          '<section class="att26-event-section att26-guests-section"><header><span>PEOPLE</span><h4>Guests</h4></header><div class="att26-detail-grid">'+metric('Guest count',String(guest))+metric('Adjusted guests',e.guests)+metric('Guest exposure',e.guestExposure)+'</div></section>'+
+          '<section class="att26-event-section att26-vehicles-section"><header><span>ON THE ROAD</span><h4>Vehicles</h4></header><div class="att26-vehicle-totals">'+metric('Total motorcycles',String(bikes))+metric('Total cages',String(cages))+'</div><div class="att26-detail-grid">'+metric('Member motorcycles',e.motorcycles)+metric('Guest motorcycles',e.guestMotorcycles)+metric('Member cages',e.vehicles)+metric('Guest cages',e.guestVehicles)+'</div></section>'+
+          '<section class="att26-event-section att26-activity-section"><header><span>ATTENDANCE</span><h4>Activity Log</h4></header><div class="att26-activity-grid">'+activityItem('First logged',e.loggedAt)+activityItem('Last updated',e.updatedAt)+'</div></section>';
       };
       target.innerHTML='<div class="att26-dashboard"><header class="att26-hero"><div class="att26-hero-copy"><div class="att26-brandline"><span class="att26-brand-dot"></span>BONESHAKERS SOCIAL CLUB <i>MEMBERSHIP</i></div><span class="att26-kicker">'+esc(year)+' MEMBERSHIP &amp; COMMUNITY ATTENDANCE</span><h2>Attendance, at a glance.</h2><p>Member turnout, guests, and ride activity—together in one clear view.</p></div><div class="att26-hero-score"><span>CORE MEMBER ATTENDANCE</span><strong>'+esc(ytd)+'</strong><div class="att26-trend-chip"><span>First half <b>'+esc(firstHalf)+'</b></span><i></i><span>Recent half <b>'+esc(recentHalf)+'</b></span><b class="att26-flat">'+esc(trend)+'</b></div><small>Workbook-calculated year-to-date average</small></div><div class="att26-calendar-progress"><span>EVENT CALENDAR</span><strong>'+recorded.length+' <small>/ '+events.length+'</small></strong><div><i style="width:'+(events.length?recorded.length/events.length*100:0)+'%"></i></div><small>events with attendance recorded</small></div></header>'+
         '<section class="att26-overview-grid"><article class="att26-stat-card"><span>Member check-ins</span><strong>'+sum('membersYes')+'</strong><small>Present marks across recorded events</small><i class="att26-card-accent red"></i></article><article class="att26-stat-card"><span>Attendance visits</span><strong>'+sum('total')+'</strong><small>Member and guest visits, not unique people</small><i class="att26-card-accent dark"></i></article><article class="att26-stat-card"><span>Adjusted guests</span><strong>'+sum('guests')+'</strong><small>'+sum('guestOriginal')+' original guest entries</small><i class="att26-card-accent purple"></i></article><article class="att26-stat-card att26-peak-card"><span>Biggest event</span><strong>'+(peak?esc(peak.total):'—')+'</strong><small>'+(peak?esc(peak.title+' · '+peak.date):'No event recorded yet')+'</small><i class="att26-card-accent gold"></i></article></section>'+
