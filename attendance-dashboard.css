@@ -471,3 +471,21 @@ dialog.ec-card-dialog:not([open]){display:none}
 .att26-action-list>button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:11px;border:1px solid #cad5e4;border-radius:8px;background:#fff;text-align:left;cursor:pointer;color:#253954;font:inherit}
 .att26-action-list>button:hover{background:#eef3fa}.att26-action-list span{display:grid;gap:4px}.att26-action-list b{font-size:14px}.att26-action-list small{font-size:12px;color:#627086}.att26-action-list strong{font-size:13px;white-space:nowrap}
 .att26-decision-grid .att26-kicker{font-weight:900}
+
+/* Best and lowest event turnout, alongside one another. */
+.att26-event-extremes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.att26-event-ranking{min-width:0;padding:13px;border:1px solid #cbd6e3;border-radius:11px;background:#f7f9fc}
+.att26-event-ranking.best{border-top:4px solid #19824b}.att26-event-ranking.lowest{border-top:4px solid #c47b20}
+.att26-event-ranking h4{margin:0;font-size:16px;color:#233853;line-height:1.4}
+.att26-event-ranking>p{font-size:12px;color:#5c6c80;margin:5px 0 10px}
+.att26-event-ranking ol{list-style:none;counter-reset:eventRank;margin:0;padding:0;display:grid;gap:8px}
+.att26-event-ranking li{counter-increment:eventRank}
+.att26-event-ranking button{position:relative;width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 9px 11px 28px;background:white;border:1px solid #d6dfeb;border-radius:8px;text-align:left;color:#263c58;font:inherit;cursor:pointer}
+.att26-event-ranking button:before{content:counter(eventRank);position:absolute;left:9px;top:13px;font-size:12px;font-weight:900;color:#6a7a90}
+.att26-event-ranking button:hover{background:#edf3fa}
+.att26-event-ranking button>span{display:grid;gap:5px;min-width:0}
+.att26-event-ranking b{font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+.att26-event-ranking small{font-size:11px;line-height:1.4;color:#5e6f84}
+.att26-event-ranking strong{font-size:22px;white-space:nowrap;color:#177341}.att26-event-ranking.lowest strong{color:#98601b}
+@media(max-width:1100px) and (min-width:851px){.att26-event-extremes{grid-template-columns:1fr}}
+@media(max-width:480px){.att26-event-extremes{grid-template-columns:1fr}}
