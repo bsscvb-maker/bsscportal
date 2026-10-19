@@ -6467,7 +6467,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         !/Bikes For Tykes Fundraiser 2026/i.test(String(row[7]||'')+' '+String(row[16]||''))):[];
       // Keep reversals/refunds signed so cancelled orders do not inflate purchases.
       const purchaseTotal=-purchases.reduce((sum,row)=>sum+(Number(String(row[9]||0).replace(/[$,]/g,''))||0),0);
-      const card=(label,value,note)=>'<div class="finance-dashboard-card"><span>'+esc(label)+'</span><strong>'+ (hasData?esc(money(value)):'—')+'</strong><small style="display:block;margin-top:8px;line-height:1.5">'+esc(note)+'</small></div>';
+      const card=(label,value,note)=>'<div class="finance-dashboard-card"><span>'+esc(label)+'</span><strong>'+ (hasData?esc(money(value)):'—')+'</strong></div>';
       return '<section class="bft-finance-section bft-program-summary"><h3>Program Overview</h3>'+
         (picker?'<label style="display:flex;flex-direction:column;gap:8px;max-width:260px;padding:16px;margin:12px 0 20px;background:#fff;border:1px solid #bbc2cb;border-radius:12px;box-shadow:0 3px 12px #0001"><span style="font-weight:700;color:#333">Choose program year</span><select data-bft-program-year aria-label="Choose program year" style="font:inherit;font-size:22px;font-weight:800;padding:10px;border:1px solid #aaa;border-radius:8px;background:#f5f6f8;color:#111">'+['2025','2026','2027'].map(y=>'<option '+(y===year?'selected':'')+'>'+y+'</option>').join('')+'</select></label>':'')+
         '<div class="bft-finance-summary bft-finance-simple">'+
