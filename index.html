@@ -9513,7 +9513,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
     (function(){
       const mq=window.matchMedia('(max-width:760px)');
       const mainItems=[['home','⌂','Home'],['membership','♟','Members'],['bft','◇','BFT'],['records','▤','Records']];
-      const moreItems=[['tracker','Task Tracker'],['finance','Finance'],['bikenights','Bike Nights'],['marketplace','Marketplace'],['sponsors','Sponsorships'],['storage','Storage'],['volunteers','Events & Volunteers'],['admin','Administration']];
+      const moreItems=[['tracker','Task Tracker'],['finance','Finance'],['bikenights','Bike Nights'],['marketplace','Marketplace'],['sponsorsnew','Sponsorships New'],['storage','Storage'],['volunteers','Events & Volunteers'],['admin','Administration']];
       function authenticated(){return document.getElementById('authGate')?.classList.contains('hidden');}
       function current(){if(!document.getElementById('dashboard')?.classList.contains('hidden'))return 'home';return document.querySelector('.sidebar [data-module].active')?.dataset.module||'home';}
       function sync(key=current()){document.querySelectorAll('[data-mobile-module]').forEach(b=>{const k=b.dataset.mobileModule;b.classList.toggle('active',k===key||(k==='more'&&moreItems.some(x=>x[0]===key)));});}
@@ -9554,7 +9554,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 <script src="event-center.js?v=20261011-1"></script>
 <script src="club-receipts.js?v=20261019-forms-photo"></script>
 <script src="home-refresh.js?v=20261017-picture-nav"></script>
-<script src="sponsorships-new.js?v=20261017-raw"></script>
+<script src="sponsorships-new.js?v=20261019-retire-old"></script>
 <script src="bft-results.js?v=20261018-12"></script>
 <link rel="stylesheet" href="forms-tools-working.css?v=20261019-3">
 <script src="forms-tools-data.js?v=20261019-2"></script>
