@@ -17,3 +17,5 @@
 .ft-card-tone-10{background:#fff0ed}.ft-tone-10{background:#ffdcd5;color:#af5d50}
 .ft-card-tone-11{background:#eaf8fc}.ft-tone-11{background:#ccecf6;color:#317e96}
 @media(max-width:600px){.forms-tools-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ft-card-art{height:64px}.ft-card-art svg{width:36px;height:36px}.ft-card-body{padding:12px}.ft-card-body h3{font-size:14px}.ft-card-body p{font-size:12px}}@media(max-width:360px){.forms-tools-grid{grid-template-columns:1fr}}
+
+.ft-purpose{padding:20px 0;border-bottom:1px solid #dde4eb;margin:0 0 24px}.ft-purpose h3{font-size:18px;margin:0 0 10px}.ft-purpose h4{font-size:14px;color:#2c4d63;margin:18px 0 6px}.ft-purpose p{font-size:14px;line-height:1.75;color:#4d6070;margin:0;max-width:82ch}
