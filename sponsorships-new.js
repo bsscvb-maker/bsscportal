@@ -317,5 +317,7 @@ async function load(force=false){
  });
  loading=false;loaded=true;draw();
 }
-const originalShow=showModule;showModule=function(moduleKey){host.hidden=true;originalShow(moduleKey);if(moduleKey===key){document.getElementById('detailTasks').innerHTML='';host.hidden=false;load()}};
+// Retire the original module after its replacement navigation has been built.
+document.querySelectorAll('[data-module="sponsors"],[data-module-card="sponsors"],[data-mobile-module="sponsors"]').forEach(element=>element.remove());
+const originalShow=showModule;showModule=function(moduleKey){if(moduleKey==='sponsors')moduleKey=key;host.hidden=true;originalShow(moduleKey);if(moduleKey===key){document.getElementById('detailTasks').innerHTML='';host.hidden=false;load()}};
 })();
