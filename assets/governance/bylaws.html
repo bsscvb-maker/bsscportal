@@ -4,7 +4,7 @@ const normalize=s=>s.toLowerCase().replace(/[’']/g,'').replace(/[^a-z0-9]+/g,'
 const stem=t=>t.length>5?t.replace(/(ing|ies|es|s)$/,''):t;
 const words=s=>[...new Set(normalize(s).split(' ').filter(t=>t&&!stop.has(t)).map(stem))];
 const intents=[
- {q:/\b(impeach|impeached|impeaching|impeachment|remove|removal|oust|ousting|vote out|recall|kick out)\b/,terms:['removal','presidential','director','officer'],target:/presidential removal|elected director and officer removal|officer vacancies and succession/},
+ {q:/\b(impeach|impeached|impeaching|impeachment|remove|removal|oust|ousting|vote out|recall|kick out)\b/,terms:['removal','presidential','director','officer'],target:/presidential removal|elected director and officer removal/},
  {q:/\b(join|joining|signup|sign up|application|applicant|new member)\b/,terms:['first time admission','new applicant','initial payment'],target:/first time admission|membership year and charges|renewal and fees/},
  {q:/\b(cost|costs|price|prices|pay|payment|fee|fees|dues|how much)\b/,terms:['dues','fees','payment'],target:/membership year and charges|renewal and fees|renewal deadlines/},
  {q:/\b(inappropriate|inappropriately|harass|harassment|misbehav|misbehaving|sexual|bullying|complain|complaint|complaints|acting up)\b/,terms:['conduct','complaint','discipline'],target:/standards and reporting|complaint|fair review|conduct and review/},
