@@ -3559,9 +3559,10 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       else if (editOptions && editOptions.reverseRows) indexedData = indexedData.reverse();
       const width = Math.min(maxColumns, Math.max(headers.length, ...indexedData.map(item => item.row.length)));
       const isRoster2027 = targetId === 'membershipContent' && currentMembershipSheet === '2027';
-      if(isRoster2027) {
-        const last=headers.findIndex(h=>String(h).trim()==='Last Name'), first=headers.findIndex(h=>String(h).trim()==='First Name');
-        indexedData.sort((a,b)=>String(a.row[last]||'').localeCompare(String(b.row[last]||''),'en',{sensitivity:'base'}) || String(a.row[first]||'').localeCompare(String(b.row[first]||''),'en',{sensitivity:'base'}) || a.sourceIndex-b.sourceIndex);
+      if(targetId === 'membershipContent') {
+        const nameHeader=h=>String(h||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+        const last=headers.findIndex(h=>nameHeader(h)==='lastname'), first=headers.findIndex(h=>nameHeader(h)==='firstname');
+        if(last>=0) indexedData.sort((a,b)=>String(a.row[last]||'').trim().localeCompare(String(b.row[last]||'').trim(),'en',{sensitivity:'base'}) || String(a.row[first]||'').trim().localeCompare(String(b.row[first]||'').trim(),'en',{sensitivity:'base'}) || a.sourceIndex-b.sourceIndex);
       }
       // Keep original sheet indexes so hiding display columns cannot shift edits.
       const rosterHeader = index => String(headers[index] || '').toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -7981,7 +7982,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const norm=value=>String(value||'').toLowerCase().replace(/[^a-z0-9]/g,'');
       const find=(...names)=>headers.findIndex(h=>names.includes(norm(h)));
       const first=find('firstname','first'),last=find('lastname','last'),road=find('roadname','road'),status=find('status'),type=find('membershiptype','membertype','type'),dues=find('duespaid','dues','duesstatus'),waiver=find('waiver','waiversigned'),start=find('startyear','yearjoined','joinyear');
-      const data=rows.slice(1).filter(row=>row.some(v=>String(v??'').trim())).map((row,index)=>({row,index}));
+      const data=rows.slice(1).filter(row=>row.some(v=>String(v??'').trim())).map((row,index)=>({row,index})).sort((a,b)=>String(a.row[last]||'').trim().localeCompare(String(b.row[last]||'').trim(),'en',{sensitivity:'base'})||String(a.row[first]||'').trim().localeCompare(String(b.row[first]||'').trim(),'en',{sensitivity:'base'})||a.index-b.index);
       const ignored=new Set([first,last,road,status,type,dues,waiver]);
       const label=(i)=>headers[i]||'Field';
       const value=(row,i)=>i>=0?String(row[i]??'').trim():'';
