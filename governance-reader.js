@@ -1,0 +1,31 @@
+(()=>{
+'use strict';
+const wordIcon='<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="9" y="3" width="21" height="26" rx="2" fill="#185abd"/><path d="M15 10h10M15 15h10M15 20h10" stroke="#fff" stroke-width="2"/><rect x="1" y="7" width="18" height="19" rx="2" fill="#103f91"/><text x="10" y="21" font-size="14" font-weight="bold" fill="white" text-anchor="middle">W</text></svg>';
+const pdfIcon='<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="2" width="28" height="28" rx="4" fill="#e5252a"/><path d="M17 6c-4 0 0 11 5 15 6 5 8 1 3 0-6-2-15 1-19 4-4 4 2 3 5-2 4-6 9-17 6-17Z" fill="none" stroke="white" stroke-width="1.5"/></svg>';
+const style=document.createElement('style');style.textContent=`
+.governance-export{display:inline-flex;gap:8px;align-items:center;text-decoration:none;background:white;border:1px solid #cbd5e1;color:#172554;border-radius:8px;padding:9px 13px;font-weight:750}.governance-export svg{width:29px;height:29px;flex-shrink:0}.governance-reader .bylaws-article h2{color:#172554}.governance-reader h3{margin-top:23px}.governance-reader .table-wrap{overflow:auto}.governance-reader table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}.governance-reader td{border:1px solid #d9d9d9;padding:10px;vertical-align:top}.governance-reader tr:first-child{background:#293647;color:white;font-weight:750}.governance-reader tr:nth-child(2n){background:#f3f5f8}.governance-reader .review{font-style:italic;color:#64748b}.bylaws-toc button.gov-active{background:#edf3fb;border-left:4px solid #c8102e}.governance-archive-card{text-align:left;padding:22px;background:white;border:1px solid #d7dfe7;border-radius:12px;cursor:pointer}.governance-archive-card h3{font-size:21px;color:#172554}.records-dashboard-cards>[data-record-collection="Archive"]{order:90}.governance-reader .bylaws-article{overflow-wrap:anywhere}@media(max-width:600px){.governance-export{padding:8px}.governance-reader td{padding:7px}}
+`;document.head.appendChild(style);
+window.renderGovernanceReader=function(key){
+ const doc=window.BSSC_GOVERNANCE[key],host=document.getElementById('recordsWorkspace');if(!doc||!host)return;
+ host.innerHTML='<nav class="minutes-breadcrumb"><button class="sponsor-tab" data-record-home>← Dashboard</button></nav><section class="records-hero"><div><h2>BSSC '+esc(doc.title)+'</h2></div><div class="records-hero-actions"><a class="governance-export" href="assets/governance/'+key+'.docx" download aria-label="Export '+esc(doc.title)+' as Word">'+wordIcon+'<span>Word</span></a><a class="governance-export" href="assets/governance/'+key+'.pdf" target="_blank" rel="noopener" aria-label="Export '+esc(doc.title)+' as PDF">'+pdfIcon+'<span>PDF</span></a></div></section><div class="bylaws-shell governance-reader"><aside class="bylaws-toc"><input type="search" data-governance-search placeholder="Describe behavior or search '+esc(doc.title.toLowerCase())+'…" aria-label="Search '+esc(doc.title)+'"><h3>'+(key==='bylaws'?'Articles':'Policies')+'</h3><div data-governance-nav></div></aside><main class="bylaws-reader" data-governance-reader></main></div>';
+ const nav=host.querySelector('[data-governance-nav]'),reader=host.querySelector('[data-governance-reader]'),input=host.querySelector('[data-governance-search]');
+ const plain=html=>{const d=document.createElement('div');d.innerHTML=html;return d.textContent||'';};
+ function show(q=''){
+  const query=q.trim(),sections=doc.sections.map((s,i)=>({...s,index:i,match:query?recordConceptMatch(plain(s.title+' '+s.html),query):null})).filter(s=>!query||s.match.score>0).sort((a,b)=>query?b.match.score-a.match.score:0);
+  nav.innerHTML=sections.map(s=>'<button data-governance-jump="'+s.index+'">'+esc(plain(s.title))+'</button>').join('')||'<p>No matching sections.</p>';
+  reader.innerHTML=(query?'<div class="bylaws-results" role="status">'+sections.length+' matching sections</div>':'')+sections.map(s=>'<article class="bylaws-article" id="governance-section-'+s.index+'"><h2>'+s.title+'</h2>'+recordConceptEvidence(s.match)+s.html+'</article>').join('');
+  nav.querySelectorAll('[data-governance-jump]').forEach(b=>b.onclick=()=>{nav.querySelectorAll('button').forEach(n=>n.classList.toggle('gov-active',n===b));document.getElementById('governance-section-'+b.dataset.governanceJump)?.scrollIntoView({behavior:'smooth',block:'start'});});
+ }
+ show();input.oninput=()=>show(input.value);host.querySelector('[data-record-home]').onclick=recordsHome;
+};
+window.renderGovernanceArchive=function(){
+ const host=document.getElementById('recordsWorkspace');host.innerHTML='<nav class="minutes-breadcrumb"><button class="sponsor-tab" data-record-home>← Dashboard</button></nav><section class="records-hero"><div><h2>Archive</h2><p>Historical documents retained for reference. Use the Bylaws and Operating Policies cards for the current documents.</p></div></section><div class="records-card-grid"><button class="governance-archive-card" data-archive-bylaws><h3>Previous Bylaws</h3><p>December 30, 2025 version</p></button><button class="governance-archive-card" data-archive-appendices><h3>Previous Appendices</h3><p>The former lettered policy documents</p></button></div>';
+ host.querySelector('[data-record-home]').onclick=recordsHome;host.querySelector('[data-archive-bylaws]').onclick=renderArchivedBylaws;host.querySelector('[data-archive-appendices]').onclick=()=>renderArchivedAppendices();
+};
+const art=recordsCollectionArt;
+recordsCollectionArt=function(id,label,rows){
+ if(id==='Policies & appendices')return '<div class="dashboard-art collection-photo-art" aria-hidden="true"><img src="assets/club-records/operating-policies-v2.webp" alt="" decoding="async"></div>';
+ if(id==='Archive')return '<div class="dashboard-art" aria-hidden="true" style="background:linear-gradient(135deg,#e4e9ef,#f9fafb);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 240 160" width="220" height="160"><rect x="45" y="50" width="150" height="95" rx="7" fill="#63758a"/><rect x="35" y="35" width="170" height="28" rx="5" fill="#8799ad"/><rect x="85" y="85" width="70" height="32" rx="3" fill="#fff"/><text x="120" y="106" fill="#334155" font-size="13" text-anchor="middle" font-weight="bold">ARCHIVE</text></svg></div>';
+ return art(id,label,rows);
+};
+})();
