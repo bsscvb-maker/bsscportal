@@ -91,6 +91,7 @@
   };
 
   const collectionPhotos={
+    'Forms and Tools':'forms-tools-desk-v1.webp',
     'Bylaws':'bylaws-official-v1.webp',
     'Policies & appendices':'appendix-archive-v1.webp',
     'Code of conduct':'conduct-official-v1.webp',
