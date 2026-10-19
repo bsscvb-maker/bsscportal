@@ -7339,7 +7339,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         if(kind==='active')return status==='active';
         if(kind==='lifer')return status==='active' && /^(lifer|life member)$/i.test(value(row,'membership type')) || status==='active' && /^(lifer|life member)$/i.test(value(row,'member classification'));
         return !/inactive|deceased|removed/i.test(status) && !!value(row,'first name');
-      }).map(row=>({name:[value(row,'first name'),value(row,'last name')].filter(Boolean).join(' '),road:value(row,'road name')})).filter(member=>member.name).sort((a,b)=>a.name.localeCompare(b.name));
+      }).map(row=>({name:[value(row,'first name'),value(row,'last name')].filter(Boolean).join(' '),last:value(row,'last name'),first:value(row,'first name'),road:value(row,'road name')})).filter(member=>member.name).sort((a,b)=>a.last.localeCompare(b.last,'en',{sensitivity:'base'})||a.first.localeCompare(b.first,'en',{sensitivity:'base'}));
     }
 
     async function showDashboardMemberList(kind,year,rosterRows) {
