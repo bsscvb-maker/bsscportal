@@ -109,13 +109,13 @@
     'Committee records':'Committee planning and operating references.'
   };
   const arts={
-    'Corporate & Tax Documents':'bylaws-official-v1.webp','Club History':'archive-records-v1.webp',
-    'Ride Safety':'conduct-official-v1.webp','Approved Artwork':'operating-policies-v2.webp',
-    'Contracts & Agreements':'bylaws-official-v1.webp','Sponsorship Resources':'committee-roundtable-v1.webp',
-    'Fund Requests':'forms-tools-desk-v1.webp','Financial Reports':'receipts-desk-v1.webp',
-    'Event Documents':'minutes-journal-v1.webp','Donation Evidence':'receipts-desk-v1.webp',
-    'Purchase Evidence':'receipts-desk-v1.webp','Accounts & Access':'archive-records-v1.webp',
-    'Restricted Members':'conduct-official-v1.webp','Bylaws':'bylaws-official-v1.webp',
+    'Corporate & Tax Documents':'corporate-tax-unique-v1.webp','Club History':'club-history-unique-v1.webp',
+    'Ride Safety':'ride-safety-unique-v1.webp','Approved Artwork':'approved-artwork-unique-v1.webp',
+    'Contracts & Agreements':'contracts-agreements-unique-v1.webp','Sponsorship Resources':'sponsorship-resources-unique-v1.webp',
+    'Fund Requests':'fund-requests-unique-v1.webp','Financial Reports':'financial-reports-unique-v1.webp',
+    'Event Documents':'event-documents-unique-v1.webp','Donation Evidence':'donation-evidence-unique-v1.webp',
+    'Purchase Evidence':'purchase-evidence-unique-v1.webp','Accounts & Access':'accounts-access-unique-v1.webp',
+    'Restricted Members':'restricted-members-unique-v1.webp','Bylaws':'bylaws-official-v1.webp',
     'Archive':'archive-records-v1.webp','Operating Policies':'operating-policies-v2.webp',
     'Code of Conduct':'conduct-official-v1.webp','Forms and Tools':'forms-tools-desk-v1.webp',
     'Minutes':'minutes-journal-v1.webp','Receipts':'receipts-desk-v1.webp',
