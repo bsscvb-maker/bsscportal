@@ -257,3 +257,73 @@
   };
 })();
 
+
+/* Remove portal collections without deleting source Drive files. */
+(() => {
+  const removable=new Set(['Corporate & Tax Documents','Club History','Ride Safety','Approved Artwork','Contracts & Agreements','Sponsorship Resources','Fund Requests','Financial Reports','Event Documents','Donation Evidence','Purchase Evidence','Accounts & Access','Restricted Members','Patches']);
+  const settingsTab='Portal Collection Settings';
+  const removed=new Set();let settingsPromise=null,settingsExists=false;
+  const base=()=> 'https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID;
+  async function settings(force=false){
+    if(!accessToken)return;
+    if(force)settingsPromise=null;
+    if(!settingsPromise)settingsPromise=(async()=>{
+      const response=await fetch(base()+'?fields=sheets.properties.title',{headers:{Authorization:'Bearer '+accessToken}});
+      if(!response.ok)throw new Error('Unable to check collection settings. Refresh and try again.');
+      settingsExists=(await response.json()).sheets.some(s=>s.properties.title===settingsTab);
+      removed.clear();
+      if(settingsExists){const rows=await getSheetValues("'"+settingsTab+"'!A1:C200",MEMBERSHIP_SPREADSHEET_ID);rows.slice(1).forEach(r=>{if(r[1]==='Removed')removed.add(r[0]);});}
+    })().catch(e=>{settingsPromise=null;throw e;});
+    return settingsPromise;
+  }
+  function filterCards(){
+    document.querySelectorAll('#recordsWorkspace .records-dashboard-card').forEach(card=>{if(removed.has(card.querySelector('h3')?.textContent.trim()))card.remove();});
+    if(removed.has('Patches'))document.querySelectorAll('#storageWorkspace button').forEach(b=>{if(b.textContent==='Patches — View Inventory')b.remove();});
+    const shortcuts={'Fund requests':'Fund Requests','Donation evidence':'Donation Evidence','Purchase evidence':'Purchase Evidence','Financial reports':'Financial Reports','Sponsorship resources':'Sponsorship Resources','Corporate documents':'Corporate & Tax Documents','Event documents':'Event Documents','Ride safety':'Ride Safety','Storage agreement and contracts':'Contracts & Agreements','Artwork and production files':'Approved Artwork','Ride safety and blank waiver':'Ride Safety'};
+    document.querySelectorAll('[data-record-shortcuts] button').forEach(b=>{if(removed.has(shortcuts[b.textContent]))b.remove();});
+  }
+  async function removeCollection(category,button){
+    if(!removable.has(category)||!accessToken)return;
+    const ordinary=!['Accounts & Access','Restricted Members','Patches'].includes(category);
+    const cached=(clubCache['Club Records']||[]).slice(1).filter(r=>r[0]&&r[2]===category);
+    const explanation=ordinary?'This removes '+cached.length+' document links from the portal.':'This removes this collection from the portal.';
+    if(!confirm('Delete “'+category+'”?\n\n'+explanation+' Original Drive files and source workbooks are kept.'))return;
+    button.disabled=true;const old=button.textContent;button.textContent='Deleting…';
+    const host=button.closest('#recordsWorkspace,#storageWorkspace');let message=host.querySelector('[data-collection-delete-status]');
+    if(!message){message=document.createElement('p');message.dataset.collectionDeleteStatus='true';message.setAttribute('role','status');button.parentNode.after(message);}
+    try{
+      await settings(true);
+      let ranges=[];
+      if(ordinary){
+        const live=await getSheetValues("'Club Records'!A1:I2000",MEMBERSHIP_SPREADSHEET_ID);
+        const current=live.slice(1).filter(r=>r[0]&&r[2]===category);
+        const normalize=rows=>JSON.stringify(rows.map(r=>Array.from({length:9},(_,i)=>String(r[i]??''))).sort((a,b)=>a[0].localeCompare(b[0])));
+        if(normalize(current)!==normalize(cached))throw new Error('This collection changed. Refresh it and review the documents before deleting.');
+        ranges=live.map((r,i)=>r[0]&&r[2]===category?"'Club Records'!A"+(i+1)+':I'+(i+1):null).filter(Boolean);
+      }
+      if(!settingsExists){
+        await writePortalSheetRequest(base()+':batchUpdate',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({requests:[{addSheet:{properties:{title:settingsTab,gridProperties:{rowCount:200,columnCount:3,frozenRowCount:1}}}}]})},'Created collection settings',settingsTab,1);
+        settingsExists=true;
+        await writePortalSheetRequest(base()+'/values/'+encodeURIComponent("'"+settingsTab+"'!A1:C1")+'?valueInputOption=RAW',{method:'PUT',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:[['Collection','Status','Updated At']]})},'Initialized collection settings',settingsTab,1);
+      }
+      if(ranges.length)await writePortalSheetRequest(base()+'/values:batchClear',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({ranges})},'Deleted portal collection links','Club Records',ranges.length);
+      await writePortalSheetRequest(base()+'/values/'+encodeURIComponent("'"+settingsTab+"'!A:C")+':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:[[category,'Removed',new Date().toISOString()]]})},'Removed portal collection',settingsTab,1);
+      removed.add(category);filterCards();
+      if(category==='Patches'){renderStorage();}
+      else {recordsDashboard=true;recordsCategory='';clubFramework.records.active='Club Records';await loadClubFramework('records');}
+    }catch(error){message.textContent='Unable to finish deleting: '+error.message+' Original files have not been deleted. Refresh before retrying.';button.disabled=false;button.textContent=old;settingsPromise=null;}
+  }
+  function control(category,container){
+    if(!removable.has(category)||!container||container.querySelector('[data-delete-collection]'))return;
+    const b=document.createElement('button');b.type='button';b.className='sponsor-tab';b.dataset.deleteCollection=category;b.style.cssText='color:#a00;border-color:#bd7a7a;margin-left:auto';b.textContent='Delete collection';b.onclick=()=>removeCollection(category,b);container.append(b);
+  }
+  const dashboard=renderRecordsDashboard;
+  renderRecordsDashboard=function(){dashboard.apply(this,arguments);filterCards();settings(true).then(filterCards).catch(()=>{});};
+  const storageRenderer=renderStorage;
+  renderStorage=function(){storageRenderer.apply(this,arguments);filterCards();settings().then(filterCards).catch(()=>{});};
+  const collection=renderRecordCollection;
+  renderRecordCollection=function(){collection.apply(this,arguments);control(recordsCategory,document.querySelector('#recordsWorkspace .minutes-breadcrumb'));};
+  let queued=false;
+  const observer=new MutationObserver(()=>{if(queued)return;queued=true;queueMicrotask(()=>{queued=false;filterCards();for(const id of ['recordsWorkspace','storageWorkspace']){const host=document.getElementById(id);if(!host?.querySelector('[data-ops-back]'))continue;const category=host.querySelector('h2')?.textContent.trim();control(category,host.querySelector('.club-toolbar'));}});});
+  const shell=document.querySelector('.detail-shell');if(shell)observer.observe(shell,{childList:true,subtree:true});
+})();
