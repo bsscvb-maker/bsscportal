@@ -41,3 +41,43 @@
   const originalStorage=renderStorage;
   renderStorage=function(){originalStorage.apply(this,arguments);const host=document.getElementById('storageWorkspace');const b=document.createElement('button');b.className='open-btn';b.style.margin='0 0 16px';b.textContent='Patches — View Inventory';b.onclick=()=>open('patches');host.prepend(b);};
 })();
+
+/* Collections use the existing private Club Records index. */
+(() => {
+  const collections=new Set(['Corporate & Tax Documents','Club History','Ride Safety','Approved Artwork','Contracts & Agreements','Sponsorship Resources','Fund Requests','Financial Reports','Event Documents','Donation Evidence','Purchase Evidence']);
+  const original=renderRecordCollection;
+  renderRecordCollection=function(){
+    if(!collections.has(recordsCategory))return original.apply(this,arguments);
+    const host=document.getElementById('recordsWorkspace'),category=recordsCategory;
+    const rows=(clubCache['Club Records']||[]).slice(1).map((v,i)=>({v,row:i+2})).filter(r=>r.v[0]&&r.v[2]===category);
+    host.innerHTML='<nav class="minutes-breadcrumb"><button class="sponsor-tab" data-doc-back>Club Records</button><button class="sponsor-tab" data-doc-refresh>Refresh</button></nav><section class="records-hero"><div><h2>'+esc(category)+'</h2><p>Open the original document. Review labels identify historical records and copies requiring verification.</p></div></section><label>Search this collection<input data-doc-query type="search" style="width:100%;padding:12px;margin:12px 0" placeholder="Search titles and notes"></label><p data-doc-count role="status"></p><div class="records-card-grid" data-doc-results></div><div data-club-editor></div>';
+    const paint=()=>{
+      const q=host.querySelector('[data-doc-query]').value.toLowerCase();
+      const selected=rows.filter(r=>[r.v[1],r.v[4],r.v[7]].join(' ').toLowerCase().includes(q));
+      host.querySelector('[data-doc-count]').textContent=selected.length+' of '+rows.length+' documents';
+      host.querySelector('[data-doc-results]').innerHTML=selected.map(({v,row})=>'<article class="record-card"><h3>'+esc(v[1])+'</h3><p><strong>'+esc(v[4]||'Needs review')+'</strong>'+(v[3]?' · '+esc(v[3]):'')+'</p><p style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(v[7]||'')+'</p><div class="record-card-actions">'+minutesDocumentLinks(v,parseMinutesNotes(v[7]))+'<button class="sponsor-tab" data-doc-edit="'+row+'">Edit record</button></div></article>').join('')||'<p>No matching documents.</p>';
+      host.querySelectorAll('[data-doc-edit]').forEach(b=>b.onclick=()=>editClubRecord('records',Number(b.dataset.docEdit)));
+    };
+    host.querySelector('[data-doc-query]').oninput=paint;
+    host.querySelector('[data-doc-back]').onclick=recordsHome;
+    host.querySelector('[data-doc-refresh]').onclick=()=>loadClubFramework('records');paint();
+  };
+  function go(category){recordsDashboard=true;recordsCategory=category;clubFramework.records.active='Club Records';showModule('records');}
+  const targets={
+    financeWorkspace:[['Fund requests','Fund Requests'],['Donation evidence','Donation Evidence'],['Purchase evidence','Purchase Evidence'],['Financial reports','Financial Reports']],
+    sponsorshipsNewWorkspace:[['Sponsorship resources','Sponsorship Resources'],['Corporate documents','Corporate & Tax Documents']],
+    volunteersWorkspace:[['Event documents','Event Documents'],['Ride safety','Ride Safety']],
+    bftWorkspace:[['Event documents','Event Documents']],
+    storageWorkspace:[['Storage agreement and contracts','Contracts & Agreements']],
+    marketplaceWorkspace:[['Artwork and production files','Approved Artwork']],
+    membershipWorkspace:[['Ride safety and blank waiver','Ride Safety']]
+  };
+  function shortcuts(){
+    for(const [id,links] of Object.entries(targets)){
+      const host=document.getElementById(id);if(!host||host.querySelector('[data-record-shortcuts]'))continue;
+      const bar=document.createElement('nav');bar.dataset.recordShortcuts='true';bar.className='club-toolbar';bar.setAttribute('aria-label','Related club documents');bar.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px';
+      links.forEach(([label,category])=>{const b=document.createElement('button');b.type='button';b.className='sponsor-tab';b.textContent=label;b.onclick=()=>go(category);bar.append(b);});host.prepend(bar);
+    }
+  }
+  const shell=document.querySelector('.detail-shell');if(shell)new MutationObserver(shortcuts).observe(shell,{childList:true,subtree:true});shortcuts();
+})();
