@@ -225,7 +225,7 @@
       if(art)art.innerHTML='<img src="assets/club-records/'+file+'" alt="" loading="lazy" decoding="async">';
       const body=card.querySelector('.dashboard-card-body');if(!body)return;
       const p=document.createElement('p');p.className='rx-description';p.textContent=descriptions[label]||'Club documents and original reference files.';body.querySelector('h3').after(p);
-      const footer=body.querySelector('.dashboard-card-footer');if(footer){const b=document.createElement('b');b.textContent='Open collection →';footer.append(b);}
+      const footer=body.querySelector('.dashboard-card-footer');if(footer)footer.querySelectorAll('b').forEach(b=>b.remove());
       card.dataset.collectionTitle=label.toLowerCase();card.setAttribute('aria-label','Open '+label);
     });
     const toolbar=document.createElement('div');toolbar.className='rx-toolbar';toolbar.innerHTML='<label class="rx-search">Find a collection<input type="search" placeholder="Search records, tax, safety, artwork…" data-collection-find></label>';
