@@ -256,7 +256,7 @@
     grid.before(toolbar);toolbar.querySelector('input').oninput=event=>{const q=event.target.value.toLowerCase().trim();[...grid.children].forEach(c=>c.hidden=!c.textContent.toLowerCase().includes(q));};
   };
   async function removeDocument(record,button){
-    const message=button.closest('.rx-card').querySelector('[data-doc-remove-status]');
+    const message=button.closest('dialog').querySelector('[data-doc-remove-status]');
     if(!accessToken){message.textContent='Sign in before removing a document.';return;}
     if(!confirm('Remove “'+record[1]+'” from the portal?\n\nThe original Drive file will stay intact.'))return;
     button.disabled=true;button.textContent='Removing…';message.textContent='';
@@ -267,9 +267,23 @@
       if(matches.length!==1||normalize(matches[0].v)!==normalize(record))throw new Error('This record changed. Refresh the collection and review it before removing.');
       const row=matches[0].row;
       await writePortalSheetRequest('https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+'/values:batchClear',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({ranges:["'Club Records'!A"+row+':I'+row]})},'Removed document from portal','Club Records',1);
+      button.closest('dialog').close();
       await loadClubFramework('records');
     }catch(error){message.textContent='Unable to finish removing: '+error.message+' Refresh before retrying.';button.disabled=false;button.textContent='Remove from portal';}
   }
+  const priorEditRecord=editClubRecord;
+  editClubRecord=function(key,rowNumber){
+    priorEditRecord.apply(this,arguments);
+    if(key!=='records'||!rowNumber||clubFramework.records.active!=='Club Records')return;
+    const record=clubCache['Club Records']?.[rowNumber-1];
+    const dialog=document.querySelector('#recordsWorkspace [data-club-editor] dialog');
+    if(!record?.[0]||!dialog)return;
+    const toolbar=dialog.querySelector('.club-toolbar');
+    const button=document.createElement('button');button.type='button';button.className='rx-remove';button.textContent='Remove from portal';
+    const message=document.createElement('p');message.className='rx-remove-status';message.dataset.docRemoveStatus='true';message.setAttribute('role','status');
+    toolbar.after(message);toolbar.append(button);
+    button.onclick=()=>removeDocument(record.slice(),button);
+  };
   const priorCollection=renderRecordCollection;
   renderRecordCollection=function(){
     if(!managed.has(recordsCategory))return priorCollection.apply(this,arguments);
@@ -286,10 +300,9 @@
       host.querySelector('[data-doc-count]').textContent=selected.length+' of '+rows.length+' documents';
       host.querySelector('[data-doc-results]').innerHTML=selected.map(({v,row})=>{
         const f=fileInfo(v),state=String(v[4]||'Needs review'),chip=state==='Needs review'?'review':state.toLowerCase();
-        return '<article class="rx-card"><div class="rx-document-art rx-live-preview"><img class="rx-drive-thumbnail" data-preview-id="'+esc(f.id)+'" alt="First-page preview of '+esc(v[1])+'" hidden><span class="rx-preview-loading" role="status">Loading document image…</span><button class="rx-open-preview" type="button" data-doc-view="'+row+'" aria-label="Open '+esc(v[1])+'"></button><span class="rx-file-badge">'+esc(f.label)+'</span></div><div class="rx-card-body"><span class="record-chip '+esc(chip)+'">'+esc(state)+'</span><h3><button class="rx-title-open" type="button" data-doc-view="'+row+'">'+esc(v[1])+'</button></h3><p>'+esc(purpose(v))+'</p>'+(v[3]?'<p><strong>Document date:</strong> '+esc(v[3])+'</p>':'')+(v[7]?'<details><summary>Record details</summary><p>'+esc(v[7])+'</p></details>':'')+'<div class="rx-card-actions">'+(f.url?'<button class="rx-primary" type="button" data-doc-view="'+row+'" aria-label="View '+esc(v[1])+'">View document</button>':'')+(f.download?'<a class="rx-secondary" href="'+esc(f.download)+'" target="_blank" rel="noopener" aria-label="'+esc(f.downloadLabel+' — '+v[1])+'">'+esc(f.downloadLabel)+'</a>':'')+'</div><div class="rx-manage-actions"><button class="rx-edit" type="button" data-doc-edit="'+row+'">Edit record</button><button class="rx-remove" type="button" data-doc-remove="'+row+'">Remove from portal</button></div><p class="rx-remove-status" data-doc-remove-status role="status"></p></div></article>';
+        return '<article class="rx-card"><div class="rx-document-art rx-live-preview"><img class="rx-drive-thumbnail" data-preview-id="'+esc(f.id)+'" alt="First-page preview of '+esc(v[1])+'" hidden><span class="rx-preview-loading" role="status">Loading document image…</span><button class="rx-open-preview" type="button" data-doc-view="'+row+'" aria-label="Open '+esc(v[1])+'"></button><span class="rx-file-badge">'+esc(f.label)+'</span></div><div class="rx-card-body"><span class="record-chip '+esc(chip)+'">'+esc(state)+'</span><h3><button class="rx-title-open" type="button" data-doc-view="'+row+'">'+esc(v[1])+'</button></h3><p>'+esc(purpose(v))+'</p>'+(v[3]?'<p><strong>Document date:</strong> '+esc(v[3])+'</p>':'')+(v[7]?'<details><summary>Record details</summary><p>'+esc(v[7])+'</p></details>':'')+'<div class="rx-card-actions">'+(f.url?'<button class="rx-primary" type="button" data-doc-view="'+row+'" aria-label="View '+esc(v[1])+'">View document</button>':'')+(f.download?'<a class="rx-secondary" href="'+esc(f.download)+'" target="_blank" rel="noopener" aria-label="'+esc(f.downloadLabel+' — '+v[1])+'">'+esc(f.downloadLabel)+'</a>':'')+'</div><div class="rx-manage-actions"><button class="rx-edit" type="button" data-doc-edit="'+row+'">Edit</button></div></div></article>';
       }).join('')||'<div class="workspace-card"><h3>No matching documents</h3><p>Try a shorter search or choose All statuses.</p></div>';
       host.querySelectorAll('[data-doc-edit]').forEach(b=>b.onclick=()=>editClubRecord('records',Number(b.dataset.docEdit)));
-      host.querySelectorAll('[data-doc-remove]').forEach(b=>b.onclick=()=>removeDocument(rows.find(r=>r.row===Number(b.dataset.docRemove)).v,b));
       host.querySelectorAll('[data-doc-view]').forEach(b=>b.onclick=()=>preview(rows.find(r=>r.row===Number(b.dataset.docView)).v));
       fillDocumentImages(host);
     };
