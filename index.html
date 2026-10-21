@@ -1850,6 +1850,14 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
 .records-dashboard-cards>[data-record-collection="Committee records"]{order:30}
 .records-dashboard-cards>[data-record-collection="minutes"]{order:40}
 .records-dashboard-cards>[data-record-collection="Receipts"]{order:50}
+
+.bft-money-breakdown{background:#fff;border:1px solid #cbd2d9;border-radius:12px;overflow:hidden;max-width:1000px;margin:16px 0}
+.bft-money-line{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 22px;border-bottom:1px solid #e3e6e9;color:#17212b}
+.bft-money-line span{font-size:1.05rem;font-weight:700}.bft-money-line small{display:block;font-size:.88rem;color:#596572;margin-top:5px;line-height:1.4}
+.bft-money-line strong{font-size:1.45rem;font-variant-numeric:tabular-nums;white-space:nowrap}.bft-money-deduction strong{color:#a32929}
+.bft-money-subtotal{background:#f1f4f6;border-top:2px solid #cbd2d9}.bft-money-remaining{background:#e9f4ed;border-top:2px solid #43815b;border-bottom:0}.bft-money-remaining strong{font-size:1.8rem;color:#185331}
+.bft-money-context{max-width:1000px;font-size:.94rem;line-height:1.55;color:#455362}
+@media(max-width:600px){.bft-money-line{padding:14px;gap:12px}.bft-money-line span{font-size:.93rem}.bft-money-line strong{font-size:1.1rem}.bft-money-remaining strong{font-size:1.3rem}}
 </style>
 
 <style>
@@ -6488,14 +6496,17 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         !/Bikes For Tykes Fundraiser 2026/i.test(String(row[7]||'')+' '+String(row[16]||''))):[];
       // Keep reversals/refunds signed so cancelled orders do not inflate purchases.
       const purchaseTotal=-purchases.reduce((sum,row)=>sum+(Number(String(row[9]||0).replace(/[$,]/g,''))||0),0);
-      const card=(label,value,note)=>'<div class="finance-dashboard-card"><span>'+esc(label)+'</span><strong>'+ (hasData?esc(money(value)):'—')+'</strong></div>';
-      return '<section class="bft-finance-section bft-program-summary"><h3>Program Overview</h3>'+
+      const line=(label,value,kind='',hint='')=>'<div class="bft-money-line '+kind+'"><div><span>'+esc(label)+'</span>'+(hint?'<small>'+esc(hint)+'</small>':'')+'</div><strong>'+(hasData?esc(money(value)):'—')+'</strong></div>';
+      return '<section class="bft-finance-section bft-program-summary"><h3>'+esc(year)+' Fundraising Breakdown</h3>'+
         (picker?'<label style="display:flex;flex-direction:column;gap:8px;max-width:260px;padding:16px;margin:12px 0 20px;background:#fff;border:1px solid #bbc2cb;border-radius:12px;box-shadow:0 3px 12px #0001"><span style="font-weight:700;color:#333">Choose program year</span><select data-bft-program-year aria-label="Choose program year" style="font:inherit;font-size:22px;font-weight:800;padding:10px;border:1px solid #aaa;border-radius:8px;background:#f5f6f8;color:#111">'+['2025','2026','2027'].map(y=>'<option '+(y===year?'selected':'')+'>'+y+'</option>').join('')+'</select></label>':'')+
-        '<div class="bft-finance-summary bft-finance-simple">'+
-        card('Net Fundraiser Proceeds',fundraiser?.available,'Receipts less processing fees and fundraising costs; before bike purchases.')+
-        card('Program Purchases',purchaseTotal,'Bikes, helmets, locks and other program costs recorded in Finance, including purchases paid by General Fund.')+
-        card('Remaining From This Fundraiser',(fundraiser?.available||0)-purchaseTotal,'Net fundraiser proceeds less program purchases. Excludes prior-year funds and bank interest.')+
-        '</div><p>'+(hasData?'2026 results include pending receipts and recorded unpaid costs. Purchase details below show what is included; unrecorded orders are not counted.':year==='2027'?'2027 is ready for next year. No program data has been recorded.':'No 2025 program data is loaded.')+'</p>'+
+        '<div class="bft-money-breakdown">'+
+        line('Money raised after payment fees',fundraiser?.income||0,'','Ticket sales, donations, auctions and raffles')+
+        line('Less: fundraising costs',-(fundraiser?.expenses||0),'bft-money-deduction','Supplies, prizes and event costs')+
+        line('Net raised before program purchases',fundraiser?.available||0,'bft-money-subtotal')+
+        line('Less: bikes, helmets and locks',-purchaseTotal,'bft-money-deduction','Recorded program purchases, including pending charges')+
+        line('Remaining from this fundraising',(fundraiser?.available||0)-purchaseTotal,'bft-money-remaining','After fundraising costs and recorded program purchases')+
+        '</div>'+
+        (hasData?'<p class="bft-money-context">The <strong>'+esc(money(fundraiser.startingBalance))+' starting balance</strong> reported August 25 is separate and is not included in the figures above. Remaining fundraising money is not the bank account balance.</p><p class="bft-money-context">Includes '+esc(money(fundraiser.pending))+' in receipts awaiting clearance.'+(fundraiser.unpaid?' Fundraising costs include '+esc(money(fundraiser.unpaid))+' still unpaid.':' All recorded fundraising costs are marked paid.')+' Only recorded purchases are included.</p>':'<p>No program data is loaded for this year.</p>')+
         '<details><summary style="cursor:pointer;font-weight:700">Program purchase details ('+purchases.length+')</summary>'+
         (purchases.length?'<div style="overflow:auto"><table style="width:100%;text-align:left"><thead><tr><th>Date</th><th>Purchase / refund</th><th>Paid from</th><th>Cost</th><th>Bank status</th></tr></thead><tbody>'+purchases.map(r=>'<tr>'+[r[0],r[3],r[6],money(-(Number(String(r[9]||0).replace(/[$,]/g,''))||0)),r[14]].map(v=>'<td style="padding:8px">'+esc(v||'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<p>No purchases recorded for this year.</p>')+'</details></section>';
     }
@@ -6512,7 +6523,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       entries.sort((a,b) => (Date.parse(b[0]) || 0) - (Date.parse(a[0]) || 0));
       const displayRows = [['Date','Description','Subcategory','Payee / Payer','Amount','Type','Payment Method','Bank Status'], ...entries.map(row => [row[0],row[3],row[5],row[8],row[9],row[12],row[13],String(row[14] || '').trim().toLowerCase() === 'yes' ? 'Cleared' : String(row[14] || '').trim().toLowerCase() === 'pending at chase' ? 'Pending at Chase' : 'Not cleared'])];
       const target = document.getElementById('financeBftTable');
-      target.innerHTML = bftProgramSummary(controlRows,transactionRows) + '<section class="bft-finance-section"><h3>2026 Bikes for Tykes Fundraiser</h3><div class="bft-finance-summary bft-finance-simple">' + summary('Fundraiser Income',money(eventIncome)) + summary('Fundraiser Expenses — Including Unpaid',money(eventCosts)) + summary('Fundraiser Money Available',money(eventNet)) + '</div><p class="bft-summary-note">Includes ' + money(fundraiser.pending) + ' pending. Expenses include the unpaid ' + money(fundraiser.unpaid) + '.</p></section><div class="control-action-bar"><button class="dashboard-edit-btn" type="button" id="bftViewBudget" aria-expanded="false" aria-controls="bftFinanceBudget">View Budget</button><button class="dashboard-edit-btn" type="button" id="bftManageTransactions">Manage Transactions</button></div><section class="bft-finance-section" id="bftFinanceBudget" hidden><h3>2026 Program Budget</h3><div class="data-status" id="financeBftBudgetStatus"></div><div id="financeBftBudgetTable"></div></section><section class="bft-finance-section"><h3>Bikes for Tykes Transactions</h3><div class="data-status" id="financeBftTransactionsStatus"></div><div id="financeBftTransactionsTable"></div></section>';
+      target.innerHTML = bftProgramSummary(controlRows,transactionRows) + '<div class="control-action-bar"><button class="dashboard-edit-btn" type="button" id="bftViewBudget" aria-expanded="false" aria-controls="bftFinanceBudget">View Budget</button><button class="dashboard-edit-btn" type="button" id="bftManageTransactions">Manage Transactions</button></div><section class="bft-finance-section" id="bftFinanceBudget" hidden><h3>2026 Program Budget</h3><div class="data-status" id="financeBftBudgetStatus"></div><div id="financeBftBudgetTable"></div></section><section class="bft-finance-section"><h3>Bikes for Tykes Transactions</h3><div class="data-status" id="financeBftTransactionsStatus"></div><div id="financeBftTransactionsTable"></div></section>';
       renderDataTable('financeBftTransactionsTable','financeBftTransactionsStatus',displayRows,0,8);
       let budgetRendered = false;
       target.querySelector('#bftViewBudget').addEventListener('click', event => {
