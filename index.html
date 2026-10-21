@@ -6782,7 +6782,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         const members = [...payments.map(item => item.n),transfer.n];
         paypalBundles.set(transfer.n,members);
         payments.forEach(item => paypalDetails.add(item.n));
-        const cents = value => Math.round(number(value)*100);
+        const cents = value => Math.round((Number(String(value || 0).replace(/[$,]/g,'')) || 0)*100);
         differences.set(transfer.n,cents(transfer.row[9])-payments.reduce((total,{row}) => total+cents(row[9]),0));
       }
       for (let index=2; index<rows.length; index++) {
