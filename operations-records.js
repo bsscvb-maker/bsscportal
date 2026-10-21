@@ -4,7 +4,83 @@
   const tabs={accounts:{title:'Accounts & Access',range:"'Accounts & Access'!A1:G2000",gid:1777343977,host:'recordsWorkspace'},restricted:{title:'Restricted Members',range:"'Restricted Members'!A2:G2000",gid:1297188057,host:'recordsWorkspace'},patches:{title:'Patches',range:"'Patches'!A1:N2000",gid:506966162,host:'storageWorkspace'}};
   let version=0;
   const e=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  async function openAccounts(){
+    const host=document.getElementById('recordsWorkspace'),ticket=++version;
+    host.innerHTML=`<style>
+      .aa-shell{background:#101010;color:#fff;border:1px solid #393939;border-radius:18px;padding:clamp(16px,3vw,30px)}
+      .aa-shell h2,.aa-shell h3{color:#fff;margin:0 0 10px}.aa-shell p{color:#d0d0d0}.aa-top,.aa-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.aa-top h2{flex:1}.aa-shell button,.aa-shell a.aa-button{background:#252525;color:#fff;border:1px solid #777;border-radius:8px;padding:11px 16px;cursor:pointer;text-decoration:none;font:inherit}.aa-shell .aa-primary{background:#b01d26;border-color:#ed6972}.aa-shell button:disabled{opacity:.55;cursor:wait}.aa-shell input,.aa-shell textarea{box-sizing:border-box;width:100%;background:#fff;color:#161616;border:1px solid #aaa;border-radius:8px;padding:12px;font:inherit}.aa-search{display:block;margin:22px 0 12px}.aa-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:16px}.aa-card{min-width:0;background:#1e1e1e;border:1px solid #444;border-top:4px solid #c42330;border-radius:12px;padding:20px;overflow-wrap:anywhere}.aa-card dl{margin:16px 0}.aa-card dt{font-size:.82rem;color:#aaa;margin-top:12px}.aa-card dd{margin:4px 0;white-space:pre-wrap}.aa-shell .aa-remove{color:#ffabb1;border-color:#99555a}.aa-editor{background:#171717;color:#fff;border:1px solid #777;border-radius:14px;width:min(620px,calc(100% - 32px));max-height:85vh;padding:24px;box-sizing:border-box}.aa-editor::backdrop{background:#000b}.aa-editor label{display:block;margin:14px 0}.aa-editor input,.aa-editor textarea{width:100%;box-sizing:border-box;padding:10px;font:inherit}.aa-editor h3{color:#fff}.aa-editor button{padding:10px 15px;margin-right:8px;cursor:pointer}.aa-message{min-height:24px}.aa-card summary{cursor:pointer;color:#fff;padding:6px 0}
+    </style><section class="aa-shell"><div class="aa-top"><button data-back>← Club Records</button><h2>Accounts & Access</h2><button data-refresh>Refresh</button><button class="aa-primary" data-add disabled>+ Add account</button></div><p>Find a club account, open its website, or manage its access information.</p><label class="aa-search">Find an account<input type="search" data-search placeholder="Search account, contact, or notes" autocomplete="off"></label><p class="aa-message" role="status" aria-live="polite" data-status>Loading private accounts…</p><div class="aa-grid" data-cards></div><dialog class="aa-editor" data-editor></dialog></section>`;
+    host.querySelector('[data-back]').onclick=()=>{++version;recordsHome();};
+    host.querySelector('[data-refresh]').onclick=openAccounts;
+    const status=host.querySelector('[data-status]'),grid=host.querySelector('[data-cards]'),dialog=host.querySelector('[data-editor]');
+    let headers=[],records=[],busy=false;
+    const current=()=>ticket===version&&host.contains(grid);
+    const normalize=r=>Array.from({length:7},(_,i)=>String(r[i]??''));
+    const base='https://sheets.googleapis.com/v4/spreadsheets/'+spreadsheet;
+    async function load(){
+      if(!accessToken)throw new Error('Use the portal’s Google sign-in, then select Refresh.');
+      const raw=await getSheetValues("'Accounts & Access'!A1:G",spreadsheet);
+      if(!current())return;
+      if(!raw.length||!raw[0].some(Boolean))throw new Error('The account sheet has no column headings. Open the source sheet to check its setup.');
+      headers=Array.from({length:7},(_,i)=>raw[0][i]||'Field '+(i+1));
+      records=raw.slice(1).map((v,i)=>({row:i+2,v:normalize(v)})).filter(r=>r.v.some(Boolean));
+      host.querySelector('[data-add]').disabled=false;paint();
+    }
+    function paint(){
+      const q=host.querySelector('[data-search]').value.trim().toLowerCase();
+      const list=records.filter(r=>r.v.some((v,i)=>i!==4&&v.toLowerCase().includes(q))).sort((a,b)=>(a.v[0]+' '+a.v[1]).localeCompare(b.v[0]+' '+b.v[1]));
+      status.textContent=list.length+' of '+records.length+' accounts';
+      grid.innerHTML=list.map(r=>{
+        let link='';try{const u=new URL(/^https?:\/\//i.test(r.v[2])?r.v[2]:'https://'+r.v[2]);if(r.v[2]&&['https:','http:'].includes(u.protocol))link='<a class="aa-button" target="_blank" rel="noopener noreferrer" href="'+e(u.href)+'">Open website ↗</a>';}catch{}
+        return '<article class="aa-card"><h3>'+e(r.v[0]||r.v[1]||'Untitled account')+'</h3><dl>'+headers.map((h,i)=>!r.v[i]||i===0?'':'<dt>'+e(h)+'</dt><dd>'+(i===4?'<details><summary>Show access details</summary><span>'+e(r.v[i])+'</span></details>':e(r.v[i]))+'</dd>').join('')+'</dl><div class="aa-actions">'+link+'<button data-edit="'+r.row+'">Edit</button></div></article>';
+      }).join('')||'<p>'+(records.length?'No accounts match your search.':'No accounts yet. Select Add account to get started.')+'</p>';
+      grid.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>edit(records.find(r=>r.row===Number(b.dataset.edit))));
+    }
+    async function verify(record){
+      const fresh=await getSheetValues("'Accounts & Access'!A"+record.row+':G'+record.row,spreadsheet);
+      if(JSON.stringify(normalize(fresh[0]||[]))!==JSON.stringify(record.v))throw new Error('This account changed since it was loaded. Refresh and try again.');
+    }
+    function edit(record){
+      if(busy)return;
+      dialog.innerHTML='<form><h3>'+ (record?'Edit account':'Add account')+'</h3><p>Changes save to the club’s private account sheet.</p>'+headers.map((h,i)=>'<label>'+e(h)+(i===4?' (private)':'')+(i===0?' *':'')+'<'+(i>=5?'textarea':'input')+' name="field'+i+'" '+(i===0?'required ':'')+(i===4?'type="password" autocomplete="new-password"':'autocomplete="off"')+'>'+(i>=5?e(record?.v[i]||'')+'</textarea>':'')+'</label>').join('')+'<p role="status" data-form-status></p><button type="submit">Save account</button><button type="button" data-cancel>Cancel</button>'+(record?'<button type="button" data-delete style="color:#a00016">Delete account</button>':'')+'</form>';
+      headers.forEach((_,i)=>{dialog.querySelector('[name="field'+i+'"]').value=record?.v[i]||'';});
+      dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();
+      if(record)dialog.querySelector('[data-delete]').onclick=()=>remove(record);
+      dialog.querySelector('form').onsubmit=async event=>{
+        event.preventDefault();if(busy)return;
+        const values=headers.map((_,i)=>dialog.querySelector('[name="field'+i+'"]').value);
+        if(!values[0].trim()){dialog.querySelector('[data-form-status]').textContent='Enter an account name.';return;}
+        busy=true;dialog.querySelectorAll('button').forEach(b=>b.disabled=true);
+        const preventClose=ev=>ev.preventDefault();dialog.addEventListener('cancel',preventClose);
+        try{
+          if(!accessToken)throw new Error('Sign in with Google again before saving.');
+          if(record)await verify(record);
+          const range="'Accounts & Access'!"+(record?'A'+record.row+':G'+record.row:'A:G');
+          const url=base+'/values/'+encodeURIComponent(range)+(record?'?valueInputOption=RAW':':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS');
+          await writePortalSheetRequest(url,{method:record?'PUT':'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:[values]}),signal:AbortSignal.timeout(20000)},record?'Edited private account':'Added private account','Accounts & Access',1);
+          dialog.close();await load();if(current())status.textContent='Account saved. '+records.length+' accounts.';
+        }catch(error){dialog.querySelector('[data-form-status]').textContent='Could not finish: '+error.message+' Refresh before retrying to check whether the save completed.';}
+        finally{busy=false;dialog.removeEventListener('cancel',preventClose);dialog.querySelectorAll('button').forEach(b=>b.disabled=false);}
+      };
+      dialog.showModal();
+    }
+    async function remove(record){
+      if(busy||!confirm('Remove “'+(record.v[0]||record.v[1]||'this account')+'” from Accounts & Access?\n\nThis deletes its saved information from the club sheet. It does not close the actual account or revoke anyone’s access to that service.'))return;
+      busy=true;dialog.querySelectorAll('button').forEach(b=>b.disabled=true);const preventClose=ev=>ev.preventDefault();dialog.addEventListener('cancel',preventClose);status.textContent='Removing account…';
+      try{
+        if(!accessToken)throw new Error('Sign in with Google again before removing an account.');
+        await verify(record);
+        await writePortalSheetRequest(base+'/values:batchClear',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({ranges:["'Accounts & Access'!A"+record.row+':G'+record.row]}),signal:AbortSignal.timeout(20000)},'Removed private account','Accounts & Access',1);
+        dialog.close();await load();if(current())status.textContent='Account removed. '+records.length+' accounts remain.';
+      }catch(error){if(current())status.textContent='Could not finish removing: '+error.message+' Refresh to check the current records.';if(dialog.open)dialog.querySelector('[data-form-status]').textContent='Could not delete: '+error.message;}
+      finally{busy=false;dialog.removeEventListener('cancel',preventClose);dialog.querySelectorAll('button').forEach(b=>b.disabled=false);}
+    }
+    host.querySelector('[data-search]').oninput=paint;
+    host.querySelector('[data-add]').onclick=()=>edit(null);
+    try{await load();}catch(error){if(current()){status.textContent='Unable to load accounts. '+error.message;grid.innerHTML='<a class="aa-button" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/'+spreadsheet+'/edit#gid=1777343977">Open source sheet ↗</a>';}}
+  }
   async function open(key){
+    if(key==='accounts')return openAccounts();
     const tab=tabs[key],host=document.getElementById(tab.host),ticket=++version;
     host.innerHTML='<section class="workspace-card"><div class="club-toolbar"><button class="sponsor-tab" data-ops-back>Back</button><h2>'+e(tab.title)+'</h2><button class="sponsor-tab" data-ops-refresh>Refresh</button><a class="sponsor-tab" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/'+spreadsheet+'/edit#gid='+tab.gid+'">Edit source</a></div><label>Search '+e(tab.title)+'<input type="search" data-ops-search style="width:100%;padding:12px;margin:12px 0" autocomplete="off"></label><p role="status" data-ops-status>Loading private records…</p><div data-ops-results></div></section>';
     host.querySelector('[data-ops-back]').onclick=()=>{++version;key==='patches'?renderStorage():recordsHome();};
