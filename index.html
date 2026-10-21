@@ -6766,25 +6766,6 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const paypalBundles = new Map();
       const paypalDetails = new Set();
       const differences = new Map();
-      const groups = new Map();
-      rows.slice(1).forEach((row,index) => {
-        if (String(row[13] || '').trim().toLowerCase() !== 'paypal') return;
-        const match = String(row[16] || '').match(/\[PAYPAL-SETTLEMENT:([A-Z0-9]+)\]/i);
-        if (!match) return;
-        if (!groups.has(match[1])) groups.set(match[1],[]);
-        groups.get(match[1]).push({row,n:index+2});
-      });
-      for (const entries of groups.values()) {
-        const transfers = entries.filter(({row}) => row[12] === 'Transfer In');
-        const payments = entries.filter(({row}) => row[12] === 'Income' || (row[12] === 'Expense' && /^PayPal Processing Fee/i.test(row[3] || '')));
-        if (transfers.length !== 1 || !payments.some(({row}) => row[12] === 'Income')) continue;
-        const transfer = transfers[0];
-        const members = [...payments.map(item => item.n),transfer.n];
-        paypalBundles.set(transfer.n,members);
-        payments.forEach(item => paypalDetails.add(item.n));
-        const cents = value => Math.round((Number(String(value || 0).replace(/[$,]/g,'')) || 0)*100);
-        differences.set(transfer.n,cents(transfer.row[9])-payments.reduce((total,{row}) => total+cents(row[9]),0));
-      }
       for (let index=2; index<rows.length; index++) {
         const [income,fee,transfer] = [rows[index-2],rows[index-1],rows[index]];
         if (!income || !fee || !transfer ||
