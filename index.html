@@ -6508,9 +6508,12 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const bridgeRows=hasData?transactionRows.slice(1).filter(row=>!financeIsVoided(row)&&String(row[2])===year):[];
       const bridgeAmount=row=>Number(String(row[9]||0).replace(/[$,]/g,''))||0;
       const bridgeSum=test=>bridgeRows.filter(test).reduce((sum,row)=>sum+bridgeAmount(row),0);
-      const heldInGeneral=bridgeSum(row=>String(row[16]||'').includes('[BFT-RECEIPT-HELD-GENERAL-20261021]'));
+      const completedAllocations=bridgeRows.filter(row=>String(row[16]||'').includes('[BFT-NET-ALLOCATION-20261021]')&&String(row[12]).toLowerCase()==='transfer in'&&String(row[6]).toLowerCase()==='bikes for tykes'&&String(row[14]).toLowerCase()==='yes');
+      const completedNet=completedAllocations.reduce((sum,row)=>sum+bridgeAmount(row),0);
+      const completedOffset=completedAllocations.reduce((sum,row)=>sum+(Number(String(row[16]).match(/\[BFT-ALLOCATION-OFFSET:([0-9.]+)\]/)?.[1])||0),0);
+      const heldInGeneral=Math.round((bridgeSum(row=>String(row[16]||'').includes('[BFT-RECEIPT-HELD-GENERAL-20261021]'))-completedNet-completedOffset)*100)/100;
       const receiptUnderReview=bridgeSum(row=>String(row[16]||'').includes('[BFT-RECEIPT-1996-REVIEW]'));
-      const owedToGeneral=-bridgeSum(row=>String(row[16]||'').includes('[BFT-SUPPLIES-OWED-65-20261021]'));
+      const owedToGeneral=Math.round((-bridgeSum(row=>String(row[16]||'').includes('[BFT-SUPPLIES-OWED-65-20261021]'))-completedOffset)*100)/100;
       const bankInterest=bridgeSum(row=>/^bikes for tykes$/i.test(String(row[6]||''))&&/bank interest/i.test(String(row[3]||''))&&new Date(row[0])>=new Date('2026-09-03'));
       const calculatedFunds=(fundraiser?.startingBalance||0)+(fundraiser?.available||0)-purchaseTotal;
       const explainedBank=calculatedFunds-heldInGeneral-receiptUnderReview-(fundraiser?.pending||0)+owedToGeneral+bankInterest;
@@ -6537,8 +6540,8 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           ...(bankInterest?[['Add: BFT bank interest',bankInterest]]:[]),
           ['Bank balance after listed items',explainedBank],
           ['Bikes for Tykes bank balance',fundraiser.bankBalance],
-          ['Difference after listed items',explainedBank-fundraiser.bankBalance]
-        ].map(([label,value])=>'<tr><th style="padding:8px">'+esc(label)+'</th><td style="padding:8px;text-align:right">'+esc(money(value))+'</td></tr>').join('')+'</tbody></table></div><p class="bft-money-context">Listed receipt and processor-fee review items require supporting settlement details before reconciliation is complete.</p></details>':'')+
+          ['Difference after listed items',Math.round((explainedBank-fundraiser.bankBalance)*100)/100]
+        ].map(([label,value])=>'<tr><th style="padding:8px">'+esc(label)+'</th><td style="padding:8px;text-align:right">'+esc(money(value))+'</td></tr>').join('')+'</tbody></table></div><p class="bft-money-context">Fund allocations update when their transfer is marked cleared. The September card batch retains a separately documented one-cent settlement difference in General.</p></details>':'')+
         '<details><summary style="cursor:pointer;font-weight:700">Program purchase details ('+purchases.length+')</summary>'+
         (purchases.length?'<div style="overflow:auto"><table style="width:100%;text-align:left"><thead><tr><th>Date</th><th>Purchase / refund</th><th>Paid from</th><th>Cost</th><th>Bank status</th></tr></thead><tbody>'+purchases.map(r=>'<tr>'+[r[0],r[3],r[6],money(-(Number(String(r[9]||0).replace(/[$,]/g,''))||0)),String(r[14]||'').trim().toLowerCase()==='yes'?'Cleared':String(r[14]||'').trim().toLowerCase()==='pending at chase'?'Pending at Chase':'Not cleared'].map(v=>'<td style="padding:8px">'+esc(v||'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<p>No purchases recorded for this year.</p>')+'</details></section>';
     }
