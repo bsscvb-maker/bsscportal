@@ -5960,7 +5960,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const generalChaseAvailable=numeric(at(6,4)),bftChaseAvailable=numeric(at(7,4));
       const presentValue=(index,fallback)=>rows[index]?.[4]!==undefined && rows[index][4]!==''?numeric(rows[index][4]):fallback;
       const generalPresent=presentValue(33,generalChaseAvailable),bftPresent=presentValue(34,bftChaseAvailable);
-      const generalExpected=generalBank+generalPending.bankNet,bftExpected=bftBank+bftPending.bankNet;
+      const generalExpected=generalBank,bftExpected=bftBank;
       const generalDifference=Math.round((generalPresent-generalExpected)*100)/100;
       const bftDifference=Math.round((bftPresent-bftExpected)*100)/100;
       const generalAvailable=generalChaseAvailable-generalPending.reserved;
@@ -6234,7 +6234,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         ${financeControlEditMode ? '<div class="control-edit-note">Enter Chase’s combined and per-account available balances, plus each account’s present balance. Pending at Chase means the bank has received the entry; Yes means posted. Update both bank balance types from the same Chase snapshot.</div>' : ''}<div class="control-grid">
         <div style="grid-column:1/-1;display:grid;gap:14px">
         ${section('FUND BALANCES',[['AVAILABLE AFTER UNPAID OBLIGATIONS',money(generalAvailable+bftAvailable)],['General Fund available',money(generalAvailable)],['Bikes for Tykes available',money(bftAvailable)],['Cleared ledger total',money(generalBank+bftBank)],['Chase total present balance',money(cash.generalPresent+cash.bftPresent)],['Present less available',money(cash.generalHold+cash.bftHold)],['Reconciliation difference',money(generalDifference+bftDifference),needsReconciliation],['Chase total available balance',at(5,4),false,6],['Chase General Fund available balance',at(6,4),false,7],['Chase Bikes for Tykes available balance',at(7,4),false,8],['Status',status,/out of balance|needs reconciliation/i.test(status)]],'tone-cash-total '+((bankSplitMismatch||needsReconciliation)?'fund-status-error':(hasPending(generalPending)||hasPending(bftPending)?'fund-awaiting-clearance':'fund-status-balanced')))}
-        <p class="control-edit-note">Chase present balances are compared with the cleared ledger plus every recorded bank-pending entry. Available balances may be lower while deposits are held. Only payments not yet reflected by Chase are reserved again, including outstanding checks and the unpaid charter. Internal transfer pairs do not reduce combined cash.</p><div class="control-fund-details">
+        <p class="control-edit-note">Chase present balances are compared with the cleared ledger. Recorded bank-pending activity is shown separately until it posts. Available balances may be lower while deposits are held. Only payments not yet reflected by Chase are reserved again, including outstanding checks and the unpaid charter. Internal transfer pairs do not reduce combined cash.</p><div class="control-fund-details">
         ${fundDetail('GENERAL FUND',generalBank,generalPending,generalAvailable)}
         ${fundDetail('BIKES FOR TYKES',bftBank,bftPending,bftAvailable,'tone-baby-blue')}
         </div>
