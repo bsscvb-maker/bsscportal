@@ -79,8 +79,45 @@
     host.querySelector('[data-add]').onclick=()=>edit(null);
     try{await load();}catch(error){if(current()){status.textContent='Unable to load accounts. '+error.message;grid.innerHTML='<a class="aa-button" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/'+spreadsheet+'/edit#gid=1777343977">Open source sheet ↗</a>';}}
   }
+
+  async function openRestricted(){
+    const host=document.getElementById('recordsWorkspace'),ticket=++version;
+    host.innerHTML=`<style>
+      .rm-shell{background:#141416;color:#f7f7f8;border:1px solid #48484e;border-radius:18px;overflow:hidden}
+      .rm-head{padding:26px;background:#300d15;border-top:6px solid #e22246}.rm-kicker{font-size:12px;font-weight:800;letter-spacing:.12em;color:#ffb9c5}.rm-head h2{font-size:clamp(26px,3vw,38px);color:#fff;margin:10px 0}.rm-head p{color:#f4d4da;max-width:850px;line-height:1.6;margin:8px 0}
+      .rm-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:22px}.rm-shell button,.rm-shell a.rm-button{background:#29292e;color:#fff;border:1px solid #73737d;border-radius:9px;padding:10px 15px;font:inherit;text-decoration:none;cursor:pointer}
+      .rm-warning{padding:16px 20px;border:1px solid #d9516b;background:#43131f;border-radius:10px;margin-top:20px;color:#fff;line-height:1.5}
+      .rm-body{padding:24px}.rm-counts{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px}.rm-counts span{padding:12px 16px;border-radius:10px;background:#25252b;border:1px solid #51515b;color:#eee}.rm-counts strong{font-size:24px;margin-right:8px}
+      .rm-controls{display:flex;gap:14px;align-items:end;flex-wrap:wrap}.rm-controls label{display:block;flex:1;min-width:200px;color:#eee;font-weight:700}.rm-controls input,.rm-controls select{display:block;width:100%;box-sizing:border-box;padding:13px;background:#fff;color:#171719;border:1px solid #aaa;border-radius:8px;margin-top:8px;font:inherit}
+      .rm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:18px}.rm-card{padding:22px;border:1px solid #6b3b47;border-left:6px solid #ef3d60;border-radius:12px;background:#221a1e;min-width:0;overflow-wrap:anywhere}.rm-card.conditional{border-color:#806132;border-left-color:#edb146;background:#252018}
+      .rm-badge{display:inline-block;border:1px solid #ef718a;background:#58182a;color:#ffe5eb;font-size:12px;font-weight:850;letter-spacing:.04em;border-radius:6px;padding:7px 10px}.conditional .rm-badge{background:#503b12;color:#ffe8ae;border-color:#d6a647}
+      .rm-card h3{font-size:25px;color:#fff;margin:18px 0 9px;line-height:1.25}.rm-directive{font-size:17px;font-weight:800;color:#ffb9c8;margin:0 0 20px}.conditional .rm-directive{color:#ffe1a1}
+      .rm-card dl{margin:0}.rm-card dt{font-size:12px;letter-spacing:.04em;text-transform:uppercase;font-weight:750;color:#c6bdc1;margin-top:17px}.rm-card dd{color:#fff;margin:6px 0;line-height:1.55;white-space:pre-wrap}.rm-card details{margin-top:18px;border-top:1px solid #66515a;padding-top:14px}.rm-card summary{cursor:pointer;font-weight:700;color:#eee}.rm-status{color:#d0ccd1;margin:18px 0}.rm-empty{color:#eee;padding:20px}.rm-confidential{font-size:12px;color:#c9bac0!important;margin-top:18px!important}
+    </style><section class="rm-shell"><header class="rm-head"><div class="rm-toolbar"><button data-rm-back>← Club Records</button><button data-rm-refresh>Refresh</button><a class="rm-button" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/${spreadsheet}/edit#gid=${tabs.restricted.gid}">Edit restriction records ↗</a></div><div class="rm-kicker">LEADERSHIP REFERENCE · MEMBERSHIP ELIGIBILITY</div><h2>Restricted Members</h2><p>Review these records before considering a person for membership or reinstatement. Each card shows the recorded restriction and the conditions, if any, for review.</p><div class="rm-warning"><strong>STOP — check the restriction before proceeding.</strong><br>Permanent restriction: not eligible for membership. Conditional restriction: remains restricted unless leadership reviews the circumstances and formally changes the decision.</div><p class="rm-confidential">Confidential club records · For authorized leadership use.</p></header><div class="rm-body"><div class="rm-counts" data-rm-counts></div><div class="rm-controls"><label>Find a person or reason<input type="search" data-rm-search placeholder="Name, restriction, reason, or notes" autocomplete="off"></label><label>Show restrictions<select data-rm-filter><option value="all">All restrictions</option><option value="permanent">Permanent restrictions</option><option value="conditional">Conditional restrictions</option></select></label></div><p class="rm-status" role="status" aria-live="polite" data-rm-status>Loading private restriction records…</p><div class="rm-grid" data-rm-grid></div></div></section>`;
+    host.querySelector('[data-rm-back]').onclick=()=>{++version;recordsHome()};
+    host.querySelector('[data-rm-refresh]').onclick=openRestricted;
+    const grid=host.querySelector('[data-rm-grid]'),status=host.querySelector('[data-rm-status]');
+    try{
+      if(!accessToken)throw new Error('Sign in with Google to view these records.');
+      const raw=await getSheetValues(tabs.restricted.range,spreadsheet);
+      if(ticket!==version||!host.contains(grid))return;
+      const headers=(raw[0]||[]).map(x=>String(x).trim().toLowerCase());
+      const at=(row,title,fallback)=>String(row[headers.indexOf(title)>=0?headers.indexOf(title):fallback]??'').trim();
+      const rows=raw.slice(1).filter(r=>r.some(v=>v!==''&&v!=null)).map(r=>({name:[at(r,'first name',1),at(r,'last name',0)].filter(Boolean).join(' '),state:at(r,'status',2),date:at(r,'effective date',3),reason:at(r,'reason category',4),review:at(r,'review eligibility',5),notes:at(r,'notes',6)})).map(r=>({...r,kind:/permanent/i.test(r.state)?'permanent':/conditional/i.test(r.state)?'conditional':'other'})).sort((a,b)=>(a.kind==='permanent'?0:1)-(b.kind==='permanent'?0:1)||a.name.localeCompare(b.name));
+      host.querySelector('[data-rm-counts]').innerHTML='<span><strong>'+rows.length+'</strong> restriction records</span><span><strong>'+rows.filter(r=>r.kind==='permanent').length+'</strong> permanent</span><span><strong>'+rows.filter(r=>r.kind==='conditional').length+'</strong> conditional</span>';
+      function paint(){
+        const q=host.querySelector('[data-rm-search]').value.trim().toLowerCase(),filter=host.querySelector('[data-rm-filter]').value;
+        const list=rows.filter(r=>(filter==='all'||r.kind===filter)&&Object.values(r).some(v=>v.toLowerCase().includes(q)));
+        status.textContent=list.length+' of '+rows.length+' restriction records shown · Permanent restrictions appear first.';
+        grid.innerHTML=list.map(r=>'<article class="rm-card '+r.kind+'"><span class="rm-badge">'+e(r.kind==='permanent'?'PERMANENTLY RESTRICTED':r.kind==='conditional'?'CONDITIONALLY RESTRICTED':r.state||'RESTRICTION RECORDED')+'</span><h3>'+e(r.name||'Name not recorded')+'</h3><p class="rm-directive">'+e(r.kind==='permanent'?'Not eligible for membership':r.kind==='conditional'?'Restricted — leadership review required':'Review the recorded decision before proceeding')+'</p><dl><dt>Recorded reason</dt><dd>'+e(r.reason||'No reason recorded. Consult leadership.')+'</dd><dt>Effective date</dt><dd>'+e(r.date||'Not recorded')+'</dd><dt>Review eligibility</dt><dd>'+e(r.review||'Not recorded — consult leadership')+'</dd></dl>'+(r.notes?'<details><summary>Decision notes</summary><p style="white-space:pre-wrap;color:#eee">'+e(r.notes)+'</p></details>':'')+'</article>').join('')||'<p class="rm-empty">No restriction records match this search.</p>';
+      }
+      host.querySelector('[data-rm-search]').oninput=paint;host.querySelector('[data-rm-filter]').onchange=paint;paint();
+    }catch(error){if(ticket===version)status.textContent='Unable to load restriction records. '+error.message+' Refresh after signing in with an authorized account.';}
+  }
+
   async function open(key){
     if(key==='accounts')return openAccounts();
+    if(key==='restricted')return openRestricted();
     const tab=tabs[key],host=document.getElementById(tab.host),ticket=++version;
     host.innerHTML='<section class="workspace-card"><div class="club-toolbar"><button class="sponsor-tab" data-ops-back>Back</button><h2>'+e(tab.title)+'</h2><button class="sponsor-tab" data-ops-refresh>Refresh</button><a class="sponsor-tab" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/'+spreadsheet+'/edit#gid='+tab.gid+'">Edit source</a></div><label>Search '+e(tab.title)+'<input type="search" data-ops-search style="width:100%;padding:12px;margin:12px 0" autocomplete="off"></label><p role="status" data-ops-status>Loading private records…</p><div data-ops-results></div></section>';
     host.querySelector('[data-ops-back]').onclick=()=>{++version;key==='patches'?renderStorage():recordsHome();};
