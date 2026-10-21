@@ -6507,16 +6507,23 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const purchaseTotal=-purchases.reduce((sum,row)=>sum+(Number(String(row[9]||0).replace(/[$,]/g,''))||0),0);
       let cardStep=0;
       const line=(label,value,kind='',hint='')=>'<article class="bft-exec-card '+kind+'"><div class="bft-exec-card-top"><span class="bft-exec-step">'+String(++cardStep).padStart(2,'0')+'</span><h4>'+esc(label)+'</h4></div><strong>'+(hasData?esc(money(value)):'—')+'</strong><p>'+esc(hint||'After fundraising costs; before bikes, helmets and locks')+'</p></article>';
-      return '<section class="bft-finance-section bft-program-summary"><h3>'+esc(year)+' Fundraising Results</h3>'+
+      return '<section class="bft-finance-section bft-program-summary"><h3>'+esc(year)+' Fundraising &amp; Program Spending</h3>'+
         (picker?'<label style="display:flex;flex-direction:column;gap:8px;max-width:260px;padding:16px;margin:12px 0 20px;background:#fff;border:1px solid #bbc2cb;border-radius:12px;box-shadow:0 3px 12px #0001"><span style="font-weight:700;color:#333">Choose program year</span><select data-bft-program-year aria-label="Choose program year" style="font:inherit;font-size:22px;font-weight:800;padding:10px;border:1px solid #aaa;border-radius:8px;background:#f5f6f8;color:#111">'+['2025','2026','2027'].map(y=>'<option '+(y===year?'selected':'')+'>'+y+'</option>').join('')+'</select></label>':'')+
         '<div class="bft-executive-cards">'+
-        line('Money Raised After Payment Fees',fundraiser?.income||0,'','Ticket sales, donations, auctions and raffles')+
+        line('New Fundraising Proceeds',fundraiser?.income||0,'','New ticket sales, donations, auctions and raffles, after payment fees')+
         line('Fundraising Costs',-(fundraiser?.expenses||0),'bft-money-deduction','Supplies, prizes and event costs')+
-        line('Net Funds Raised',fundraiser?.available||0,'bft-money-subtotal')+
-        line('Bikes, Helmets & Locks Purchased',-purchaseTotal,'bft-money-deduction','Recorded bicycle, helmet and lock purchases')+
-        line('Remaining From This Fundraising',(fundraiser?.available||0)-purchaseTotal,'bft-money-remaining','After fundraising costs and recorded program purchases')+
+        line('Fundraising Proceeds After Event Costs',fundraiser?.available||0,'bft-money-subtotal','New fundraising proceeds minus fundraising costs')+
+        line('Program Purchases',-purchaseTotal,'bft-money-deduction','Bikes, helmets and locks')+
+        line('New Fundraising Money Remaining',(fundraiser?.available||0)-purchaseTotal,'bft-money-remaining','New proceeds minus event costs and program purchases')+
         '</div>'+
-        (hasData?'<p class="bft-money-context">The <strong>'+esc(money(fundraiser.startingBalance))+' starting balance</strong> reported August 25 is separate and is not included in the figures above.</p>'+(fundraiser.unpaid?'<p class="bft-money-context">Fundraising costs include '+esc(money(fundraiser.unpaid))+' still unpaid.</p>':''):'<p>No program data is loaded for this year.</p>')+
+        (hasData?'<p class="bft-money-context">Starting funds before ticket sales: <strong>'+esc(money(fundraiser.startingBalance))+'</strong>. The cards show new fundraising and spending since then.</p>'+(fundraiser.unpaid?'<p class="bft-money-context">Fundraising costs include '+esc(money(fundraiser.unpaid))+' still unpaid.</p>':''):'<p>No program data is loaded for this year.</p>')+
+        (hasData?'<details class="bft-bank-bridge"><summary style="cursor:pointer;font-weight:700">Starting funds and current bank balance</summary><div style="overflow:auto"><table style="width:100%;text-align:left"><tbody>'+[
+          ['Starting funds',fundraiser.startingBalance],
+          ['New fundraising money remaining',fundraiser.available-purchaseTotal],
+          ['Calculated program funds',fundraiser.startingBalance+fundraiser.available-purchaseTotal],
+          ['Bikes for Tykes bank balance',fundraiser.bankBalance],
+          ['Difference to explain by receipts and fund allocations',fundraiser.startingBalance+fundraiser.available-purchaseTotal-fundraiser.bankBalance]
+        ].map(([label,value])=>'<tr><th style="padding:8px">'+esc(label)+'</th><td style="padding:8px;text-align:right">'+esc(money(value))+'</td></tr>').join('')+'</tbody></table></div></details>':'')+
         '<details><summary style="cursor:pointer;font-weight:700">Program purchase details ('+purchases.length+')</summary>'+
         (purchases.length?'<div style="overflow:auto"><table style="width:100%;text-align:left"><thead><tr><th>Date</th><th>Purchase / refund</th><th>Paid from</th><th>Cost</th><th>Bank status</th></tr></thead><tbody>'+purchases.map(r=>'<tr>'+[r[0],r[3],r[6],money(-(Number(String(r[9]||0).replace(/[$,]/g,''))||0)),String(r[14]||'').trim().toLowerCase()==='yes'?'Cleared':String(r[14]||'').trim().toLowerCase()==='pending at chase'?'Pending at Chase':'Not cleared'].map(v=>'<td style="padding:8px">'+esc(v||'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<p>No purchases recorded for this year.</p>')+'</details></section>';
     }
