@@ -53,7 +53,7 @@ function bankLedgerPlan_(ledger,bankRows,today) {
     if(matches.length>1)return;
     const date=bankLedgerDay_(b[2]),amount=Number(b[4]),transfer=processor||/online transfer (to|from)/i.test(b[3]);
     const r=Array(17).fill('');
-    r[0]=date;r[1]=new Date(date+'T12:00:00Z').toLocaleString('en-US',{month:'long',timeZone:'UTC'});r[2]=Number(date.slice(0,4));r[3]=String(b[3]);r[4]='Uncategorized';r[5]='Bank import — review';r[6]=fund(b);r[7]='Bank import — review';r[8]=String(b[7]||b[3]);r[9]=amount;r[12]=transfer?(amount<0?'Transfer Out':'Transfer In'):(amount<0?'Expense':'Income');r[13]=processor?(/paypal/i.test(b[3])?'PayPal':'Chase Payments'):'ACH / Bank Transfer';r[14]=b[5]==='Pending'?'Pending at Chase':'No';r[15]=false;r[16]=tag(r,b)+' [BANK-AUTO] Imported from Chase account …'+b[1]+'. Review category and fund; fund defaults to the bank account. '+(transfer?'Bank movement only; do not count as new income/expense.':'');
+    r[0]=date;r[1]=new Date(date+'T12:00:00Z').toLocaleString('en-US',{month:'long',timeZone:'UTC'});r[2]=Number(date.slice(0,4));r[3]=String(b[3]);r[4]='';r[5]='';r[6]=fund(b);r[7]='';r[8]=String(b[7]||b[3]);r[9]=amount;r[12]=transfer?(amount<0?'Transfer Out':'Transfer In'):(amount<0?'Expense':'Income');r[13]=processor?(/paypal/i.test(b[3])?'PayPal':'Chase Payments'):'ACH / Bank Transfer';r[14]=b[5]==='Pending'?'Pending at Chase':'No';r[15]=false;r[16]=tag(r,b)+' [BANK-AUTO] Imported from Chase account …'+b[1]+'. Review category and fund; fund defaults to the bank account. '+(transfer?'Bank movement only; do not count as new income/expense.':'');
     additions.push(r);
   });
   bankRows.filter(b=>b[5]==='Removed').forEach(b=>{
@@ -84,9 +84,10 @@ function importBankLedger_(book,bankRows) {
     const n=++last;
     if(n>sheet.getMaxRows())sheet.insertRowsAfter(sheet.getMaxRows(),100);
     sheet.getRange(n-1,1,1,17).copyTo(sheet.getRange(n,1,1,17),SpreadsheetApp.CopyPasteType.PASTE_FORMAT,false);
-    sheet.getRange(n,1,1,17).setValues([r]);
+    sheet.getRange(n,1,1,10).setValues([r.slice(0,10)]);
+    sheet.getRange(n,13,1,5).setValues([r.slice(12,17)]);
     sheet.getRange(n,1).setNumberFormat('yyyy-mm-dd');
-    sheet.getRange(n,11,1,2).setFormulas([['=IF(J'+n+'="","",J'+n+'+K'+(n-1)+')','=K'+n]]);
+    if(!sheet.getRange(n,11).getFormula())sheet.getRange(n-1,11,1,2).copyTo(sheet.getRange(n,11,1,2),SpreadsheetApp.CopyPasteType.PASTE_FORMULA,false);
     sheet.getRange(n,18).setFormula('=IF(O'+n+'="Yes",IF(LEFT(M'+n+',8)="Transfer",0,J'+n+'),0)');
   });
   return {added:plan.additions.length,matched:plan.changes.length};
