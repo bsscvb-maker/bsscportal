@@ -34,11 +34,20 @@
       }catch{}
       return 'record:'+record.row;
     }
+    function websiteName(key,record){
+      const names={"admin.google.com":"Google Workspace Admin","google.com":"Google","admin.joindeed.org":"Deed","api.id.me":"ID.me","boneshakerssocialclub.com":"BoneShakers Social Club","causes.benevity.org":"Benevity","cis.scc.virginia.gov":"Virginia State Corporation Commission","dot.cards":"Dot Cards","eservice.eco.loc.gov":"U.S. Copyright Office","gc23.managebuilding.com":"Buildium Property Portal","gtc.blackandmild.com":"Black & Mild","identity.walmart.com":"Walmart","imprintmaker.com":"Imprint Maker","lastpass.com":"LastPass","mycube.cubesmart.com":"CubeSmart","secure.atlanticunionbank.com":"Atlantic Union Bank","atlanticunionbank.com":"Atlantic Union Bank","secure.chase.com":"Chase","chase.com":"Chase","secure.login.gov":"Login.gov","simple990.com":"Simple990","thekrogerco.versaic.com":"Kroger Community Giving","vault.bitwarden.com":"Bitwarden","vdacs.evokeplatform.com":"Virginia Agriculture & Consumer Services","verified.usps.com":"USPS","amazon.com":"Amazon","dollartree.com":"Dollar Tree","facebook.com":"Facebook","gotprint.com":"GotPrint","hobbylobby.com":"Hobby Lobby","homedepot.com":"The Home Depot","instagram.com":"Instagram","npo.tax.virginia.gov":"Virginia Tax — Nonprofits","paypal.com":"PayPal","signupgenius.com":"SignUpGenius","totebagsnow.com":"Tote Bags Now"};
+      if(names[key])return names[key];
+      if(key.startsWith('record:'))return record.v[0]||record.v[1]||'Account';
+      const label=record.v[0]||record.v[1]||'';
+      if(label&&!label.includes('.')&&!/^https?:/i.test(label))return label;
+      const parts=key.split('.'),word=parts.length>1?parts[parts.length-2]:key;
+      return word.charAt(0).toUpperCase()+word.slice(1);
+    }
     function accountCard(r,insideGroup=false){
       let link='';try{const u=new URL(/^https?:\/\//i.test(r.v[2])?r.v[2]:'https://'+r.v[2]);if(r.v[2]&&['https:','http:'].includes(u.protocol))link='<a class="aa-button" target="_blank" rel="noopener noreferrer" href="'+e(u.href)+'">Open website ↗</a>';}catch{}
       const title=insideGroup?(r.v[3]||r.v[1]||r.v[0]||'Account'):(r.v[0]||r.v[1]||'Untitled account');
       const body='<dl>'+headers.map((h,i)=>!r.v[i]||i===0?'':'<dt>'+e(h)+'</dt><dd>'+(i===4?'<details><summary>Show access details</summary><span>'+e(r.v[i])+'</span></details>':e(r.v[i]))+'</dd>').join('')+'</dl><div class="aa-actions">'+link+'<button data-edit="'+r.row+'">Edit</button></div>';
-      return '<article class="aa-card">'+(insideGroup?'<details><summary><strong>'+e(title)+'</strong></summary>'+body+'</details>':'<h3>'+e(title)+'</h3>'+body)+'</article>';
+      return '<article class="aa-card">'+(insideGroup?'<details><summary><strong>'+e(title)+'</strong></summary>'+body+'</details>':'<h3>'+e(websiteName(websiteKey(r),r))+'</h3><p>'+e(websiteKey(r).startsWith('record:')?'':websiteKey(r))+'</p>'+body)+'</article>';
     }
     function paint(){
       const q=host.querySelector('[data-search]').value.trim().toLowerCase();
@@ -48,13 +57,13 @@
       if(selectedWebsite&&!groups.has(selectedWebsite))selectedWebsite=null;
       if(selectedWebsite){
         const group=groups.get(selectedWebsite),list=group.filter(matches).sort((a,b)=>(a.v[3]||a.v[1]).localeCompare(b.v[3]||b.v[1]));
-        status.innerHTML='<button data-websites>← All websites</button> <strong>'+e(selectedWebsite)+'</strong> · '+list.length+' of '+group.length+' logins';
+        status.innerHTML='<button data-websites>← All websites</button> <strong>'+e(websiteName(selectedWebsite,group[0]))+'</strong> · '+e(selectedWebsite)+' · '+list.length+' of '+group.length+' logins';
         status.querySelector('[data-websites]').onclick=()=>{selectedWebsite=null;paint();};
         grid.innerHTML=list.map(r=>accountCard(r,true)).join('')||'<p>No logins match your search.</p>';
       }else{
         const list=[...groups.entries()].filter(([,rs])=>rs.some(matches)).sort(([a,ar],[b,br])=>(a.startsWith('record:')?ar[0].v[0]:a).localeCompare(b.startsWith('record:')?br[0].v[0]:b));
         status.textContent=list.length+' website cards · '+records.length+' accounts';
-        grid.innerHTML=list.map(([key,rs])=>rs.length===1?accountCard(rs[0]):'<article class="aa-card"><h3>'+e(key)+'</h3><p>'+rs.length+' logins</p><div class="aa-actions"><button data-website="'+e(key)+'">View accounts →</button></div></article>').join('')||'<p>'+(records.length?'No accounts match your search.':'No accounts yet. Select Add account to get started.')+'</p>';
+        grid.innerHTML=list.map(([key,rs])=>rs.length===1?accountCard(rs[0]):'<article class="aa-card"><h3>'+e(websiteName(key,rs[0]))+'</h3><p>'+e(key)+'</p><p>'+rs.length+' logins</p><div class="aa-actions"><button data-website="'+e(key)+'">View accounts →</button></div></article>').join('')||'<p>'+(records.length?'No accounts match your search.':'No accounts yet. Select Add account to get started.')+'</p>';
         grid.querySelectorAll('[data-website]').forEach(b=>b.onclick=()=>{selectedWebsite=b.dataset.website;paint();});
       }
       grid.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>edit(records.find(r=>r.row===Number(b.dataset.edit))));
