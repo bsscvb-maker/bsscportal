@@ -1,7 +1,7 @@
 # BSSC Chase sync
 
 Private Google Apps Script project: BSSC Bank Sync (owned by the club Web Administrator).
-Install `Setup.gs` and `Sync.gs` in that project. Secrets must remain in Script Properties;
+Install `Setup.gs`, `Sync.gs`, and `Ledger.gs` in that project. Secrets must remain in Script Properties;
 never add credentials or permanent bank tokens to this repository.
 
 The web app executes as its owner and is internet reachable. `doPost` requires a
@@ -12,13 +12,11 @@ The handler supports only `sync`; it never returns bank tokens or transaction da
 Sync requests retrieve current and available USD balances for the explicitly mapped
 club accounts ending 7707 and 8799. Bank activity is upserted into `Chase Bank Feed`
 by Plaid transaction ID, including modified, pending-to-posted and removed records.
-The sync cursor advances only after sheet writes succeed. Ledger classifications,
-cleared flags and formulas are preserved. Bank feed imports do not post additional
-income/expenses to Transactions-2026 automatically.
+The sync cursor advances only after sheet writes succeed. Ledger classifications and running-balance formulas are preserved. New activity dated October 22, 2026 onward automatically enters Transactions-2026, or links to existing entries. Bank IDs and pending replacement IDs prevent repeated imports. Pending entries remain `Pending at Chase`; posted entries await manual reconciliation (`No`). Existing cleared entries stay cleared. Unknown categories remain blank for review; the fund initially follows the mapped bank account. Processor payouts match existing settlement groups rather than duplicating income. Removed auto-imports are voided with the original amount retained in notes.
 
 `Bank Sync Status` contains the last successful import timestamp and transaction
 history status. The timestamp represents the import, not a guarantee that Chase has
-made new transactions available to Plaid. Balance requests use `/accounts/balance/get`.
+made new transactions available to Plaid. Balance requests use `/accounts/balance/get`. Transaction refresh is requested through `/transactions/refresh` at most once every 30 minutes; unavailable refresh is reported without blocking the available feed import. A refresh request is asynchronous and does not guarantee every recent bank transaction arrives in the same run.
 
 `installDailySchedule` creates one minute timer for `scheduledChaseSync`. The timer
 does work only during 03:30–04:29 America/New_York, once per successful day, with
