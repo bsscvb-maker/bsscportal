@@ -631,7 +631,7 @@
 
 
 /* Marketplace final review entrypoint. */
-(()=>{const s=document.createElement("script");s.src="marketplace-routing.js?v=20261022-3";document.body.append(s);})();
+(()=>{const s=document.createElement("script");s.src="marketplace-routing.js?v=20261022-vendor-payments";document.body.append(s);})();
 /* Contact directory: data and cleaned card artwork load only after Google sign-in. */
 (() => {
   const book='1unxFrG3TJfEbJpucQVPveVO1y9NUTdboqhED2HMueV4';
