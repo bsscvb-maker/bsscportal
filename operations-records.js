@@ -267,7 +267,7 @@
     'Event Documents':'Applications, event instructions, signups, and supporting event records.',
     'Donation Evidence':'Acknowledgments and payment documents supporting recorded assistance.',
     'Purchase Evidence':'Invoices and supplier documents supporting club purchases.',
-    'Vendors':'Repeat suppliers, invoices, order sheets, and production references.',
+    'Vendor Receipts':'Individual vendor invoices, receipts, order sheets, and production references.',
     'Accounts & Access':'Private account details and access methods.',
     'Restricted Members':'Private restriction decisions and review information.',
     'Bylaws':'The club’s governing document.',
@@ -281,6 +281,7 @@
     'Committee records':'Committee planning and operating references.'
   };
   const arts={
+    'Vendor Receipts':'purchase-evidence-unique-v1.webp',
     'Corporate & Tax Documents':'corporate-tax-unique-v1.webp','Club History':'club-history-unique-v1.webp',
     'Ride Safety':'ride-safety-unique-v1.webp','Approved Artwork':'approved-artwork-unique-v1.webp',
     'Contracts & Agreements':'contracts-agreements-unique-v1.webp','Sponsorship Resources':'sponsorship-resources-unique-v1.webp',
@@ -293,7 +294,7 @@
     'Minutes':'minutes-journal-v1.webp','Receipts':'receipts-desk-v1.webp',
     'Bikes for Tykes':'bikes-for-tykes-records-v2.webp','Committee records':'committee-roundtable-v1.webp'
   };
-  const managed=new Set(Object.keys(descriptions).slice(0,11));
+  const managed=new Set([...Object.keys(descriptions).slice(0,11),'Vendor Receipts']);
   const mimeTypes={"1HjwdQmtFSxGm2AvDzyo6QfAjyGsVzwZ9":"application/pdf","1YWv-OGgNZNpx7fJBYtqr4AKxXrHXk4ZU":"application/pdf","1RSutxT0tNItmtJzglJvGiBbdtmk3PC0P":"application/pdf","1hiIYLTO_2Q_hBzv6PMK1JBTCm55COJy8":"application/pdf","1NEoN-QE7ytkAJKr_Pn_N_HxvfcwH4AAp":"application/pdf","1c4oUvHQtfcXtrQoYcLoSEEd4OiBiRNfg":"application/pdf","1q6PlTazU38idB7mzQ_qp6n7bIzI3DlKN":"application/pdf","16NG18oMEwIwt9eWiUzur1ibjR6avx4fZ":"application/pdf","1Gukfugq7ysoa2wUUK9B9Te0P-OWW6LWp":"application/pdf","1pw_rnmSfUCHlTboy2BQ7yQmP8Ij-OiIo":"application/pdf","1g1sjXG5m5ujR_-y0ImqCrEZDIs37KCzX":"application/pdf","1rI4MX1afxJSZFXLRYnIyv0JctttwKDvH":"text/html","1bFfSAx_azwIQtr7PqgLqpcB90DjVwT8j":"application/vnd.openxmlformats-officedocument.presentationml.presentation","1vVohrx0qovNOsijpj3rnem4XaU21AlyW":"application/vnd.openxmlformats-officedocument.wordprocessingml.document","1dmhGOHc1rX771nogDARTY23fL3amkSC8":"application/vnd.openxmlformats-officedocument.wordprocessingml.document","1W0BYy8I6AU4dI0xSXjJC70FGbxLWx85t":"application/pdf","1s2g8gINDMXfojsnSsFgDkpQEpCc5WSRx":"application/pdf","1Sl54KL784t5com7mFaJr-8uSI0dnHCsK":"application/pdf","1wKA50KAUWIo_P9BbKcP7azNCGY99S7xL":"application/pdf","1jwwvsGEMgTNV1c8rjssisxs3704WZ_oD":"application/pdf","1J-7V9QYz_B5u1aQba9aceIJuwajnCouj":"application/pdf","1ZpsTmP-l_Cr27_fzGUVgZdsoypjHV2SX":"application/pdf","18cgSpRtMoo5368e8hf9Pkg680SCrj5Vf":"application/pdf","1KWndJUYg145N0MmEAZX90fHQAT7gMYIS":"application/vnd.openxmlformats-officedocument.wordprocessingml.document","1CKMT5ho5KW4QWiUfefwM3h99GyTcPXB5":"application/pdf","1ZBn14nVCv-It0dftg1iAeIby5y2i7B3w":"application/pdf","1yqIEVHjEaUW98s__JxcIn54Wn8t1l1E_":"application/pdf","1GDZyLsmQjSY74lI-KqFpk8xf9szSKCoD":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","1plh3eoqhZknnLLknAXQSH16h_ZEpRywa-SmF7XmgsR4":"application/vnd.google-apps.spreadsheet","1Zw6zIlT5_f06Xcovj-JqVGI-q_rZaRZHut3xGbv_DFk":"application/vnd.google-apps.spreadsheet","1NKBEbbRa_nSuDeL5c7Abe6p2lYS4474Hp5CEfaSS_dQ":"application/vnd.google-apps.spreadsheet","1BllO5dydFET5N_sW5MZ6PO2OoeJYo04L":"application/pdf","15zRbBWpPfqmqg6TNxSC2tojj0KncEF_-":"application/pdf","1kEOCSZ43Jhtuya6z09gwtoq_paC9Mpvw":"application/pdf","1d02_qC16wukcg5cuSU0EWttrV-IkuMVm":"application/pdf","1K8GoPo37Yk6H8BHMbhffZDpJ0LmdTWDMLggJGqicGh4":"application/vnd.google-apps.spreadsheet","1JS6_61jkJdB46WtN8jUrLyChI-b5UvFgR0RHMJuSwm0":"application/vnd.google-apps.spreadsheet","1gAGwPsup2WH_By4ae5dmp33IKZ8zVLTU":"application/pdf","1jn8W3m1yeczdlYHIpEc_f1g8Byc0PpNo":"application/pdf","1_QXfQyxD0JFuJUowD00PgxbtwqsOajd9":"application/pdf","1AatEiUG6qM02KmR2PK3v5TpwCXPpJusR":"application/pdf","18hvNcFZGYt0gGunG_itp4saArdbDmDAj":"application/pdf","1caO2trHHICvd9D7m8EsU7qBIs8Rw-DgU":"application/pdf","14s8kdjgiR6Z2-pXHHRtc6ySq2BWfyCYr":"application/pdf","1dwzORoUequwXh7BNo2ypPKucmljlaLCV":"application/pdf"};
   const mimeLabels={
     'application/pdf':'PDF','application/vnd.google-apps.document':'Google Doc',
@@ -336,6 +337,7 @@
     }).catch(()=>{host.querySelectorAll('.rx-preview-loading').forEach(label=>label.textContent='Preview unavailable — click to open document');});
   }
   function purpose(v){
+    if(v[2]==='Vendor Receipts')return String(v[7]||'').split('\n')[0]||'Vendor receipt or ordering reference';
     const t=String(v[1]).toLowerCase();
     const rules=[
       [/501\(c\)\(3\)/,'IRS letter recognizing BSSC C3’s federal charitable tax exemption.'],
@@ -486,7 +488,7 @@
 
 /* Remove portal collections without deleting source Drive files. */
 (() => {
-  const removable=new Set(['Vendors','Corporate & Tax Documents','Club History','Ride Safety','Approved Artwork','Contracts & Agreements','Sponsorship Resources','Fund Requests','Financial Reports','Event Documents','Donation Evidence','Purchase Evidence','Accounts & Access','Restricted Members','Patches']);
+  const removable=new Set(['Vendor Receipts','Corporate & Tax Documents','Club History','Ride Safety','Approved Artwork','Contracts & Agreements','Sponsorship Resources','Fund Requests','Financial Reports','Event Documents','Donation Evidence','Purchase Evidence','Accounts & Access','Restricted Members','Patches']);
   const settingsTab='Portal Collection Settings';
   const removed=new Set();let settingsPromise=null,settingsExists=false;
   const base=()=> 'https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID;
@@ -554,27 +556,3 @@
   const shell=document.querySelector('.detail-shell');if(shell)observer.observe(shell,{childList:true,subtree:true});
 })();
 
-/* Repeat vendor files use the private Club Records index. */
-(() => {
- const previous=renderRecordCollection;
- renderRecordCollection=function(){
-  if(recordsCategory!=='Vendors')return previous.apply(this,arguments);
-  const host=document.getElementById('recordsWorkspace');
-  const rows=(clubCache['Club Records']||[]).slice(1).map((v,i)=>({v,row:i+2})).filter(r=>r.v[0]&&r.v[2]==='Vendors');
-  host.innerHTML='<nav class="minutes-breadcrumb"><button class="sponsor-tab" data-vendor-back>← Club Records</button><button class="sponsor-tab" data-vendor-refresh>Refresh</button></nav><section class="records-hero"><div><h2>Vendors</h2><p style="display:block">Repeat suppliers, invoices, order sheets, and production references. Keep each supplier’s files together here.</p></div></section><label>Find a vendor or file<input type="search" data-vendor-search style="width:100%;padding:12px;margin:12px 0" placeholder="Search vendors, invoices, patches, pins…"></label><div class="records-card-grid" data-vendor-grid></div><div data-club-editor></div>';
-  const safe=url=>{try{const u=new URL(url);return u.protocol==='https:'?esc(u.href):''}catch{return ''}};
-  function paint(){
-   const q=host.querySelector('[data-vendor-search]').value.toLowerCase().trim();
-   host.querySelector('[data-vendor-grid]').innerHTML=rows.filter(({v})=>[v[1],v[7]].join(' ').toLowerCase().includes(q)).sort((a,b)=>a.v[1].localeCompare(b.v[1])).map(({v,row})=>{
-    let info={};try{info=JSON.parse(v[7]||'{}')}catch{info.summary=v[7]}
-    const groups=Array.isArray(info.groups)?info.groups:[];
-    return '<article class="record-card" style="border-top:4px solid #b82030;padding:24px;overflow-wrap:anywhere"><h3>'+esc(v[1])+'</h3><p>'+esc(info.summary||'Vendor files and ordering history.')+'</p><div class="record-card-actions"><a class="sponsor-tab" href="'+safe(v[6])+'" target="_blank" rel="noopener">Open vendor folder ↗</a><button class="sponsor-tab" data-vendor-edit="'+row+'">Edit vendor</button></div>'+groups.map(g=>'<details style="margin-top:18px;border-top:1px solid #777;padding-top:12px" '+(q?'open':'')+'><summary style="cursor:pointer;font-weight:bold">'+esc(g.title)+' ('+(g.files||[]).length+')</summary><ul style="padding-left:20px">'+(g.files||[]).map(f=>'<li style="margin:12px 0"><a href="'+safe(f.url)+'" target="_blank" rel="noopener">'+esc(f.title)+'</a></li>').join('')+'</ul>'+(!(g.files||[]).length?'<p>No files in this group yet.</p>':'')+'</details>').join('')+'</article>';
-   }).join('')||'<p>No matching vendors.</p>';
-   host.querySelectorAll('[data-vendor-edit]').forEach(b=>b.onclick=()=>editClubRecord('records',Number(b.dataset.vendorEdit)));
-  }
-  host.querySelector('[data-vendor-search]').oninput=paint;
-  host.querySelector('[data-vendor-back]').onclick=recordsHome;
-  host.querySelector('[data-vendor-refresh]').onclick=()=>loadClubFramework('records');
-  paint();
- };
-})();
