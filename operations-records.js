@@ -267,6 +267,7 @@
     'Event Documents':'Applications, event instructions, signups, and supporting event records.',
     'Donation Evidence':'Acknowledgments and payment documents supporting recorded assistance.',
     'Purchase Evidence':'Invoices and supplier documents supporting club purchases.',
+    'Vendors':'Repeat suppliers, invoices, order sheets, and production references.',
     'Accounts & Access':'Private account details and access methods.',
     'Restricted Members':'Private restriction decisions and review information.',
     'Bylaws':'The club’s governing document.',
@@ -485,7 +486,7 @@
 
 /* Remove portal collections without deleting source Drive files. */
 (() => {
-  const removable=new Set(['Corporate & Tax Documents','Club History','Ride Safety','Approved Artwork','Contracts & Agreements','Sponsorship Resources','Fund Requests','Financial Reports','Event Documents','Donation Evidence','Purchase Evidence','Accounts & Access','Restricted Members','Patches']);
+  const removable=new Set(['Vendors','Corporate & Tax Documents','Club History','Ride Safety','Approved Artwork','Contracts & Agreements','Sponsorship Resources','Fund Requests','Financial Reports','Event Documents','Donation Evidence','Purchase Evidence','Accounts & Access','Restricted Members','Patches']);
   const settingsTab='Portal Collection Settings';
   const removed=new Set();let settingsPromise=null,settingsExists=false;
   const base=()=> 'https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID;
@@ -551,4 +552,29 @@
   let queued=false;
   const observer=new MutationObserver(()=>{if(queued)return;queued=true;queueMicrotask(()=>{queued=false;filterCards();for(const id of ['recordsWorkspace','storageWorkspace']){const host=document.getElementById(id);if(!host?.querySelector('[data-ops-back]'))continue;const category=host.querySelector('h2')?.textContent.trim();control(category,host.querySelector('.club-toolbar'));}});});
   const shell=document.querySelector('.detail-shell');if(shell)observer.observe(shell,{childList:true,subtree:true});
+})();
+
+/* Repeat vendor files use the private Club Records index. */
+(() => {
+ const previous=renderRecordCollection;
+ renderRecordCollection=function(){
+  if(recordsCategory!=='Vendors')return previous.apply(this,arguments);
+  const host=document.getElementById('recordsWorkspace');
+  const rows=(clubCache['Club Records']||[]).slice(1).map((v,i)=>({v,row:i+2})).filter(r=>r.v[0]&&r.v[2]==='Vendors');
+  host.innerHTML='<nav class="minutes-breadcrumb"><button class="sponsor-tab" data-vendor-back>← Club Records</button><button class="sponsor-tab" data-vendor-refresh>Refresh</button></nav><section class="records-hero"><div><h2>Vendors</h2><p style="display:block">Repeat suppliers, invoices, order sheets, and production references. Keep each supplier’s files together here.</p></div></section><label>Find a vendor or file<input type="search" data-vendor-search style="width:100%;padding:12px;margin:12px 0" placeholder="Search vendors, invoices, patches, pins…"></label><div class="records-card-grid" data-vendor-grid></div><div data-club-editor></div>';
+  const safe=url=>{try{const u=new URL(url);return u.protocol==='https:'?esc(u.href):''}catch{return ''}};
+  function paint(){
+   const q=host.querySelector('[data-vendor-search]').value.toLowerCase().trim();
+   host.querySelector('[data-vendor-grid]').innerHTML=rows.filter(({v})=>[v[1],v[7]].join(' ').toLowerCase().includes(q)).sort((a,b)=>a.v[1].localeCompare(b.v[1])).map(({v,row})=>{
+    let info={};try{info=JSON.parse(v[7]||'{}')}catch{info.summary=v[7]}
+    const groups=Array.isArray(info.groups)?info.groups:[];
+    return '<article class="record-card" style="border-top:4px solid #b82030;padding:24px;overflow-wrap:anywhere"><h3>'+esc(v[1])+'</h3><p>'+esc(info.summary||'Vendor files and ordering history.')+'</p><div class="record-card-actions"><a class="sponsor-tab" href="'+safe(v[6])+'" target="_blank" rel="noopener">Open vendor folder ↗</a><button class="sponsor-tab" data-vendor-edit="'+row+'">Edit vendor</button></div>'+groups.map(g=>'<details style="margin-top:18px;border-top:1px solid #777;padding-top:12px" '+(q?'open':'')+'><summary style="cursor:pointer;font-weight:bold">'+esc(g.title)+' ('+(g.files||[]).length+')</summary><ul style="padding-left:20px">'+(g.files||[]).map(f=>'<li style="margin:12px 0"><a href="'+safe(f.url)+'" target="_blank" rel="noopener">'+esc(f.title)+'</a></li>').join('')+'</ul>'+(!(g.files||[]).length?'<p>No files in this group yet.</p>':'')+'</details>').join('')+'</article>';
+   }).join('')||'<p>No matching vendors.</p>';
+   host.querySelectorAll('[data-vendor-edit]').forEach(b=>b.onclick=()=>editClubRecord('records',Number(b.dataset.vendorEdit)));
+  }
+  host.querySelector('[data-vendor-search]').oninput=paint;
+  host.querySelector('[data-vendor-back]').onclick=recordsHome;
+  host.querySelector('[data-vendor-refresh]').onclick=()=>loadClubFramework('records');
+  paint();
+ };
 })();
