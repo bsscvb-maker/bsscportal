@@ -6,12 +6,14 @@
   bar.innerHTML = '<div class="bank-sync-buttons"><button type="button" id="bankSyncNow">Sync</button><button type="button" id="bankFeedOpen">Chase activity</button></div><small id="bankSyncLast" role="status" aria-live="polite">Last sync: checking…</small>';
   const admin = document.getElementById('financeAdminToggle');
   admin.before(bar);
+  bar.querySelector('.bank-sync-buttons').prepend(admin);
   const button = document.getElementById('bankSyncNow');
   const label = document.getElementById('bankSyncLast');
   let busy = false, lastSuccess = '';
   const style=document.createElement('style');
   style.textContent=`#bankSyncActions{display:none;margin-left:auto;text-align:right;max-width:440px}#bankSyncActions.visible{display:block}.bank-sync-buttons{display:flex;justify-content:flex-end;gap:8px}#bankSyncActions button{padding:11px 18px;border:2px solid #cf1235;background:#cf1235;color:white;border-radius:9px;font-weight:800;cursor:pointer}#bankSyncActions #bankFeedOpen{background:#181818;border-color:#555}#bankSyncActions button:disabled{opacity:.65;cursor:wait}#bankSyncLast{display:block;margin-top:7px;color:#ccc;font-size:.76rem;line-height:1.4}#bankSyncLast.error{color:#ff8e9d}.detail-head:has(#bankSyncActions.visible){flex-wrap:wrap;gap:12px}#bankSyncActions.visible~#financeAdminToggle{margin-left:0}@media(max-width:900px){body.portal-authenticated #bankSyncActions.visible~#financeAdminToggle{position:static!important}#bankSyncActions{max-width:100%;margin-left:0;text-align:left}.bank-sync-buttons{justify-content:flex-start}}`;
   document.head.append(style);
+  style.textContent += '#bankSyncActions #financeAdminToggle{margin:0!important;position:static!important;min-height:0!important;padding:11px 18px!important;box-shadow:none}.bank-sync-buttons{flex-wrap:wrap}';
   function showTimestamp() {
     if (!lastSuccess) {label.textContent='No successful bank sync recorded';return;}
     const date=new Date(lastSuccess);
