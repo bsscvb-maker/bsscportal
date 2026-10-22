@@ -175,7 +175,7 @@
       for(const row of records){
         const card=document.createElement('article');
         card.style.cssText='margin:18px 0;padding:20px;border:1px solid #a6adb5;border-left:5px solid #238649;border-radius:10px';
-        const title=document.createElement('h3');title.textContent=row[0]+' · '+Number(row[3]||0).toLocaleString('en-US',{style:'currency',currency:'USD'});
+        const title=document.createElement('h3');title.textContent=row[0]+' · '+(Number(String(row[3]||0).replace(/[^0-9.-]/g,''))||0).toLocaleString('en-US',{style:'currency',currency:'USD'});
         card.append(title);
         for(const [label,value] of [['Payment date',row[1]],['Vendor / recipient',row[2]],['Method',row[4]],['Paid from',row[5]],['Recipient',row[6]],['Bank status',row[7]],['Transaction number',row[8]],['Notes',row[9]],['Evidence',row[10]]]){
           if(!value)continue;
