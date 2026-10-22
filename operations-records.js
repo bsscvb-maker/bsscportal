@@ -629,3 +629,6 @@
 })();
 
 
+
+/* Marketplace final review entrypoint. */
+(()=>{const s=document.createElement("script");s.src="marketplace-routing.js?v=20261022-1";document.body.append(s);})();
