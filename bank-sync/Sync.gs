@@ -45,6 +45,13 @@ function syncChase_(actor) {
       if (!a || !a.balances || typeof a.balances.current !== 'number' || typeof a.balances.available !== 'number' || a.balances.iso_currency_code !== 'USD') throw new Error('Chase did not supply complete USD balances for ' + mask + '.');
       checked[mask] = a.balances;
     });
+    let refreshStatus='';
+    if(Date.now()-Number(p.getProperty('LAST_REFRESH_ATTEMPT_MS')||0)>1800000){
+      p.setProperty('LAST_REFRESH_ATTEMPT_MS',String(Date.now()));
+      try{plaidRequest_('/transactions/refresh',{access_token:token});refreshStatus='Bank refresh requested; recent transactions may arrive after this sync.';Utilities.sleep(5000);}
+      catch(error){refreshStatus='On-demand bank refresh unavailable: '+String(error.message).slice(0,100)+'. Imported latest activity available from Plaid.';}
+      p.setProperty('BANK_REFRESH_STATUS',refreshStatus);
+    }else refreshStatus=p.getProperty('BANK_REFRESH_STATUS')||'Using latest available Plaid activity.';
     const originalCursor = p.getProperty('PLAID_TRANSACTIONS_CURSOR') || '';
     let batch;
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -83,12 +90,14 @@ function syncChase_(actor) {
     batch.removed.forEach(function(t) { const row = rows.get(t.transaction_id); if (row) { row[5] = 'Removed'; row[10] = now; } });
     const allRows = [...rows.values()].sort(function(a,b) { return String(b[2]).localeCompare(String(a[2])) || String(a[0]).localeCompare(String(b[0])); });
     if (allRows.length) bank.getRange(2,1,allRows.length,BSSC_BANK_HEADERS.length).setValues(allRows);
+    const ledgerImport=importBankLedger_(book,allRows);
+    control.getRange('H1').setValue(new Date()).setNumberFormat('mmmm d, yyyy');
     // Keep formulas and ledger classifications intact. Current balances are compared to cleared cash.
     control.getRange('E6:E8').setValues([[checked['7707'].available+checked['8799'].available],[checked['7707'].available],[checked['8799'].available]]);
     control.getRange('E34:E35').setValues([[checked['7707'].current],[checked['8799'].current]]);
     control.getRange('H34:H35').setValues([[0],[0]]);
-    const result = {ok:true,lastSuccess:now,transactions:allRows.filter(function(row) {return row[5]!=='Removed';}).length,transactionUpdateStatus:batch.updateStatus};
-    status.getRange(2,1,7,2).setValues([['Last successful sync',now],['Source','Chase via Plaid'],['Transactions',result.transactions],['Transaction update status',batch.updateStatus],['Triggered by',actor],['Bank freshness','Balances retrieved on request; transactions follow Plaid bank updates'],['Ledger handling','Bank feed imported; ledger classifications and cleared flags preserved']]);
+    const result = {ok:true,lastSuccess:now,transactions:allRows.filter(function(row) {return row[5]!=='Removed';}).length,transactionUpdateStatus:batch.updateStatus,ledgerAdded:ledgerImport.added,ledgerMatched:ledgerImport.matched,refreshStatus:refreshStatus};
+    status.getRange(2,1,7,2).setValues([['Last successful sync',now],['Source','Chase via Plaid'],['Transactions',result.transactions],['Transaction update status',batch.updateStatus],['Triggered by',actor],['Bank freshness',refreshStatus],['Ledger handling','Automatic ledger import: '+ledgerImport.added+' new; '+ledgerImport.matched+' linked. Pending stays uncleared; classifications preserved.']]);
     SpreadsheetApp.flush();
     // Commit the cursor only after all sheet writes succeed; retries upsert the same bank IDs.
     p.setProperties({PLAID_TRANSACTIONS_CURSOR:batch.cursor,LAST_SYNC_FINISHED_MS:String(Date.now()),LAST_SYNC_RESULT:JSON.stringify(result)});
