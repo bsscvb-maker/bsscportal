@@ -33,6 +33,22 @@ const error=e=>e?.message||String(e);
 function matching(list){return list.filter(r=>(!state.query||r.v.join(' ').toLowerCase().includes(state.query.toLowerCase()))&&(!state.filter||(state.filter==='Needs coverage'?!r.v[3]&&!r.v[4]:state.filter==='Unassigned'?!used().has(r.v[2]):state.filter==='Awaiting release'?r.v[10]&&r.v[14]!=='Released':r.v.includes(state.filter))));}
 function status(msg,isError=false){const el=H().querySelector('[data-hq-status]');if(el){el.textContent=msg;el.classList.toggle('error',isError);}}
 function retainFocus(){const el=document.activeElement;return el?.dataset.hqSearch!==undefined?{query:el.value,start:el.selectionStart}:null;}
+
+const pictureStyles=document.createElement('style');
+pictureStyles.textContent=`
+#volunteersWorkspace .hq-picture-card{position:relative;display:block;isolation:isolate;min-height:290px;padding:0;overflow:hidden;border:1px solid #ffffff35;border-bottom:6px solid var(--card-accent);border-radius:18px;background:#15151a;box-shadow:0 9px 24px #0004;text-align:left;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease;color:#fff;width:100%}
+#volunteersWorkspace .hq-picture-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .25s ease}
+#volunteersWorkspace .hq-picture-shade{position:absolute;inset:0;background:linear-gradient(180deg,#0000 20%,#08091040 45%,#080910ed 100%)}
+#volunteersWorkspace .hq-picture-name{position:absolute;bottom:23px;left:25px;right:22px;color:#fff;font:800 clamp(24px,2.5vw,32px)/1.16 Arial,sans-serif;text-shadow:0 2px 7px #000c}
+#volunteersWorkspace .hq-year-card .hq-picture-name{font-size:clamp(48px,6vw,68px);letter-spacing:.02em}
+#volunteersWorkspace .hq-pink-card .hq-picture-shade{background:linear-gradient(180deg,#bd166327,#8e0e604d 40%,#310b27f5 100%)}
+#volunteersWorkspace .hq-picture-card:hover{transform:translateY(-5px);box-shadow:0 15px 30px #0006;border-color:var(--card-accent)}
+#volunteersWorkspace .hq-picture-card:hover img{transform:scale(1.035)}
+#volunteersWorkspace .hq-picture-card:focus-visible{outline:4px solid var(--card-accent);outline-offset:4px}
+@media(prefers-reduced-motion:reduce){#volunteersWorkspace .hq-picture-card,#volunteersWorkspace .hq-picture-card img{transition:none}}
+@media(max-width:600px){#volunteersWorkspace .hq-picture-card{min-height:250px}}
+`;document.head.append(pictureStyles);
+
 const hub={page:'years',year:'2026',events:[],assignments:[],checklist:[],documents:[],generation:0,current:null};
 const yearOf=r=>String(r[2]||'').match(/^\d{4}/)?.[0]||String(r[0]||'').match(/(?:^|-)(20\d{2})(?:-|$)/)?.[1]||'';
 const eventKind=name=>/bikes?\s+for\s+tykes|\bbft\b/i.test(name)?'bft':/pink\s+ride/i.test(name)?'pink':'other';
@@ -58,13 +74,14 @@ async function loadHub(){
 }
 function renderHub(){
  const years=[...new Set(['2026','2027','2028',...hub.events.map(yearOf).filter(Boolean)])].sort();
- const cardStyle='min-height:220px;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer;border-top:5px solid #aa1830;padding:32px';
+ const yearArt=['assets/portal-bikenights.webp','assets/portal-volunteers.webp','assets/club-records/bikes-for-tykes-records-v2.webp'];
+ const accents=['#e9394e','#28b5d3','#e9a83d'];
  if(hub.page==='years'){
-  H().innerHTML='<div class="bft-hq hq-daymode"><header class="hq-day-header"><h2>Events & Volunteers</h2></header><div class="hq-grid">'+years.map(y=>'<button class="hq-card" data-event-year="'+y+'" style="'+cardStyle+'"><h3 style="font-size:38px;margin:0">'+y+'</h3></button>').join('')+'</div></div>';
+  H().innerHTML='<div class="bft-hq hq-daymode"><header class="hq-day-header"><h2>Events & Volunteers</h2></header><div class="hq-grid">'+years.map((y,i)=>'<button class="hq-picture-card hq-year-card" data-event-year="'+y+'" style="--card-accent:'+accents[i%3]+'"><img src="'+yearArt[i%3]+'" alt="" loading="lazy"><span class="hq-picture-shade"></span><span class="hq-picture-name">'+y+'</span></button>').join('')+'</div></div>';
   H().querySelectorAll('[data-event-year]').forEach(b=>b.onclick=()=>{hub.year=b.dataset.eventYear;hub.page='events';renderHub();});
   return;
  }
- H().innerHTML='<div class="bft-hq hq-daymode"><header class="hq-day-header"><div>'+btn('← Years','data-hub-years')+'<h2>'+html(hub.year)+'</h2></div><div class="hq-header-tools">'+btn('+ Add event','data-hub-add')+'</div></header><div class="hq-grid">'+yearEvents().map((e,i)=>'<button class="hq-card" data-hub-event="'+i+'" style="'+cardStyle+'"><h3 style="font-size:28px;margin:0">'+html(e.name)+'</h3></button>').join('')+'</div></div>';
+ H().innerHTML='<div class="bft-hq hq-daymode"><header class="hq-day-header"><div>'+btn('← Years','data-hub-years')+'<h2>'+html(hub.year)+'</h2></div><div class="hq-header-tools">'+btn('+ Add event','data-hub-add')+'</div></header><div class="hq-grid">'+yearEvents().map((e,i)=>'<button class="hq-picture-card hq-event-card '+(e.kind==='pink'?'hq-pink-card':'')+'" data-hub-event="'+i+'" style="--card-accent:'+(e.kind==='pink'?'#f04c9f':e.kind==='bft'?'#e9394e':'#28b5d3')+'"><img src="'+(e.kind==='pink'?'assets/portal-bikenights.webp':e.kind==='bft'?'assets/portal-bft.webp':'assets/portal-volunteers.webp')+'" alt="" loading="lazy"><span class="hq-picture-shade"></span><span class="hq-picture-name">'+html(e.name)+'</span></button>').join('')+'</div></div>';
  H().querySelector('[data-hub-years]').onclick=()=>{hub.page='years';renderHub();};
  H().querySelectorAll('[data-hub-event]').forEach(b=>b.onclick=()=>{const e=yearEvents()[Number(b.dataset.hubEvent)];hub.current=e;if(e.kind==='bft'&&hub.year==='2026'){state.tab='Overview';state.query='';state.filter='';load();}else renderEventDetails(e);});
  H().querySelector('[data-hub-add]').onclick=()=>{clubFramework.volunteers.active='Club Events';H().insertAdjacentHTML('beforeend','<div data-club-editor></div>');editClubRecord('volunteers');requireEventDate();};
