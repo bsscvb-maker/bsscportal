@@ -33,6 +33,57 @@ const error=e=>e?.message||String(e);
 function matching(list){return list.filter(r=>(!state.query||r.v.join(' ').toLowerCase().includes(state.query.toLowerCase()))&&(!state.filter||(state.filter==='Needs coverage'?!r.v[3]&&!r.v[4]:state.filter==='Unassigned'?!used().has(r.v[2]):state.filter==='Awaiting release'?r.v[10]&&r.v[14]!=='Released':r.v.includes(state.filter))));}
 function status(msg,isError=false){const el=H().querySelector('[data-hq-status]');if(el){el.textContent=msg;el.classList.toggle('error',isError);}}
 function retainFocus(){const el=document.activeElement;return el?.dataset.hqSearch!==undefined?{query:el.value,start:el.selectionStart}:null;}
+const hub={year:'2026',events:[],assignments:[],checklist:[],documents:[],generation:0,current:null};
+const yearOf=r=>String(r[2]||'').match(/^\d{4}/)?.[0]||String(r[0]||'').match(/(?:^|-)(20\d{2})(?:-|$)/)?.[1]||'';
+const eventKind=name=>/bikes?\s+for\s+tykes|\bbft\b/i.test(name)?'bft':/pink\s+ride/i.test(name)?'pink':'other';
+function yearEvents(){
+ const list=hub.events.filter(r=>r[0]&&yearOf(r)===hub.year).map(v=>({id:v[0],name:v[1],kind:eventKind(v[1]),v}));
+ const bft=list.filter(e=>e.kind==='bft');
+ const merged=list.filter(e=>e.kind!=='bft'&&e.kind!=='pink');
+ merged.push({id:hub.year==='2026'?EVENT:'BFT-'+hub.year,name:'Bikes for Tykes Charity Concert',kind:'bft',v:bft.find(e=>e.id===EVENT)?.v||bft[0]?.v,ids:[...new Set([hub.year==='2026'?EVENT:'BFT-'+hub.year,...bft.map(e=>e.id)])]});
+ const pink=list.filter(e=>e.kind==='pink');merged.push({id:pink[0]?.id||'PINK-'+hub.year,name:'Pink Ride',kind:'pink',v:pink[0]?.v,ids:pink.map(e=>e.id)});
+ return merged.sort((a,b)=>a.name.localeCompare(b.name));
+}
+async function loadHub(){
+ const generation=++hub.generation;
+ if(!accessToken){H().innerHTML='<div class="bft-hq"><p>Sign in with Google to view events and volunteers.</p></div>';return;}
+ H().innerHTML='<div class="bft-hq"><p role="status">Loading events by year…</p></div>';
+ try{
+  const tabs=['Club Events','Volunteer Assignments','Event Checklist','Club Records'];
+  const data=await getSheetRanges(["'Club Events'!A1:H2000","'Volunteer Assignments'!A1:J2000","'Event Checklist'!A1:H2000","'Club Records'!A1:I2000"],MEMBERSHIP_SPREADSHEET_ID);
+  if(generation!==hub.generation)return;
+  tabs.forEach((t,i)=>clubCache[t]=data[i]||[]);
+  [hub.events,hub.assignments,hub.checklist,hub.documents]=data.map(rs=>(rs||[]).slice(1).filter(r=>r[0]));hub.current=null;renderHub();
+ }catch(e){H().innerHTML='<div class="bft-hq"><p role="alert">'+html(error(e))+'</p>'+btn('Retry','data-hub-retry')+'</div>';H().querySelector('[data-hub-retry]').onclick=loadHub;}
+}
+function renderHub(){
+ const years=[...new Set(['2026','2027',...hub.events.map(yearOf).filter(Boolean)])].sort();
+ H().innerHTML='<div class="bft-hq hq-daymode"><header class="hq-day-header"><div><div class="hq-kicker">BSSC · EVENTS & VOLUNTEERS</div><h2>Choose an event</h2><p>Keep each year’s events, volunteers, receipts, and documents together.</p></div><div class="hq-header-tools">'+btn('Refresh','data-hub-refresh')+btn('+ Add event','data-hub-add')+'</div></header><nav class="hq-tabs" aria-label="Event year">'+years.map(y=>btn(y,'data-event-year="'+y+'" aria-pressed="'+(hub.year===y)+'"',hub.year===y?'selected':'')).join('')+'</nav><h3>'+html(hub.year)+' Events</h3><div class="hq-grid">'+yearEvents().map((e,i)=>'<button class="hq-card" data-hub-event="'+i+'" style="text-align:left;cursor:pointer;border-top:5px solid #aa1830;padding:24px"><h3>'+html(e.name)+'</h3><p>'+html(e.v?[e.v[2],e.v[3]].filter(Boolean).join(' · ')||'Event details available':'Ready for '+hub.year+' planning')+'</p><p>'+html(e.kind==='bft'&&hub.year==='2026'?'Crew, stations, raffle baskets, prizes, donors, documents, and results':e.kind==='pink'?'Raffle basket, receipts, volunteers, and event documents':'Volunteer assignments, event checklist, and supporting files')+'</p><strong>Open event →</strong></button>').join('')+'</div></div>';
+ H().querySelectorAll('[data-event-year]').forEach(b=>b.onclick=()=>{hub.year=b.dataset.eventYear;renderHub();});
+ H().querySelectorAll('[data-hub-event]').forEach(b=>b.onclick=()=>{const e=yearEvents()[Number(b.dataset.hubEvent)];hub.current=e;if(e.kind==='bft'&&hub.year==='2026'){state.tab='Overview';state.query='';state.filter='';load();}else renderEventDetails(e);});
+ H().querySelector('[data-hub-refresh]').onclick=loadHub;
+ H().querySelector('[data-hub-add]').onclick=()=>{clubFramework.volunteers.active='Club Events';H().insertAdjacentHTML('beforeend','<div data-club-editor></div>');editClubRecord('volunteers');requireEventDate();};
+}
+function requireEventDate(){const field=H().querySelector('dialog [name=c2]');if(field){field.required=true;field.min=hub.year+'-01-01';field.max=hub.year+'-12-31';}}
+function matchingEventRows(rows,e){const ids=new Set(e.ids||[e.id]);ids.add(e.id);return rows.map((v,i)=>({v,row:i+2})).filter(r=>ids.has(r.v[1]));}
+function eventDocuments(e){return hub.documents.filter(v=>{
+ let meta={};try{meta=JSON.parse(v[7]||'{}')}catch{}
+ const linked=String(meta.eventId||meta.event||'')===e.id;
+ const nameMatch=e.kind==='pink'?/pink\s+ride/i.test([v[1],meta.program,meta.event].join(' ')):e.kind==='bft'?/bikes?\s+for\s+tykes|\bbft\b/i.test([v[1],meta.program].join(' ')):linked;
+ const year=String(meta.year||v[3]||'').slice(0,4);
+ return (linked||nameMatch)&&year===hub.year&&!!safeURL(v[6]);
+ });}
+function renderEventDetails(e){
+ const assignments=matchingEventRows((clubCache['Volunteer Assignments']||[]).slice(1),e),tasks=matchingEventRows((clubCache['Event Checklist']||[]).slice(1),e),docs=eventDocuments(e);
+ H().innerHTML='<div class="bft-hq hq-daymode"><div class="hq-toolbar">'+btn('← '+hub.year+' Events','data-event-back')+(e.kind==='bft'&&hub.year==='2026'?btn('Concert workspace','data-event-concert'):'')+'</div><header class="hq-day-header"><div><div class="hq-kicker">'+html(hub.year)+' EVENT</div><h2>'+html(e.name)+'</h2><p>'+html(e.v?[e.v[2],e.v[3],e.v[4]].filter(Boolean).join(' · '):'Event date and details have not been entered.')+'</p></div></header>'+(e.v?'<section class="hq-card"><h3>Event details</h3><p>'+html(e.v[6]||'')+'</p>'+btn('Edit event details','data-event-edit')+'</section>':'<section class="hq-card"><p>Add the event details when the date and plans are ready.</p>'+btn('Add event details','data-event-create')+'</section>')+'<section><h3>Volunteers</h3><div class="hq-grid">'+assignments.map(r=>'<article class="hq-card"><h3>'+html(r.v[2])+'</h3><p>'+html(r.v[3])+'</p><p>'+html(r.v[6]||'')+'</p>'+btn('Edit assignment','data-event-assignment="'+r.row+'"')+'</article>').join('')+(assignments.length?'':'<p>No volunteer assignments recorded for this event.</p>')+'</div></section><section><h3>Event checklist</h3><div class="hq-grid">'+tasks.map(r=>'<article class="hq-card"><h3>'+html(r.v[2])+'</h3><p>'+html([r.v[3],r.v[5]].filter(Boolean).join(' · '))+'</p>'+btn('Edit checklist item','data-event-task="'+r.row+'"')+'</article>').join('')+(tasks.length?'':'<p>No checklist items recorded for this event.</p>')+'</div></section><section><h3>Receipts & event documents</h3><div class="hq-grid">'+docs.map(v=>'<article class="hq-card"><h3>'+html(v[1])+'</h3><p>'+html(v[3]||'')+'</p><a class="hq-btn" href="'+html(safeURL(v[6]))+'" target="_blank" rel="noopener">Open document ↗</a></article>').join('')+(docs.length?'':'<p>No linked receipts or documents recorded for this year.</p>')+'</div></section><div data-club-editor></div></div>';
+ H().querySelector('[data-event-back]').onclick=()=>{hub.current=null;renderHub();};H().querySelector('[data-event-concert]')?.addEventListener('click',()=>load());
+ const editGeneric=(tab,row)=>{clubFramework.volunteers.active=tab;editClubRecord('volunteers',row);};
+ H().querySelector('[data-event-edit]')?.addEventListener('click',()=>editGeneric('Club Events',(clubCache['Club Events']||[]).findIndex(v=>v[0]===e.v[0])+1));
+ H().querySelector('[data-event-create]')?.addEventListener('click',()=>{editGeneric('Club Events');const form=H().querySelector('dialog form');if(form?.elements.c1)form.elements.c1.value=e.name;requireEventDate();});
+ H().querySelectorAll('[data-event-assignment]').forEach(b=>b.onclick=()=>editGeneric('Volunteer Assignments',Number(b.dataset.eventAssignment)));
+ H().querySelectorAll('[data-event-task]').forEach(b=>b.onclick=()=>editGeneric('Event Checklist',Number(b.dataset.eventTask)));
+}
+
 async function load(){
  const gen=++state.generation;
  if(!accessToken){H().innerHTML='<div class="bft-hq"><div class="hq-empty">Sign in with Google to open the shared event command center.</div></div>';return;}
@@ -44,18 +95,21 @@ async function load(){
   state.loadedAt=new Date();state.notice='';render();
  }catch(e){H().innerHTML=`<div class="bft-hq"><div class="hq-warning" role="alert">${html(error(e))}</div>${btn('Retry','data-hq-retry')}</div>`;H().querySelector('[data-hq-retry]').onclick=load;}
 }
-loadClubFramework=async function(key){if(key==='volunteers')return load();return legacyLoad(key);};
+loadClubFramework=async function(key){if(key==='volunteers')return loadHub();return legacyLoad(key);};
 function master(){return records('Documents').find(r=>r.v[3]==='Editable master')?.v[4];}
 function go(t,query=''){state.tab=t;state.query=query;state.filter='';render();if(t==='Sponsors')loadSponsors();}
 function render(){
  const focus=retainFocus(),ss=records('Stations'),vv=records('Volunteers'),pp=records('Prizes'),open=records('Review').filter(r=>r.v[4]==='Open').length;
  const full=ss.filter(r=>r.v[3]||r.v[4]).length,checked=vv.filter(r=>r.v[3]==='Here').length;
- H().innerHTML=`<div class="bft-hq hq-daymode"><header class="hq-day-header"><div><div class="hq-kicker">BSSC · EVENT DAY</div><h2>Bikes for Tykes</h2><p>Oct 11 · Elevation 27 · 1–6 PM</p></div><div class="hq-header-tools">${btn('Refresh','data-hq-refresh')}${master()?`<a class="hq-btn" target="_blank" rel="noopener" href="${html(safeURL(master()))}">Master document ↗</a>`:''}</div></header><nav class="hq-tabs" aria-label="Event workspace">${tabs.slice(0,4).map(t=>btn(labels[t],`data-hq-tab="${t}" aria-pressed="${state.tab===t}"`,state.tab===t?'selected':'')).join('')}<details class="hq-more"><summary>More${tabs.slice(4).includes(state.tab)?' · '+labels[state.tab]:''}</summary><div>${tabs.slice(4).map(t=>btn(labels[t]+(t==='Review'&&open?' ('+open+')':''),`data-hq-tab="${t}" aria-pressed="${state.tab===t}"`,state.tab===t?'selected':'')).join('')}</div></details></nav><div class="hq-status" data-hq-status role="status">${html(state.notice||'Shared records · Updated '+(state.loadedAt?.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})||'—'))}</div><div data-hq-body></div><details class="hq-admin-tools"><summary>Documents, exports & other events</summary><div class="hq-toolbar">${btn('Other club events','data-hq-legacy')}${btn('Print live event packet','data-hq-print')}${btn('Export all event records','data-hq-export-all')}</div></details></div>`;
+ H().innerHTML=`<div class="bft-hq hq-daymode"><header class="hq-day-header"><div><div class="hq-kicker">BSSC · EVENT DAY</div><h2>Bikes for Tykes Charity Concert</h2><p>Oct 11 · Elevation 27 · 1–6 PM</p></div><div class="hq-header-tools">${btn('← 2026 Events','data-hq-event-home')}${btn('Event details & checklist','data-hq-event-details')}${btn('Fundraiser results','data-hq-event-results')}${btn('Refresh','data-hq-refresh')}${master()?`<a class="hq-btn" target="_blank" rel="noopener" href="${html(safeURL(master()))}">Master document ↗</a>`:''}</div></header><nav class="hq-tabs" aria-label="Event workspace">${tabs.slice(0,4).map(t=>btn(labels[t],`data-hq-tab="${t}" aria-pressed="${state.tab===t}"`,state.tab===t?'selected':'')).join('')}<details class="hq-more"><summary>More${tabs.slice(4).includes(state.tab)?' · '+labels[state.tab]:''}</summary><div>${tabs.slice(4).map(t=>btn(labels[t]+(t==='Review'&&open?' ('+open+')':''),`data-hq-tab="${t}" aria-pressed="${state.tab===t}"`,state.tab===t?'selected':'')).join('')}</div></details></nav><div class="hq-status" data-hq-status role="status">${html(state.notice||'Shared records · Updated '+(state.loadedAt?.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})||'—'))}</div><div data-hq-body></div><details class="hq-admin-tools"><summary>Documents, exports & other events</summary><div class="hq-toolbar">${btn('Other club events','data-hq-legacy')}${btn('Print live event packet','data-hq-print')}${btn('Export all event records','data-hq-export-all')}</div></details></div>`;
+ H().querySelector('[data-hq-event-home]').onclick=()=>{hub.year='2026';renderHub();};
+ H().querySelector('[data-hq-event-details]').onclick=()=>renderEventDetails(hub.current||yearEvents().find(e=>e.kind==='bft'));
+ H().querySelector('[data-hq-event-results]').onclick=()=>{showModule('bft');document.querySelector('[data-bft-tab="results"]')?.click();};
  const body=H().querySelector('[data-hq-body]');
  if(state.tab==='Overview')overview(body);else if(state.tab==='Documents')documents(body);else if(state.tab==='Sponsors')sponsors(body);else list(body);
  H().querySelectorAll('[data-hq-tab]').forEach(b=>b.onclick=()=>go(b.dataset.hqTab));
  H().querySelector('[data-hq-refresh]').onclick=()=>{if(!state.busy){state.sponsors={};load();}};
- H().querySelector('[data-hq-legacy]').onclick=async()=>{await legacyLoad('volunteers');const b=document.createElement('button');b.className='open-btn';b.textContent='← Bikes for Tykes Event Command Center';b.onclick=load;H().prepend(b);};
+ H().querySelector('[data-hq-legacy]').onclick=renderHub;
  H().querySelector('[data-hq-print]').onclick=printPacket;
  H().querySelector('[data-hq-export-all]').onclick=()=>download('BFT_2026_All_Event_Records.json',JSON.stringify({event:EVENT,exportedAt:new Date().toISOString(),...state.data},null,2),'application/json');
  if(focus&&H().querySelector('[data-hq-search]')){const q=H().querySelector('[data-hq-search]');q.focus();q.setSelectionRange(focus.start,focus.start);}
@@ -196,3 +250,4 @@ function exportCSV(key){const cell=v=>'"'+String(v??'').replace(/^[=+\-@]/,"'$&"
 function printPacket(){let p=document.getElementById('hq-print');if(!p){p=document.createElement('section');p.id='hq-print';p.style.display='none';document.body.append(p);}p.innerHTML=`<h1>Bikes for Tykes · Live Event Packet</h1><p>October 11, 2026 · Elevation 27<br>Generated ${html(new Date().toLocaleString())}</p>`+Object.keys(configs).map(k=>`<h2>${html(k)}</h2>`+records(k).map(({v})=>`<section class="hq-print-record"><h3>${html(v[k==='Prizes'?4:k==='Stations'||k==='Volunteers'||k==='Review'||k==='Documents'?2:5])}</h3>${configs[k].headers.map((h,i)=>i>1&&v[i]?`<p><strong>${html(h)}:</strong> ${html(v[i])}</p>`:'').join('')}</section>`).join('')).join('');window.print();}
 window.addEventListener('offline',()=>{if(H().classList.contains('active'))status('Offline. Loaded records remain visible; reconnect before saving.',true);});
 })();
+
