@@ -1,5 +1,6 @@
 // Bank imports are identified by bank IDs, not amounts. No bank credentials here.
 function bankLedgerDay_(value) {
+  if(typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value))return value;
   if (value instanceof Date) return Utilities.formatDate(value,'America/New_York','yyyy-MM-dd');
   if (typeof value === 'number') return new Date(Math.round((value-25569)*86400000)).toISOString().slice(0,10);
   const d=new Date(value); return isNaN(d.getTime())?'':Utilities.formatDate(d,'America/New_York','yyyy-MM-dd');
@@ -38,6 +39,12 @@ function bankLedgerPlan_(ledger,bankRows,today) {
         // The payout is already represented; keep the summary visible for review, never add duplicate income.
         return;
       }
+    }
+    if(/^DEPOSIT$/i.test(String(b[3]))){
+      const cash=ledger.map((r,i)=>({r,i})).filter(x=>active(x.r)&&x.r[6]===fund(b)&&nearby(x.r,b)&&cents(x.r[9])===cents(b[4])&&x.r[13]==='Cash'&&String(x.r[14]).toLowerCase()!=='yes');
+      const deposits=live.filter(t=>/^DEPOSIT$/i.test(String(t[3]))&&String(t[1])===String(b[1])&&cents(t[4])===cents(b[4])&&bankLedgerDay_(t[2])===bankLedgerDay_(b[2]));
+      const next=cash.find(x=>!claimed.has(x.i));
+      if(cash.length===deposits.length&&next){stamp(next.i,b);return;}
     }
     const words=String(b[7]||b[3]).toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>=4&&!['orig','name','debit','store','payment','transfer','purchase','paypal','entry','descr','online','from','bank'].includes(w));
     const matches=candidates.filter(x=>x.r[12]!=='Settlement Summary'&&(/online transfer/i.test(b[3])?/^Transfer (In|Out)$/.test(x.r[12]):processor?/^Transfer (In|Out)$/.test(x.r[12])&&/paypal|chase payments/i.test(x.r[13]):words.some(w=>(String(x.r[3])+' '+String(x.r[8])).toLowerCase().includes(w))));
