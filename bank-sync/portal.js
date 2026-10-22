@@ -13,17 +13,19 @@
   const style=document.createElement('style');
   style.textContent=`#bankSyncActions{display:none;margin-left:auto;text-align:right;max-width:440px}#bankSyncActions.visible{display:block}.bank-sync-buttons{display:flex;justify-content:flex-end;gap:8px}#bankSyncActions button{padding:11px 18px;border:2px solid #cf1235;background:#cf1235;color:white;border-radius:9px;font-weight:800;cursor:pointer}#bankSyncActions #bankFeedOpen{background:#181818;border-color:#555}#bankSyncActions button:disabled{opacity:.65;cursor:wait}#bankSyncLast{display:block;margin-top:7px;color:#ccc;font-size:.76rem;line-height:1.4}#bankSyncLast.error{color:#ff8e9d}.detail-head:has(#bankSyncActions.visible){flex-wrap:wrap;gap:12px}#bankSyncActions.visible~#financeAdminToggle{margin-left:0}@media(max-width:900px){body.portal-authenticated #bankSyncActions.visible~#financeAdminToggle{position:static!important}#bankSyncActions{max-width:100%;margin-left:0;text-align:left}.bank-sync-buttons{justify-content:flex-start}}`;
   document.head.append(style);
+  style.textContent += '#bankSyncActions #bankSyncNow.success{background:#16783b;border-color:#219b50}#bankSyncLast.success{color:#7ee5a1}';
   style.textContent += '#bankSyncActions #financeAdminToggle{margin:0!important;position:static!important;min-height:0!important;padding:11px 18px!important;box-shadow:none}.bank-sync-buttons{flex-wrap:wrap}';
   function showTimestamp() {
-    if (!lastSuccess) {label.textContent='No successful bank sync recorded';return;}
+    if (!lastSuccess || Number.isNaN(new Date(lastSuccess).getTime())) {button.classList.remove('success');label.classList.remove('success');label.textContent='No successful bank sync recorded';return;}
     const date=new Date(lastSuccess);
     label.textContent='LAST SYNC · '+date.toLocaleDateString('en-US',{timeZone:'America/New_York',weekday:'short',month:'long',day:'numeric',year:'numeric'})+' at '+date.toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'});
     label.classList.remove('error');
+    button.classList.add('success');label.classList.add('success');
   }
   async function readStatus() {
     if(!accessToken)return;
     try{const rows=await getSheetValues("'Bank Sync Status'!A2:B8",FINANCE_SPREADSHEET_ID);lastSuccess=rows.find(row=>row[0]==='Last successful sync')?.[1]||'';if(!busy)showTimestamp();}
-    catch(error){if(!busy){label.textContent='Last sync unavailable';label.classList.add('error');}}
+    catch(error){if(!busy){button.classList.remove('success');label.classList.remove('success');label.textContent='Last sync unavailable';label.classList.add('error');}}
   }
   function visibility(){const visible=admin.classList.contains('visible');bar.classList.toggle('visible',visible);if(visible)readStatus();}
   new MutationObserver(visibility).observe(admin,{attributes:true,attributeFilter:['class']});
@@ -31,7 +33,7 @@
   button.addEventListener('click',async()=>{
     if(busy)return;
     if(!accessToken){label.textContent='Sign in to the portal first.';return;}
-    busy=true;button.disabled=true;button.textContent='Syncing…';label.classList.remove('error');label.textContent='Updating Chase balances and bank activity…';
+    busy=true;button.disabled=true;button.textContent='Syncing…';button.classList.remove('success');label.classList.remove('error','success');label.textContent='Updating Chase balances and bank activity…';
     try {
       const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({action:'sync',token:accessToken}),redirect:'follow',signal:AbortSignal.timeout(120000)});
       if(!response.ok)throw new Error('Bank sync service could not be reached.');
