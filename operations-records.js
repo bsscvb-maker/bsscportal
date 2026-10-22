@@ -9,6 +9,7 @@
     host.innerHTML=`<style>
       .aa-shell{background:#101010;color:#fff;border:1px solid #393939;border-radius:18px;padding:clamp(16px,3vw,30px)}
       .aa-shell h2,.aa-shell h3{color:#fff;margin:0 0 10px}.aa-shell p{color:#d0d0d0}.aa-top,.aa-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.aa-top h2{flex:1}.aa-shell button,.aa-shell a.aa-button{background:#252525;color:#fff;border:1px solid #777;border-radius:8px;padding:11px 16px;cursor:pointer;text-decoration:none;font:inherit}.aa-shell .aa-primary{background:#b01d26;border-color:#ed6972}.aa-shell button:disabled{opacity:.55;cursor:wait}.aa-shell input,.aa-shell textarea{box-sizing:border-box;width:100%;background:#fff;color:#161616;border:1px solid #aaa;border-radius:8px;padding:12px;font:inherit}.aa-search{display:block;margin:22px 0 12px}.aa-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:16px}.aa-card{min-width:0;background:#1e1e1e;border:1px solid #444;border-top:4px solid #c42330;border-radius:12px;padding:20px;overflow-wrap:anywhere}.aa-card dl{margin:16px 0}.aa-card dt{font-size:.82rem;color:#aaa;margin-top:12px}.aa-card dd{margin:4px 0;white-space:pre-wrap}.aa-shell .aa-remove{color:#ffabb1;border-color:#99555a}.aa-editor{background:#171717;color:#fff;border:1px solid #777;border-radius:14px;width:min(620px,calc(100% - 32px));max-height:85vh;padding:24px;box-sizing:border-box}.aa-editor::backdrop{background:#000b}.aa-editor label{display:block;margin:14px 0}.aa-editor input,.aa-editor textarea{width:100%;box-sizing:border-box;padding:10px;font:inherit}.aa-editor h3{color:#fff}.aa-editor button{padding:10px 15px;margin-right:8px;cursor:pointer}.aa-message{min-height:24px}.aa-card summary{cursor:pointer;color:#fff;padding:6px 0}
+    .aa-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,205px),1fr));gap:12px}.aa-shell button.aa-site{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:145px;padding:16px 12px;background:#1e1e1e;border:1px solid #444;border-top:3px solid #c42330;border-radius:12px;text-align:center;overflow-wrap:anywhere}.aa-shell button.aa-site:hover{background:#2b2223;border-color:#e25560}.aa-shell button.aa-site:focus-visible{outline:3px solid #fff;outline-offset:3px}.aa-site strong{font-size:1rem}.aa-site small{color:#c1c1c1;font-size:.78rem}.aa-logo{width:56px;height:56px;display:grid;place-items:center;background:white;border-radius:12px;padding:7px;box-sizing:border-box;color:#a21d27;font-size:1.4rem;font-weight:bold}.aa-logo img{width:100%;height:100%;object-fit:contain}.aa-grid.aa-logins{grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr))}
     </style><section class="aa-shell"><div class="aa-top"><button data-back>← Club Records</button><h2>Accounts & Access</h2><button data-refresh>Refresh</button><button class="aa-primary" data-add disabled>+ Add account</button></div><p>Find a club account, open its website, or manage its access information.</p><label class="aa-search">Find an account<input type="search" data-search placeholder="Search account, contact, or notes" autocomplete="off"></label><p class="aa-message" role="status" aria-live="polite" data-status>Loading private accounts…</p><div class="aa-grid" data-cards></div><dialog class="aa-editor" data-editor></dialog></section>`;
     host.querySelector('[data-back]').onclick=()=>{++version;recordsHome();};
     host.querySelector('[data-refresh]').onclick=openAccounts;
@@ -49,22 +50,30 @@
       const body='<dl>'+headers.map((h,i)=>!r.v[i]||i===0?'':'<dt>'+e(h)+'</dt><dd>'+(i===4?'<details><summary>Show access details</summary><span>'+e(r.v[i])+'</span></details>':e(r.v[i]))+'</dd>').join('')+'</dl><div class="aa-actions">'+link+'<button data-edit="'+r.row+'">Edit</button></div>';
       return '<article class="aa-card">'+(insideGroup?'<details><summary><strong>'+e(title)+'</strong></summary>'+body+'</details>':'<h3>'+e(websiteName(websiteKey(r),r))+'</h3><p>'+e(websiteKey(r).startsWith('record:')?'':websiteKey(r))+'</p>'+body)+'</article>';
     }
+    function siteLogo(key,record){
+      if(key.startsWith('record:'))return '<span class="aa-logo" aria-hidden="true">'+e(websiteName(key,record).charAt(0))+'</span>';
+      const aliases={'admin.google.com':'google.com','secure.atlanticunionbank.com':'atlanticunionbank.com','secure.chase.com':'chase.com','identity.walmart.com':'walmart.com','vault.bitwarden.com':'bitwarden.com','mycube.cubesmart.com':'cubesmart.com','thekrogerco.versaic.com':'kroger.com','verified.usps.com':'usps.com'};
+      const domain=aliases[key]||key;
+      return '<span class="aa-logo" aria-hidden="true"><img src="https://www.google.com/s2/favicons?domain='+encodeURIComponent(domain)+'&amp;sz=128" alt="" loading="lazy" referrerpolicy="no-referrer"></span>';
+    }
     function paint(){
       const q=host.querySelector('[data-search]').value.trim().toLowerCase();
       const groups=new Map();
       records.forEach(r=>{const key=websiteKey(r);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r);});
-      const matches=r=>r.v.some((v,i)=>i!==4&&v.toLowerCase().includes(q));
+      const matches=r=>r.v.some((v,i)=>i!==4&&v.toLowerCase().includes(q))||websiteName(websiteKey(r),r).toLowerCase().includes(q);
       if(selectedWebsite&&!groups.has(selectedWebsite))selectedWebsite=null;
+      grid.classList.toggle('aa-logins',!!selectedWebsite);
       if(selectedWebsite){
         const group=groups.get(selectedWebsite),list=group.filter(matches).sort((a,b)=>(a.v[3]||a.v[1]).localeCompare(b.v[3]||b.v[1]));
-        status.innerHTML='<button data-websites>← All websites</button> <strong>'+e(websiteName(selectedWebsite,group[0]))+'</strong> · '+e(selectedWebsite)+' · '+list.length+' of '+group.length+' logins';
+        status.innerHTML='<button data-websites>← All websites</button> <strong>'+e(websiteName(selectedWebsite,group[0]))+'</strong> · '+list.length+' of '+group.length+' logins';
         status.querySelector('[data-websites]').onclick=()=>{selectedWebsite=null;paint();};
-        grid.innerHTML=list.map(r=>accountCard(r,true)).join('')||'<p>No logins match your search.</p>';
+        grid.innerHTML=list.map(r=>accountCard(r,group.length>1)).join('')||'<p>No logins match your search.</p>';
       }else{
-        const list=[...groups.entries()].filter(([,rs])=>rs.some(matches)).sort(([a,ar],[b,br])=>(a.startsWith('record:')?ar[0].v[0]:a).localeCompare(b.startsWith('record:')?br[0].v[0]:b));
+        const list=[...groups.entries()].filter(([,rs])=>rs.some(matches)).sort(([a,ar],[b,br])=>websiteName(a,ar[0]).localeCompare(websiteName(b,br[0]),undefined,{sensitivity:'base'})||a.localeCompare(b));
         status.textContent=list.length+' website cards · '+records.length+' accounts';
-        grid.innerHTML=list.map(([key,rs])=>rs.length===1?accountCard(rs[0]):'<article class="aa-card"><h3>'+e(websiteName(key,rs[0]))+'</h3><p>'+e(key)+'</p><p>'+rs.length+' logins</p><div class="aa-actions"><button data-website="'+e(key)+'">View accounts →</button></div></article>').join('')||'<p>'+(records.length?'No accounts match your search.':'No accounts yet. Select Add account to get started.')+'</p>';
+        grid.innerHTML=list.map(([key,rs])=>'<button type="button" class="aa-site" data-website="'+e(key)+'" aria-label="Open '+e(websiteName(key,rs[0]))+' accounts">'+siteLogo(key,rs[0])+'<strong>'+e(websiteName(key,rs[0]))+'</strong><small>'+rs.length+' '+(rs.length===1?'login':'logins')+'</small></button>').join('')||'<p>'+(records.length?'No accounts match your search.':'No accounts yet. Select Add account to get started.')+'</p>';
         grid.querySelectorAll('[data-website]').forEach(b=>b.onclick=()=>{selectedWebsite=b.dataset.website;paint();});
+        grid.querySelectorAll('.aa-logo img').forEach(img=>img.onerror=()=>{const label=img.closest('button').querySelector('strong').textContent;img.parentElement.textContent=label.charAt(0);});
       }
       grid.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>edit(records.find(r=>r.row===Number(b.dataset.edit))));
     }
