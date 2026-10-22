@@ -192,3 +192,11 @@
   });
   panel.querySelector('[data-refresh-vendor-payments]').addEventListener('click',load);
 })();
+
+
+/* Reload live totals after a successful fulfillment send. */
+window.addEventListener('message',event=>{
+  const result=event.data||{};
+  if(event.source!==marketplaceVendorOrderPopup||result.type!=='bssc-marketplace-vendor-order-result'||!result.success||result.requestId!==marketplaceVendorOrderRequestId)return;
+  queueMicrotask(()=>loadMarketplaceData());
+},true);
