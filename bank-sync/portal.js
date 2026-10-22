@@ -40,6 +40,7 @@
       const result=await response.json();
       if(!result.ok)throw new Error(result.error||'Bank sync did not complete.');
       lastSuccess=result.lastSuccess;showTimestamp();
+      const details=document.createElement('span');details.style.display='block';details.textContent=(result.ledgerAdded||0)+' new ledger entries; '+(result.ledgerMatched||0)+' linked. '+(result.refreshStatus||'');label.append(details);
       loadedFinanceTabs.clear();
       await Promise.allSettled([loadFinanceTab(document.querySelector('[data-finance-tab].active')?.dataset.financeTab||'control',true),refreshFinanceReconciliationCount()]);
     }catch(error){label.textContent='Sync failed: '+error.message+(lastSuccess?' Last success: '+new Date(lastSuccess).toLocaleString('en-US',{timeZone:'America/New_York'}):'');label.classList.add('error');}
