@@ -13,7 +13,7 @@
     host.querySelector('[data-back]').onclick=()=>{++version;recordsHome();};
     host.querySelector('[data-refresh]').onclick=openAccounts;
     const status=host.querySelector('[data-status]'),grid=host.querySelector('[data-cards]'),dialog=host.querySelector('[data-editor]');
-    let headers=[],records=[],busy=false;
+    let headers=[],records=[],busy=false,selectedWebsite=null;
     const current=()=>ticket===version&&host.contains(grid);
     const normalize=r=>Array.from({length:7},(_,i)=>String(r[i]??''));
     const base='https://sheets.googleapis.com/v4/spreadsheets/'+spreadsheet;
@@ -26,14 +26,37 @@
       records=raw.slice(1).map((v,i)=>({row:i+2,v:normalize(v)})).filter(r=>r.v.some(Boolean));
       host.querySelector('[data-add]').disabled=false;paint();
     }
+    function websiteKey(record){
+      const value=record.v[2].trim();
+      try{
+        const url=new URL(/^https?:\/\//i.test(value)?value:'https://'+value);
+        if(value&&['http:','https:'].includes(url.protocol)&&url.hostname)return url.hostname.toLowerCase().replace(/^www\./,'');
+      }catch{}
+      return 'record:'+record.row;
+    }
+    function accountCard(r,insideGroup=false){
+      let link='';try{const u=new URL(/^https?:\/\//i.test(r.v[2])?r.v[2]:'https://'+r.v[2]);if(r.v[2]&&['https:','http:'].includes(u.protocol))link='<a class="aa-button" target="_blank" rel="noopener noreferrer" href="'+e(u.href)+'">Open website ↗</a>';}catch{}
+      const title=insideGroup?(r.v[3]||r.v[1]||r.v[0]||'Account'):(r.v[0]||r.v[1]||'Untitled account');
+      const body='<dl>'+headers.map((h,i)=>!r.v[i]||i===0?'':'<dt>'+e(h)+'</dt><dd>'+(i===4?'<details><summary>Show access details</summary><span>'+e(r.v[i])+'</span></details>':e(r.v[i]))+'</dd>').join('')+'</dl><div class="aa-actions">'+link+'<button data-edit="'+r.row+'">Edit</button></div>';
+      return '<article class="aa-card">'+(insideGroup?'<details><summary><strong>'+e(title)+'</strong></summary>'+body+'</details>':'<h3>'+e(title)+'</h3>'+body)+'</article>';
+    }
     function paint(){
       const q=host.querySelector('[data-search]').value.trim().toLowerCase();
-      const list=records.filter(r=>r.v.some((v,i)=>i!==4&&v.toLowerCase().includes(q))).sort((a,b)=>(a.v[0]+' '+a.v[1]).localeCompare(b.v[0]+' '+b.v[1]));
-      status.textContent=list.length+' of '+records.length+' accounts';
-      grid.innerHTML=list.map(r=>{
-        let link='';try{const u=new URL(/^https?:\/\//i.test(r.v[2])?r.v[2]:'https://'+r.v[2]);if(r.v[2]&&['https:','http:'].includes(u.protocol))link='<a class="aa-button" target="_blank" rel="noopener noreferrer" href="'+e(u.href)+'">Open website ↗</a>';}catch{}
-        return '<article class="aa-card"><h3>'+e(r.v[0]||r.v[1]||'Untitled account')+'</h3><dl>'+headers.map((h,i)=>!r.v[i]||i===0?'':'<dt>'+e(h)+'</dt><dd>'+(i===4?'<details><summary>Show access details</summary><span>'+e(r.v[i])+'</span></details>':e(r.v[i]))+'</dd>').join('')+'</dl><div class="aa-actions">'+link+'<button data-edit="'+r.row+'">Edit</button></div></article>';
-      }).join('')||'<p>'+(records.length?'No accounts match your search.':'No accounts yet. Select Add account to get started.')+'</p>';
+      const groups=new Map();
+      records.forEach(r=>{const key=websiteKey(r);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r);});
+      const matches=r=>r.v.some((v,i)=>i!==4&&v.toLowerCase().includes(q));
+      if(selectedWebsite&&!groups.has(selectedWebsite))selectedWebsite=null;
+      if(selectedWebsite){
+        const group=groups.get(selectedWebsite),list=group.filter(matches).sort((a,b)=>(a.v[3]||a.v[1]).localeCompare(b.v[3]||b.v[1]));
+        status.innerHTML='<button data-websites>← All websites</button> <strong>'+e(selectedWebsite)+'</strong> · '+list.length+' of '+group.length+' logins';
+        status.querySelector('[data-websites]').onclick=()=>{selectedWebsite=null;paint();};
+        grid.innerHTML=list.map(r=>accountCard(r,true)).join('')||'<p>No logins match your search.</p>';
+      }else{
+        const list=[...groups.entries()].filter(([,rs])=>rs.some(matches)).sort(([a,ar],[b,br])=>(a.startsWith('record:')?ar[0].v[0]:a).localeCompare(b.startsWith('record:')?br[0].v[0]:b));
+        status.textContent=list.length+' website cards · '+records.length+' accounts';
+        grid.innerHTML=list.map(([key,rs])=>rs.length===1?accountCard(rs[0]):'<article class="aa-card"><h3>'+e(key)+'</h3><p>'+rs.length+' logins</p><div class="aa-actions"><button data-website="'+e(key)+'">View accounts →</button></div></article>').join('')||'<p>'+(records.length?'No accounts match your search.':'No accounts yet. Select Add account to get started.')+'</p>';
+        grid.querySelectorAll('[data-website]').forEach(b=>b.onclick=()=>{selectedWebsite=b.dataset.website;paint();});
+      }
       grid.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>edit(records.find(r=>r.row===Number(b.dataset.edit))));
     }
     async function verify(record){
