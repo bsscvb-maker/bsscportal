@@ -33,7 +33,7 @@ const error=e=>e?.message||String(e);
 function matching(list){return list.filter(r=>(!state.query||r.v.join(' ').toLowerCase().includes(state.query.toLowerCase()))&&(!state.filter||(state.filter==='Needs coverage'?!r.v[3]&&!r.v[4]:state.filter==='Unassigned'?!used().has(r.v[2]):state.filter==='Awaiting release'?r.v[10]&&r.v[14]!=='Released':r.v.includes(state.filter))));}
 function status(msg,isError=false){const el=H().querySelector('[data-hq-status]');if(el){el.textContent=msg;el.classList.toggle('error',isError);}}
 function retainFocus(){const el=document.activeElement;return el?.dataset.hqSearch!==undefined?{query:el.value,start:el.selectionStart}:null;}
-const hub={year:'2026',events:[],assignments:[],checklist:[],documents:[],generation:0,current:null};
+const hub={page:'years',year:'2026',events:[],assignments:[],checklist:[],documents:[],generation:0,current:null};
 const yearOf=r=>String(r[2]||'').match(/^\d{4}/)?.[0]||String(r[0]||'').match(/(?:^|-)(20\d{2})(?:-|$)/)?.[1]||'';
 const eventKind=name=>/bikes?\s+for\s+tykes|\bbft\b/i.test(name)?'bft':/pink\s+ride/i.test(name)?'pink':'other';
 function yearEvents(){
@@ -53,15 +53,20 @@ async function loadHub(){
   const data=await getSheetRanges(["'Club Events'!A1:H2000","'Volunteer Assignments'!A1:J2000","'Event Checklist'!A1:H2000","'Club Records'!A1:I2000"],MEMBERSHIP_SPREADSHEET_ID);
   if(generation!==hub.generation)return;
   tabs.forEach((t,i)=>clubCache[t]=data[i]||[]);
-  [hub.events,hub.assignments,hub.checklist,hub.documents]=data.map(rs=>(rs||[]).slice(1).filter(r=>r[0]));hub.current=null;renderHub();
+  [hub.events,hub.assignments,hub.checklist,hub.documents]=data.map(rs=>(rs||[]).slice(1).filter(r=>r[0]));hub.current=null;hub.page='years';renderHub();
  }catch(e){H().innerHTML='<div class="bft-hq"><p role="alert">'+html(error(e))+'</p>'+btn('Retry','data-hub-retry')+'</div>';H().querySelector('[data-hub-retry]').onclick=loadHub;}
 }
 function renderHub(){
- const years=[...new Set(['2026','2027',...hub.events.map(yearOf).filter(Boolean)])].sort();
- H().innerHTML='<div class="bft-hq hq-daymode"><header class="hq-day-header"><div><div class="hq-kicker">BSSC · EVENTS & VOLUNTEERS</div><h2>Choose an event</h2><p>Keep each year’s events, volunteers, receipts, and documents together.</p></div><div class="hq-header-tools">'+btn('Refresh','data-hub-refresh')+btn('+ Add event','data-hub-add')+'</div></header><nav class="hq-tabs" aria-label="Event year">'+years.map(y=>btn(y,'data-event-year="'+y+'" aria-pressed="'+(hub.year===y)+'"',hub.year===y?'selected':'')).join('')+'</nav><h3>'+html(hub.year)+' Events</h3><div class="hq-grid">'+yearEvents().map((e,i)=>'<button class="hq-card" data-hub-event="'+i+'" style="text-align:left;cursor:pointer;border-top:5px solid #aa1830;padding:24px"><h3>'+html(e.name)+'</h3><p>'+html(e.v?[e.v[2],e.v[3]].filter(Boolean).join(' · ')||'Event details available':'Ready for '+hub.year+' planning')+'</p><p>'+html(e.kind==='bft'&&hub.year==='2026'?'Crew, stations, raffle baskets, prizes, donors, documents, and results':e.kind==='pink'?'Raffle basket, receipts, volunteers, and event documents':'Volunteer assignments, event checklist, and supporting files')+'</p><strong>Open event →</strong></button>').join('')+'</div></div>';
- H().querySelectorAll('[data-event-year]').forEach(b=>b.onclick=()=>{hub.year=b.dataset.eventYear;renderHub();});
+ const years=[...new Set(['2026','2027','2028',...hub.events.map(yearOf).filter(Boolean)])].sort();
+ const cardStyle='min-height:220px;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer;border-top:5px solid #aa1830;padding:32px';
+ if(hub.page==='years'){
+  H().innerHTML='<div class="bft-hq hq-daymode"><header class="hq-day-header"><h2>Events & Volunteers</h2></header><div class="hq-grid">'+years.map(y=>'<button class="hq-card" data-event-year="'+y+'" style="'+cardStyle+'"><h3 style="font-size:38px;margin:0">'+y+'</h3></button>').join('')+'</div></div>';
+  H().querySelectorAll('[data-event-year]').forEach(b=>b.onclick=()=>{hub.year=b.dataset.eventYear;hub.page='events';renderHub();});
+  return;
+ }
+ H().innerHTML='<div class="bft-hq hq-daymode"><header class="hq-day-header"><div>'+btn('← Years','data-hub-years')+'<h2>'+html(hub.year)+'</h2></div><div class="hq-header-tools">'+btn('+ Add event','data-hub-add')+'</div></header><div class="hq-grid">'+yearEvents().map((e,i)=>'<button class="hq-card" data-hub-event="'+i+'" style="'+cardStyle+'"><h3 style="font-size:28px;margin:0">'+html(e.name)+'</h3></button>').join('')+'</div></div>';
+ H().querySelector('[data-hub-years]').onclick=()=>{hub.page='years';renderHub();};
  H().querySelectorAll('[data-hub-event]').forEach(b=>b.onclick=()=>{const e=yearEvents()[Number(b.dataset.hubEvent)];hub.current=e;if(e.kind==='bft'&&hub.year==='2026'){state.tab='Overview';state.query='';state.filter='';load();}else renderEventDetails(e);});
- H().querySelector('[data-hub-refresh]').onclick=loadHub;
  H().querySelector('[data-hub-add]').onclick=()=>{clubFramework.volunteers.active='Club Events';H().insertAdjacentHTML('beforeend','<div data-club-editor></div>');editClubRecord('volunteers');requireEventDate();};
 }
 function requireEventDate(){const field=H().querySelector('dialog [name=c2]');if(field){field.required=true;field.min=hub.year+'-01-01';field.max=hub.year+'-12-31';}}
