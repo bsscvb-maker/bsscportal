@@ -31,7 +31,7 @@
       const value=record.v[2].trim();
       try{
         const url=new URL(/^https?:\/\//i.test(value)?value:'https://'+value);
-        if(value&&['http:','https:'].includes(url.protocol)&&url.hostname)return url.hostname.toLowerCase().replace(/^www\./,'');
+        if(value&&['http:','https:'].includes(url.protocol)&&url.hostname)return url.hostname.toLowerCase().replace(/^www\./,'').replace(/^secure\.(?=(?:atlanticunionbank|chase)\.com$)/,'');
       }catch{}
       return 'record:'+record.row;
     }
