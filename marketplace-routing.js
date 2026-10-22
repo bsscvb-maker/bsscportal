@@ -70,3 +70,81 @@
   renderMerchandiseReceiving=function(...args){const result=originalRender.apply(this,args);groupCustomerOrders();return result;};
   groupCustomerOrders();
 })();
+
+
+/* Show the customers behind dashboard merchandise and color totals. */
+(() => {
+  const original=renderMarketplaceDashboard;
+  const popup=document.createElement('div');
+  popup.id='marketOrderCustomers';popup.role='tooltip';popup.hidden=true;
+  const style=document.createElement('style');
+  style.textContent='#marketOrderCustomers{position:fixed;z-index:10000;width:290px;max-width:calc(100vw - 24px);max-height:300px;overflow:auto;background:#171717;color:white;border:1px solid #777;border-top:3px solid #c8102e;border-radius:9px;padding:13px 15px;box-shadow:0 6px 24px #0006;font:14px/1.45 Arial}#marketOrderCustomers[hidden]{display:none}#marketOrderCustomers strong{display:block;margin-bottom:7px}#marketOrderCustomers ul{margin:0;padding-left:19px}#marketOrderCustomers li{margin:5px 0}.market-insight-row[data-customer-breakdown]{cursor:help}.market-insight-row[data-customer-breakdown]:focus-visible{outline:2px solid #256b9a;outline-offset:3px}';
+  document.head.append(style);document.body.append(popup);
+  let active=null,hideTimer;
+  const hide=()=>{popup.hidden=true;if(active)active.removeAttribute('aria-describedby');active=null;};
+  const scheduleHide=()=>{clearTimeout(hideTimer);hideTimer=setTimeout(hide,160);};
+  popup.addEventListener('mouseenter',()=>clearTimeout(hideTimer));
+  popup.addEventListener('mouseleave',scheduleHide);
+  document.addEventListener('keydown',event=>{if(event.key==='Escape')hide();});
+  document.addEventListener('click',event=>{if(active&&!active.contains(event.target)&&!popup.contains(event.target))hide();});
+  window.addEventListener('resize',hide);
+  renderMarketplaceDashboard=function(rows,ordersRows=[],salesRows=[],financialRows=[],period='all'){
+    hide();
+    const result=original.apply(this,arguments);
+    const end=new Date();end.setHours(23,59,59,999);
+    const start=new Date(end);start.setHours(0,0,0,0);
+    if(period==='year')start.setMonth(0,1);
+    if(period==='month')start.setDate(1);
+    if(period==='90')start.setDate(start.getDate()-89);
+    const orders=new Map(ordersRows.slice(1).filter(r=>{
+      if(!r[1]||!r[4])return false;
+      if(period==='all')return true;
+      const date=new Date(String(r[0]||'').trim());
+      return !Number.isNaN(date.getTime())&&date>=start&&date<=end;
+    }).map(r=>[String(r[1]).trim(),r]));
+    const products=new Map(),colors=new Map();
+    const add=(map,key,name,qty)=>{
+      if(!map.has(key))map.set(key,new Map());
+      const names=map.get(key);names.set(name,(names.get(name)||0)+qty);
+    };
+    salesRows.slice(6).forEach(r=>{
+      const order=orders.get(String(r[1]||'').trim());
+      const item=String(r[2]||'').trim(),qty=Number(String(r[3]||'').replace(/,/g,''))||0;
+      if(!order||!item||qty<=0)return;
+      const product=item.replace(/\s*\([^()]*\)\s*$/,'').trim();
+      const details=(item.match(/\(([^()]*)\)\s*$/)?.[1]||'').split(',').map(v=>v.trim());
+      add(products,product,String(order[4]).trim(),qty);
+      if(details.length>1)add(colors,details.slice(1).join(', '),String(order[4]).trim(),qty);
+    });
+    const host=document.getElementById('marketDashboard');
+    host?.querySelectorAll('.market-action-card').forEach(card=>{
+      const title=card.querySelector('h3')?.textContent;
+      const map=title==='Top-Selling Merchandise'?products:title==='Top-Selling Colors'?colors:null;
+      if(!map)return;
+      card.querySelectorAll('.market-insight-row').forEach(row=>{
+        const label=row.querySelector('span')?.textContent||'',names=map.get(label);
+        if(!names?.size)return;
+        row.dataset.customerBreakdown='true';row.tabIndex=0;
+        row.setAttribute('aria-label',label+' — show who ordered');
+        const show=()=>{
+          clearTimeout(hideTimer);hide();active=row;row.setAttribute('aria-describedby',popup.id);
+          const heading=document.createElement('strong');heading.textContent=label;
+          const list=document.createElement('ul');
+          [...names].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([name,qty])=>{
+            const li=document.createElement('li');li.textContent=name+' — '+qty;list.append(li);
+          });
+          popup.replaceChildren(heading,list);popup.hidden=false;
+          const box=row.getBoundingClientRect(),width=popup.offsetWidth,height=popup.offsetHeight;
+          let left=box.right+10;if(left+width>innerWidth-12)left=box.left-width-10;
+          popup.style.left=Math.max(12,Math.min(left,innerWidth-width-12))+'px';
+          popup.style.top=Math.max(12,Math.min(box.top,innerHeight-height-12))+'px';
+        };
+        row.addEventListener('mouseenter',show);row.addEventListener('mouseleave',scheduleHide);
+        row.addEventListener('focus',show);row.addEventListener('blur',scheduleHide);
+        row.addEventListener('click',show);
+        row.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();show();}});
+      });
+    });
+    return result;
+  };
+})();
