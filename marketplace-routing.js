@@ -148,3 +148,47 @@
     return result;
   };
 })();
+
+
+/* Recorded supplier payments, read from the private Marketplace workbook. */
+(() => {
+  const tabs=document.querySelector('[data-market-tab="dashboard"]')?.parentElement;
+  const firstPanel=document.querySelector('[data-market-panel="dashboard"]');
+  if(!tabs||!firstPanel)return;
+  const button=document.createElement('button');
+  button.type='button';button.className='sponsor-tab';button.dataset.marketTab='vendor-payments';button.textContent='Vendor Payments';
+  tabs.append(button);
+  const panel=document.createElement('div');panel.dataset.marketPanel='vendor-payments';panel.className=firstPanel.className.replace(/\bactive\b/g,'').trim();
+  panel.innerHTML='<section class="market-action-card"><h3>Vendor Payments</h3><div class="market-action-body"><p>Supplier payment records linked to your vendor order numbers.</p><button type="button" data-refresh-vendor-payments>Refresh payments</button><div data-vendor-payment-records role="status">Open this tab to load payments.</div></div></section>';
+  firstPanel.parentElement.append(panel);
+  let generation=0;
+  async function load(){
+    const ticket=++generation,target=panel.querySelector('[data-vendor-payment-records]');
+    target.textContent='Loading vendor payments…';
+    try{
+      if(!accessToken)throw new Error('Sign in with Google to view payment records.');
+      const rows=await getSheetValues("'Vendor Payments'!A1:K200",MARKETPLACE_SPREADSHEET_ID);
+      if(ticket!==generation)return;
+      target.replaceChildren();
+      const records=rows.slice(1).filter(row=>row[0]).reverse();
+      if(!records.length){target.textContent='No vendor payments recorded.';return;}
+      for(const row of records){
+        const card=document.createElement('article');
+        card.style.cssText='margin:18px 0;padding:20px;border:1px solid #a6adb5;border-left:5px solid #238649;border-radius:10px';
+        const title=document.createElement('h3');title.textContent=row[0]+' · '+Number(row[3]||0).toLocaleString('en-US',{style:'currency',currency:'USD'});
+        card.append(title);
+        for(const [label,value] of [['Payment date',row[1]],['Vendor / recipient',row[2]],['Method',row[4]],['Paid from',row[5]],['Recipient',row[6]],['Bank status',row[7]],['Transaction number',row[8]],['Notes',row[9]],['Evidence',row[10]]]){
+          if(!value)continue;
+          const p=document.createElement('p'),strong=document.createElement('strong');strong.textContent=label+': ';p.append(strong,document.createTextNode(String(value)));card.append(p);
+        }
+        target.append(card);
+      }
+    }catch(error){if(ticket===generation)target.textContent='Unable to load payments. '+error.message;}
+  }
+  button.addEventListener('click',()=>{
+    document.querySelectorAll('[data-market-tab]').forEach(tab=>tab.classList.toggle('active',tab===button));
+    document.querySelectorAll('[data-market-panel]').forEach(item=>item.classList.toggle('active',item===panel));
+    load();
+  });
+  panel.querySelector('[data-refresh-vendor-payments]').addEventListener('click',load);
+})();
