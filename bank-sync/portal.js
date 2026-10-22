@@ -50,7 +50,7 @@
     const body=dialog.querySelector('.bank-feed-content');
     try{
       const rows=await getSheetValues("'Chase Bank Feed'!A1:K",FINANCE_SPREADSHEET_ID);
-      const active=rows.slice(1).filter(row=>row[5]!=='Removed');
+      const active=rows.slice(1).filter(row=>row[5]!=='Removed').sort((a,b)=>Date.parse(b[2])-Date.parse(a[2]));
       body.innerHTML='<div style="overflow:auto;max-height:60vh"><table style="width:100%;border-collapse:collapse"><thead><tr>'+['Date','Account','Description','Amount','Status'].map(x=>'<th style="padding:10px;text-align:left;border-bottom:1px solid #555">'+x+'</th>').join('')+'</tr></thead><tbody>'+active.map(row=>'<tr>'+[row[2],'…'+row[1],row[3],Number(row[4]).toLocaleString('en-US',{style:'currency',currency:row[8]||'USD'}),row[5]].map(x=>'<td style="padding:10px;border-bottom:1px solid #333">'+esc(String(x||''))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
     }catch(error){body.textContent='Chase activity could not load. Try refreshing the portal.';}
   });
