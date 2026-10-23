@@ -209,6 +209,8 @@
     .portal-health { display:none; flex:0 0 300px; min-height:82px; align-items:center; gap:14px; padding:14px 18px; border:2px solid transparent; border-radius:14px; color:#fff; box-shadow:0 8px 24px rgba(0,0,0,.28); }
     .portal-health.visible { display:flex; }
     .portal-health-dot { flex:0 0 18px; width:18px; height:18px; border:4px solid rgba(255,255,255,.72); border-radius:50%; box-shadow:0 0 0 5px rgba(255,255,255,.12); }
+    @keyframes portal-health-spin { to { transform:rotate(360deg); } }
+    .portal-health.is-working .portal-health-dot { border-top-color:transparent; animation:portal-health-spin .85s linear infinite; }
     .portal-health-copy { min-width:0; }
     .portal-health-label { display:block; margin-bottom:2px; font-size:.72rem; font-weight:900; letter-spacing:.08em; text-transform:uppercase; opacity:.9; }
     .portal-health strong { display:block; font-size:1.22rem; line-height:1.15; }
@@ -8553,6 +8555,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       loadPortalPublishStatus();
       loadUptimeRobotStatus();
       portalHealthCheckRunning = true;
+      document.querySelectorAll('[data-portal-health="true"]').forEach(panel => { panel.classList.add('is-working'); panel.setAttribute('aria-busy','true'); });
       try {
         const initialCheck = !portalHealthInitialCheckComplete;
         const indexes = initialCheck
@@ -8582,6 +8585,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         if (initialCheck) portalHealthInitialCheckComplete = true;
       } finally {
         portalHealthCheckRunning = false;
+        document.querySelectorAll('[data-portal-health="true"]').forEach(panel => { panel.classList.remove('is-working'); panel.setAttribute('aria-busy','false'); });
       }
     }
 
