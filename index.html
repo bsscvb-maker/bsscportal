@@ -3422,12 +3422,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         dialog.querySelector('button').addEventListener('click', () => dialog.close());
         dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
         dialog.addEventListener('close', () => dialog.remove(), {once:true});
-        const ledger=financeControlTransactionRows;
-  const totals=bftFundraiserTotals(ledger,financeControlRows);
-  const purchases=-ledger.slice(1).filter(row=>!financeIsVoided(row)&&String(row[2])==='2026'&&financeExpenseFund(row).toLowerCase()==='bikes for tykes'&&String(row[12]||'').trim().toLowerCase()==='expense'&&!financeIsProcessingFee(row)&&!/Bikes For Tykes Fundraiser 2026/i.test(String(row[7]||'')+' '+String(row[16]||''))).reduce((sum,row)=>sum+(Number(String(row[9]||0).replace(/[$,]/g,''))||0),0);
-  const format=value=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value);
-  dialog.querySelector('.bft-fundraising-result').textContent='This year’s fundraising brought in '+format(totals.income)+' after payment fees, leaving '+format(totals.available)+' after fundraising costs. After recorded purchases of bikes, helmets, locks and program supplies, '+format(totals.available-purchases)+' of this year’s fundraising remains—a much-needed cushion for next year. This remainder may change as this year’s program spending is completed.';
-  dialog.showModal();
+          dialog.showModal();
       } catch (error) {
         alert('Expense details could not load from Transaction 2026. Please try again.');
       } finally {
@@ -9720,6 +9715,11 @@ document.addEventListener('click',function(event){
     dialog.addEventListener('close',()=>info.focus());
     document.body.appendChild(dialog);
   }
+  const ledger=financeControlTransactionRows;
+  const totals=bftFundraiserTotals(ledger,financeControlRows);
+  const purchases=-ledger.slice(1).filter(row=>!financeIsVoided(row)&&String(row[2])==='2026'&&financeExpenseFund(row).toLowerCase()==='bikes for tykes'&&String(row[12]||'').trim().toLowerCase()==='expense'&&!financeIsProcessingFee(row)&&!/Bikes For Tykes Fundraiser 2026/i.test(String(row[7]||'')+' '+String(row[16]||''))).reduce((sum,row)=>sum+(Number(String(row[9]||0).replace(/[$,]/g,''))||0),0);
+  const format=value=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value);
+  dialog.querySelector('.bft-fundraising-result').textContent='This year’s fundraising brought in '+format(totals.income)+' after payment fees, leaving '+format(totals.available)+' after fundraising costs. After recorded purchases of bikes, helmets, locks and program supplies, '+format(totals.available-purchases)+' of this year’s fundraising remains—a much-needed cushion for next year. This remainder may change as this year’s program spending is completed.';
   dialog.showModal();
 },true);
 </script>
