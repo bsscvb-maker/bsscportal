@@ -218,8 +218,10 @@
     .module-loading small{font-size:.72rem;margin-top:2px}
     .module-loading-orb{display:block;width:22px;height:22px;flex:0 0 22px;border:4px solid #087a3b;border-radius:50%;box-shadow:0 0 0 4px #087a3b1a}
     .module-loading.is-working .module-loading-orb{border-top-color:transparent;animation:portal-health-spin .85s linear infinite}
-    .module-loading.has-error{background:#fff3dc;border-color:#bd870c;color:#805800}
-    .module-loading.has-error .module-loading-orb{border-color:#bd870c}
+    .module-loading.is-working{background:#fff6d8;border-color:#e0b323;color:#805c00}
+    .module-loading.is-working .module-loading-orb{border-color:#c28c00;border-top-color:transparent;box-shadow:0 0 0 4px #c28c001a}
+    .module-loading.has-error{background:#fdebed;border-color:#e38995;color:#b11930}
+    .module-loading.has-error .module-loading-orb{border-color:#c8102e;box-shadow:0 0 0 4px #c8102e1a}
     .portal-health-copy { min-width:0; }
     .portal-health-label { display:block; margin-bottom:2px; font-size:.72rem; font-weight:900; letter-spacing:.08em; text-transform:uppercase; opacity:.9; }
     .portal-health strong { display:block; font-size:1.22rem; line-height:1.15; }
@@ -2502,9 +2504,9 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const p=document.getElementById('moduleLoading');if(!p)return;
       p.hidden=moduleLoadingKey==='home';
       const s=moduleLoadingStates.get(moduleLoadingKey)||{pending:0,error:false,loaded:false};
-      p.classList.toggle('is-working',s.pending>0);p.classList.toggle('has-error',!s.pending&&s.error);
+      p.classList.toggle('is-working',s.pending>0);p.classList.toggle('has-error',!s.pending&&(s.error||!s.loaded));
       p.setAttribute('aria-busy',String(s.pending>0));
-      p.querySelector('strong').textContent=s.pending?'Loading…':s.error?'Load error':s.loaded?'Ready':'Ready to load';
+      p.querySelector('strong').textContent=s.pending?'Loading…':s.error?'Load error':s.loaded?'Ready':'Not synced';
       p.querySelector('small').textContent=(modules[moduleLoadingKey]?.title||'Module')+' · Google Sheets';
     }
     function moduleRequestOwner(url){
