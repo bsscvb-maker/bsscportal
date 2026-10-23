@@ -9718,7 +9718,7 @@ body td.bft-spending-blue,body td.bft-spending-blue span{color:#1565a8!important
 </style>
 <script>
 document.addEventListener('click',function(event){
-  const info=event.target.closest('.bft-spending-info');if(!info)return;
+  const info=event.target.closest('.bft-spending-info:not(.finance-control-info)');if(!info)return;
   event.preventDefault();event.stopImmediatePropagation();
   let dialog=document.querySelector('.bft-spending-dialog');
   if(!dialog){
