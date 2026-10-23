@@ -10,6 +10,13 @@
       .aa-shell{background:#101010;color:#fff;border:1px solid #393939;border-radius:18px;padding:clamp(16px,3vw,30px)}
       .aa-shell h2,.aa-shell h3{color:#fff;margin:0 0 10px}.aa-shell p{color:#d0d0d0}.aa-top,.aa-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.aa-top h2{flex:1}.aa-shell button,.aa-shell a.aa-button{background:#252525;color:#fff;border:1px solid #777;border-radius:8px;padding:11px 16px;cursor:pointer;text-decoration:none;font:inherit}.aa-shell .aa-primary{background:#b01d26;border-color:#ed6972}.aa-shell button:disabled{opacity:.55;cursor:wait}.aa-shell input,.aa-shell textarea{box-sizing:border-box;width:100%;background:#fff;color:#161616;border:1px solid #aaa;border-radius:8px;padding:12px;font:inherit}.aa-search{display:block;margin:22px 0 12px}.aa-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:16px}.aa-card{min-width:0;background:#1e1e1e;border:1px solid #444;border-top:4px solid #c42330;border-radius:12px;padding:20px;overflow-wrap:anywhere}.aa-card dl{margin:16px 0}.aa-card dt{font-size:.82rem;color:#aaa;margin-top:12px}.aa-card dd{margin:4px 0;white-space:pre-wrap}.aa-shell .aa-remove{color:#ffabb1;border-color:#99555a}.aa-editor{background:#171717;color:#fff;border:1px solid #777;border-radius:14px;width:min(620px,calc(100% - 32px));max-height:85vh;padding:24px;box-sizing:border-box}.aa-editor::backdrop{background:#000b}.aa-editor label{display:block;margin:14px 0}.aa-editor input,.aa-editor textarea{width:100%;box-sizing:border-box;padding:10px;font:inherit}.aa-editor h3{color:#fff}.aa-editor button{padding:10px 15px;margin-right:8px;cursor:pointer}.aa-message{min-height:24px}.aa-card summary{cursor:pointer;color:#fff;padding:6px 0}
     .aa-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,205px),1fr));gap:12px}.aa-shell button.aa-site{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:145px;padding:16px 12px;background:#1e1e1e;border:1px solid #444;border-top:3px solid #c42330;border-radius:12px;text-align:center;overflow-wrap:anywhere}.aa-shell button.aa-site:hover{background:#2b2223;border-color:#e25560}.aa-shell button.aa-site:focus-visible{outline:3px solid #fff;outline-offset:3px}.aa-site strong{font-size:1rem}.aa-site small{color:#c1c1c1;font-size:.78rem}.aa-logo{width:56px;height:56px;display:grid;place-items:center;background:white;border-radius:12px;padding:7px;box-sizing:border-box;color:#a21d27;font-size:1.4rem;font-weight:bold}.aa-logo img{width:100%;height:100%;object-fit:contain}.aa-grid.aa-logins{grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr))}
+
+      .aa-password{display:flex;align-items:center;gap:7px;flex-wrap:wrap;white-space:normal}
+      .aa-password-value{flex:1;min-width:90px;overflow-wrap:anywhere;user-select:text;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+      .aa-shell button.aa-password-icon,.aa-editor button.aa-password-icon{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;min-width:34px;margin:0;padding:6px;background:#e9f3fc;color:#1565a8;border:1px solid #9fc4e2;border-radius:7px;cursor:pointer}
+      .aa-password-icon svg{width:18px;height:18px;fill:none;stroke:#1565a8;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+      .aa-password-icon:focus-visible{outline:2px solid #70b8f2;outline-offset:2px}
+      .aa-password-note{font-size:.78rem;color:#bcdcf5;min-height:1em}
     </style><section class="aa-shell"><div class="aa-top"><button data-back>← Club Records</button><h2>Accounts & Access</h2><button data-refresh>Refresh</button><button class="aa-primary" data-add disabled>+ Add account</button></div><p>Find a club account, open its website, or manage its access information.</p><label class="aa-search">Find an account<input type="search" data-search placeholder="Search account, contact, or notes" autocomplete="off"></label><p class="aa-message" role="status" aria-live="polite" data-status>Loading private accounts…</p><div class="aa-grid" data-cards></div><dialog class="aa-editor" data-editor></dialog></section>`;
     host.querySelector('[data-back]').onclick=()=>{++version;recordsHome();};
     host.querySelector('[data-refresh]').onclick=openAccounts;
@@ -44,10 +51,33 @@
       const parts=key.split('.'),word=parts.length>1?parts[parts.length-2]:key;
       return word.charAt(0).toUpperCase()+word.slice(1);
     }
+
+    const eyeIcon='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+    const copyIcon='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></svg>';
+    function passwordMarkup(row){
+      return '<div class="aa-password" data-password-row="'+row+'"><span class="aa-password-value" data-password-value>••••••••</span><button type="button" class="aa-password-icon" data-password-toggle aria-label="Show password" title="Show password" aria-pressed="false">'+eyeIcon+'</button><button type="button" class="aa-password-icon" data-password-copy aria-label="Copy password" title="Copy password">'+copyIcon+'</button><span class="aa-password-note" role="status" aria-live="polite"></span></div>';
+    }
+    function wirePassword(container,getValue,input=null){
+      const toggle=container.querySelector('[data-password-toggle]'),copy=container.querySelector('[data-password-copy]'),message=container.querySelector('.aa-password-note');
+      toggle.onclick=()=>{
+        const show=toggle.getAttribute('aria-pressed')!=='true';
+        if(input)input.type=show?'text':'password';
+        else container.querySelector('[data-password-value]').textContent=show?getValue():'••••••••';
+        toggle.setAttribute('aria-pressed',String(show));
+        toggle.setAttribute('aria-label',show?'Hide password':'Show password');
+        toggle.title=show?'Hide password':'Show password';
+        message.textContent='';
+      };
+      copy.onclick=async()=>{
+        try{await navigator.clipboard.writeText(getValue());message.textContent='Copied';copy.title='Password copied';}
+        catch{message.textContent='Use the eye icon, then select and copy the password.';}
+      };
+    }
+
     function accountCard(r,insideGroup=false){
       let link='';try{const u=new URL(/^https?:\/\//i.test(r.v[2])?r.v[2]:'https://'+r.v[2]);if(r.v[2]&&['https:','http:'].includes(u.protocol))link='<a class="aa-button" target="_blank" rel="noopener noreferrer" href="'+e(u.href)+'">Open website ↗</a>';}catch{}
       const title=insideGroup?(r.v[3]||r.v[1]||r.v[0]||'Account'):(r.v[0]||r.v[1]||'Untitled account');
-      const body='<dl>'+headers.map((h,i)=>!r.v[i]||i===0?'':'<dt>'+e(h)+'</dt><dd>'+(i===4?'<details><summary>Show access details</summary><span>'+e(r.v[i])+'</span></details>':e(r.v[i]))+'</dd>').join('')+'</dl><div class="aa-actions">'+link+'<button data-edit="'+r.row+'">Edit</button></div>';
+      const body='<dl>'+headers.map((h,i)=>!r.v[i]||i===0?'':'<dt>'+e(h)+'</dt><dd>'+(i===4?passwordMarkup(r.row):e(r.v[i]))+'</dd>').join('')+'</dl><div class="aa-actions">'+link+'<button data-edit="'+r.row+'">Edit</button></div>';
       return '<article class="aa-card">'+(insideGroup?'<details><summary><strong>'+e(title)+'</strong></summary>'+body+'</details>':'<h3>'+e(websiteName(websiteKey(r),r))+'</h3><p>'+e(websiteKey(r).startsWith('record:')?'':websiteKey(r))+'</p>'+body)+'</article>';
     }
     function siteLogo(key,record){
@@ -75,6 +105,10 @@
         grid.querySelectorAll('[data-website]').forEach(b=>b.onclick=()=>{selectedWebsite=b.dataset.website;paint();});
         grid.querySelectorAll('.aa-logo img').forEach(img=>img.onerror=()=>{const label=img.closest('button').querySelector('strong').textContent;img.parentElement.textContent=label.charAt(0);});
       }
+      grid.querySelectorAll('[data-password-row]').forEach(container=>{
+        const record=records.find(r=>r.row===Number(container.dataset.passwordRow));
+        if(record)wirePassword(container,()=>record.v[4]);
+      });
       grid.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>edit(records.find(r=>r.row===Number(b.dataset.edit))));
     }
     async function verify(record){
@@ -85,6 +119,11 @@
       if(busy)return;
       dialog.innerHTML='<form><h3>'+ (record?'Edit account':'Add account')+'</h3><p>Changes save to the club’s private account sheet.</p>'+headers.map((h,i)=>'<label>'+e(h)+(i===4?' (private)':'')+(i===0?' *':'')+'<'+(i>=5?'textarea':'input')+' name="field'+i+'" '+(i===0?'required ':'')+(i===4?'type="password" autocomplete="new-password"':'autocomplete="off"')+'>'+(i>=5?e(record?.v[i]||'')+'</textarea>':'')+'</label>').join('')+'<p role="status" data-form-status></p><button type="submit">Save account</button><button type="button" data-cancel>Cancel</button>'+(record?'<button type="button" data-delete style="color:#a00016">Delete account</button>':'')+'</form>';
       headers.forEach((_,i)=>{dialog.querySelector('[name="field'+i+'"]').value=record?.v[i]||'';});
+      const passwordInput=dialog.querySelector('[name="field4"]');
+      const passwordActions=document.createElement('div');passwordActions.innerHTML=passwordMarkup('editor');
+      passwordActions.querySelector('[data-password-value]').remove();
+      passwordInput.insertAdjacentElement('afterend',passwordActions);
+      wirePassword(passwordActions,()=>passwordInput.value,passwordInput);
       dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();
       if(record)dialog.querySelector('[data-delete]').onclick=()=>remove(record);
       dialog.querySelector('form').onsubmit=async event=>{
