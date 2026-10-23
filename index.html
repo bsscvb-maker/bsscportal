@@ -6218,8 +6218,8 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         const comparisonHtml=comparisonParts?'<span class="comparison-number">'+esc(comparisonParts[1])+'</span><span class="comparison-caption">'+esc(comparisonParts[2])+'</span>':'<span class="comparison-number">'+esc(comparison)+'</span>';
         const detail=kind?' class="finance-detail-row" tabindex="0" role="button" data-finance-fund="'+esc(fund)+'" data-finance-kind="'+kind+'" aria-label="Show '+esc(label)+' breakdown"':'';
         const bftSpending=expense && /bikes for tykes/i.test(fund);
-        const info=bftSpending?'<button type="button" class="bft-spending-info" aria-label="About Bikes for Tykes program spending" aria-haspopup="dialog">ⓘ</button>':'';
-        return '<tr'+detail+'><th scope="row">'+(kind?'<span class="finance-detail-chevron" aria-hidden="true">›</span>':'')+esc(label)+info+'</th><td class="'+(bftSpending?'bft-spending-blue':financeAmountTone(label,after))+'"'+(bftSpending?' style="color:#1565a8!important"':'')+'><span class="comparison-current-amount"'+(bftSpending?' style="color:#1565a8!important"':'')+'>'+money(after)+'</span></td><td class="'+(bftSpending?'bft-spending-blue':financeAmountTone(label,before))+'"'+(bftSpending?' style="color:#1565a8!important"':'')+'>'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+(bftSpending?'#1565a8':color)+'">'+comparisonHtml+'</td></tr>';
+        const info=bftSpending?'<button type="button" class="bft-spending-info" aria-label="About Bikes for Tykes program spending" aria-haspopup="dialog"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 7v4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="4.7" r=".85" fill="currentColor"/></svg></button>':'';
+        return '<tr'+detail+'><th scope="row">'+(kind?'<span class="finance-detail-chevron" aria-hidden="true">›</span>':'')+(bftSpending?'<span class="bft-spending-label">'+esc(label)+info+'</span>':esc(label))+'</th><td class="'+(bftSpending?'bft-spending-blue':financeAmountTone(label,after))+'"'+(bftSpending?' style="color:#1565a8!important"':'')+'><span class="comparison-current-amount"'+(bftSpending?' style="color:#1565a8!important"':'')+'>'+money(after)+'</span></td><td class="'+(bftSpending?'bft-spending-blue':financeAmountTone(label,before))+'"'+(bftSpending?' style="color:#1565a8!important"':'')+'>'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+(bftSpending?'#1565a8':color)+'">'+comparisonHtml+'</td></tr>';
       }).join('')+'</tbody></table></div>';
     }
 
@@ -9695,8 +9695,10 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 <script src="bank-sync/portal.js?v=20261022-2"></script>
 <style>
 body td.bft-spending-blue,body td.bft-spending-blue span{color:#1565a8!important}
-.bft-spending-info{display:inline-flex;align-items:center;justify-content:center;margin-left:4px;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:transparent;color:#1565a8;font-size:18px;cursor:pointer;vertical-align:middle}
-.bft-spending-info:hover{background:#d8ecfc}.bft-spending-info:focus-visible{outline:2px solid #1565a8;outline-offset:2px}
+.bft-spending-label{white-space:nowrap}
+.bft-spending-info{position:relative;display:inline-flex;align-items:center;justify-content:center;margin:0 0 0 4px;width:14px;height:14px;padding:0;border:0;border-radius:50%;background:transparent!important;color:#1565a8!important;line-height:1;cursor:pointer;vertical-align:super;transform:translateY(-1px)}
+.bft-spending-info::after{content:"";position:absolute;inset:-5px}
+.bft-spending-info:hover{color:#084e8b!important;background:transparent!important}.bft-spending-info:focus-visible{outline:2px solid #1565a8;outline-offset:2px}
 .bft-spending-dialog{width:min(460px,calc(100vw - 36px));box-sizing:border-box;border:1px solid #9ec8e9;border-radius:14px;padding:24px;background:#f4faff;color:#17324d;box-shadow:0 18px 60px #0005}
 .bft-spending-dialog::backdrop{background:#0007}.bft-spending-dialog h2{margin:0 0 14px;font-size:1.2rem;color:#1565a8}
 .bft-spending-dialog p{line-height:1.6;margin:0 0 20px}.bft-spending-dialog button{float:right;border:0;border-radius:7px;background:#1565a8;color:white;padding:9px 18px;font:inherit;font-weight:700;cursor:pointer}
