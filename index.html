@@ -211,6 +211,15 @@
     .portal-health-dot { flex:0 0 18px; width:18px; height:18px; border:4px solid rgba(255,255,255,.72); border-radius:50%; box-shadow:0 0 0 5px rgba(255,255,255,.12); }
     @keyframes portal-health-spin { to { transform:rotate(360deg); } }
     .portal-health.is-working .portal-health-dot { border-top-color:transparent; animation:portal-health-spin .85s linear infinite; }
+
+    .module-loading{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #94b6d6;border-radius:12px;background:#e9f3fc;color:#155b96;min-width:200px;margin-left:auto}
+    .module-loading[hidden]{display:none!important}
+    .module-loading strong,.module-loading small{display:block;color:inherit!important}
+    .module-loading small{font-size:.72rem;margin-top:2px}
+    .module-loading-orb{display:block;width:22px;height:22px;flex:0 0 22px;border:4px solid #1565a8;border-radius:50%;box-shadow:0 0 0 4px #1565a81a}
+    .module-loading.is-working .module-loading-orb{border-top-color:transparent;animation:portal-health-spin .85s linear infinite}
+    .module-loading.has-error{background:#fff3dc;border-color:#bd870c;color:#805800}
+    .module-loading.has-error .module-loading-orb{border-color:#bd870c}
     .portal-health-copy { min-width:0; }
     .portal-health-label { display:block; margin-bottom:2px; font-size:.72rem; font-weight:900; letter-spacing:.08em; text-transform:uppercase; opacity:.9; }
     .portal-health strong { display:block; font-size:1.22rem; line-height:1.15; }
@@ -2087,7 +2096,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 
         <section class="detail-view" id="detail">
           <button class="back" id="back" type="button"><span class="back-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></span><span>Portal Home</span></button>
-          <div class="detail-shell"><div class="detail-head"><div><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><button class="finance-admin-header" id="membershipAdminToggle" type="button">Admin</button><button class="finance-admin-header" id="financeAdminToggle" type="button">Admin</button><div class="portal-health checking" id="portalHealth" data-portal-health="true" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong data-portal-health-status="true">Checking</strong><small data-portal-health-detail="true">Verifying connected systems…</small></div></div></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div><div class="membership-workspace" id="membershipWorkspace">
+          <div class="detail-shell"><div class="detail-head"><div><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><div id="moduleLoading" class="module-loading" role="status" aria-live="polite" hidden><span class="module-loading-orb" aria-hidden="true"></span><div><strong>Ready to load</strong><small>Google Sheets</small></div></div><button class="finance-admin-header" id="membershipAdminToggle" type="button">Admin</button><button class="finance-admin-header" id="financeAdminToggle" type="button">Admin</button><div class="portal-health checking" id="portalHealth" data-portal-health="true" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong data-portal-health-status="true">Checking</strong><small data-portal-health-detail="true">Verifying connected systems…</small></div></div></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div><div class="membership-workspace" id="membershipWorkspace">
             <div class="membership-tabs" aria-label="Membership sections">
               <button class="membership-tab" data-membership-sheet="Dashboard 2027">Dashboard 2027</button>
               <button class="membership-tab" data-membership-sheet="2027">2027 Roster</button>
@@ -2486,9 +2495,54 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       } catch (error) {}
     }, 60000);
 
-    async function fetchSheetRead(url) {
+
+    let moduleLoadingKey='home';
+    const moduleLoadingStates=new Map();
+    function renderModuleLoading(){
+      const p=document.getElementById('moduleLoading');if(!p)return;
+      p.hidden=moduleLoadingKey==='home';
+      const s=moduleLoadingStates.get(moduleLoadingKey)||{pending:0,error:false,loaded:false};
+      p.classList.toggle('is-working',s.pending>0);p.classList.toggle('has-error',!s.pending&&s.error);
+      p.setAttribute('aria-busy',String(s.pending>0));
+      p.querySelector('strong').textContent=s.pending?'Loading…':s.error?'Load error':s.loaded?'Ready':'Ready to load';
+      p.querySelector('small').textContent=(modules[moduleLoadingKey]?.title||'Module')+' · Google Sheets';
+    }
+    function moduleRequestOwner(url){
+      const u=new URL(String(url),location.href);
+      if(u.hostname!=='sheets.googleapis.com'||moduleLoadingKey==='home')return null;
+      const book=u.pathname.split('/')[3],key=moduleLoadingKey;
+      const books={membership:MEMBERSHIP_SPREADSHEET_ID,finance:FINANCE_SPREADSHEET_ID,bft:BFT_SPREADSHEET_ID,bikenights:BIKE_NIGHTS_SPREADSHEET_ID,marketplace:MARKETPLACE_SPREADSHEET_ID,sponsors:SPREADSHEET_ID,storage:MEMBERSHIP_SPREADSHEET_ID,volunteers:MEMBERSHIP_SPREADSHEET_ID,records:MEMBERSHIP_SPREADSHEET_ID,admin:MEMBERSHIP_SPREADSHEET_ID};
+      if(key==='records'&&book==='1unxFrG3TJfEbJpucQVPveVO1y9NUTdboqhED2HMueV4')return key;
+      if(books[key]!==book)return null;
+      const decoded=decodeURIComponent(String(url));
+      if(book===MEMBERSHIP_SPREADSHEET_ID){
+        if(/Portal Audit|Portal Activity/i.test(decoded))return null;
+        if(key==='membership'&&/Storage |Club Records|Volunteer|Event Checklist|Meeting Minutes/i.test(decoded))return null;
+        if(key==='storage'&&!/Storage/i.test(decoded))return null;
+        if(key==='volunteers'&&!/Event|Volunteer/i.test(decoded))return null;
+        if(key==='records'&&!/Club Records|Meeting Minutes|Decision|Action|Document|Collection/i.test(decoded))return null;
+      }
+      return key;
+    }
+    function beginModuleRequest(key){
+      if(!key)return ()=>{};
+      let s=moduleLoadingStates.get(key);
+      if(!s){s={pending:0,error:false,loaded:false};moduleLoadingStates.set(key,s);}
+      if(!s.pending)s.error=false;s.pending++;renderModuleLoading();
+      return failed=>{s.pending=Math.max(0,s.pending-1);s.error=s.error||failed;s.loaded=true;renderModuleLoading();};
+    }
+    const moduleOriginalFetch=window.fetch.bind(window);
+    window.fetch=async function(input,options){
+      const background=options?.bsscBackground;
+      if(background){options={...options};delete options.bsscBackground;}
+      const finish=beginModuleRequest(background?null:moduleRequestOwner(typeof input==='string'?input:input?.url||input));
+      try{const response=await moduleOriginalFetch(input,options);await response.clone().arrayBuffer();finish(!response.ok);return response;}
+      catch(error){finish(true);throw error;}
+    };
+
+    async function fetchSheetRead(url, trackActivity = true) {
       for (let attempt = 0; attempt < 4; attempt++) {
-        const response = await fetch(url, {headers:{Authorization:`Bearer ${accessToken}`}});
+        const response = await fetch(url, {headers:{Authorization:`Bearer ${accessToken}`},bsscBackground:!trackActivity});
         if (response.ok) return response.json();
         if (response.status === 401) {
           accessToken = '';
@@ -2512,9 +2566,9 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       }
     }
 
-    async function getSheetValues(range, spreadsheetId = SPREADSHEET_ID, valueRenderOption = 'FORMATTED_VALUE') {
+    async function getSheetValues(range, spreadsheetId = SPREADSHEET_ID, valueRenderOption = 'FORMATTED_VALUE', trackActivity = true) {
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?majorDimension=ROWS&valueRenderOption=${encodeURIComponent(valueRenderOption)}`;
-      return (await fetchSheetRead(url)).values || [];
+      return (await fetchSheetRead(url,trackActivity)).values || [];
     }
 
     async function getSheetRanges(ranges, spreadsheetId) {
@@ -8566,11 +8620,11 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           try {
             if (Array.isArray(range)) {
               await Promise.all(range.map(async tab => {
-                const rows = await getSheetValues("'"+tab+"'!A1:"+columnNumberToLetters(clubSchemas[tab].length)+"1",spreadsheetId);
+                const rows = await getSheetValues("'"+tab+"'!A1:"+columnNumberToLetters(clubSchemas[tab].length)+"1",spreadsheetId,'FORMATTED_VALUE',false);
                 if (JSON.stringify(rows[0]) !== JSON.stringify(clubSchemas[tab])) throw new Error('Unexpected column layout in '+tab);
               }));
             } else {
-              const rows = await getSheetValues(range,spreadsheetId);
+              const rows = await getSheetValues(range,spreadsheetId,'FORMATTED_VALUE',false);
               if (index === moduleConnectionIndexes.storage && JSON.stringify(rows[0]) !== JSON.stringify(storageHeaders)) throw new Error('Storage Inventory columns do not match');
               if (index === moduleConnectionIndexes.admin && !document.getElementById('adminWorkspace')) throw new Error('Administration workspace unavailable');
             }
@@ -9431,6 +9485,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         const index = moduleConnectionIndexes[key];
         if (Number.isInteger(index) && portalConnectionStates[index] === 'error') return;
       }
+      moduleLoadingKey=key;renderModuleLoading();
       const healthPanel = document.getElementById('portalHealth');
       if (healthPanel) healthPanel.classList.toggle('visible', key === 'admin');
       const financeAdminButton = document.getElementById('financeAdminToggle');
