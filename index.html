@@ -3532,6 +3532,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
     let bftDashboardRows = [];
     let bftDonationRows = [];
     let bftCashLedger = null;
+    let bftHistoricalLedger = null;
     let bftFinanceControlRows = null;
     const bftDashboardPendingEdits = new Map();
 
@@ -4936,9 +4937,11 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           getSheetValues("'Finance Sync'!A1:J250", BFT_SPREADSHEET_ID),
           getSheetValues("'Purchase Budget'!A1:E46", BFT_SPREADSHEET_ID),
           getSheetValues("'Transactions-2026'!A1:Q", FINANCE_SPREADSHEET_ID),
-          getSheetValues("'Control-2026'!A1:H40", FINANCE_SPREADSHEET_ID)
+          getSheetValues("'Control-2026'!A1:H40", FINANCE_SPREADSHEET_ID),
+          getSheetValues("'Transactions-2025'!A1:P1000", FINANCE_SPREADSHEET_ID)
       ]);
       const [dashboardResult, ticketResult, donationResult, financeResult, budgetResult, cashResult, controlResult] = results;
+      bftHistoricalLedger = results[7].status === 'fulfilled' ? results[7].value : null;
       bftFinanceControlRows = controlResult.status === 'fulfilled' ? controlResult.value : null;
       bftCashLedger = cashResult.status === 'fulfilled' ? cashResult.value : null;
       const donationRows = donationResult.status === 'fulfilled' ? donationResult.value : [];
@@ -6584,7 +6587,31 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 
 
     let bftProgramYear = '2026';
+    function bftHistoricalProgramSummary(picker) {
+      const choose=picker?'<label style="display:flex;flex-direction:column;gap:8px;max-width:260px;margin:12px 0 20px"><span>Choose program year</span><select data-bft-program-year aria-label="Choose program year" style="font:inherit;font-size:22px;padding:10px">'+['2025','2026','2027'].map(y=>'<option '+(y==='2025'?'selected':'')+'>'+y+'</option>').join('')+'</select></label>':'';
+      const title='<section class="bft-finance-section bft-program-summary"><h3>2025 Fundraising &amp; Program Spending</h3>'+choose;
+      if(!bftHistoricalLedger)return title+'<p role="status">The 2025 ledger could not load. Refresh this module to retry.</p></section>';
+      // The historical ledger uses Type K / Cleared M, unlike the 2026 schema.
+      const rows=bftHistoricalLedger.slice(1).filter(r=>String(r[2])==='2025'&&/^bikes for tykes$/i.test(String(r[6]||'').trim())&&!/^void\b/i.test(String(r[3]||'')));
+      const amount=r=>Number(String(r[9]||0).replace(/[$,\s]/g,''))||0;
+      const income=rows.filter(r=>/^income$/i.test(String(r[10]||'').trim()));
+      const expenses=rows.filter(r=>/^expense$/i.test(String(r[10]||'').trim()));
+      const purchases=expenses.filter(r=>/bicycle purchase|bike purchase|helmet|safety gear|locks/i.test(String(r[4])+' '+String(r[5])));
+      const total=rs=>Math.round(rs.reduce((n,r)=>n+amount(r),0)*100)/100;
+      const proceeds=total(income),spending=-total(purchases),costs=-total(expenses.filter(r=>!purchases.includes(r)));
+      const card=(label,value,hint,kind='')=>'<article class="bft-exec-card '+kind+'"><h4>'+esc(label)+'</h4><strong>'+esc(money(value))+'</strong><p>'+esc(hint)+'</p></article>';
+      const details=(label,list)=>'<details><summary style="cursor:pointer;font-weight:700">'+esc(label)+' ('+list.length+')</summary><div style="overflow:auto"><table style="width:100%;text-align:left"><thead><tr>'+['Date recorded','Transaction','Payee / Payer','Amount','Payment method','Bank status'].map(s=>'<th>'+s+'</th>').join('')+'</tr></thead><tbody>'+list.slice().sort((a,b)=>Date.parse(a[0])-Date.parse(b[0])).map(r=>'<tr>'+[r[0],r[3],r[8],money(amount(r)),r[11]||'Not recorded',/^yes$/i.test(String(r[12]))?'Cleared':'Not cleared'].map(v=>'<td style="padding:8px">'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div></details>';
+      return title+'<div class="bft-executive-cards">'+
+        card('Recorded Income',proceeds,'50/50 raffle and designated donations')+
+        card('Other Recorded Costs',-costs,'Recorded expenses other than program purchases','bft-money-deduction')+
+        card('Income After Other Costs',proceeds-costs,'Recorded income minus other recorded costs','bft-money-subtotal')+
+        card('Program Purchases',-spending,'Recorded bicycles, helmets and safety supplies','bft-money-deduction')+
+        card('Recorded Net Activity',Math.round((proceeds-costs-spending)*100)/100,'Income minus all recorded expenses; excludes opening funds','bft-money-remaining')+
+        '</div><p class="bft-money-context">Source: Transactions-2025. These are recorded amounts, not a complete audited fundraising total. Opening funds and year-end bank balance are not established here. Unspecified donations in General Fund remain unassigned.</p>'+
+        details('Income details',income)+details('Program purchase details',purchases)+(costs?details('Other cost details',expenses.filter(r=>!purchases.includes(r))):'')+'</section>';
+    }
     function bftProgramSummary(controlRows,transactionRows,year='2026',picker=false) {
+      if(year==='2025')return bftHistoricalProgramSummary(picker);
       const hasData=year==='2026';
       const fundraiser=hasData?bftFundraiserTotals(transactionRows,controlRows):null;
       const purchases=hasData?transactionRows.slice(1).filter(row=>
