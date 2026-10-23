@@ -1,0 +1,13 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const scope={window:{},Intl,Date};vm.runInNewContext(fs.readFileSync('funding-dashboard.js','utf8'),scope);const m=scope.window.BSSCFundingModel;
+assert.equal(m.instant('10/23/2026 14:11:06'),Date.parse('2026-10-23T18:11:06Z'));
+assert.equal(m.instant('1/23/2026 14:11:06'),Date.parse('2026-01-23T19:11:06Z'));
+assert.equal(m.duration(Date.parse('2026-10-23T17:49:24Z'),Date.parse('2026-10-23T18:11:48Z')),'22m 24s');
+let row=Array(35).fill('');Object.assign(row,{0:'BSSC-FR-99999',1:'2026-10-23T17:00:00Z',2:'FULFILLMENT_PENDING',3:'Jane',4:'Helper',6:'jane@example.org',9:500,17:'APPROVED',23:'APPROVED',24:'2026-10-23T18:00:00Z',33:250,34:'Alex Member'});
+const audit=[[],['a',row[0],'SUBMITTED','PUBLIC_FORM',row[1],'Submitted'],['b',row[0],'BOARD_APPROVED','SYSTEM',row[24],'Majority reached']];
+const votes=[[],['secret-token',row[0],'Officer','Pat','pat@example.org','President','Approve','10/23/2026 13:30:00','OFFICER_APPROVAL','FINALIZED'],['secret2',row[0],'Voter','Lee','lee@example.org','Director','','10/23/2026 13:30:00','TOKEN_CREATED','FINALIZED']];
+const roster=[['Status','Last Name','First Name','Email','Director Position'],['Active','Member','Alex','alex@example.org','']];
+let result=m.build([[],row],audit,votes,roster,[])[0];assert.equal(result.subject,'Alex Member');assert.equal(result.contact,'Jane Helper');assert.equal(result.category,'Club member');assert.equal(result.closedState,false);assert.equal(result.closed,null);assert.equal(result.approved,250);assert.equal(result.ballots[1].time,null);assert.equal(result.events.filter(e=>e.action==='VOTE').length,1);assert.ok(!JSON.stringify(result).includes('secret-token'));
+row[30]='2026-10-23T19:00:00Z';row[2]='COMPLETED';result=m.build([[],row],audit,votes,roster,[])[0];assert.equal(result.closedState,true);assert.equal(m.duration(result.submitted,result.closed),'2h');
+assert.equal(m.build([[],row],audit,votes,[],[])[0].category,'Unverified');
+console.log('PASS: Eastern timestamps, elapsed/closed durations, recipient versus submitter, membership, votes and no token exposure');
