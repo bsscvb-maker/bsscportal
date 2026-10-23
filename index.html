@@ -3982,7 +3982,32 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           ]);
           const goodsStatement=goods === 'no' ? 'No goods or services were provided in exchange for this contribution.' : `Goods or services provided in exchange: ${esc(description)}. Good faith estimated value: ${money(Number(goodsValue))}.`;
           const contribution=isCash ? `Cash contribution: <strong>${money(amount)}</strong>` : `Noncash contribution: <strong>${esc(donatedItem)}</strong>. No value is assigned to this item in this acknowledgment.`;
-          popup.document.write(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Receipt ${esc(receiptNumber)}</title><style>body{font:16px/1.55 Arial,sans-serif;max-width:720px;margin:50px auto;color:#171717;padding:0 24px}header{border-bottom:4px solid #c8102e;padding-bottom:14px}h1{font-size:26px;margin:0}h2{font-size:20px;margin:28px 0 12px}dl{display:grid;grid-template-columns:160px 1fr;gap:8px 14px}dt{font-weight:bold}dd{margin:0}.print{margin:25px 0;padding:10px 16px;background:#c8102e;color:#fff;border:0;border-radius:6px;font-weight:bold;cursor:pointer}@media print{.print{display:none}body{margin:20px auto}}</style></head><body><header><h1>BoneShakers Social Club</h1><div>Bikes for Tykes Charity Concert</div></header><h2>Contribution acknowledgment</h2><dl><dt>Receipt number</dt><dd>${esc(receiptNumber)}</dd><dt>Donor</dt><dd>${esc(donor)}</dd><dt>Date received</dt><dd>${esc(date)}</dd><dt>Date prepared</dt><dd>${esc(new Date().toLocaleDateString('en-US'))}</dd></dl><p>${contribution}</p><p>${goodsStatement}</p><p>Thank you for supporting Bikes for Tykes.</p><button class="print" onclick="window.print()">Print or save as PDF</button></body></html>`);
+          popup.document.write(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Receipt ${esc(receiptNumber)}</title><style>body{font:16px/1.55 Arial,sans-serif;max-width:720px;margin:50px auto;color:#171717;padding:0 24px}header{border-bottom:4px solid #c8102e;padding-bottom:14px}h1{font-size:26px;margin:0}h2{font-size:20px;margin:28px 0 12px}dl{display:grid;grid-template-columns:160px 1fr;gap:8px 14px}dt{font-weight:bold}dd{margin:0}.print{margin:25px 0;padding:10px 16px;background:#c8102e;color:#fff;border:0;border-radius:6px;font-weight:bold;cursor:pointer}@media print{.print{display:none}body{margin:20px auto}}</style></head><body><header><h1>BoneShakers Social Club</h1><div>Bikes for Tykes Charity Concert</div></header><h2>Contribution acknowledgment</h2><dl><dt>Receipt number</dt><dd>${esc(receiptNumber)}</dd><dt>Donor</dt><dd>${esc(donor)}</dd><dt>Date received</dt><dd>${esc(date)}</dd><dt>Date prepared</dt><dd>${esc(new Date().toLocaleDateString('en-US'))}</dd></dl><p>${contribution}</p><p>${goodsStatement}</p><p>Thank you for supporting Bikes for Tykes.</p><button class="print" onclick="window.print()">Print or save as PDF</button>
+<style>
+.finance-year-comparison td.bft-spending-blue,.finance-year-comparison td.bft-spending-blue span{color:#1565a8!important}
+.bft-spending-info{display:inline-flex;align-items:center;justify-content:center;margin-left:7px;width:28px;height:28px;padding:0;border:0;border-radius:50%;background:transparent;color:#1565a8;font-size:22px;cursor:pointer;vertical-align:middle}
+.bft-spending-info:hover{background:#d8ecfc}.bft-spending-info:focus-visible{outline:2px solid #1565a8;outline-offset:2px}
+.bft-spending-dialog{width:min(460px,calc(100vw - 36px));box-sizing:border-box;border:1px solid #9ec8e9;border-radius:14px;padding:24px;background:#f4faff;color:#17324d;box-shadow:0 18px 60px #0005}
+.bft-spending-dialog::backdrop{background:#0007}.bft-spending-dialog h2{margin:0 0 14px;font-size:1.2rem;color:#1565a8}
+.bft-spending-dialog p{line-height:1.6;margin:0 0 20px}.bft-spending-dialog button{float:right;border:0;border-radius:7px;background:#1565a8;color:white;padding:9px 18px;font:inherit;font-weight:700;cursor:pointer}
+</style>
+<script>
+document.addEventListener('click',function(event){
+  const info=event.target.closest('.bft-spending-info');if(!info)return;
+  event.preventDefault();event.stopImmediatePropagation();
+  let dialog=document.querySelector('.bft-spending-dialog');
+  if(!dialog){
+    dialog=document.createElement('dialog');dialog.className='bft-spending-dialog';dialog.setAttribute('aria-labelledby','bftSpendingTitle');
+    dialog.innerHTML='<h2 id="bftSpendingTitle">More support. Greater impact.</h2><p>Stronger fundraising helped us purchase <strong>50 additional bikes this year, along with 100 helmets and 100 locks.</strong> The higher spending reflects an expanded program, with funds raised exceeding program costs.</p><button type="button">Close</button>';
+    dialog.querySelector('button').addEventListener('click',()=>dialog.close());
+    dialog.addEventListener('close',()=>info.focus());
+    document.body.appendChild(dialog);
+  }
+  dialog.showModal();
+},true);
+</script>
+
+</body></html>`);
           popup.document.close();
           panel.querySelector('[name="column13"]').value='Prepared';
           panel.querySelector('[name="column14"]').value=receiptNumber;
@@ -6214,7 +6239,9 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         const comparisonParts=comparison.match(/^(.+?) (improvement|decline|more|less|last year)$/);
         const comparisonHtml=comparisonParts?'<span class="comparison-number">'+esc(comparisonParts[1])+'</span><span class="comparison-caption">'+esc(comparisonParts[2])+'</span>':'<span class="comparison-number">'+esc(comparison)+'</span>';
         const detail=kind?' class="finance-detail-row" tabindex="0" role="button" data-finance-fund="'+esc(fund)+'" data-finance-kind="'+kind+'" aria-label="Show '+esc(label)+' breakdown"':'';
-        return '<tr'+detail+'><th scope="row">'+(kind?'<span class="finance-detail-chevron" aria-hidden="true">›</span>':'')+esc(label)+'</th><td class="'+financeAmountTone(label,after)+'"><span class="comparison-current-amount">'+money(after)+'</span></td><td class="'+financeAmountTone(label,before)+'">'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+color+'">'+comparisonHtml+'</td></tr>';
+        const bftSpending=expense && /bikes for tykes/i.test(fund);
+        const info=bftSpending?'<button type="button" class="bft-spending-info" aria-label="About Bikes for Tykes program spending" aria-haspopup="dialog">ⓘ</button>':'';
+        return '<tr'+detail+'><th scope="row">'+(kind?'<span class="finance-detail-chevron" aria-hidden="true">›</span>':'')+esc(label)+info+'</th><td class="'+(bftSpending?'bft-spending-blue':financeAmountTone(label,after))+'"><span class="comparison-current-amount">'+money(after)+'</span></td><td class="'+(bftSpending?'bft-spending-blue':financeAmountTone(label,before))+'">'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+(bftSpending?'#1565a8':color)+'">'+comparisonHtml+'</td></tr>';
       }).join('')+'</tbody></table></div>';
     }
 
