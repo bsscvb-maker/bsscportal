@@ -256,7 +256,7 @@
 
   async function open(key){
     if(key==='accounts')return openAccounts();
-    if(key==='restricted')return openRestricted();
+    if(key==='restricted')return window.openGovernanceConduct();
     const tab=tabs[key],host=document.getElementById(tab.host),ticket=++version;
     host.innerHTML='<section class="workspace-card"><div class="club-toolbar"><button class="sponsor-tab" data-ops-back>Back</button><h2>'+e(tab.title)+'</h2><button class="sponsor-tab" data-ops-refresh>Refresh</button><a class="sponsor-tab" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/'+spreadsheet+'/edit#gid='+tab.gid+'">Edit source</a></div><label>Search '+e(tab.title)+'<input type="search" data-ops-search style="width:100%;padding:12px;margin:12px 0" autocomplete="off"></label><p role="status" data-ops-status>Loading private records…</p><div data-ops-results></div></section>';
     host.querySelector('[data-ops-back]').onclick=()=>{++version;key==='patches'?renderStorage():recordsHome();};
@@ -285,9 +285,10 @@
       host.querySelector('[data-ops-search]').oninput=paint;paint();
     }catch(error){if(ticket===version)status.textContent='Unable to load private records. '+error.message+' Your Google account must have access to the source spreadsheet.';}
   }
+  window.openRestrictedMembersRegister=openRestricted;
   const originalRecords=renderRecordsDashboard;
   renderRecordsDashboard=function(){originalRecords.apply(this,arguments);const grid=document.querySelector('#recordsWorkspace .records-collections');if(!grid)return;
-    ['accounts','restricted'].forEach(key=>{const b=document.createElement('button');b.className='collection-card records-dashboard-card';b.dataset.operations=key;b.innerHTML='<div class="dashboard-art" aria-hidden="true"><div class="dashboard-book"><small>BONESHAKERS<br>SOCIAL CLUB</small><strong>'+e(tabs[key].title)+'</strong><span>PRIVATE RECORDS</span></div></div><div class="dashboard-card-body"><h3>'+e(tabs[key].title)+'</h3><div class="dashboard-card-footer"><span>Google access required</span></div></div>';b.onclick=()=>open(key);grid.append(b);});
+    ['accounts','restricted'].forEach(key=>{const title=key==='restricted'?'Governance & Conduct':tabs[key].title;const b=document.createElement('button');b.className='collection-card records-dashboard-card';b.dataset.operations=key;b.innerHTML='<div class="dashboard-art" aria-hidden="true"><div class="dashboard-book"><small>BONESHAKERS<br>SOCIAL CLUB</small><strong>'+e(title)+'</strong><span>PRIVATE RECORDS</span></div></div><div class="dashboard-card-body"><h3>'+e(title)+'</h3><div class="dashboard-card-footer"><span>Google access required</span></div></div>';b.onclick=()=>open(key);grid.append(b);});
     [...grid.children].sort((a,b)=>a.querySelector('h3').textContent.localeCompare(b.querySelector('h3').textContent)).forEach(b=>grid.append(b));
   };
   const originalStorage=renderStorage;
@@ -350,7 +351,7 @@
     'Purchase Evidence':'Invoices and supplier documents supporting club purchases.',
     'Vendor Receipts':'Individual vendor invoices, receipts, order sheets, and production references.',
     'Accounts & Access':'Private account details and access methods.',
-    'Restricted Members':'Private restriction decisions and review information.',
+    'Governance & Conduct':'Member cases, leadership statements, Board decisions, and restricted membership records.',
     'Bylaws':'The club’s governing document.',
     'Archive':'Previous bylaws and operating documents.',
     'Operating Policies':'Procedures for the club’s day-to-day work.',
@@ -369,7 +370,7 @@
     'Fund Requests':'fund-requests-unique-v1.webp','Financial Reports':'financial-reports-unique-v1.webp',
     'Event Documents':'event-documents-unique-v1.webp','Donation Evidence':'donation-evidence-unique-v1.webp',
     'Purchase Evidence':'purchase-evidence-unique-v1.webp','Accounts & Access':'accounts-access-unique-v1.webp',
-    'Restricted Members':'restricted-members-unique-v1.webp','Bylaws':'bylaws-official-v1.webp',
+    'Governance & Conduct':'restricted-members-unique-v1.webp','Bylaws':'bylaws-official-v1.webp',
     'Archive':'archive-records-v1.webp','Operating Policies':'operating-policies-v2.webp',
     'Code of Conduct':'conduct-official-v1.webp','Forms and Tools':'forms-tools-desk-v1.webp',
     'Minutes':'minutes-journal-v1.webp','Receipts':'receipts-desk-v1.webp',
