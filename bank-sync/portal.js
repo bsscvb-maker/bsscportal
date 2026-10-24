@@ -39,11 +39,19 @@
       if(!response.ok)throw new Error('Bank sync service could not be reached.');
       const result=await response.json();
       if(!result.ok)throw new Error(result.error||'Bank sync did not complete.');
-      lastSuccess=result.lastSuccess;showTimestamp();
-      const details=document.createElement('span');details.style.display='block';details.textContent=(result.ledgerAdded||0)+' new ledger entries; '+(result.ledgerMatched||0)+' linked. '+(result.refreshStatus||'');label.append(details);
+      lastSuccess=result.lastSuccess;
+      label.textContent='Chase import complete. Refreshing Reconciliation and Control 2026…';
       loadedFinanceTabs.clear();
-      await Promise.allSettled([loadFinanceTab(document.querySelector('[data-finance-tab].active')?.dataset.financeTab||'control',true),refreshFinanceReconciliationCount()]);
-    }catch(error){label.textContent='Sync failed: '+error.message+(lastSuccess?' Last success: '+new Date(lastSuccess).toLocaleString('en-US',{timeZone:'America/New_York'}):'');label.classList.add('error');}
+      // Reconciliation reads the updated ledger before its dependent cash views reload.
+      await loadFinanceTab('reconciliation',true);
+      if(!loadedFinanceTabs.has('reconciliation'))throw new Error('Chase imported, but Reconciliation could not refresh.');
+      await Promise.all([loadFinanceTab('control',true),loadFinanceTab('dashboard',true)]);
+      if(!loadedFinanceTabs.has('control') || !loadedFinanceTabs.has('dashboard'))throw new Error('Chase imported, but Control or Dashboard could not refresh.');
+      const active=document.querySelector('[data-finance-tab].active')?.dataset.financeTab;
+      if(active && !['reconciliation','control','dashboard'].includes(active))await loadFinanceTab(active,true);
+      showTimestamp();
+      const details=document.createElement('span');details.style.display='block';details.textContent='Reconciliation, Control 2026 and Dashboard refreshed. '+(result.ledgerAdded||0)+' new ledger entries; '+(result.ledgerMatched||0)+' linked. Posted entries await reconciliation review. '+(result.refreshStatus||'');label.append(details);
+    }catch(error){button.classList.remove('success');label.classList.remove('success');label.textContent='Sync incomplete: '+error.message+(lastSuccess?' Last success: '+new Date(lastSuccess).toLocaleString('en-US',{timeZone:'America/New_York'}):'');label.classList.add('error');}
     finally{busy=false;button.disabled=false;button.textContent='Sync';}
   });
   document.getElementById('bankFeedOpen').addEventListener('click',async()=>{
