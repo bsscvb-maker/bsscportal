@@ -161,8 +161,8 @@
     try{await load();}catch(error){if(current()){status.textContent='Unable to load accounts. '+error.message;grid.innerHTML='<a class="aa-button" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/'+spreadsheet+'/edit#gid=1777343977">Open source sheet ↗</a>';}}
   }
 
-  async function openRestricted(){
-    const host=document.getElementById('recordsWorkspace'),ticket=++version;
+  async function openRestricted(options={}){
+    const host=options.host||document.getElementById('recordsWorkspace'),ticket=++version;
     host.innerHTML=`<style>
       .rm-shell{background:#141416;color:#f7f7f8;border:1px solid #48484e;border-radius:18px;overflow:hidden}
       .rm-head{padding:26px;background:#300d15;border-top:6px solid #e22246}.rm-kicker{font-size:12px;font-weight:800;letter-spacing:.12em;color:#ffb9c5}.rm-head h2{font-size:clamp(26px,3vw,38px);color:#fff;margin:10px 0}.rm-head p{color:#f4d4da;max-width:850px;line-height:1.6;margin:8px 0}
@@ -177,7 +177,7 @@
       .rm-edit-actions{margin-top:20px;display:flex;justify-content:flex-end}.rm-name-editor{width:min(520px,calc(100% - 32px));box-sizing:border-box;max-height:85vh;overflow:auto;background:#19191d;color:#fff;border:1px solid #777;border-radius:14px;padding:24px}.rm-name-editor::backdrop{background:#000b}.rm-name-editor h3{color:#fff;margin-top:0}.rm-name-editor label{display:block;margin:16px 0;font-weight:700}.rm-name-editor input,.rm-name-editor select,.rm-name-editor textarea{display:block;width:100%;box-sizing:border-box;margin-top:8px;padding:12px;background:#fff;color:#171719;border:1px solid #aaa;border-radius:8px;font:inherit}.rm-name-editor button{padding:11px 16px;border-radius:8px;border:1px solid #777;background:#29292e;color:#fff;font:inherit;cursor:pointer}.rm-name-editor button[type=submit]{background:#a92039;border-color:#ef718a}.rm-name-editor button:disabled{opacity:.55;cursor:wait}.rm-name-editor .rm-edit-help{font-size:13px;color:#d0ccd1;line-height:1.5}.rm-name-editor .rm-remove{color:#ffb9c5;border-color:#c55}.rm-name-editor [data-rm-error]{color:#ffb9c5;white-space:pre-wrap}
     </style><section class="rm-shell"><header class="rm-head"><div class="rm-toolbar"><button data-rm-back>← Club Records</button><button data-rm-refresh>Refresh</button><a class="rm-button" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/${spreadsheet}/edit#gid=${tabs.restricted.gid}">Edit restriction records ↗</a></div><div class="rm-kicker">LEADERSHIP REFERENCE · MEMBERSHIP ELIGIBILITY</div><h2>Restricted Members</h2><p>Review these records before considering a person for membership or reinstatement. Each card shows the recorded restriction and the conditions, if any, for review.</p><div class="rm-warning"><strong>STOP — check the restriction before proceeding.</strong><br>Permanent restriction: not eligible for membership. Conditional restriction: remains restricted unless leadership reviews the circumstances and formally changes the decision.</div><p class="rm-confidential">Confidential club records · For authorized leadership use.</p></header><div class="rm-body"><div class="rm-counts" data-rm-counts></div><div class="rm-controls"><label>Find a person or reason<input type="search" data-rm-search placeholder="Name, restriction, reason, or notes" autocomplete="off"></label><label>Show restrictions<select data-rm-filter><option value="all">All restrictions</option><option value="permanent">Permanent restrictions</option><option value="conditional">Conditional restrictions</option><option value="cleared">Cleared records</option></select></label></div><p class="rm-status" role="status" aria-live="polite" data-rm-status>Loading private restriction records…</p><div class="rm-grid" data-rm-grid></div></div><dialog class="rm-name-editor" data-rm-editor aria-label="Edit restriction record"></dialog></section>`;
     host.querySelector('[data-rm-back]').onclick=()=>{++version;recordsHome()};
-    host.querySelector('[data-rm-refresh]').onclick=openRestricted;
+    host.querySelector('[data-rm-refresh]').onclick=()=>openRestricted(options);
     const grid=host.querySelector('[data-rm-grid]'),status=host.querySelector('[data-rm-status]');
     try{
       if(!accessToken)throw new Error('Sign in with Google to view these records.');
@@ -187,6 +187,7 @@
       const at=(row,title,fallback)=>String(row[headers.indexOf(title)>=0?headers.indexOf(title):fallback]??'').trim();
       const rows=raw.slice(1).map((v,i)=>({v,row:i+3})).filter(({v})=>v.some(x=>x!==''&&x!=null)).map(({v:r,row})=>({row,original:Array.from({length:7},(_,i)=>String(r[i]??'')),first:at(r,'first name',1),last:at(r,'last name',0),name:[at(r,'first name',1),at(r,'last name',0)].filter(Boolean).join(' '),state:at(r,'status',2),date:at(r,'effective date',3),reason:at(r,'reason category',4),review:at(r,'review eligibility',5),notes:at(r,'notes',6)})).map(r=>({...r,kind:/permanent/i.test(r.state)?'permanent':/conditional/i.test(r.state)?'conditional':/^(cleared|lifted|inactive|removed|eligible|unrestricted)$/i.test(r.state)?'cleared':'other'})).sort((a,b)=>(a.kind==='permanent'?0:1)-(b.kind==='permanent'?0:1)||a.name.localeCompare(b.name));
       host.querySelector('[data-rm-counts]').innerHTML='<span><strong>'+rows.length+'</strong> restriction records</span><span><strong>'+rows.filter(r=>r.kind==='permanent').length+'</strong> permanent</span><span><strong>'+rows.filter(r=>r.kind==='conditional').length+'</strong> conditional</span>';
+      host.dispatchEvent(new CustomEvent('restrictedrecordsloaded',{detail:{count:rows.length}}));
       function paint(){
         const q=host.querySelector('[data-rm-search]').value.trim().toLowerCase(),filter=host.querySelector('[data-rm-filter]').value;
         const list=rows.filter(r=>(filter==='all'||r.kind===filter)&&[r.name,r.state,r.date,r.reason,r.review,r.notes].some(v=>v.toLowerCase().includes(q)));
@@ -217,7 +218,7 @@
         const unlock=()=>{saving=false;dialog.querySelectorAll('button,input,select,textarea').forEach(el=>el.disabled=false);};
         const preventClose=event=>event.preventDefault();
         async function finish(message){
-          dialog.close();await openRestricted();
+          dialog.close();await openRestricted(options);
           const updated=host.querySelector('[data-rm-status]');if(updated)updated.textContent=message+' '+updated.textContent;
         }
         dialog.querySelector('form').onsubmit=async event=>{
@@ -286,6 +287,7 @@
     }catch(error){if(ticket===version)status.textContent='Unable to load private records. '+error.message+' Your Google account must have access to the source spreadsheet.';}
   }
   window.openRestrictedMembersRegister=openRestricted;
+  window.renderRestrictedMembersRegister=host=>openRestricted({host});
   const originalRecords=renderRecordsDashboard;
   renderRecordsDashboard=function(){originalRecords.apply(this,arguments);const grid=document.querySelector('#recordsWorkspace .records-collections');if(!grid)return;
     ['accounts','restricted'].forEach(key=>{const title=key==='restricted'?'Governance & Conduct':tabs[key].title;const b=document.createElement('button');b.className='collection-card records-dashboard-card';b.dataset.operations=key;b.innerHTML='<div class="dashboard-art" aria-hidden="true"><div class="dashboard-book"><small>BONESHAKERS<br>SOCIAL CLUB</small><strong>'+e(title)+'</strong><span>PRIVATE RECORDS</span></div></div><div class="dashboard-card-body"><h3>'+e(title)+'</h3><div class="dashboard-card-footer"><span>Google access required</span></div></div>';b.onclick=()=>open(key);grid.append(b);});
