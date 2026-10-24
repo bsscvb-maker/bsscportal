@@ -6429,7 +6429,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
     }
     let financeControlRefreshInFlight = false;
     window.setInterval(async () => {
-      if (financeControlRefreshInFlight || financeControlEditMode || document.hidden || !document.querySelector('[data-finance-panel="control"].active')) return;
+      if (document.getElementById('bankSyncNow')?.disabled || financeControlRefreshInFlight || financeControlEditMode || document.hidden || !document.querySelector('[data-finance-panel="control"].active')) return;
       financeControlRefreshInFlight = true;
       try {
         const [rows,transactions] = await Promise.all([getSheetValues("'Control-2026'!A1:H40",FINANCE_SPREADSHEET_ID),getSheetValues("'Transactions-2026'!A1:Q",FINANCE_SPREADSHEET_ID)]);
@@ -6437,7 +6437,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       } catch (error) {
         document.getElementById('financeControlStatus').textContent = 'Could not refresh bank reconciliation. Reopen the tab to retry.';
       } finally { financeControlRefreshInFlight = false; }
-    },4000);
+    },30000);
 
     function renderFinanceActivity(rows, activities, transactionRows) {
       const at = (r,c) => String((rows[r] && rows[r][c]) || '—').trim();
