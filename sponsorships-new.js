@@ -319,5 +319,7 @@ async function load(force=false){
 }
 // Retire the original module after its replacement navigation has been built.
 document.querySelectorAll('[data-module="sponsors"],[data-module-card="sponsors"],[data-mobile-module="sponsors"]').forEach(element=>element.remove());
+window.portalViewAdapters=window.portalViewAdapters||{};
+window.portalViewAdapters.sponsorships={module:'sponsorsnew',refresh:()=>load(),capture:()=>({selected,q,type,year,personType,view,followFilter,sortMode}),restore:s=>{selected=s.selected;q=s.q;type=s.type;year=s.year;personType=s.personType;view=s.view;followFilter=s.followFilter;sortMode=s.sortMode}};
 const originalShow=showModule;showModule=function(moduleKey){if(moduleKey==='sponsors')moduleKey=key;host.hidden=true;originalShow(moduleKey);if(moduleKey===key){document.getElementById('detailTasks').innerHTML='';host.hidden=false;load()}};
 })();
