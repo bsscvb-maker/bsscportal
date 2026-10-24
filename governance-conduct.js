@@ -65,6 +65,8 @@
       host.querySelector('[data-gc-documents]').textContent=rows.length;
       sections.forEach((s,i)=>{host.querySelector('[data-gc-tab-count="'+i+'"]').textContent=events.filter(e=>e.category===s.name).length;});
 
+      window.portalViewAdapters=window.portalViewAdapters||{};
+      window.portalViewAdapters.governance={capture:()=>({selected,activeFile}),restore:s=>{selected=s.selected;activeFile=s.activeFile;}};
       const base='https://sheets.googleapis.com/v4/spreadsheets/'+book;
       const sheetRange="'Governance & Conduct'!A1:Q200";
       const rowRange=n=>"'Governance & Conduct'!A"+n+':Q'+n;
