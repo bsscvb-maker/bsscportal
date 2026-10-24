@@ -9,7 +9,7 @@
   button.setAttribute('aria-label','Go back one screen');
   button.title='Go back one screen';
   const style=document.createElement('style');
-  style.textContent='#back{position:sticky;top:8px;z-index:35;background:#fff;box-shadow:0 2px 8px #0002}#back:focus-visible{outline:3px solid #ad1932;outline-offset:3px}@media(max-width:760px){#back{top:72px}}';
+  style.textContent='#back{position:sticky;top:8px;z-index:35;background:#000;color:#fff;border-color:#555;box-shadow:0 2px 8px #0002} #back:hover{background:#222;color:#fff}#back .back-icon{color:#fff}#back:focus-visible{outline:3px solid #ad1932;outline-offset:3px}@media(max-width:760px){#back{top:72px}}';
   document.head.append(style);
   function signature(){
     if(!document.getElementById('dashboard').classList.contains('hidden'))return 'home';
