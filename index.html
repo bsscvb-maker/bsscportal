@@ -6265,16 +6265,16 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
     }
 
 
-    function financeControlInfo(label) {
-      const keys={
-        'available after unpaid obligations':'available','after reserving unpaid obligations':'available',
-        'present less available':'holds','verified pending included in chase snapshot':'verified',
-        'status':'status','net income':'net','net operating position':'net',
-        'lifetime giving since 2005':'impact','average per year (21 years)':'average'
-      };
-      const key=keys[String(label).toLowerCase()];
-      if(!key)return '';
-      return '<button type="button" class="bft-spending-info finance-control-info" style="color:#1565a8!important;background:transparent!important" data-finance-help="'+key+'" aria-label="About '+esc(label)+'" aria-haspopup="dialog"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="7.5" style="fill:#1565a8!important;stroke:none!important"/><path d="M8 7v4" style="fill:none!important;stroke:#fff!important;stroke-width:1.6;stroke-linecap:round"/><circle cx="8" cy="4.7" r=".9" style="fill:#fff!important;stroke:none!important"/></svg></button>';
+    function financeControlGuide() {
+      return `<details class="finance-balance-guide"><summary>How these balances work</summary><div class="finance-guide-body"><p>Chase balances are compared with the cleared ledger and only the pending activity verified in that same bank snapshot. A pending entry stays uncleared until it posts. Other uncleared entries are not used to force a match.</p><dl>
+        <dt>Available after obligations</dt><dd>Money available after reserving recorded commitments that Chase has not already reflected. Payments already included in Chase’s available balance are not deducted twice. Internal transfer pairs do not reduce combined cash.</dd>
+        <dt>Pending payments / bank holds</dt><dd>The difference between Chase’s present balance and available balance. It can reflect pending payments, deposit holds, or other availability restrictions; it is not automatically missing money.</dd>
+        <dt>Verified pending in the Chase snapshot</dt><dd>Only activity confirmed as included in the same Chase balance snapshot belongs here. Deposits are positive; payments are negative. This is separate from the full list of pending ledger entries, so zero can be correct even when other items remain pending.</dd>
+        <dt>Reconciliation and status</dt><dd>A reconciliation difference of $0.00 means there is no unexplained difference. Pending means transactions are awaiting clearance; it does not by itself mean the account is out of balance.</dd>
+        <dt>Net income</dt><dd>Income minus expenses for the period, rather than the bank balance or available cash. Starting funds, transfers, and timing can make those amounts different. Program costs belong to their program even when paid through General checking.</dd>
+        <dt>Community impact</dt><dd>Recorded charitable giving and program support since 2005, including Bikes for Tykes. Lifetime totals combine historical giving with current-year transactions designated as community impact. Fundraising revenue and transfers between club accounts are not additional charitable giving.</dd>
+        <dt>Average per year</dt><dd>The annual average uses 21 elapsed years from 2005 to 2026. Financial years restart each January 1.</dd>
+      </dl><p class="finance-guide-tip">Select a row marked › to open its transaction breakdown.</p></div></details>`;
     }
 
     function financeYearComparison(fund,current) {
@@ -6299,8 +6299,8 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         const comparisonHtml=comparisonParts?'<span class="comparison-number">'+esc(comparisonParts[1])+'</span><span class="comparison-caption">'+esc(comparisonParts[2])+'</span>':'<span class="comparison-number">'+esc(comparison)+'</span>';
         const detail=kind?' class="finance-detail-row" tabindex="0" role="button" data-finance-fund="'+esc(fund)+'" data-finance-kind="'+kind+'" aria-label="Show '+esc(label)+' breakdown"':'';
         const bftSpending=expense && /bikes for tykes/i.test(fund);
-        const info=bftSpending?'<button type="button" class="bft-spending-info" style="color:#1565a8!important;background:transparent!important" aria-label="About Bikes for Tykes program spending" aria-haspopup="dialog"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="7.5" style="fill:#1565a8!important;stroke:none!important"/><path d="M8 7v4" style="fill:none!important;stroke:#fff!important;stroke-width:1.6;stroke-linecap:round"/><circle cx="8" cy="4.7" r=".9" style="fill:#fff!important;stroke:none!important"/></svg></button>':'';
-        return '<tr'+detail+'><th scope="row">'+(kind?'<span class="finance-detail-chevron" aria-hidden="true">›</span>':'')+(bftSpending?'<span class="bft-spending-label">'+esc(label)+info+'</span>':esc(label)+financeControlInfo(label))+'</th><td class="'+(bftSpending?'bft-spending-blue':financeAmountTone(label,after))+'"'+(bftSpending?' style="color:#1565a8!important"':'')+'><span class="comparison-current-amount"'+(bftSpending?' style="color:#1565a8!important"':'')+'>'+money(after)+'</span></td><td class="'+(bftSpending?'bft-spending-blue':financeAmountTone(label,before))+'"'+(bftSpending?' style="color:#1565a8!important"':'')+'>'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+(bftSpending?'#1565a8':color)+'">'+comparisonHtml+'</td></tr>';
+        const info=bftSpending?'<button type="button" class="bft-spending-info finance-spending-help" aria-label="About Bikes for Tykes program spending" aria-haspopup="dialog">About spending</button>':'';
+        return '<tr'+detail+'><th scope="row">'+(kind?'<span class="finance-detail-chevron" aria-hidden="true">›</span>':'')+(bftSpending?'<span class="bft-spending-label">'+esc(label)+info+'</span>':esc(label))+'</th><td class="'+(bftSpending?'bft-spending-blue':financeAmountTone(label,after))+'"'+(bftSpending?' style="color:#1565a8!important"':'')+'><span class="comparison-current-amount"'+(bftSpending?' style="color:#1565a8!important"':'')+'>'+money(after)+'</span></td><td class="'+(bftSpending?'bft-spending-blue':financeAmountTone(label,before))+'"'+(bftSpending?' style="color:#1565a8!important"':'')+'>'+(before==null?'—':money(before))+'</td><td class="comparison-percent" style="--change-color:'+(bftSpending?'#1565a8':color)+'">'+comparisonHtml+'</td></tr>';
       }).join('')+'</tbody></table></div>';
     }
 
@@ -6311,7 +6311,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const numeric = value => Number(String(value).replace(/[$,%(),▲▼]/g,'').trim()) * (String(value).includes('(') ? -1 : 1);
       const resultTone = value => numeric(value) < 0 ? 'tone-red' : 'tone-green';
       const editableValue = (value,row,column=4) => financeControlEditMode ? `<input class="control-edit-input" data-control-row="${row}" data-control-column="${column}" value="${esc(value === '—' ? '' : value)}" aria-label="Edit bank reconciliation amount">` : `<strong>${esc(value)}</strong>`;
-      const section = (title,pairs,cls='') => `<section class="control-card ${cls}"><h3>${esc(title)}</h3><div class="control-rows">${pairs.map(([label,value,bad,row,detail,column]) => `<div class="control-row ${financeAmountTone(label,value)} ${bad ? 'status-bad' : ''} ${detail ? 'finance-detail-row' : ''}"${detail ? ` tabindex="0" role="button" data-finance-fund="${esc(detail[0])}" data-finance-kind="${esc(detail[1])}" aria-label="Show ${esc(label)} breakdown"` : ''}><span${/^(AVAILABLE AFTER UNPAID OBLIGATIONS|General Fund available|Bikes for Tykes available|After reserving uncleared payments)$/.test(label) ? ' style="font-weight:800"' : ''}>${detail ? '<span class="finance-detail-chevron" aria-hidden="true">›</span>' : ''}${esc(label)}${financeControlInfo(label)}</span>${row ? editableValue(value,row,column) : `<strong>${esc(value)}</strong>`}</div>`).join('')}</div></section>`;
+      const section = (title,pairs,cls='') => `<section class="control-card ${cls}"><h3>${esc(title)}</h3><div class="control-rows">${pairs.map(([label,value,bad,row,detail,column]) => `<div class="control-row ${financeAmountTone(label,value)} ${bad ? 'status-bad' : ''} ${detail ? 'finance-detail-row' : ''}"${detail ? ` tabindex="0" role="button" data-finance-fund="${esc(detail[0])}" data-finance-kind="${esc(detail[1])}" aria-label="Show ${esc(label)} breakdown"` : ''}><span${/^(AVAILABLE AFTER OBLIGATIONS|General Fund available|Bikes for Tykes available|Available after obligations)$/.test(label) ? ' style="font-weight:800"' : ''}>${detail ? '<span class="finance-detail-chevron" aria-hidden="true">›</span>' : ''}${esc(label)}</span>${row ? editableValue(value,row,column) : `<strong>${esc(value)}</strong>`}</div>`).join('')}</div></section>`;
       const money = value => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value || 0);
       const monthSection = (title,balance,totals) => section(title,[['Current Fund Balance',balance],['Income',money(totals.income),false,null,[/BIKES FOR TYKES/i.test(title)?'Bikes for Tykes':'General Fund','month-income']],['Expenses',money(totals.expenses),false,null,[/BIKES FOR TYKES/i.test(title)?'Bikes for Tykes':'General Fund','month-expense']],['Net Income',money(totals.income-totals.expenses)]],/BIKES FOR TYKES/i.test(title)?'tone-baby-blue':'tone-green').replace('<span>Net Income</span>','<span class="control-month-performance">Net Income</span>');
       const generalMonth = financePeriodTotals('General Fund','month',transactionRows,rows);
@@ -6331,20 +6331,20 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         ['Expected balance including verified pending',money(fund==='General Fund'?cash.generalExpected:cash.bftExpected)],
         ['Other ledger activity marked pending at Chase (net)',money(pending.bankNet)],
         ['Reconciliation difference',money(fund==='General Fund'?generalDifference:bftDifference),fund==='General Fund'?generalNeedsReconciliation:bftNeedsReconciliation],
-        ['Present less available',money(fund==='General Fund'?cash.generalHold:cash.bftHold)],
+        ['Pending payments / bank holds',money(fund==='General Fund'?cash.generalHold:cash.bftHold)],
         ['Unpaid obligations reserved',money(-pending.reserved)],
         ['Pending PayPal deposits',money(pending.paypal),false,null,[fund,'paypal']],
         ['Deposits awaiting availability',money(pending.otherDeposits),false,null,[fund,'other']],
         ['Pending outgoing payments',money(-pending.outgoing),false,null,[fund,'outgoing']],
-        ['After reserving unpaid obligations',money(available),false,null,[fund,'available']],
+        ['Available after obligations',money(available),false,null,[fund,'available']],
         ['Status',(fund==='General Fund'?generalNeedsReconciliation:bftNeedsReconciliation)?'NEEDS RECONCILIATION':fundStatus(pending),fund==='General Fund'?generalNeedsReconciliation:bftNeedsReconciliation]
       ],tone+(hasPending(pending)?' fund-awaiting-clearance':'')); };
       document.getElementById('financeControlTable').innerHTML = `<div class="control-title"><h2>${esc(at(0,0))}</h2><span class="live-eastern-time" data-live-eastern-clock="true"></span></div>
         <div class="control-action-bar"><button class="dashboard-edit-btn ${financeControlEditMode ? 'active' : ''}" id="financeControlEditToggle" aria-pressed="${financeControlEditMode}">${financeControlEditMode ? 'Done Editing' : 'Edit Bank Reconciliation'}</button></div>
         ${financeControlEditMode ? '<div class="control-edit-note">Enter Chase’s combined and per-account available balances, plus each account’s present balance. Pending at Chase means the bank has received the entry; Yes means posted. Update both bank balance types and the verified pending amounts from the same Chase snapshot. Verified pending is signed: deposits positive, payments negative. Do not include outstanding checks, cash on hand, or orders absent from that snapshot.</div>' : ''}<div class="control-grid">
         <div style="grid-column:1/-1;display:grid;gap:14px">
-        ${section('FUND BALANCES',[['AVAILABLE AFTER UNPAID OBLIGATIONS',money(generalAvailable+bftAvailable)],['General Fund available',money(generalAvailable)],['Bikes for Tykes available',money(bftAvailable)],['Cleared ledger total',money(generalBank+bftBank)],['Verified pending included in Chase snapshot',money(cash.generalReflectedPending+cash.bftReflectedPending)],['Expected balance including verified pending',money(cash.generalExpected+cash.bftExpected)],['Chase total present balance',money(cash.generalPresent+cash.bftPresent)],['Present less available',money(cash.generalHold+cash.bftHold)],['Reconciliation difference',money(generalDifference+bftDifference),needsReconciliation],['Chase total available balance',at(5,4),false,6],['Chase General Fund available balance',at(6,4),false,7],['Chase Bikes for Tykes available balance',at(7,4),false,8],['Status',status,/out of balance|needs reconciliation/i.test(status)]],'tone-cash-total '+((bankSplitMismatch||needsReconciliation)?'fund-status-error':(hasPending(generalPending)||hasPending(bftPending)?'fund-awaiting-clearance':'fund-status-balanced')))}
-        <p class="control-edit-note">Chase displayed balances are compared with the cleared ledger plus only the pending activity verified as included in that same bank snapshot. Those pending entries remain uncleared. Other uncleared ledger entries are not used to force a match. Available balances may be lower while deposits are held. Only payments not yet reflected by Chase are reserved again, such as outstanding checks. Internal transfer pairs do not reduce combined cash.</p><div class="control-fund-details">
+        ${section('FUND BALANCES',[['AVAILABLE AFTER OBLIGATIONS',money(generalAvailable+bftAvailable)],['General Fund available',money(generalAvailable)],['Bikes for Tykes available',money(bftAvailable)],['Cleared ledger total',money(generalBank+bftBank)],['Verified pending included in Chase snapshot',money(cash.generalReflectedPending+cash.bftReflectedPending)],['Expected balance including verified pending',money(cash.generalExpected+cash.bftExpected)],['Chase total present balance',money(cash.generalPresent+cash.bftPresent)],['Pending payments / bank holds',money(cash.generalHold+cash.bftHold)],['Reconciliation difference',money(generalDifference+bftDifference),needsReconciliation],['Chase total available balance',at(5,4),false,6],['Chase General Fund available balance',at(6,4),false,7],['Chase Bikes for Tykes available balance',at(7,4),false,8],['Status',status,/out of balance|needs reconciliation/i.test(status)]],'tone-cash-total '+((bankSplitMismatch||needsReconciliation)?'fund-status-error':(hasPending(generalPending)||hasPending(bftPending)?'fund-awaiting-clearance':'fund-status-balanced')))}
+        ${financeControlGuide()}<div class="control-fund-details">
         ${fundDetail('GENERAL FUND',generalBank,generalPending,generalAvailable)}
         ${fundDetail('BIKES FOR TYKES',bftBank,bftPending,bftAvailable,'tone-baby-blue')}
         </div>
@@ -6359,7 +6359,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       document.querySelectorAll('#financeControlTable .finance-detail-row').forEach(row=>{
         const open=()=>showFinanceBreakdown(row.dataset.financeFund,row.dataset.financeKind);
         row.addEventListener('click',open);
-        row.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();open();}});
+        row.addEventListener('keydown',event=>{if(event.target!==row)return;if(event.key==='Enter'||event.key===' '){event.preventDefault();open();}});
       });
       document.getElementById('financeControlEditToggle').addEventListener('click',saveFinanceControlEdits);
       startEasternClock();
@@ -9812,6 +9812,17 @@ body td.bft-spending-blue,body td.bft-spending-blue span{color:#1565a8!important
 .bft-spending-dialog{width:min(460px,calc(100vw - 36px));box-sizing:border-box;border:1px solid #9ec8e9;border-radius:14px;padding:24px;background:#f4faff;color:#17324d;box-shadow:0 18px 60px #0005}
 .bft-spending-dialog::backdrop{background:#0007}.bft-spending-dialog h2{margin:0 0 14px;font-size:1.2rem;color:#1565a8}
 .bft-spending-dialog p{line-height:1.6;margin:0 0 20px}.bft-spending-dialog button{float:right;border:0;border-radius:7px;background:#1565a8;color:white;padding:9px 18px;font:inherit;font-weight:700;cursor:pointer}
+
+.finance-balance-guide{border:1px solid #bec7ce;border-radius:10px;background:#f7f9fa;color:#20252b;margin:0;padding:0 16px}
+.finance-balance-guide>summary{cursor:pointer;padding:13px 0;font-weight:700;color:#263d51;min-height:22px}
+.finance-balance-guide>summary:focus-visible{outline:2px solid #a71931;outline-offset:3px;border-radius:4px}
+.finance-guide-body{border-top:1px solid #d5dde3;padding:4px 0 12px;max-width:100%;line-height:1.55}
+.finance-guide-body p{color:#38434e}.finance-guide-body dl{display:grid;grid-template-columns:minmax(150px,1fr) 3fr;gap:12px 22px;margin:16px 0}
+.finance-guide-body dt{font-weight:700;color:#20252b}.finance-guide-body dd{margin:0;color:#38434e}.finance-guide-tip{font-size:.88rem}
+#financeControlTable .bft-spending-label{display:inline-grid;vertical-align:middle;gap:2px}
+#financeControlTable .finance-spending-help{display:inline-block;width:auto;height:auto;min-height:24px;padding:2px 0;margin-left:0;text-align:left;border:0;border-radius:4px;font-size:.72rem;font-weight:500;text-decoration:underline;text-underline-offset:3px;vertical-align:baseline;transform:none;white-space:nowrap;color:#1565a8!important;background:transparent!important}
+#financeControlTable .finance-spending-help::after{display:none}
+@media(max-width:650px){.finance-guide-body dl{grid-template-columns:1fr;gap:5px}.finance-guide-body dd{margin-bottom:12px}}
 </style>
 <script>
 document.addEventListener('click',function(event){
@@ -9834,29 +9845,7 @@ document.addEventListener('click',function(event){
 },true);
 </script>
 
-<script>
-document.addEventListener('click',function(event){
-  const info=event.target.closest('.finance-control-info');if(!info)return;
-  event.preventDefault();event.stopImmediatePropagation();
-  const explanations={
-    available:['Available after unpaid obligations','Money available after reserving recorded commitments that Chase has not already reflected. Payments already included in Chase’s available balance are not deducted a second time. Internal transfers between club accounts do not reduce combined cash.'],
-    holds:['Present balance versus available balance','The present balance includes money in the account before Chase’s availability restrictions and pending payment holds. The available balance is what Chase currently permits you to use. The difference can reflect pending payments or deposit holds; it is not automatically missing money or an accounting error.'],
-    verified:['Verified pending in the bank snapshot','Only pending activity specifically confirmed as included in the same Chase balance snapshot belongs in this calculation. Deposits are positive and payments are negative. This is separate from the full list of pending ledger transactions. A zero here can be correct even when other items remain pending.'],
-    status:['What the reconciliation status means','Reconciled means the ledger and the bank snapshot agree. Pending means some transactions have not finished posting; it does not by itself mean the account is out of balance. A reconciliation difference of $0.00 means there is no unexplained difference. Pending entries remain uncleared until posting is confirmed.'],
-    net:['Net income is not the bank balance','Net income is income minus expenses for the reporting period shown. It is not the amount in the bank or the money available to spend. Starting funds, timing of transactions and transfers between accounts can make the bank balance different. Program costs are attributed to their program even when paid through General checking.'],
-    impact:['What community impact includes','Recorded charitable giving and program support since 2005, including Bikes for Tykes and other qualifying charitable support. This combines historical totals with current-year transactions designated as community impact. It is not fundraising revenue or money currently in the bank. Transfers between club accounts are not additional charitable giving.'],
-    average:['21 years since 2005','The club’s 21st anniversary falls in 2026: 2026 minus 2005 equals 21 elapsed years. The annual average uses that 21-year span. Financial years restart each January 1. Counting every calendar year from 2005 through 2026 includes 22 years, including the founding year and the current year. “Celebrating 21 years” is the clearest anniversary wording.']
-  };
-  const content=explanations[info.dataset.financeHelp];if(!content)return;
-  const dialog=document.createElement('dialog');dialog.className='bft-spending-dialog finance-control-help-dialog';
-  dialog.setAttribute('aria-labelledby','financeControlHelpTitle');
-  const title=document.createElement('h2');title.id='financeControlHelpTitle';title.textContent=content[0];
-  const text=document.createElement('p');text.textContent=content[1];
-  const close=document.createElement('button');close.type='button';close.textContent='Close';close.addEventListener('click',()=>dialog.close());
-  dialog.append(title,text,close);document.body.appendChild(dialog);
-  dialog.addEventListener('close',()=>{dialog.remove();info.focus();},{once:true});dialog.showModal();
-},true);
-</script>
+
 <script src="portal-navigation.js?v=20261024-1"></script>
 </body>
 </html>
