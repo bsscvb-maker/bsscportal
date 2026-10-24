@@ -6027,7 +6027,13 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       // Reconciled fund balances through transaction row 357 (September 30).
       // Subsequent bank movement counts only Cleared Yes; PayPal gross/fee rows
       // remain accounting entries and the net transfer alone changes bank cash.
-      const clearedFundBalance = (fundName,opening) => transactionRows.slice(357).reduce((balance,row) => {
+      // Check 3635 was outstanding at the September snapshot. Include its
+      // actual ledger amount only when it clears, even though its entry predates
+      // the snapshot boundary. Match its stable check reference, not its row number.
+      const openingOutstanding = transactionRows.slice(1,357).filter(row =>
+        String(row[13]||'').trim().toLowerCase()==='check' && /\bcheck\s*#\s*3635\b/i.test(String(row[16]||''))
+      );
+      const clearedFundBalance = (fundName,opening) => [...openingOutstanding,...transactionRows.slice(357)].reduce((balance,row) => {
         const fund=String(row[6]||'').trim().toLowerCase();
         const cleared=String(row[14]||'').trim().toLowerCase();
         const method=String(row[13]||'').trim().toLowerCase();
@@ -9795,7 +9801,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 <script src="governance-certification.js?v=20261019-1"></script>
 <script src="operations-records.js?v=20261022-submission-refresh"></script>
 <script src="funding-dashboard.js?v=20261023-2"></script>
-<script src="bank-sync/portal.js?v=20261022-2"></script>
+<script src="bank-sync/portal.js?v=20261024-1"></script>
 <style>
 body td.bft-spending-blue,body td.bft-spending-blue span{color:#1565a8!important}
 .bft-spending-label{white-space:nowrap}
