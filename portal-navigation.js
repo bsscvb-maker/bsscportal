@@ -34,6 +34,8 @@
   function align(){document.documentElement.style.setProperty('--portal-back-top',Math.ceil(header.getBoundingClientRect().height||76)+10+'px');}
   align();if(typeof ResizeObserver!=='undefined')new ResizeObserver(align).observe(header);
   const visible=n=>n&&!!n.getClientRects().length&&!n.closest('[hidden]');
+  // The body marker is a mobile layout flag, not the signed-in state.
+  const authenticated=()=>document.getElementById('authGate')?.classList.contains('hidden')===true;
   const home=()=>!document.getElementById('dashboard').classList.contains('hidden');
   const workspace=()=>moduleKey()==='sponsorsnew'?document.getElementById('sponsorshipsNewWorkspace'):document.querySelector('.detail-body > .active')||document.getElementById('detailTasks');
   const moduleKey=()=>home()?'home':document.querySelector('.sidebar [data-module].active')?.dataset.module||moduleLoadingKey||'home';
@@ -141,7 +143,7 @@
   document.addEventListener('click',event=>{
     const button=event.target.closest('#back,#portalForward,#portalRefresh,#portalHome,#mobilePageRefresh');
     if(button){event.preventDefault();event.stopImmediatePropagation();if(button.id==='back')move(-1);else if(button.id==='portalForward')move(1);else if(button.id==='portalRefresh'||button.id==='mobilePageRefresh')refreshCurrent();else{beforeNavigation();showModule('home');commit();pending=null;}return;}
-    if(restoring||!document.body.classList.contains('portal-authenticated'))return;
+    if(restoring||!authenticated())return;
     const control=event.target.closest('button,a,summary,[role=button],[data-open],[data-module]');
     if(!control||!control.closest('#detail,#dashboard,#sidebar,.mobile-app-nav,.mobile-more-sheet,#portalSearchResults'))return;
     // Old in-page back controls use the same single-step history as the header.
@@ -158,7 +160,8 @@
   new MutationObserver(()=>{if(restoring||refreshing)return;if(pending){clearTimeout(timer);timer=setTimeout(commit,50);}else update();}).observe(document.getElementById('detail'),{subtree:true,childList:true,attributes:true,attributeFilter:['class','hidden','aria-selected','open']});
   function clear(){past.length=0;future.length=0;pending=null;selectBefore=null;update();}
   document.getElementById('signOut')?.addEventListener('click',clear);
-  new MutationObserver(()=>{if(!document.body.classList.contains('portal-authenticated'))clear();}).observe(document.body,{attributes:true,attributeFilter:['class']});
+  const authGate=document.getElementById('authGate');
+  if(authGate)new MutationObserver(()=>{if(!authenticated())clear();}).observe(authGate,{attributes:true,attributeFilter:['class']});
   window.portalGoBack=()=>move(-1);window.portalGoForward=()=>move(1);window.portalRefreshCurrent=refreshCurrent;
   window.portalNavigation={before:beforeNavigation,after:commit,clear};
   update();
