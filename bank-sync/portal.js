@@ -42,11 +42,20 @@
       lastSuccess=result.lastSuccess;
       label.textContent='Chase import complete. Refreshing Reconciliation and Control 2026…';
       loadedFinanceTabs.clear();
-      // Reconciliation reads the updated ledger before its dependent cash views reload.
-      await loadFinanceTab('reconciliation',true);
-      if(!loadedFinanceTabs.has('reconciliation'))throw new Error('Chase imported, but Reconciliation could not refresh.');
-      await Promise.all([loadFinanceTab('control',true),loadFinanceTab('dashboard',true)]);
-      if(!loadedFinanceTabs.has('control') || !loadedFinanceTabs.has('dashboard'))throw new Error('Chase imported, but Control or Dashboard could not refresh.');
+      // One batch provides a consistent ledger and control snapshot and avoids
+      // repeating the full ledger read for each dependent view after bank import.
+      const [transactions,control,dashboard,priorYear]=await getSheetRanges([
+        "'Transactions-2026'!A1:Q",
+        "'Control-2026'!A1:H40",
+        "'Dashboard-2026'!A1:AF80",
+        "'Transactions-2025'!A1:P1000"
+      ],FINANCE_SPREADSHEET_ID);
+      if(!transactions?.length || !control?.length || !dashboard?.length)throw new Error('Chase imported, but the finance refresh returned incomplete data.');
+      financePriorYearRows=priorYear||[];
+      renderFinanceReconciliation(transactions);
+      renderFinanceControl(control,transactions);
+      renderFinanceDashboard(dashboard,control,transactions);
+      ['reconciliation','control','dashboard'].forEach(key=>loadedFinanceTabs.add(key));
       const active=document.querySelector('[data-finance-tab].active')?.dataset.financeTab;
       if(active && !['reconciliation','control','dashboard'].includes(active))await loadFinanceTab(active,true);
       showTimestamp();
