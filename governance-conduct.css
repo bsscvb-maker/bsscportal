@@ -61,3 +61,19 @@ body:has(#recordsWorkspace.active .gc-shell) #detailDescription{display:none}
 .gc-directory-card button.gc-corner{background:#15171dcc;border-color:#ffffff55;border-radius:5px;font-size:11px;padding:7px 11px}
 .gc-directory-card button.gc-corner:hover{background:#ad1230;border-color:#ed5573}
 @media(prefers-reduced-motion:reduce){.gc-directory-card,.gc-directory-photo{transition:none}.gc-directory-card:hover{transform:none}}
+
+.gc-directory-card .gc-cover-top{z-index:auto}
+.gc-directory-card button.gc-card-open{position:absolute;inset:0;z-index:2;display:block;width:100%;height:100%;padding:0;border:0;border-radius:0;background:transparent;cursor:pointer}
+.gc-directory-card button.gc-card-open:focus-visible{outline:3px solid white;outline-offset:-8px}
+.gc-directory-card button.gc-corner{position:relative;z-index:3}
+.gc-directory-card .gc-name{font-weight:850;display:block;line-height:1.18}
+.gc-directory-card:has(.gc-card-open:hover) .gc-name{text-decoration:underline;text-decoration-color:#e52b50;text-decoration-thickness:2px;text-underline-offset:6px}
+
+.gc-doc-toolbar{align-items:flex-start;gap:14px;padding:16px 18px;min-height:90px}
+.gc-doc-toolbar>.gc-doc-title{display:block;min-width:0;flex:1}
+.gc-doc-title h4{font-size:14px;line-height:1.45;color:#263244;margin:0 0 7px;overflow-wrap:anywhere}
+.gc-doc-title time{display:block;font-size:11px;color:#697587;font-weight:500;line-height:1.5}
+.gc-doc-toolbar>.gc-doc-actions{display:flex;flex:none;gap:6px;padding-top:1px}
+.gc-doc-card .gc-preview{height:400px;cursor:zoom-in}
+.gc-doc-card .gc-preview:hover{box-shadow:inset 0 0 0 3px #bc1739}
+.gc-doc-grid{margin-top:20px}
