@@ -82,7 +82,7 @@
     if(event.target.closest('#back')){event.preventDefault();event.stopImmediatePropagation();goBack();return;}
     if(restoring||!document.body.classList.contains('portal-authenticated'))return;
     const control=event.target.closest('button,a,summary,[role="button"]');
-    if(!control||/^(refresh|sync|save|delete|remove|copy|approve|send|cancel|close|sign out)\b/i.test((control.textContent||control.getAttribute('aria-label')||'').trim())||control.closest('dialog')||control.matches('#signOut')||control.closest('#authGate'))return;
+    if(!control||/^(refresh|sync|save|delete|remove|copy|approve|send|cancel|close|sign out)\b/i.test((control.textContent||control.getAttribute('aria-label')||'').trim())||control.closest('dialog')||control.matches('[data-gc-edit],[data-gc-file-edit],[data-gc-doc-edit],[data-gc-doc-add]')||control.matches('#signOut')||control.closest('#authGate'))return;
     if(control.tagName==='A'&&control.getAttribute('href')&&!control.getAttribute('href').startsWith('#'))return;
     if(!control.closest('#detail,#dashboard,#sidebar,.mobile-app-nav,.mobile-more-sheet'))return;
     commit();pending=snapshot();const id=++sequence;
