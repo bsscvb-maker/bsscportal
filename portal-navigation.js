@@ -20,12 +20,14 @@
       recordsDashboard,recordsCategory,typeof minutesView!=='undefined'?minutesView:null]);
   }
   function tree(node){
+    if(node.nodeType===1&&(node.hidden||node.matches('[data-finance-panel]:not(.active),[data-bft-panel]:not(.active),[data-bike-panel]:not(.active),[data-market-panel]:not(.active),[data-sponsor-panel]:not(.active)')))return {node,untracked:true};
     const item={node,children:[...node.childNodes].map(tree)};
     if(node.nodeType===1){item.attrs=[...node.attributes].map(a=>[a.name,a.value]);if('value'in node&&node.type!=='file')item.value=node.value;if('checked'in node)item.checked=node.checked;item.scrollTop=node.scrollTop;item.scrollLeft=node.scrollLeft;}
     else item.text=node.nodeValue;
     return item;
   }
   function restoreTree(item){
+    if(item.untracked)return;
     const n=item.node;
     if(n.nodeType===1){for(const a of [...n.attributes])if(!item.attrs.some(([k])=>k===a.name))n.removeAttribute(a.name);for(const[k,v]of item.attrs)if(n.getAttribute(k)!==v)n.setAttribute(k,v);}
     else if(n.nodeValue!==item.text)n.nodeValue=item.text;
@@ -37,7 +39,9 @@
   function snapshot(){
     const module=document.querySelector('.sidebar [data-module].active')?.dataset.module||document.querySelector('[data-module].active')?.dataset.module||'home';
     const home=!document.getElementById('dashboard').classList.contains('hidden');
-    return {signature:signature(),home,module,tree:home?null:tree(document.getElementById('detail')),
+    return {signature:signature(),home,module,tree:home?null:tree(document.querySelector('.detail-body > .active')||document.getElementById('detailTasks')),
+      header:home?null:tree(document.querySelector('.detail-head')),
+      workspaceClasses:[...document.querySelector('.detail-body').children].map(node=>({node,className:node.className})),
       recordsDashboard,recordsCategory,membership:currentMembershipSheet,
       clubActive:Object.fromEntries(Object.entries(clubFramework).map(([k,v])=>[k,v.active])),
       minutes:{...minutesView},storage:{...storageState},storageBrowseAll,scroll:window.scrollY};
@@ -60,7 +64,8 @@
       recordsDashboard=previous.recordsDashboard;recordsCategory=previous.recordsCategory;currentMembershipSheet=previous.membership;
       Object.entries(previous.clubActive).forEach(([k,v])=>{if(clubFramework[k])clubFramework[k].active=v;});
       Object.assign(minutesView,previous.minutes);Object.assign(storageState,previous.storage);storageBrowseAll=previous.storageBrowseAll;
-      restoreTree(previous.tree);
+      restoreTree(previous.tree);restoreTree(previous.header);
+      previous.workspaceClasses.forEach(({node,className})=>{node.className=className;});
       document.getElementById('dashboard').classList.add('hidden');document.getElementById('detail').classList.add('active');
       moduleLoadingKey=previous.module;setActive(previous.module);
       document.querySelectorAll('[data-mobile-module]').forEach(b=>b.classList.toggle('active',b.dataset.mobileModule===previous.module));
@@ -72,7 +77,7 @@
     if(event.target.closest('#back')){event.preventDefault();event.stopImmediatePropagation();goBack();return;}
     if(restoring||!document.body.classList.contains('portal-authenticated'))return;
     const control=event.target.closest('button,a,summary,[role="button"]');
-    if(!control||control.closest('dialog')||control.matches('#signOut')||control.closest('#authGate'))return;
+    if(!control||/^(refresh|sync|save|delete|remove|copy|approve|send|cancel|close|sign out)\b/i.test((control.textContent||control.getAttribute('aria-label')||'').trim())||control.closest('dialog')||control.matches('#signOut')||control.closest('#authGate'))return;
     if(control.tagName==='A'&&control.getAttribute('href')&&!control.getAttribute('href').startsWith('#'))return;
     if(!control.closest('#detail,#dashboard,#sidebar,.mobile-app-nav,.mobile-more-sheet'))return;
     commit();pending=snapshot();const id=++sequence;

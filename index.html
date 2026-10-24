@@ -2395,8 +2395,10 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       }
     }
 
+    let lastActivityRecordedAt = 0;
     function recordActivity() {
-      if (!accessToken) return;
+      if (!accessToken || Date.now()-lastActivityRecordedAt<5000) return;
+      lastActivityRecordedAt=Date.now();
       try {
         const session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
         if (session) {
@@ -2404,6 +2406,16 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           localStorage.setItem(SESSION_KEY, JSON.stringify(session));
         }
       } catch (error) {}
+    }
+
+    function startPortalSession() {
+      // Wait for the page's module definitions before restoring the chosen screen.
+      setTimeout(() => {
+        if (!accessToken) return;
+        loadAdminSystemStatus();
+        if (!document.getElementById('dashboard').classList.contains('hidden')) loadOperationsOverview();
+        setTimeout(() => { if (accessToken) loadSharedPortalAudit(); }, 1500);
+      }, 0);
     }
 
     function initializeGoogleAuth() {
@@ -2428,12 +2440,12 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           saveSession(response.expires_in);
           document.getElementById('authGate').classList.add('hidden');
           restorePortalView();
-          await Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData(), loadMarketplaceData(), loadAdminSystemStatus(), loadOperationsOverview(true), loadSharedPortalAudit()]);
+          await startPortalSession();
         }
       });
       if (restoreSession()) {
         setTimeout(restorePortalView,0);
-        Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData(), loadMarketplaceData(), loadAdminSystemStatus(), loadOperationsOverview(true), loadSharedPortalAudit()]);
+        startPortalSession();
       }
     }
 
@@ -2463,7 +2475,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
             saveSession(response.expires_in);
             document.getElementById('authGate').classList.add('hidden');
             restorePortalView();
-            await Promise.all([loadSponsorData(), loadBftData(), loadBikeNightData(), loadMarketplaceData(), loadAdminSystemStatus(), loadOperationsOverview(true), loadSharedPortalAudit()]);
+            await startPortalSession();
           }
         });
         tokenClient.requestAccessToken({prompt: 'consent'});
@@ -2539,34 +2551,65 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const background=options?.bsscBackground;
       if(background){options={...options};delete options.bsscBackground;}
       const finish=beginModuleRequest(background?null:moduleRequestOwner(typeof input==='string'?input:input?.url||input));
-      try{const response=await moduleOriginalFetch(input,options);await response.clone().arrayBuffer();finish(!response.ok);return response;}
+      try{const response=await moduleOriginalFetch(input,options);if(!background&&moduleRequestOwner(typeof input==='string'?input:input?.url||input))await response.clone().arrayBuffer();finish(!response.ok);return response;}
       catch(error){finish(true);throw error;}
     };
 
-    async function fetchSheetRead(url, trackActivity = true) {
-      for (let attempt = 0; attempt < 4; attempt++) {
-        const response = await fetch(url, {headers:{Authorization:`Bearer ${accessToken}`},bsscBackground:!trackActivity});
-        if (response.ok) return response.json();
-        if (response.status === 401) {
-          accessToken = '';
-          clearSession();
-          document.getElementById('authGate').classList.remove('hidden');
-          document.getElementById('authError').textContent = 'Your Google access expired. Sign in again to reconnect the workbooks.';
-          throw new Error('Google access expired (401). Sign in again.');
-        }
-        if (response.status !== 429 || attempt === 3) {
-          let detail = '';
-          try {
-            const payload = await response.json();
-            detail = payload?.error?.message || payload?.error?.status || '';
-          } catch (error) {}
-          throw new Error(`Google Sheets returned ${response.status}${detail ? ': ' + detail : ''}`);
-        }
-        const retrySeconds = Number(response.headers.get('Retry-After'));
-        const delay = Number.isFinite(retrySeconds) && retrySeconds > 0
-          ? Math.min(retrySeconds * 1000, 15000) : (1000 * 2 ** attempt + Math.random() * 400);
-        await new Promise(resolve => setTimeout(resolve, delay));
+    const sheetReadQueue = [];
+    const sheetReadsInFlight = new Map();
+    let activeSheetReads = 0;
+    function pumpSheetReads() {
+      while (activeSheetReads < 4 && sheetReadQueue.length) {
+        const request = sheetReadQueue.shift();
+        activeSheetReads++;
+        Promise.resolve().then(request.run).then(request.resolve,request.reject).finally(() => {activeSheetReads--;pumpSheetReads();});
       }
+    }
+    function scheduleSheetRead(run, foreground) {
+      return new Promise((resolve,reject) => {
+        const request={run,resolve,reject,foreground};
+        const backgroundIndex=sheetReadQueue.findIndex(item=>!item.foreground);
+        if(foreground && backgroundIndex>=0)sheetReadQueue.splice(backgroundIndex,0,request);
+        else sheetReadQueue.push(request);
+        pumpSheetReads();
+      });
+    }
+    async function fetchSheetRead(url, trackActivity = true) {
+      const token=accessToken;
+      if(!token)throw new Error('Sign in to reconnect Google Sheets.');
+      const key=token+'|'+url;
+      // Share simultaneous identical reads only; completed reads are never cached.
+      if(sheetReadsInFlight.has(key))return structuredClone(await sheetReadsInFlight.get(key));
+      const work=(async()=>{
+        for(let attempt=0;attempt<3;attempt++){
+          if(accessToken!==token)throw new Error('Google session changed. Reload this screen after signing in.');
+          let response;
+          try{
+            const result=await scheduleSheetRead(async()=>{
+              if(accessToken!==token)throw new Error('Google session changed. Reload this screen after signing in.');
+              const response=await fetch(url,{headers:{Authorization:`Bearer ${token}`},bsscBackground:!trackActivity,signal:AbortSignal.timeout(20000)});
+              const payload=await response.json().catch(error=>{if(response.ok)throw error;return {};});
+              return {response,payload};
+            },trackActivity);
+            response=result.response;
+            if(response.ok)return result.payload;
+            if(response.status===401){
+              if(accessToken===token){accessToken='';clearSession();document.getElementById('authGate').classList.remove('hidden');document.getElementById('authError').textContent='Your Google access expired. Sign in again to reconnect the workbooks.';}
+              throw new Error('Google access expired (401). Sign in again.');
+            }
+            const detail=result.payload?.error?.message||result.payload?.error?.status||'';
+            if(![429,500,502,503,504].includes(response.status)||attempt===2)throw new Error(`Google Sheets returned ${response.status}${detail?': '+detail:''}`);
+          }catch(error){
+            if(error.name==='TimeoutError'||error.name==='AbortError')throw new Error('Google Sheets took too long to respond. Select Refresh to retry.');
+            throw error;
+          }
+          const retrySeconds=Number(response.headers.get('Retry-After'));
+          const delay=Number.isFinite(retrySeconds)&&retrySeconds>0?Math.min(retrySeconds*1000,15000):1000*2**attempt+Math.random()*400;
+          await new Promise(resolve=>setTimeout(resolve,delay));
+        }
+      })();
+      sheetReadsInFlight.set(key,work);
+      try{return structuredClone(await work);}finally{if(sheetReadsInFlight.get(key)===work)sheetReadsInFlight.delete(key);}
     }
 
     async function getSheetValues(range, spreadsheetId = SPREADSHEET_ID, valueRenderOption = 'FORMATTED_VALUE', trackActivity = true) {
@@ -8603,7 +8646,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 
     async function loadAdminSystemStatus() {
       const target = document.getElementById('adminSystemStatus');
-      if (!target || portalHealthCheckRunning) return;
+      if (!target || portalHealthCheckRunning || document.hidden) return;
       const connections = [
         ['Membership','Membership dashboard',MEMBERSHIP_SPREADSHEET_ID,"'Dashboard 2026'!A1:A1"],
         ['Finance','14 connected workbook sections',FINANCE_SPREADSHEET_ID,"'Dashboard-2026'!A1:A1"],
@@ -8621,7 +8664,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         const connected = portalConnectionStates.filter(state => state === 'connected').length;
         const unavailable = portalConnectionStates.filter(state => state === 'error').length;
         const checking = connections.length - connected - unavailable;
-        if (connected === connections.length) setPortalHealth('operational',`${connected} of ${connections.length} modules connected · Checks rotate every 5 seconds`);
+        if (connected === connections.length) setPortalHealth('operational',`${connected} of ${connections.length} modules connected · Checks rotate every 30 seconds`);
         else if (unavailable >= Math.ceil(connections.length / 2) || (unavailable === connections.length && checking === 0)) setPortalHealth('critical',`${connected} of ${connections.length} modules connected · ${unavailable} unavailable`);
         else if (checking === connections.length && connected === 0) setPortalHealth('checking','Verifying connected systems…');
         else setPortalHealth('degraded',`${connected} of ${connections.length} modules connected · ${unavailable} unavailable · ${checking} checking`);
@@ -8641,7 +8684,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         setPortalHealth('critical','Google access is unavailable');
         return;
       }
-      if (!portalHealthTimer) portalHealthTimer = window.setInterval(loadAdminSystemStatus,5000);
+      if (!portalHealthTimer) portalHealthTimer = window.setInterval(loadAdminSystemStatus,30000);
       loadPortalPublishStatus();
       loadUptimeRobotStatus();
       portalHealthCheckRunning = true;
@@ -9517,10 +9560,6 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       showModule(view.module);
     }
     function showModule(key) {
-      if (key !== 'home' && key !== 'admin') {
-        const index = moduleConnectionIndexes[key];
-        if (Number.isInteger(index) && portalConnectionStates[index] === 'error') return;
-      }
       moduleLoadingKey=key;renderModuleLoading();
       const healthPanel = document.getElementById('portalHealth');
       if (healthPanel) healthPanel.classList.toggle('visible', key === 'admin');
@@ -9565,9 +9604,11 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       } else if (key === 'bikenights') {
         taskGrid.innerHTML = '';
         bikeNightsWorkspace.classList.add('active');
+        loadBikeNightData();
       } else if (key === 'marketplace') {
         taskGrid.innerHTML = '';
         marketplaceWorkspace.classList.add('active');
+        loadMarketplaceData();
       } else if (key === 'admin') {
         taskGrid.innerHTML = '';
         adminWorkspace.classList.add('active');
