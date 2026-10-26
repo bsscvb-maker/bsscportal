@@ -5155,7 +5155,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
   const financialOrders=financialRows.slice(5).filter(r=>r[0]&&r[1]);
   const financeById=new Map(financialOrders.map(r=>[String(r[0]).trim(),r]));
   const profit=periodPaid.reduce((sum,r)=>sum+money((financeById.get(String(r[1]).trim())||[])[10]),0);
-  const margin=collected?Math.round(profit/collected*100):0;
+  const margin=merchandise?(profit/merchandise*100).toFixed(1):'0.0';
   const sales=salesRows.slice(6).filter(r=>periodOrderIds.has(String(r[1]||'').trim()));
   const pieceCount=sales.reduce((sum,r)=>sum+(Number(String(r[3]||'').replace(/,/g,''))||0),0);
   const pendingFinance=financialOrders.filter(r=>/pending|cash due|unpaid/i.test(String(r[2]||''))||/unpaid/i.test(String(r[12]||''))).length;
@@ -5202,7 +5202,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         ${kpi('Total Collected',cash(collected),'Money received from paid orders','revenue')}
         ${kpi('Merchandise Collected',cash(merchandise),'Product sales before tax and fees','revenue')}
         ${kpi('Realized Profit',cash(profit),'Profit earned on collected sales','profit')}
-        ${kpi('Profit Margin',`${margin}%`,'Realized profit divided by collected revenue','profit')}
+        ${kpi('Profit Margin',`${margin}%`,'Realized profit divided by merchandise sales before tax and fees','profit')}
         ${kpi('Cash to Collect',at(6,16)||'$0.00','Outstanding cash payments','cash')}
         ${kpi('Total Orders',String(periodOrders.length),'Orders in selected period')}
         ${kpi('Pieces Ordered',String(pieceCount),'All orders in selected period')}
