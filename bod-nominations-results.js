@@ -5,8 +5,20 @@
 })(typeof window === 'undefined' ? globalThis : window, function () {
   'use strict';
   const SHEET = 'BOD Nominations 2027';
-  const CANDIDATE_SHEET = 'BOD Candidates 2027';
-  const AUDIT_SHEET = 'BOD Nomination Changes 2027';
+  let selectedYear=2027;
+  function yearSheets(year) {
+    year=Number(year);
+    if(!Number.isInteger(year)||year<2000||year>2100)throw Error('Choose a valid nomination year.');
+    return {year,nominations:'BOD Nominations '+year,candidates:'BOD Candidates '+year,audit:'BOD Nomination Changes '+year};
+  }
+  function availableYears(sheets=[]) {
+    const years=new Set(Array.from({length:Math.max(5,new Date().getFullYear()+4-2026)},(_,i)=>2026+i));
+    sheets.forEach(entry=>{const match=/^BOD Nominations (20[0-9]{2}|2100)$/.exec(entry.properties?.title||'');if(match)years.add(Number(match[1]));});
+    return [...years].sort((a,b)=>a-b);
+  }
+  function yearSelector(year,years) {
+    return `<label class="bod-year-picker">Nomination year <select data-bod-year aria-label="Nomination year">${years.map(value=>`<option value="${value}" ${value===year?'selected':''}>${value}</option>`).join('')}</select></label>`;
+  }
   const ADMIN_EMAILS = ['president@boneshakerssocialclub.com','bsscvb@boneshakerssocialclub.com'];
   const AUDIT_HEADERS = ['Changed At','Actor','Action','Member','Reference','Reason','Before JSON','After JSON','Change ID'];
   const CHANGE_REASONS = [
@@ -76,12 +88,12 @@
     return `<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${paths[name]||paths.nominees}</svg>`;
   };
 
-  function markup(model, updatedAt, sourceUrl, admin = false) {
+  function markup(model, updatedAt, sourceUrl, admin = false, year = 2027, years = availableYears()) {
     const top=model.nominees[0]?.count||0,tied=model.nominees.filter(person=>person.count===top).length;
     const stats=[['Submissions',model.submissions.length,'members have submitted','people','submissions'],['Members nominated',model.nominees.length,'members on the nomination list','nominees','totals'],['Total nominations',model.total,'across all member submissions','total','totals']];
     let rank=0,previous=-1;
     return `<section class="bod-results" aria-label="BOD nomination results">
-      <header class="bod-hero"><div class="bod-hero-top"><p class="bod-results-kicker">BONESHAKERS · BOARD OF DIRECTORS</p><span class="bod-connection"><i aria-hidden="true"></i>Connected</span></div><div class="bod-hero-main"><div><h2>Nominations <span>2027</span></h2><p>Your board. Your members. Every nomination in one place.</p></div><div class="bod-results-actions"><button type="button" data-bod-refresh>${icon('refresh')}<span>Refresh totals</span></button><button type="button" data-bod-export ${model.nominees.length?'':'disabled'}>${icon('download')}<span>Export CSV</span></button></div></div><div class="bod-hero-footer"><span>${icon('clock')}Updated ${html(updatedAt)}</span>${admin?'<button type="button" data-bod-jump="bod-submissions">Manage submissions '+icon('arrow')+'</button>':''}</div></header>
+      <header class="bod-hero">${yearSelector(year,years)}<div class="bod-hero-top"><p class="bod-results-kicker">BONESHAKERS · BOARD OF DIRECTORS</p><span class="bod-connection"><i aria-hidden="true"></i>Connected</span></div><div class="bod-hero-main"><div><h2>Nominations <span>${year}</span></h2><p>Your board. Your members. Every nomination in one place.</p></div><div class="bod-results-actions"><button type="button" data-bod-refresh>${icon('refresh')}<span>Refresh totals</span></button><button type="button" data-bod-export ${model.nominees.length?'':'disabled'}>${icon('download')}<span>Export CSV</span></button></div></div><div class="bod-hero-footer"><span>${icon('clock')}Updated ${html(updatedAt)}</span>${admin?'<button type="button" data-bod-jump="bod-submissions">Manage submissions '+icon('arrow')+'</button>':''}</div></header>
       <div class="bod-results-stats">${stats.map(([label,value,caption,symbol,jump],i)=>`<button type="button" class="bod-stat bod-stat-${i}" data-bod-jump="bod-${jump}"><span class="bod-stat-top"><span>${html(label)}</span><i>${icon(symbol)}</i></span><strong>${value}</strong><span class="bod-stat-caption">${html(caption)}</span></button>`).join('')}</div>
       ${model.excluded?`<p class="bod-results-note" role="alert">${model.excluded} incomplete or invalid log row(s) excluded from the totals. Review the source sheet before using these results.</p>`:''}
       ${model.duplicates?`<p class="bod-results-note">${model.duplicates} duplicate or superseded row(s) excluded. Each member is counted once.</p>`:''}
@@ -95,7 +107,7 @@
       <label class="bod-search-label"><span>Find a member</span><input type="search" data-bod-submitter-search placeholder="Search submitter’s name…" autocomplete="off"></label>
       <div class="bod-submission-list">${model.submissions.map((record,index)=>`<article class="bod-submission-card" data-bod-name="${html(normalize(record.nominator))}" data-bod-submission-index="${index}" ${index>=6?'hidden':''}><div class="bod-submission-head"><span class="bod-avatar" aria-hidden="true">${html(initials(record.nominator))}</span><div>${admin?`<button class="bod-member-name" type="button" data-bod-manage="${html(record.reference)}" aria-label="Manage nominations for ${html(record.nominator)}">${html(record.nominator)}</button>`:`<h4>${html(record.nominator)}</h4>`}<span class="bod-submission-time">${html(record.timestamp)}</span></div><span class="bod-submission-number">${record.names.length}<small>selected</small></span></div><div class="bod-choice-tags">${record.names.slice(0,3).map(name=>`<span>${html(name)}</span>`).join('')}${record.names.length>3?`<span class="bod-tag-more">+${record.names.length-3} more</span>`:''}</div>${admin?`<div class="bod-card-actions"><button type="button" data-bod-manage="${html(record.reference)}">${icon('edit')}Edit nominees</button><button type="button" data-bod-manage="${html(record.reference)}" data-bod-action="reset" class="bod-card-reset">${icon('reset')}Reset member</button></div>`:`<details class="bod-readonly-detail"><summary>View all ${record.names.length} nominee${record.names.length===1?'':'s'}</summary><ul>${record.names.map(name=>`<li>${html(name)}</li>`).join('')}</ul></details>`}</article>`).join('')}</div>
       ${model.submissions.length>6?`<button class="bod-panel-more" type="button" data-bod-submissions-toggle aria-expanded="false">View all ${model.submissions.length} submissions ${icon('arrow')}</button>`:''}<p class="bod-empty-search" data-bod-no-match hidden>No member matches that name.</p>${!model.submissions.length?`<div class="bod-empty">${icon('people')}<strong>No member submissions yet</strong><p>Submissions will appear here as members nominate.</p></div>`:''}</section></div>
-      <footer class="bod-dashboard-footer"><span>${admin?'Corrections and resets are recorded in change history.':'BSSC · 2027 board nominations'}</span><a target="_blank" rel="noopener noreferrer" href="${html(sourceUrl)}">Open source sheet ↗</a></footer>
+      <footer class="bod-dashboard-footer"><span>${admin?'Corrections and resets are recorded in change history.':'BSSC · '+year+' board nominations'}</span><a target="_blank" rel="noopener noreferrer" href="${html(sourceUrl)}">Open source sheet ↗</a></footer>
     </section>`;
   }
 
@@ -172,7 +184,7 @@
 @media(max-width:460px){.bod-hero{padding:17px 16px 42px}.bod-hero-top{align-items:flex-start}.bod-results-kicker{font-size:8px;letter-spacing:1.3px;line-height:1.6;max-width:165px}.bod-connection{font-size:8px;padding:5px 7px}.bod-hero-main{margin-top:17px;gap:17px}.bod-hero h2{font-size:30px;letter-spacing:-1px}.bod-hero-main p{font-size:11px;max-width:250px;line-height:1.6}.bod-results-actions{width:100%}.bod-results-actions button{font-size:11px;min-height:43px;flex:1;padding:10px}.bod-results-actions button svg{width:16px;height:16px;flex-basis:16px}.bod-hero-footer{margin-top:17px;align-items:flex-start;flex-direction:column;gap:13px}.bod-hero-footer>span{font-size:8px}.bod-hero-footer button{font-size:10px;padding:3px 0}.bod-results-stats{gap:6px;margin-left:8px;margin-right:8px}.bod-stat{padding:11px 9px;border-radius:10px}.bod-stat-top{font-size:10px;line-height:1.5;align-items:flex-start}.bod-stat-top i{display:none}.bod-stat strong{font-size:29px;margin:9px 0 6px}.bod-stat-caption{display:none}.bod-results-panel{padding:16px;border-radius:13px}.bod-panel-eyebrow{font-size:8px}.bod-panel-heading h3{font-size:18px}.bod-total-badge{font-size:9px}.bod-leader{gap:8px}.bod-rank{flex-basis:21px;font-size:10px}.bod-leader-count{min-width:55px;flex-basis:55px}.bod-leader-count small{font-size:9px}.bod-submission-card{padding:12px}.bod-avatar{width:32px;height:32px;flex-basis:32px}.bod-choice-tags>span{font-size:11px}.bod-card-actions button{font-size:12px;min-height:44px}.bod-dashboard-footer{font-size:9px}.bod-history-row{gap:9px}.bod-history-icon{width:26px;height:26px;flex-basis:26px}}
     `;
 
-    style.textContent += '.bod-admin-choice[hidden],.bod-admin-other[hidden]{display:none!important}.bod-search-label{display:block;max-width:460px;font-weight:700;font-size:14px;margin:16px 0}.bod-search-label input,.bod-admin-dialog input[type=search],.bod-admin-dialog textarea,.bod-admin-dialog select{display:block;width:100%;margin-top:7px;padding:12px;border:1px solid #9ba3ad;border-radius:8px;background:#fff;color:#161616;font:inherit}.bod-manage-actions{padding:0 14px 16px}.bod-manage-actions button{min-height:44px}.bod-admin-dialog{color:#161616;background:#f8f9fa;border:1px solid #707984;border-radius:16px;width:min(680px,calc(100vw - 24px));max-height:88dvh;padding:0;box-shadow:0 14px 60px #0007}.bod-admin-dialog::backdrop{background:#0008}.bod-admin-dialog header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px;border-bottom:3px solid #c8102e;background:#111;color:#fff}.bod-admin-dialog header h2{margin:0 0 5px;font-size:23px}.bod-admin-dialog header p{font-size:12px;margin:0;color:#ddd;overflow-wrap:anywhere}.bod-admin-dialog button{min-height:44px;border:1px solid #888;border-radius:8px;padding:10px 15px;font:700 14px Arial,sans-serif;cursor:pointer;background:#fff;color:#161616}.bod-admin-dialog button:disabled{opacity:.6;cursor:wait}.bod-admin-dialog [data-bod-close]{flex:0 0 auto;background:transparent;color:#fff;border-color:#aaa}.bod-admin-body{padding:18px}.bod-admin-candidates{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:32dvh;overflow:auto;padding:3px;margin:12px -3px}.bod-admin-choice{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid #aeb6c0;border-radius:8px;background:#fff;font-size:14px;min-height:52px}.bod-admin-choice:has(input:checked){border-color:#c8102e;background:#fff0f2}.bod-admin-choice input{width:22px;height:22px;accent-color:#c8102e;flex:0 0 22px}.bod-admin-choice small{display:block;color:#555;margin-top:3px}.bod-admin-reason{display:block;margin-top:14px;font-size:14px;font-weight:700}.bod-admin-dialog textarea{resize:vertical;min-height:72px}.bod-admin-count{font-size:13px;font-weight:700;margin:10px 0}.bod-admin-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.bod-admin-dialog .bod-admin-save{background:#176c39;color:#fff;border-color:#176c39}.bod-admin-dialog .bod-admin-reset{color:#a10d25;border-color:#a10d25}.bod-admin-reset-check{background:#fff0f2;border:1px solid #a10d25;padding:14px;border-radius:8px;margin-top:14px;line-height:1.5}.bod-admin-status{line-height:1.5;font-size:14px;margin:12px 0 0;white-space:pre-wrap}.bod-admin-status:empty{display:none}.bod-admin-status[data-state=busy]{color:#6b4b00;background:#fff0b7;padding:10px;border-radius:7px}.bod-admin-status[data-state=error]{color:#a10d25}.bod-admin-status[data-state=saved]{color:#176c39}.bod-admin-dialog :focus-visible{outline:3px solid #2867ad;outline-offset:3px}[data-bod-name][hidden]{display:none!important}.bod-admin-toast{padding:12px;background:#dcf3e4;border-left:4px solid #176c39;border-radius:6px;color:#145c30}@media(max-width:600px){.bod-admin-dialog{width:calc(100vw - 16px);max-height:94dvh;border-radius:12px}.bod-admin-dialog header,.bod-admin-body{padding:14px}.bod-admin-candidates{grid-template-columns:1fr;max-height:35dvh}.bod-admin-actions>*{flex:1}.bod-admin-dialog button{min-height:48px}}';
+    style.textContent += '.bod-year-picker{display:flex;align-items:center;gap:12px;font-size:14px;font-weight:700;color:#fff;margin-bottom:20px}.bod-year-picker select{font:inherit;color:#fff;background:#292929;border:1px solid #aaa;border-radius:8px;min-height:44px;padding:8px 36px 8px 12px}' + '.bod-admin-choice[hidden],.bod-admin-other[hidden]{display:none!important}.bod-search-label{display:block;max-width:460px;font-weight:700;font-size:14px;margin:16px 0}.bod-search-label input,.bod-admin-dialog input[type=search],.bod-admin-dialog textarea,.bod-admin-dialog select{display:block;width:100%;margin-top:7px;padding:12px;border:1px solid #9ba3ad;border-radius:8px;background:#fff;color:#161616;font:inherit}.bod-manage-actions{padding:0 14px 16px}.bod-manage-actions button{min-height:44px}.bod-admin-dialog{color:#161616;background:#f8f9fa;border:1px solid #707984;border-radius:16px;width:min(680px,calc(100vw - 24px));max-height:88dvh;padding:0;box-shadow:0 14px 60px #0007}.bod-admin-dialog::backdrop{background:#0008}.bod-admin-dialog header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px;border-bottom:3px solid #c8102e;background:#111;color:#fff}.bod-admin-dialog header h2{margin:0 0 5px;font-size:23px}.bod-admin-dialog header p{font-size:12px;margin:0;color:#ddd;overflow-wrap:anywhere}.bod-admin-dialog button{min-height:44px;border:1px solid #888;border-radius:8px;padding:10px 15px;font:700 14px Arial,sans-serif;cursor:pointer;background:#fff;color:#161616}.bod-admin-dialog button:disabled{opacity:.6;cursor:wait}.bod-admin-dialog [data-bod-close]{flex:0 0 auto;background:transparent;color:#fff;border-color:#aaa}.bod-admin-body{padding:18px}.bod-admin-candidates{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:32dvh;overflow:auto;padding:3px;margin:12px -3px}.bod-admin-choice{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid #aeb6c0;border-radius:8px;background:#fff;font-size:14px;min-height:52px}.bod-admin-choice:has(input:checked){border-color:#c8102e;background:#fff0f2}.bod-admin-choice input{width:22px;height:22px;accent-color:#c8102e;flex:0 0 22px}.bod-admin-choice small{display:block;color:#555;margin-top:3px}.bod-admin-reason{display:block;margin-top:14px;font-size:14px;font-weight:700}.bod-admin-dialog textarea{resize:vertical;min-height:72px}.bod-admin-count{font-size:13px;font-weight:700;margin:10px 0}.bod-admin-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.bod-admin-dialog .bod-admin-save{background:#176c39;color:#fff;border-color:#176c39}.bod-admin-dialog .bod-admin-reset{color:#a10d25;border-color:#a10d25}.bod-admin-reset-check{background:#fff0f2;border:1px solid #a10d25;padding:14px;border-radius:8px;margin-top:14px;line-height:1.5}.bod-admin-status{line-height:1.5;font-size:14px;margin:12px 0 0;white-space:pre-wrap}.bod-admin-status:empty{display:none}.bod-admin-status[data-state=busy]{color:#6b4b00;background:#fff0b7;padding:10px;border-radius:7px}.bod-admin-status[data-state=error]{color:#a10d25}.bod-admin-status[data-state=saved]{color:#176c39}.bod-admin-dialog :focus-visible{outline:3px solid #2867ad;outline-offset:3px}[data-bod-name][hidden]{display:none!important}.bod-admin-toast{padding:12px;background:#dcf3e4;border-left:4px solid #176c39;border-radius:6px;color:#145c30}@media(max-width:600px){.bod-admin-dialog{width:calc(100vw - 16px);max-height:94dvh;border-radius:12px}.bod-admin-dialog header,.bod-admin-body{padding:14px}.bod-admin-candidates{grid-template-columns:1fr;max-height:35dvh}.bod-admin-actions>*{flex:1}.bod-admin-dialog button{min-height:48px}}';
     document.head.appendChild(style);
   }
 
@@ -181,7 +193,7 @@
     if(!session)throw Error('Sign in again before changing nominations.');
     const actor=normalize(await getPortalAuditActor());
     if(!ADMIN_EMAILS.includes(actor))throw Error('Use the President or bsscvb Google account to manage nominations.');
-    const fresh=await getSheetValues("'BOD Nominations 2027'!A:G",MEMBERSHIP_SPREADSHEET_ID);
+    const fresh=await getSheetValues("'"+context.nominationSheet+"'!A:G",MEMBERSHIP_SPREADSHEET_ID);
     const operationId=crypto.randomUUID();
     const mutation=buildAdminMutation({rows:fresh,record,action,ids,reason,actor,candidates:context.candidates,nominationSheetId:context.nominationSheetId,auditSheetId:context.auditSheetId,at:new Date().toISOString(),operationId});
     if(accessToken!==session)throw Error('Your Google session changed. Refresh results before saving.');
@@ -190,7 +202,7 @@
       response=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+':batchUpdate',{method:'POST',headers:{Authorization:'Bearer '+session,'Content-Type':'application/json'},body:JSON.stringify({requests:mutation.requests}),signal:AbortSignal.timeout(30000)});
     } catch(error) {
       // Never blindly repeat a possibly committed write after a connection failure.
-      const history=await getSheetValues("'"+AUDIT_SHEET+"'!A:I",MEMBERSHIP_SPREADSHEET_ID).then(parseHistory).catch(()=>[]);
+      const history=await getSheetValues("'"+context.auditSheet+"'!A:I",MEMBERSHIP_SPREADSHEET_ID).then(parseHistory).catch(()=>[]);
       if(history.some(item=>item.id===operationId))return;
       throw Error('The connection ended before saving could be confirmed. Refresh results and check Change history before trying again.');
     }
@@ -246,6 +258,7 @@
 
   async function load(notice) {
     const request = ++sequence;
+    const names=yearSheets(selectedYear),year=names.year;
     if (!accessToken) return;
     currentMembershipSheet = SHEET;
     installStyle();
@@ -255,30 +268,31 @@
     const active = () => request===sequence && currentMembershipSheet===SHEET && moduleLoadingKey==='membership';
     try {
       const metadata = await fetchSheetRead('https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+'?fields=sheets.properties');
-      const sheet = (metadata.sheets||[]).find(entry=>entry.properties?.title===SHEET);
+      const sheet = (metadata.sheets||[]).find(entry=>entry.properties?.title===names.nominations);
       // The public form creates this private tab when the first submission is saved.
-      const rows = sheet ? await getSheetValues("'BOD Nominations 2027'!A:G",MEMBERSHIP_SPREADSHEET_ID) : [];
+      const rows = sheet ? await getSheetValues("'"+names.nominations+"'!A:G",MEMBERSHIP_SPREADSHEET_ID) : [];
       const model=buildModel(rows);
       let admin=false,adminError='',context=null,history=[];
       const actor=normalize(await getPortalAuditActor());
       if(ADMIN_EMAILS.includes(actor)&&sheet) {
         try {
-          const candidateSheet=(metadata.sheets||[]).find(entry=>entry.properties?.title===CANDIDATE_SHEET),auditSheet=(metadata.sheets||[]).find(entry=>entry.properties?.title===AUDIT_SHEET);
+          const candidateSheet=(metadata.sheets||[]).find(entry=>entry.properties?.title===names.candidates),auditSheet=(metadata.sheets||[]).find(entry=>entry.properties?.title===names.audit);
           if(!candidateSheet||!auditSheet)throw Error('Nomination admin setup is not complete.');
-          const [candidateRows,auditRows]=await Promise.all([getSheetValues("'"+CANDIDATE_SHEET+"'!A:D",MEMBERSHIP_SPREADSHEET_ID),getSheetValues("'"+AUDIT_SHEET+"'!A:I",MEMBERSHIP_SPREADSHEET_ID)]);
-          if(!auditRows.length)throw Error('The nomination change-history header is missing.');history=parseHistory(auditRows);context={candidates:parseCandidates(candidateRows),nominationSheetId:sheet.properties.sheetId,auditSheetId:auditSheet.properties.sheetId};admin=true;
+          const [candidateRows,auditRows]=await Promise.all([getSheetValues("'"+names.candidates+"'!A:D",MEMBERSHIP_SPREADSHEET_ID),getSheetValues("'"+names.audit+"'!A:I",MEMBERSHIP_SPREADSHEET_ID)]);
+          if(!auditRows.length)throw Error('The nomination change-history header is missing.');history=parseHistory(auditRows);context={year,nominationSheet:names.nominations,auditSheet:names.audit,candidates:parseCandidates(candidateRows),nominationSheetId:sheet.properties.sheetId,auditSheetId:auditSheet.properties.sheetId};admin=true;
         } catch(error){adminError=error.message;}
       }
       if (!active()) return;
       const sourceUrl='https://docs.google.com/spreadsheets/d/'+MEMBERSHIP_SPREADSHEET_ID+'/edit'+(sheet?'#gid='+sheet.properties.sheetId:'');
       const updatedAt = new Date().toLocaleString('en-US',{timeZone:'America/New_York',timeZoneName:'short'});
-      target.innerHTML=(typeof notice==='string'?'<p class="bod-admin-toast" role="status">'+html(notice)+'</p>':'')+markup(model,updatedAt,sourceUrl,admin)+(admin?historyMarkup(history):'')+(adminError?'<p class="bod-results-note" role="alert">Results are available, but administrative controls could not load: '+html(adminError)+'</p>':'');
-      status.textContent='BOD Nominations 2027 · '+model.submissions.length+' member submission'+(model.submissions.length===1?'':'s');
+      target.innerHTML=(typeof notice==='string'?'<p class="bod-admin-toast" role="status">'+html(notice)+'</p>':'')+markup(model,updatedAt,sourceUrl,admin,year,availableYears(metadata.sheets))+(admin?historyMarkup(history):'')+(adminError?'<p class="bod-results-note" role="alert">Results are available, but administrative controls could not load: '+html(adminError)+'</p>':'');
+      status.textContent='BOD Nominations '+year+' · '+model.submissions.length+' member submission'+(model.submissions.length===1?'':'s');
       target.querySelector('[data-bod-refresh]').addEventListener('click',()=>load());
+      target.querySelector('[data-bod-year]').addEventListener('change',event=>{selectedYear=yearSheets(event.target.value).year;load();});
       bindDashboard(target,model,context);
       target.querySelector('[data-bod-export]').addEventListener('click',()=>{
         const url=URL.createObjectURL(new Blob(['\ufeff'+tallyCsv(model)],{type:'text/csv;charset=utf-8'}));
-        const link=document.createElement('a');link.href=url;link.download='BSSC_BOD_Nomination_Tally_2027.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+        const link=document.createElement('a');link.href=url;link.download='BSSC_BOD_Nomination_Tally_'+year+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
       });
     } catch (error) {
       if (!active()) return;
@@ -288,5 +302,5 @@
     }
   }
   if(typeof document!=='undefined')document.getElementById('bodAdministrationLink')?.addEventListener('click',()=>{currentMembershipSheet=SHEET;showModule('membership');});
-  return {load,buildModel,tallyCsv,markup,buildAdminMutation,parseCandidates,parseHistory,historyMarkup,changeReason,CHANGE_REASONS,installStyle,bindDashboard};
+  return {yearSheets,availableYears,yearSelector,load,buildModel,tallyCsv,markup,buildAdminMutation,parseCandidates,parseHistory,historyMarkup,changeReason,CHANGE_REASONS,installStyle,bindDashboard};
 });
