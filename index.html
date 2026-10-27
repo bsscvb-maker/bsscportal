@@ -6718,7 +6718,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       let cardStep=0;
       const line=(label,value,kind='',hint='')=>'<article class="bft-exec-card '+kind+'"><div class="bft-exec-card-top"><span class="bft-exec-step">'+String(++cardStep).padStart(2,'0')+'</span><h4>'+esc(label)+'</h4></div><strong>'+(hasData?esc(money(value)):'—')+'</strong><p>'+esc(hint||'After fundraising costs; before bikes, helmets and locks')+'</p></article>';
       return '<section class="bft-finance-section bft-program-summary">'+(picker?'':'<h3>'+esc(year)+' Fundraising &amp; Program Spending</h3>')+
-        (picker?bftProgramYearPicker(year):'')+'>'+y+'</option>').join('')+'</select></label>':'')+
+        (picker?bftProgramYearPicker(year):'')+
         '<div class="bft-executive-cards">'+
         line('New Fundraising Proceeds',fundraiser?.income||0,'','New ticket sales, donations, auctions and raffles, after payment fees')+
         line('Fundraising Costs',-(fundraiser?.expenses||0),'bft-money-deduction','Supplies, prizes and event costs')+
