@@ -2084,6 +2084,13 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 #dashboard .operations-freshness p{color:#a9a8a5;font-size:12px}
 @media(max-width:1200px) and (min-width:761px){#dashboard #operationsOverviewCards .operations-kpi{padding-left:11px!important;padding-right:11px!important}#dashboard #operationsOverviewCards .operations-kpi>strong{font-size:clamp(20px,2.3vw,29px)}#dashboard .operations-fund-breakdown div{justify-content:center}#dashboard .operations-overview-head{min-height:220px;padding:24px}#dashboard .command-hero-copy h1{font-size:36px}}
 @media(max-width:760px){#dashboard .operations-overview-head{min-height:240px;padding:25px 18px;display:block;background-position:65% center}#dashboard .command-hero-copy{max-width:100%}#dashboard .command-hero-copy h1{font-size:34px}#dashboard .command-hero-copy p{font-size:18px}#dashboard .operations-overview-meta{margin-top:25px;max-width:100%;justify-content:flex-start}#dashboard .operations-overview-status{text-align:left!important}#dashboard #operationsOverviewCards{grid-template-columns:repeat(2,minmax(0,1fr))!important;overflow:visible!important}#dashboard #operationsOverviewCards .operations-kpi{grid-template-rows:auto auto 1fr!important;grid-row:auto!important;padding:20px 12px!important;border-bottom:1px solid #ffffff20}#dashboard #operationsOverviewCards .operations-kpi>.command-kpi-heading{min-height:115px;font-size:11px}#dashboard #operationsOverviewCards .operations-kpi>strong{font-size:clamp(19px,5vw,26px);white-space:normal}#dashboard #operationsOverviewCards .operations-kpi:nth-child(4){padding-top:15px!important}#dashboard #operationsOverviewCards .operations-kpi:last-child{grid-column:1/-1}#dashboard #operationsOverviewCards .operations-kpi:nth-child(2):after,#dashboard #operationsOverviewCards .operations-kpi:nth-child(4):after{display:none}#dashboard .operations-fund-breakdown div{justify-content:center}#dashboard .command-goal{padding:20px 16px}#dashboard .command-goal-top{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px}#dashboard .command-goal-top h3{grid-column:1/-1}#dashboard .command-goal-top strong{font-size:21px;display:block}#dashboard .command-goal-bottom{flex-wrap:wrap}#dashboard .command-goal-track{min-width:100%}#dashboard .command-goal-state{width:100%;text-align:right}}
+</style><style id="command-goal-success">
+/* Goal success color follows the live fundraising amount. */
+#dashboard .command-goal.goal-met{border-color:#29965a;background:linear-gradient(115deg,#14291e,#101b16 48%,#0c1210)}
+#dashboard .command-goal.goal-met .command-goal-top h3{color:#9bdcb5}
+#dashboard .command-goal.goal-met .command-goal-percent strong,#dashboard .command-goal.goal-met .command-goal-state{color:#70e59c}
+#dashboard .command-goal.goal-met .command-goal-track{border-color:#2e9e5c;background:#163523}
+#dashboard .command-goal.goal-met .command-goal-track>span{background:linear-gradient(180deg,#30c775,#158343);box-shadow:inset 0 2px 3px #a0f8bd50}
 </style></head>
 <body>
   <section class="auth-gate" id="authGate">
@@ -3083,9 +3090,11 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       if (goalPanel) {
         goalPanel.hidden = !(bftTotals && bftGoalNumber > 0);
         goalPanel.innerHTML = '';
+        goalPanel.classList.remove('goal-met');
         if (!goalPanel.hidden) {
           const percent = Math.round(bftTotals.income / bftGoalNumber * 100);
           const achieved = bftTotals.income >= bftGoalNumber;
+          goalPanel.classList.toggle('goal-met',achieved);
           goalPanel.innerHTML = `<div class="command-goal-top"><h3>2026 FUNDRAISING GOAL</h3><div><strong>${esc(bftRaised)}</strong> raised</div><div><strong>${esc(money(bftGoalNumber))}</strong> goal</div><div class="command-goal-percent"><strong>${percent}%</strong> of goal</div></div><div class="command-goal-bottom"><div class="command-goal-track" role="progressbar" aria-label="2026 fundraising goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.max(0,Math.min(100,percent))}" aria-valuetext="${percent}% of goal${achieved?', goal exceeded':''}"><span style="width:${Math.max(0,Math.min(100,percent))}%"></span></div><span class="command-goal-state">${achieved?'Goal exceeded!':esc(money(bftGoalNumber-bftTotals.income))+' to go'}</span></div>`;
         }
       }
