@@ -19,3 +19,5 @@ test('unrelated selections and All years filters remain usable',()=>{
  const select=picker(['','2026','2027'],'');normalizeYearPicker(select,2027);assert.equal(select.value,'');
  const unrelated=picker(['Active','Inactive'],'Active');normalizeYearPicker(unrelated,2027);assert.deepEqual(unrelated.options.map(o=>o.value),['Active','Inactive']);
 });
+
+test('year labels with descriptive text are also sorted',()=>{const select=picker(['2026','2027'],'2027');select.options.forEach(o=>o.textContent=o.value+' Fundraiser');normalizeYearPicker(select,2027);assert.deepEqual(select.options.map(o=>o.value),['2027','2026']);});
