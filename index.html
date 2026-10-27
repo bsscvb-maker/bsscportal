@@ -759,6 +759,9 @@
     .activity-result.good { border-top-color:#16845b; }
     .activity-result.bad { border-top-color:#c8102e; background:#fff1f3; }
     .bft-finance-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+    .bft-program-year-picker { display:flex;align-items:center;gap:8px;margin:4px 0 16px;font-weight:700; }
+    .bft-program-year-picker select { font:inherit;padding:7px 10px;border:1px solid #88919c;border-radius:7px;background:#fff;color:#171717; }
+    .bft-program-year-picker .bssc-year-menu { margin-left:0; }
     .bft-finance-section { margin-top:18px; }
     .bft-finance-section h3 { margin:0 0 5px; font-size:1.15rem; }
     .bft-finance-section > p { margin:0 0 12px; color:var(--muted); }
@@ -3467,13 +3470,20 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           </div>
         </div>`;
       const dashboardHost=document.getElementById('bftDashboardTable');
+      const editBar=dashboardHost.querySelector('.dashboard-action-bar');
+      const tabBar=document.querySelector('#bftWorkspace .sponsor-tabs');
+      tabBar.querySelector('#bftDashboardEditToggle')?.remove();
+      const editButton=editBar.querySelector('button');
+      editButton.style.marginLeft='auto';
+      tabBar.appendChild(editButton);
+      editBar.remove();
       const yearPicker=dashboardHost.querySelector('[data-bft-program-year]');
       if(yearPicker) yearPicker.onchange=event=>{
         bftProgramYear=event.target.value;
         renderBftDashboard(bftDashboardRows,bftDonationRows);
       };
       if(bftProgramYear!=='2026'){
-        dashboardHost.querySelector('.dashboard-action-bar').hidden=true;
+        document.getElementById('bftDashboardEditToggle').hidden=true;
         dashboardHost.querySelector('.edit-help')?.remove();
         const blank=dashboardHost.querySelector('.bft-dashboard');
         blank.querySelectorAll('.finance-row strong').forEach(node=>{node.textContent='—';node.removeAttribute('contenteditable');node.removeAttribute('data-dashboard-edit');});
@@ -5009,7 +5019,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       if (dashboardResult.status === 'fulfilled' && bftCashLedger) {
         const dashboardRows = dashboardResult.value;
         renderBftDashboard(dashboardRows, donationRows);
-        document.getElementById('bftDashboardStatus').textContent = 'Choose a program year below. Fundraiser results come from recorded receipts and costs; program purchases and in-kind support are shown separately.';
+        document.getElementById('bftDashboardStatus').textContent = 'Fundraiser results come from recorded receipts and costs; program purchases and in-kind support are shown separately.';
       } else {
         document.getElementById('bftDashboardStatus').textContent = 'Dashboard or Transactions-2026 could not load; cash totals are unavailable.';
       }
@@ -6653,10 +6663,14 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
     }
 
 
-    let bftProgramYear = '2026';
+    let bftProgramYear = String(new Date().getFullYear());
+    function bftProgramYearPicker(year) {
+      const years = [...new Set(['2025','2026','2027',String(new Date().getFullYear())])].sort((a,b)=>Number(b)-Number(a));
+      return '<label class="bft-program-year-picker"><span>Year</span><select data-bft-program-year aria-label="Choose program year">'+years.map(y=>'<option '+(y===year?'selected':'')+'>'+y+'</option>').join('')+'</select></label>';
+    }
     function bftHistoricalProgramSummary(picker) {
-      const choose=picker?'<label style="display:flex;flex-direction:column;gap:8px;max-width:260px;margin:12px 0 20px"><span>Choose program year</span><select data-bft-program-year aria-label="Choose program year" style="font:inherit;font-size:22px;padding:10px">'+['2025','2026','2027'].map(y=>'<option '+(y==='2025'?'selected':'')+'>'+y+'</option>').join('')+'</select></label>':'';
-      const title='<section class="bft-finance-section bft-program-summary"><h3>2025 Fundraising &amp; Program Spending</h3>'+choose;
+      const choose=picker?bftProgramYearPicker('2025'):'';
+      const title='<section class="bft-finance-section bft-program-summary">'+(picker?'':'<h3>2025 Fundraising &amp; Program Spending</h3>')+choose;
       if(!bftHistoricalLedger)return title+'<p role="status">The 2025 ledger could not load. Refresh this module to retry.</p></section>';
       // The historical ledger uses Type K / Cleared M, unlike the 2026 schema.
       const rows=bftHistoricalLedger.slice(1).filter(r=>String(r[2])==='2025'&&/^bikes for tykes$/i.test(String(r[6]||'').trim())&&!/^void\b/i.test(String(r[3]||'')));
@@ -6703,8 +6717,8 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const explainedBank=calculatedFunds-heldInGeneral-receiptUnderReview-(fundraiser?.pending||0)+owedToGeneral+bankInterest;
       let cardStep=0;
       const line=(label,value,kind='',hint='')=>'<article class="bft-exec-card '+kind+'"><div class="bft-exec-card-top"><span class="bft-exec-step">'+String(++cardStep).padStart(2,'0')+'</span><h4>'+esc(label)+'</h4></div><strong>'+(hasData?esc(money(value)):'—')+'</strong><p>'+esc(hint||'After fundraising costs; before bikes, helmets and locks')+'</p></article>';
-      return '<section class="bft-finance-section bft-program-summary"><h3>'+esc(year)+' Fundraising &amp; Program Spending</h3>'+
-        (picker?'<label style="display:flex;flex-direction:column;gap:8px;max-width:260px;padding:16px;margin:12px 0 20px;background:#fff;border:1px solid #bbc2cb;border-radius:12px;box-shadow:0 3px 12px #0001"><span style="font-weight:700;color:#333">Choose program year</span><select data-bft-program-year aria-label="Choose program year" style="font:inherit;font-size:22px;font-weight:800;padding:10px;border:1px solid #aaa;border-radius:8px;background:#f5f6f8;color:#111">'+['2025','2026','2027'].map(y=>'<option '+(y===year?'selected':'')+'>'+y+'</option>').join('')+'</select></label>':'')+
+      return '<section class="bft-finance-section bft-program-summary">'+(picker?'':'<h3>'+esc(year)+' Fundraising &amp; Program Spending</h3>')+
+        (picker?bftProgramYearPicker(year):'')+'>'+y+'</option>').join('')+'</select></label>':'')+
         '<div class="bft-executive-cards">'+
         line('New Fundraising Proceeds',fundraiser?.income||0,'','New ticket sales, donations, auctions and raffles, after payment fees')+
         line('Fundraising Costs',-(fundraiser?.expenses||0),'bft-money-deduction','Supplies, prizes and event costs')+
