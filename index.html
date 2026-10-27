@@ -3058,7 +3058,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const bftGoal = findCommandValue(bftRows,'Goal Amount');
       const bftGoalNumber = Number(String(bftGoal).replace(/[$,]/g,''));
       const bftRaisedNote = bftTotals
-        ? '2026 fundraising · After payment fees · Before fundraising costs'
+        ? '2026 fundraising'
         : 'Fundraising transactions unavailable · Refresh to retry';
       const marketplaceDue = String(marketRows[6]?.[16] || '').trim();
       const cards = [
