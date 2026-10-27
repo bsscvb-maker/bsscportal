@@ -2970,7 +2970,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const status = document.getElementById('operationsOverviewStatus');
       const freshness = document.getElementById('operationsOverviewFreshness');
       if (!target) return;
-      const [finance,membership,bft,marketplace,roster,control] = results;
+      const [finance,membership,bft,marketplace,roster,control,ledger] = results;
       const card = (label,value,note = '') => `<article class="operations-kpi"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong>${note ? `<small>${esc(note)}</small>` : ''}</article>`;
       const fundBalance = value => String(value ?? '—').replace(/[▲▼△▽↑↓⬆⬇↗↘🔺🔻\uFE0E\uFE0F]/gu,'').trim() || '—';
       const rowsOrEmpty = item => item.status === 'fulfilled' ? item.value : [];
@@ -2987,21 +2987,28 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const membershipCard = Number.isFinite(activeCount) && membershipValue && prospectCount !== null
         ? `<article class="operations-kpi"><span>Member count</span><strong>${esc(String(activeCount + prospectCount))}</strong><div class="operations-membership-breakdown"><span>Active members <b>${esc(String(activeCount))}</b></span><span>Prospects <b>${esc(String(prospectCount))}</b></span></div></article>`
         : card('Active Members',membershipValue || '—',prospectCount === null ? 'Prospect count unavailable · refresh to retry' : '');
-      const bftRaised = findCommandValue(bftRows,'Total Raised So Far');
+      // Use the same after-fee fundraising proceeds as the BFT program pages.
+      // The separate BFT workbook dashboard deducts event costs and uses a narrower filter.
+      const bftLedgerRows = ledger ? rowsOrEmpty(ledger) : [];
+      const bftTotals = bftLedgerRows.length > 1 ? bftFundraiserTotals(bftLedgerRows,impactRows) : null;
+      const bftRaised = bftTotals ? money(bftTotals.income) : '';
       const bftGoal = findCommandValue(bftRows,'Goal Amount');
-      const bftProgress = findCommandValue(bftRows,'Progress Toward Goal');
+      const bftGoalNumber = Number(String(bftGoal).replace(/[$,]/g,''));
+      const bftRaisedNote = bftTotals
+        ? 'After payment fees · Before fundraising costs' + (bftGoalNumber > 0 ? ` · ${Math.round(bftTotals.income / bftGoalNumber * 100)}% of ${bftGoal} goal` : '')
+        : 'Fundraising transactions unavailable · Refresh to retry';
       const marketplaceDue = String(marketRows[6]?.[16] || '').trim();
       const cards = [
         membershipCard,
         `<article class="operations-kpi"><span>Cash on Hand</span><strong>${esc(String(financeRows[6]?.[1] || '—'))}</strong><div class="operations-fund-breakdown"><div>Bikes for Tykes <b>${esc(fundBalance(financeRows[11]?.[5]))}</b></div><div>General Fund <b>${esc(fundBalance(financeRows[11]?.[1]))}</b></div></div></article>`,
         `<article class="operations-kpi"><span>Lifetime Community Impact</span><strong>${esc(String(financeRows[6]?.[5] || '—'))}</strong><div class="operations-fund-breakdown"><div>2025 Full Year <b>${esc(fundBalance(impactRows[25]?.[4]))}</b></div><div>2026 Year to Date <b>${esc(fundBalance(impactRows[27]?.[1]))}</b></div></div></article>`,
-        card('Bikes for Tykes Raised to Date · 2026',bftRaised,bftGoal ? `${bftProgress || 'Progress not shown'} of ${bftGoal} goal` : 'Bikes for Tykes · Dashboard'),
+        card('Bikes for Tykes Raised to Date · 2026',bftRaised,bftRaisedNote),
         card('Marketplace Cash to Collect',marketplaceDue || 'Unavailable',marketplaceDue ? 'Outstanding marketplace payments' : 'Marketplace data did not load · Refresh to retry')
       ];
       target.innerHTML = cards.join('');
       const successful = results.filter(result => result.status === 'fulfilled').length;
       const total = results.length;
-      if (status) status.textContent = successful === total ? 'All six data sources refreshed' : `${successful} of ${total} data sources refreshed · Some totals unavailable`;
+      if (status) status.textContent = successful === total ? `All ${total} data sources refreshed` : `${successful} of ${total} data sources refreshed · Some totals unavailable`;
       if (freshness) freshness.textContent = `Last refreshed ${new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',timeZoneName:'short'})}.`;
       operationsOverviewLoadedAt = Date.now();
     }
@@ -3019,7 +3026,8 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           getSheetValues("'DashBoard'!A1:G40",BFT_SPREADSHEET_ID),
           getSheetValues("'Dashboard'!A1:V22",MARKETPLACE_SPREADSHEET_ID),
           getSheetValues("'2026'!A1:AH855",MEMBERSHIP_SPREADSHEET_ID),
-          getSheetValues("'Control-2026'!A1:H40",FINANCE_SPREADSHEET_ID)
+          getSheetValues("'Control-2026'!A1:H40",FINANCE_SPREADSHEET_ID),
+          getSheetValues("'Transactions-2026'!A1:Q2500",FINANCE_SPREADSHEET_ID,'UNFORMATTED_VALUE')
         ]);
         renderOperationsOverview(results);
       } catch (error) {
