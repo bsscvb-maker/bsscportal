@@ -7533,7 +7533,6 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
     }
 
     const membershipSheetConfig = {
-      'BOD Election History':{group:'Current'},
       'BOD Nominations 2027':{range:"'BOD Nominations 2027'!A1:G10000",columns:7,group:'Current'},
       'Charter':{range:"'Charter'!A1:Z1000",columns:26,editable:true,group:'Member Lists'},
       'Lifer':{range:"'Lifer'!A1:AB1000",columns:28,editable:true,group:'Member Lists'},
@@ -8262,7 +8261,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
     }
 
     async function loadMembershipSheetSource(sheetName, force = false) {
-      if (sheetName === 'BOD Election History') return window.BSSCBodElectionHistory.load();
+      if (sheetName === 'BOD Election History') return window.BSSCBodNominations.selectYear(2026);
       if (sheetName === 'BOD Nominations 2027') return window.BSSCBodNominations.load();
       const config = membershipSheetConfig[sheetName];
       if (!config || !accessToken) return;
@@ -8456,8 +8455,8 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
     const MEMBERSHIP_HIDDEN_KEY = 'bssc_membership_hidden_sections';
     const MEMBERSHIP_PINNED_KEY = 'bssc_membership_pinned_sections';
     const MEMBERSHIP_NAMES_KEY = 'bssc_membership_section_names';
-    const defaultMembershipPinned = ['Dashboard 2027','2027','BOD Nominations 2027','BOD Election History','2026 - Non Renewal','Dues Payments','2027-Attendance','Dashboard 2026','2026 Attendance Summary','2026','2026-Attendance','2026 Attendance Dashboard','Officer List','Lifer'];
-    const defaultMembershipNames = {'BOD Nominations 2027':'BOD Nominations','Dashboard 2027':'Dashboard 2027','2027':'2027 Roster','2026 - Non Renewal':'Renewal Status','2027-Attendance':'2027 Attendance','Dashboard 2026':'Dashboard 2026','2026 Attendance Summary':'Attendance Summary','2026':'2026 Roster','2026-Attendance':'2026 Attendance','2026 Attendance Dashboard':'2026 Attendance Dashboard','Officer List':'Officer List','Lifer':'Lifers'};
+    const defaultMembershipPinned = ['Dashboard 2027','2027','BOD Nominations 2027','2026 - Non Renewal','Dues Payments','2027-Attendance','Dashboard 2026','2026 Attendance Summary','2026','2026-Attendance','2026 Attendance Dashboard','Officer List','Lifer'];
+    const defaultMembershipNames = {'BOD Nominations 2027':'Board Elections','Dashboard 2027':'Dashboard 2027','2027':'2027 Roster','2026 - Non Renewal':'Renewal Status','2027-Attendance':'2027 Attendance','Dashboard 2026':'Dashboard 2026','2026 Attendance Summary':'Attendance Summary','2026':'2026 Roster','2026-Attendance':'2026 Attendance','2026 Attendance Dashboard':'2026 Attendance Dashboard','Officer List':'Officer List','Lifer':'Lifers'};
     function membershipSetting(key,fallback) { try { const value = JSON.parse(localStorage.getItem(key) || 'null'); return value ?? fallback; } catch (error) { return fallback; } }
     function membershipDisplayName(name) { if(annualGroups.includes(name))return name.replace('Membership ',''); return String(membershipSetting(MEMBERSHIP_NAMES_KEY,{})[name] || defaultMembershipNames[name] || name); }
     function openMembershipSection(name) {
@@ -8474,13 +8473,6 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const allNames = Object.keys(membershipSheetConfig).filter(name=>!annualMembershipGroup(name)||annualGroups.includes(name));
       const hidden = new Set(membershipSetting(MEMBERSHIP_HIDDEN_KEY,[]).filter(name => allNames.includes(name)));
       let savedPinned = membershipSetting(MEMBERSHIP_PINNED_KEY,defaultMembershipPinned);
-      if (!localStorage.getItem('bssc_bod_election_history_added_v1')) {
-        if (!savedPinned.includes('BOD Election History')) savedPinned.splice(Math.max(0,savedPinned.indexOf('BOD Nominations 2027')+1),0,'BOD Election History');
-        hidden.delete('BOD Election History');
-        localStorage.setItem(MEMBERSHIP_PINNED_KEY,JSON.stringify(savedPinned));
-        localStorage.setItem(MEMBERSHIP_HIDDEN_KEY,JSON.stringify([...hidden]));
-        localStorage.setItem('bssc_bod_election_history_added_v1','true');
-      }
       if (!localStorage.getItem('bssc_bod_nominations_added_v1')) {
         if (!savedPinned.includes('BOD Nominations 2027')) {
           const rosterIndex = savedPinned.indexOf('2027');
@@ -8516,6 +8508,16 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         hidden.delete('2026 - Non Renewal');
         localStorage.setItem(MEMBERSHIP_HIDDEN_KEY,JSON.stringify([...hidden]));
         localStorage.setItem('bssc_membership_renewal_status_added_v1','true');
+      }
+      if (!localStorage.getItem('bssc_board_elections_combined_v1')) {
+        savedPinned=savedPinned.filter(name=>name!=='BOD Election History');
+        if(!savedPinned.includes('BOD Nominations 2027'))savedPinned.splice(Math.max(0,savedPinned.indexOf('2027')+1),0,'BOD Nominations 2027');
+        hidden.delete('BOD Nominations 2027');hidden.delete('BOD Election History');
+        const names=membershipSetting(MEMBERSHIP_NAMES_KEY,{});names['BOD Nominations 2027']='Board Elections';delete names['BOD Election History'];
+        localStorage.setItem(MEMBERSHIP_NAMES_KEY,JSON.stringify(names));
+        localStorage.setItem(MEMBERSHIP_PINNED_KEY,JSON.stringify(savedPinned));
+        localStorage.setItem(MEMBERSHIP_HIDDEN_KEY,JSON.stringify([...hidden]));
+        localStorage.setItem('bssc_board_elections_combined_v1','true');
       }
       savedPinned=[...new Set(savedPinned.map(name=>annualMembershipGroup(name)||name))];
       annualGroups.slice().reverse().forEach(name=>{if(!savedPinned.includes(name))savedPinned.unshift(name);});
@@ -9975,9 +9977,9 @@ document.addEventListener('click',function(event){
 
 
 <script src="portal-navigation.js?v=20261024-browser-nav"></script>
-<script src="bod-nominations-results.js?v=20261027-years-1"></script>
-<script src="bod-election-history-data.js?v=20261027-1"></script>
-<script src="bod-election-history.js?v=20261027-1"></script>
+<script src="bod-nominations-results.js?v=20261027-combined-1"></script>
+<script src="bod-election-history-data.js?v=20261027-combined-1"></script>
+<script src="bod-election-history.js?v=20261027-combined-1"></script>
 <script src="board-service-records.js?v=20261027-1"></script>
 </body>
 </html>

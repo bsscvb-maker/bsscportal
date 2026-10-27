@@ -5,7 +5,8 @@
 })(typeof window === 'undefined' ? globalThis : window, function () {
   'use strict';
   const SHEET = 'BOD Nominations 2027';
-  let selectedYear=2027;
+  let selectedYear=2027, discoveredSheets=[];
+  function selectYear(value){selectedYear=yearSheets(value).year;return load();}
   function yearSheets(year) {
     year=Number(year);
     if(!Number.isInteger(year)||year<2000||year>2100)throw Error('Choose a valid nomination year.');
@@ -13,11 +14,12 @@
   }
   function availableYears(sheets=[]) {
     const years=new Set(Array.from({length:Math.max(5,new Date().getFullYear()+4-2026)},(_,i)=>2026+i));
+    Object.keys((typeof window!=='undefined'?window:globalThis).BSSCBodElectionHistoryData||{}).forEach(year=>years.add(Number(year)));
     sheets.forEach(entry=>{const match=/^BOD Nominations (20[0-9]{2}|2100)$/.exec(entry.properties?.title||'');if(match)years.add(Number(match[1]));});
     return [...years].sort((a,b)=>a-b);
   }
   function yearSelector(year,years) {
-    return `<label class="bod-year-picker">Nomination year <select data-bod-year aria-label="Nomination year">${years.map(value=>`<option value="${value}" ${value===year?'selected':''}>${value}</option>`).join('')}</select></label>`;
+    return `<label class="bod-year-picker">Board service year <select data-bod-year aria-label="Board service year">${years.map(value=>`<option value="${value}" ${value===year?'selected':''}>${value}</option>`).join('')}</select></label>`;
   }
   const ADMIN_EMAILS = ['president@boneshakerssocialclub.com','bsscvb@boneshakerssocialclub.com'];
   const AUDIT_HEADERS = ['Changed At','Actor','Action','Member','Reference','Reason','Before JSON','After JSON','Change ID'];
@@ -260,6 +262,7 @@
     const request = ++sequence;
     const names=yearSheets(selectedYear),year=names.year;
     if (!accessToken) return;
+    if(window.BSSCBodElectionHistoryData?.[year]) return window.BSSCBodElectionHistory.load(year,availableYears(discoveredSheets));
     currentMembershipSheet = SHEET;
     installStyle();
     const status = document.getElementById('membershipStatus'), target=document.getElementById('membershipContent');
@@ -268,6 +271,7 @@
     const active = () => request===sequence && currentMembershipSheet===SHEET && moduleLoadingKey==='membership';
     try {
       const metadata = await fetchSheetRead('https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+'?fields=sheets.properties');
+      discoveredSheets=metadata.sheets||[];
       const sheet = (metadata.sheets||[]).find(entry=>entry.properties?.title===names.nominations);
       // The public form creates this private tab when the first submission is saved.
       const rows = sheet ? await getSheetValues("'"+names.nominations+"'!A:G",MEMBERSHIP_SPREADSHEET_ID) : [];
@@ -302,5 +306,5 @@
     }
   }
   if(typeof document!=='undefined')document.getElementById('bodAdministrationLink')?.addEventListener('click',()=>{currentMembershipSheet=SHEET;showModule('membership');});
-  return {yearSheets,availableYears,yearSelector,load,buildModel,tallyCsv,markup,buildAdminMutation,parseCandidates,parseHistory,historyMarkup,changeReason,CHANGE_REASONS,installStyle,bindDashboard};
+  return {yearSheets,availableYears,yearSelector,selectYear,load,buildModel,tallyCsv,markup,buildAdminMutation,parseCandidates,parseHistory,historyMarkup,changeReason,CHANGE_REASONS,installStyle,bindDashboard};
 });

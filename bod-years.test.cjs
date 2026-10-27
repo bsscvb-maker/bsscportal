@@ -18,3 +18,19 @@ test('admin reads and recovery use the year captured with the record',()=>{
  assert.doesNotMatch(s,/getSheetValues\("'BOD Nominations 2027/);
  assert.match(s,/nominationSheet:names\.nominations,auditSheet:names\.audit/);
 });
+
+test('combined selector includes every historical year alongside live nomination years',()=>{
+ globalThis.BSSCBodElectionHistoryData={2014:{},2015:{},2026:{}};
+ try { const years=api.availableYears();for(const year of [2014,2015,2026,2027,2028])assert.ok(years.includes(year));assert.match(api.yearSelector(2014,years),/Board service year/); }
+ finally {delete globalThis.BSSCBodElectionHistoryData;}
+});
+test('historical year delegates before any live sheet access',async()=>{
+ const vm=require('node:vm');let historyCall;
+ const context={window:{BSSCBodElectionHistoryData:{2026:{}},BSSCBodElectionHistory:{load:(year,years)=>{historyCall={year,years};}}},accessToken:'test-token',globalThis:{},Date};vm.createContext(context);
+ vm.runInContext(fs.readFileSync('bod-nominations-results.js','utf8'),context);
+ await context.window.BSSCBodNominations.selectYear(2026);
+ assert.equal(historyCall.year,2026);assert.ok(historyCall.years.includes(2027));
+});
+test('membership navigation consolidates saved pins and retires standalone history',()=>{
+ const source=fs.readFileSync('index.html','utf8');assert.doesNotMatch(source,/'BOD Election History':\{group:/);assert.match(source,/'BOD Nominations 2027':'Board Elections'/);assert.match(source,/bssc_board_elections_combined_v1/);assert.match(source,/savedPinned=savedPinned.filter\(name=>name!=='BOD Election History'\)/);
+});

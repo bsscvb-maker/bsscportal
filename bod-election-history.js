@@ -1,7 +1,7 @@
 (function(root){
 'use strict';
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let year=2026,snapshotIndex=0;
+let year=2026,snapshotIndex=0,selectionYears=null;
 function leadershipMarkup(record,index=0){
  const snapshots=record.leadershipSnapshots||[],snapshot=snapshots[index]||snapshots[0];
  const rows=snapshot?.rows||record.officers||[];
@@ -11,7 +11,7 @@ function leadershipMarkup(record,index=0){
 }
 function markup(data,selected,snapshot=0){
  const record=data[selected],candidates=record.candidates||[];
- return `<section class="bod-results bod-history" aria-label="Board election history"><header class="bod-hero"><label class="bod-year-picker">Board service year <select data-history-year aria-label="Board service year">${Object.keys(data).sort((a,b)=>b-a).map(y=>`<option value="${y}" ${Number(y)===Number(selected)?'selected':''}>${y}</option>`).join('')}</select></label><p class="bod-results-kicker">BONESHAKERS · BOARD OF DIRECTORS</p><h2>Election history <span>${selected}</span></h2><p>Officers, candidates and election totals.</p></header>
+ return `<section class="bod-results bod-history" aria-label="Board election history"><header class="bod-hero"><label class="bod-year-picker">Board service year <select data-history-year aria-label="Board service year">${(selectionYears||Object.keys(data)).slice().sort((a,b)=>b-a).map(y=>`<option value="${y}" ${Number(y)===Number(selected)?'selected':''}>${y}</option>`).join('')}</select></label><p class="bod-results-kicker">BONESHAKERS · BOARD OF DIRECTORS</p><h2>Board Elections <span>${selected}</span></h2><p>Officers, candidates and election totals.</p></header>
  ${leadershipMarkup(record,snapshot)}
  <section class="bod-results-panel" id="bod-history-ballot"><div class="bod-panel-heading"><h3>Candidate nominations &amp; ballot totals</h3><button type="button" data-history-export ${candidates.length?'':'disabled'}>Export CSV</button></div>
  <div class="bod-results-stats">${[['Candidates',candidates.length||'—'],['Ballots counted',record.ballots??'—'],['Valid ballots',record.ballots!==undefined&&record.invalid!==undefined?record.ballots:'—']].map(([label,value])=>`<div class="bod-stat"><span>${label}</span><strong>${value}</strong></div>`).join('')}</div>
@@ -20,13 +20,15 @@ function markup(data,selected,snapshot=0){
  ${record.retained?`<p><strong>Retained Board seat:</strong> ${record.retained.map(escape).join('; ')}</p>`:''}${record.declined?`<h4>Declined nomination</h4><ul>${record.declined.map(n=>`<li>${escape(n)}</li>`).join('')}</ul>`:''}</section></section>`;
 }
 function csv(record){const cell=v=>'"'+String(v??'').replace(/"/g,'""')+'"';return [['Year','Candidate','Nominations','Ballot votes','Outcome'],...record.candidates.map(c=>[record.year,c.name,c.nominations,c.votes,c.outcome])].map(r=>r.map(cell).join(',')).join('\r\n');}
-function load(){
+function load(selected,years){
+ if(selected!==undefined){year=Number(selected);snapshotIndex=0;}
+ if(years)selectionYears=years;
  if(typeof accessToken==='undefined'||!accessToken)return;
- currentMembershipSheet='BOD Election History';root.BSSCBodNominations.installStyle();
+ currentMembershipSheet='BOD Nominations 2027';root.BSSCBodNominations.installStyle();
  if(!document.getElementById('bod-history-style')){const style=document.createElement('style');style.id='bod-history-style';style.textContent='.bod-history .bod-results-panel{margin:18px 0;padding:24px}.bod-history-table{overflow-x:auto}.bod-history table{width:100%;border-collapse:collapse;color:inherit}.bod-history th,.bod-history td{text-align:left;padding:13px;border-bottom:1px solid #cbd0d6}.bod-history button,.bod-history select,.bod-history summary{min-height:44px}.bod-history .bod-stat strong{font-size:clamp(22px,4vw,38px)}.bod-history label{display:block;margin:12px 0}.bod-history select{margin-left:8px;padding:8px}.bod-history details{margin-top:20px}.bod-history summary{cursor:pointer;padding:10px 0}';document.head.appendChild(style);}
  const target=document.getElementById('membershipContent');target.innerHTML=markup(root.BSSCBodElectionHistoryData,year,snapshotIndex);
- const status=document.getElementById('membershipStatus');status.classList.remove('lifer-summary');status.textContent='BOD Election History · '+year;
- target.querySelector('[data-history-year]').addEventListener('change',e=>{year=Number(e.target.value);snapshotIndex=0;load();});
+ const status=document.getElementById('membershipStatus');status.classList.remove('lifer-summary');status.textContent='Board Elections · '+year;
+ target.querySelector('[data-history-year]').addEventListener('change',e=>{root.BSSCBodNominations.selectYear(e.target.value);});
  target.querySelector('[data-history-snapshot]')?.addEventListener('change',e=>{snapshotIndex=Number(e.target.value);load();});
  target.querySelector('[data-history-export]').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob(['\ufeff'+csv(root.BSSCBodElectionHistoryData[year])],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='BSSC_BOD_Election_'+year+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
 }
