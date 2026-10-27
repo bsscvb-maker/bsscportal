@@ -2044,8 +2044,11 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 #dashboard .operations-overview-meta{flex-wrap:wrap;justify-content:flex-end;max-width:360px;gap:9px;position:relative}
 #dashboard .operations-overview-status{font-size:11px;color:#c5ccc9;max-width:none;flex-basis:100%;order:2}
 #dashboard .operations-refresh{background:#121314db;color:#fff;border:1px solid #777;min-height:40px;padding:8px 15px;font-size:13px}
-#dashboard .home-portal-health{margin:0!important;min-width:0!important;width:auto!important;max-width:240px;min-height:0!important;height:auto!important;padding:9px 12px!important;box-shadow:none!important;border-radius:24px!important}
-#dashboard .home-portal-health .portal-health-label,#dashboard .home-portal-health small{display:none!important}
+#dashboard .home-portal-health{margin:0!important;min-width:0!important;width:auto!important;max-width:290px;min-height:0!important;height:auto!important;padding:12px 15px!important;box-shadow:none!important;border-radius:12px!important}
+#dashboard .home-portal-health .portal-health-label{display:block!important;font-size:10px!important;letter-spacing:.08em;margin-bottom:3px}
+#dashboard .home-portal-health small{display:block!important;font-size:11px!important;line-height:1.4;color:inherit;margin-top:4px}
+#dashboard .home-portal-health.is-working:not(.critical),#dashboard .home-portal-health.checking{background:#9b6800;border-color:#ffc93d;color:#fff}
+#dashboard .home-portal-health .portal-health-copy{min-width:0;white-space:normal}
 #dashboard .home-portal-health strong{font-size:13px!important}
 #dashboard .home-portal-health .portal-health-dot{width:10px;height:10px;flex:0 0 10px}
 #dashboard #operationsOverviewCards{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));gap:0!important;border:1px solid #47433e;border-radius:12px;background:linear-gradient(135deg,#1b1c1d,#0d0e0f);overflow:hidden;padding:0!important;scroll-snap-type:none}
