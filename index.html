@@ -4107,7 +4107,6 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           popup.document.write(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Receipt ${esc(receiptNumber)}</title><style>body{font:16px/1.55 Arial,sans-serif;max-width:720px;margin:50px auto;color:#171717;padding:0 24px}header{border-bottom:4px solid #c8102e;padding-bottom:14px}h1{font-size:26px;margin:0}h2{font-size:20px;margin:28px 0 12px}dl{display:grid;grid-template-columns:160px 1fr;gap:8px 14px}dt{font-weight:bold}dd{margin:0}.print{margin:25px 0;padding:10px 16px;background:#c8102e;color:#fff;border:0;border-radius:6px;font-weight:bold;cursor:pointer}@media print{.print{display:none}body{margin:20px auto}}</style></head><body><header><h1>BoneShakers Social Club</h1><div>Bikes for Tykes Charity Concert</div></header><h2>Contribution acknowledgment</h2><dl><dt>Receipt number</dt><dd>${esc(receiptNumber)}</dd><dt>Donor</dt><dd>${esc(donor)}</dd><dt>Date received</dt><dd>${esc(date)}</dd><dt>Date prepared</dt><dd>${esc(new Date().toLocaleDateString('en-US'))}</dd></dl><p>${contribution}</p><p>${goodsStatement}</p><p>Thank you for supporting Bikes for Tykes.</p><button class="print" onclick="window.print()">Print or save as PDF</button>
 
 
-<script src="portal-year-selects.js?v=20261027-1"></script>
 </body></html>`);
           popup.document.close();
           panel.querySelector('[name="column13"]').value='Prepared';
@@ -9982,5 +9981,6 @@ document.addEventListener('click',function(event){
 <script src="bod-election-history-data.js?v=20261027-combined-1"></script>
 <script src="bod-election-history.js?v=20261027-combined-1"></script>
 <script src="board-service-records.js?v=20261027-1"></script>
+<script src="portal-year-selects.js?v=20261027-1"></script>
 </body>
 </html>
