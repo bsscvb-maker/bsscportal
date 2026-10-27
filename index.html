@@ -2144,7 +2144,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           <section class="operations-overview" aria-labelledby="operationsOverviewTitle">
             <header class="operations-overview-head">
               <div class="command-hero-copy"><span class="command-eyebrow">BONESHAKERS SOCIAL CLUB</span><h1 id="operationsOverviewTitle">Club Command Center</h1><p>Your club at a glance.</p></div>
-              <div class="operations-overview-meta"><div class="portal-health visible checking home-portal-health" data-portal-health="true" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong data-portal-health-status="true">Checking</strong><small data-portal-health-detail="true">Verifying connected systems…</small></div></div><span class="operations-overview-status" id="operationsOverviewStatus" role="status" aria-live="polite">Waiting for Google sign-in…</span><button class="operations-refresh" id="operationsOverviewRefresh" type="button">Refresh</button></div>
+              <div class="operations-overview-meta"><div class="portal-health visible checking home-portal-health" data-portal-health="true" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong data-portal-health-status="true">Checking</strong><small data-portal-health-detail="true">Verifying connected systems…</small></div></div></div>
             </header>
             <div class="operations-kpis" id="operationsOverviewCards">
               <article class="operations-kpi"><span>Membership</span><strong>—</strong><small>Sign in to load the latest count.</small></article>
@@ -3040,7 +3040,6 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 
     function renderOperationsOverview(results) {
       const target = document.getElementById('operationsOverviewCards');
-      const status = document.getElementById('operationsOverviewStatus');
       const freshness = document.getElementById('operationsOverviewFreshness');
       if (!target) return;
       const [finance,membership,bft,marketplace,roster,control,ledger] = results;
@@ -3098,19 +3097,14 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           goalPanel.innerHTML = `<div class="command-goal-top"><h3>2026 FUNDRAISING GOAL</h3><div><strong>${esc(bftRaised)}</strong> raised</div><div><strong>${esc(money(bftGoalNumber))}</strong> goal</div><div class="command-goal-percent"><strong>${percent}%</strong> of goal</div></div><div class="command-goal-bottom"><div class="command-goal-track" role="progressbar" aria-label="2026 fundraising goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.max(0,Math.min(100,percent))}" aria-valuetext="${percent}% of goal${achieved?', goal exceeded':''}"><span style="width:${Math.max(0,Math.min(100,percent))}%"></span></div><span class="command-goal-state">${achieved?'Goal exceeded!':esc(money(bftGoalNumber-bftTotals.income))+' to go'}</span></div>`;
         }
       }
-      const successful = results.filter(result => result.status === 'fulfilled').length;
-      const total = results.length;
-      if (status) status.textContent = successful === total ? `All ${total} data sources refreshed` : `${successful} of ${total} data sources refreshed · Some totals unavailable`;
       if (freshness) freshness.textContent = `Last refreshed ${new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',timeZoneName:'short'})}.`;
       operationsOverviewLoadedAt = Date.now();
     }
 
     async function loadOperationsOverview(force = false) {
-      const status = document.getElementById('operationsOverviewStatus');
-      if (!status || !accessToken || operationsOverviewLoading) return;
+      if (!document.getElementById('operationsOverviewCards') || !accessToken || operationsOverviewLoading) return;
       if (!force && Date.now() - operationsOverviewLoadedAt < 300000) return;
       operationsOverviewLoading = true;
-      status.textContent = 'Refreshing connected workbooks…';
       try {
         const results = await Promise.allSettled([
           getSheetValues("'Dashboard-2026'!A1:AF80",FINANCE_SPREADSHEET_ID),
@@ -3123,7 +3117,8 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         ]);
         renderOperationsOverview(results);
       } catch (error) {
-        status.textContent = 'Could not refresh workbook summaries. Try again.';
+        const freshness = document.getElementById('operationsOverviewFreshness');
+        if (freshness) freshness.textContent = 'Could not refresh workbook summaries. Use the top refresh control to retry.';
       } finally { operationsOverviewLoading = false; }
     }
 
@@ -9067,7 +9062,6 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       loadUptimeRobotStatus(true);
     });
 
-    document.getElementById('operationsOverviewRefresh').addEventListener('click',() => loadOperationsOverview(true));
     document.getElementById('portalAuditClear').addEventListener('click',clearPortalAudit);
     renderPortalAudit();
 
