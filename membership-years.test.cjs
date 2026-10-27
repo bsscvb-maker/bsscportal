@@ -25,3 +25,14 @@ test('virtual groups are excluded from global sheet reads and individual annual 
 test('all portal inline scripts parse',()=>{
  for(const m of source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))if(m[1].trim())new vm.Script(m[1]);
 });
+test('year persists across sections and missing attendance never reads another year',async()=>{
+ const nodes={membershipStatus:{textContent:''},membershipContent:{innerHTML:''}};
+ const c=vm.createContext({document:{querySelectorAll:()=>[],getElementById:id=>nodes[id]},membershipSheetConfig:{'2016':{},'2017':{},'2027':{},'Dashboard 2027':{},'2027 Attendance Dashboard':{}},currentMembershipSheet:'',reads:[]});
+ const block=source.slice(source.indexOf("    let membershipYear ="),source.indexOf('    async function loadMembershipSheetSource('));
+ vm.runInContext(block+"\nannualMembershipToolbar=()=>{};async function loadMembershipSheetSource(name){reads.push(name);}",c);
+ await vm.runInContext("loadMembershipSheet('2016')",c);
+ await vm.runInContext("loadMembershipSheet('Membership Attendance')",c);
+ assert.match(nodes.membershipContent.innerHTML,/No attendance dashboard is available for 2016/);
+ await vm.runInContext("loadMembershipSheet('Membership Roster')",c);
+ assert.deepEqual(Array.from(c.reads),['2016','2016']);
+});
