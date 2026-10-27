@@ -2091,7 +2091,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 #dashboard .command-goal.goal-met .command-goal-percent strong,#dashboard .command-goal.goal-met .command-goal-state{color:#70e59c}
 #dashboard .command-goal.goal-met .command-goal-track{border-color:#2e9e5c;background:#163523}
 #dashboard .command-goal.goal-met .command-goal-track>span{background:linear-gradient(180deg,#30c775,#158343);box-shadow:inset 0 2px 3px #a0f8bd50}
-</style></head>
+</style><style id="command-profit-stats">#dashboard .operations-fund-breakdown b.command-positive{color:#70e59c}</style></head>
 <body>
   <section class="auth-gate" id="authGate">
     <div class="auth-card">
@@ -3066,16 +3066,26 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const bftRaised = bftTotals ? money(bftTotals.income) : '';
       const bftGoal = findCommandValue(bftRows,'Goal Amount');
       const bftGoalNumber = Number(String(bftGoal).replace(/[$,]/g,''));
-      const bftRaisedNote = bftTotals
-        ? '2026 fundraising'
-        : 'Fundraising transactions unavailable · Refresh to retry';
       const marketplaceDue = String(marketRows[6]?.[16] || '').trim();
+      // Dashboard L7 is realized profit; B19 is paid merchandise revenue before tax/fees.
+      // Match the Marketplace module's profit / merchandise revenue margin definition.
+      const marketNumber = value => {
+        if (value == null || String(value).trim() === '') return null;
+        const parsed = Number(String(value).replace(/[$,]/g,''));
+        return Number.isFinite(parsed) ? parsed : null;
+      };
+      const marketplaceProfit = marketNumber(marketRows[6]?.[11]);
+      const marketplaceMerchandise = marketNumber(marketRows[18]?.[1]);
+      const marketplaceMargin = marketplaceProfit !== null && marketplaceMerchandise !== null
+        ? (marketplaceMerchandise > 0 ? (marketplaceProfit / marketplaceMerchandise * 100).toFixed(1) + '%' : marketplaceMerchandise === 0 && marketplaceProfit === 0 ? '0.0%' : '—')
+        : '—';
+      const statsCard = (label,value,lines) => `<article class="operations-kpi"><span>${esc(label)}</span><strong>${esc(value || '—')}</strong><div class="operations-fund-breakdown">${lines.map(([name,amount,positive]) => `<div>${esc(name)} <b${positive ? ' class="command-positive"' : ''}>${esc(amount)}</b></div>`).join('')}</div></article>`;
       const cards = [
         membershipCard,
         `<article class="operations-kpi"><span>Cash on Hand</span><strong>${esc(String(financeRows[6]?.[1] || '—'))}</strong><div class="operations-fund-breakdown"><div>Bikes for Tykes <b>${esc(fundBalance(financeRows[11]?.[5]))}</b></div><div>General Fund <b>${esc(fundBalance(financeRows[11]?.[1]))}</b></div></div></article>`,
         `<article class="operations-kpi"><span>Lifetime Community Impact</span><strong>${esc(String(financeRows[6]?.[5] || '—'))}</strong><div class="operations-fund-breakdown"><div>2025 Full Year <b>${esc(fundBalance(impactRows[25]?.[4]))}</b></div><div>2026 Year to Date <b>${esc(fundBalance(impactRows[27]?.[1]))}</b></div></div></article>`,
-        card('BFT Raised to Date',bftRaised,bftRaisedNote),
-        card('Marketplace Cash to Collect',marketplaceDue ? money(marketplaceDue) : 'Unavailable',marketplaceDue ? '' : 'Marketplace data did not load · Refresh to retry')
+        statsCard('BFT Raised to Date',bftRaised,[['Fundraising costs',bftTotals ? money(bftTotals.expenses) : '—',false],['Net raised',bftTotals ? money(bftTotals.available) : '—',!!bftTotals && bftTotals.available > 0]]),
+        statsCard('Marketplace Cash to Collect',marketplaceDue ? money(marketplaceDue) : 'Unavailable',[['Net profit',marketplaceProfit !== null ? money(marketplaceProfit) : '—',marketplaceProfit > 0],['Profit margin',marketplaceMargin,marketplaceProfit > 0]])
       ];
       const commandIcons = [
         '<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M17 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5"/>',
