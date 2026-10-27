@@ -1,6 +1,7 @@
 (function(root){
 'use strict';
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const summaryLayoutStyle=".bod-history #bod-history-ballot .bod-results-stats{margin:18px 0 22px;position:static;gap:14px}.bod-history #bod-history-ballot .bod-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}.bod-history #bod-history-ballot .bod-panel-heading h3{margin:0;min-width:0;flex:1 1 240px}.bod-history #bod-history-ballot [data-history-export]{flex:0 0 auto}.bod-history #bod-history-ballot .bod-stat{min-width:0}@media(max-width:460px){.bod-history #bod-history-ballot .bod-results-stats{gap:8px}.bod-history #bod-history-ballot .bod-stat{padding:12px 9px}.bod-history #bod-history-ballot .bod-stat>span{font-size:12px}}";
 let year=2026,snapshotIndex=0,selectionYears=null;
 function leadershipMarkup(record,index=0){
  const snapshots=record.leadershipSnapshots||[],snapshot=snapshots[index]||snapshots[0];
@@ -25,12 +26,12 @@ function load(selected,years){
  if(years)selectionYears=years;
  if(typeof accessToken==='undefined'||!accessToken)return;
  currentMembershipSheet='BOD Nominations 2027';root.BSSCBodNominations.installStyle();
- if(!document.getElementById('bod-history-style')){const style=document.createElement('style');style.id='bod-history-style';style.textContent='.bod-history .bod-results-panel{margin:18px 0;padding:24px}.bod-history-table{overflow-x:auto}.bod-history table{width:100%;border-collapse:collapse;color:inherit}.bod-history th,.bod-history td{text-align:left;padding:13px;border-bottom:1px solid #cbd0d6}.bod-history button,.bod-history select,.bod-history summary{min-height:44px}.bod-history .bod-stat strong{font-size:clamp(22px,4vw,38px)}.bod-history label{display:block;margin:12px 0}.bod-history select{margin-left:8px;padding:8px}.bod-history details{margin-top:20px}.bod-history summary{cursor:pointer;padding:10px 0}';document.head.appendChild(style);}
+ if(!document.getElementById('bod-history-style')){const style=document.createElement('style');style.id='bod-history-style';style.textContent=summaryLayoutStyle+'.bod-history .bod-results-panel{margin:18px 0;padding:24px}.bod-history-table{overflow-x:auto}.bod-history table{width:100%;border-collapse:collapse;color:inherit}.bod-history th,.bod-history td{text-align:left;padding:13px;border-bottom:1px solid #cbd0d6}.bod-history button,.bod-history select,.bod-history summary{min-height:44px}.bod-history .bod-stat strong{font-size:clamp(22px,4vw,38px)}.bod-history label{display:block;margin:12px 0}.bod-history select{margin-left:8px;padding:8px}.bod-history details{margin-top:20px}.bod-history summary{cursor:pointer;padding:10px 0}';document.head.appendChild(style);}
  const target=document.getElementById('membershipContent');target.innerHTML=markup(root.BSSCBodElectionHistoryData,year,snapshotIndex);
  const status=document.getElementById('membershipStatus');status.classList.remove('lifer-summary');status.textContent='Board Elections · '+year;
  target.querySelector('[data-history-year]').addEventListener('change',e=>{root.BSSCBodNominations.selectYear(e.target.value);});
  target.querySelector('[data-history-snapshot]')?.addEventListener('change',e=>{snapshotIndex=Number(e.target.value);load();});
  target.querySelector('[data-history-export]').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob(['\ufeff'+csv(root.BSSCBodElectionHistoryData[year])],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='BSSC_BOD_Election_'+year+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
 }
-root.BSSCBodElectionHistory={markup,leadershipMarkup,csv,load};
+root.BSSCBodElectionHistory={summaryLayoutStyle,markup,leadershipMarkup,csv,load};
 })(typeof window==='undefined'?globalThis:window);
