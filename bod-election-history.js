@@ -3,12 +3,22 @@
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const summaryLayoutStyle=".bod-history #bod-history-ballot .bod-results-stats{margin:18px 0 22px;position:static;gap:14px}.bod-history #bod-history-ballot .bod-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}.bod-history #bod-history-ballot .bod-panel-heading h3{margin:0;min-width:0;flex:1 1 240px}.bod-history #bod-history-ballot [data-history-export]{flex:0 0 auto}.bod-history #bod-history-ballot .bod-stat{min-width:0}@media(max-width:460px){.bod-history #bod-history-ballot .bod-results-stats{gap:8px}.bod-history #bod-history-ballot .bod-stat{padding:12px 9px}.bod-history #bod-history-ballot .bod-stat>span{font-size:12px}}";
 let year=2026,snapshotIndex=null,selectionYears=null;
+function lineupLabel(record,index){
+ if(index===0)return 'Original selection';
+ const snap=record.leadershipSnapshots[index],date=snap.asOf||snap.effectiveDate||snap.date;
+ if(date){const at=new Date(date);if(!Number.isNaN(at.getTime()))return 'As of '+at.toLocaleDateString('en-US',{timeZone:'UTC',year:'numeric',month:'short',day:'numeric'});}
+ const descriptions={2025:['','Sergeant-at-Arms and director changes','Road Captain vacancy','President and Media Director vacancies','Todd Humphrey assumes President','Revised officers and club roles'],2026:['','Goodwill Ambassador reassignment']};
+ if(descriptions[record.year]?.[index])return descriptions[record.year][index];
+ const prior=record.leadershipSnapshots[index-1]?.rows||[],changed=snap.rows.filter(row=>!prior.some(p=>p.position===row.position&&p.name===row.name));
+ const roles=[...new Set(changed.map(row=>row.position))];
+ return roles.length?'Revised '+roles.slice(0,3).join(', '):'Revised board roster';
+}
 function leadershipMarkup(record,index=null){
  const snapshots=record.leadershipSnapshots||[],snapshot=snapshots[index??(snapshots.length-1)]||snapshots[snapshots.length-1];
  const rows=snapshot?.rows||record.officers||[];
  const names=rows.filter(r=>!r.additional),additional=rows.filter(r=>r.additional);
  const table=items=>`<div class="bod-history-table"><table><thead><tr><th scope="col">Position</th><th scope="col">Board member / status</th></tr></thead><tbody>${items.map(r=>`<tr><th scope="row">${escape(r.position)}</th><td>${r.status?escape(r.name):`<button type="button" class="board-record-name" data-board-record-name="${escape(r.name.replace(/\s*\(.*$/,''))}" data-board-record-year="${record.year}">${escape(r.name)}</button>`}</td></tr>`).join('')}</tbody></table></div>`;
- return `<section class="bod-results-panel" id="bod-history-officers"><div class="bod-panel-heading"><h3>Officer selections</h3><span class="bod-total-badge">${record.year} Board</span></div>${snapshots.length>1?`<label>Board lineup <select data-history-snapshot aria-label="Board lineup">${snapshots.map((v,i)=>({v,i})).reverse().map(({v,i})=>`<option value="${i}" ${v===snapshot?'selected':''}>${i===0?'Original selections':'Board change '+i+(i===snapshots.length-1?' — Latest lineup':'')}</option>`).join('')}</select></label>`:''}${names.length?table(names):'<p>Officer selections are not available for this year.</p>'}${additional.length?`<details><summary>Additional club roles</summary>${table(additional)}</details>`:''}</section>`;
+ return `<section class="bod-results-panel" id="bod-history-officers"><div class="bod-panel-heading"><h3>Officer selections</h3><span class="bod-total-badge">${record.year} Board</span></div>${snapshots.length>1?`<label>Board lineup <select data-history-snapshot aria-label="Board lineup">${snapshots.map((v,i)=>({v,i})).map(({v,i})=>`<option value="${i}" ${v===snapshot?'selected':''}>${escape(lineupLabel(record,i))}</option>`).join('')}</select></label>`:''}${names.length?table(names):'<p>Officer selections are not available for this year.</p>'}${additional.length?`<details><summary>Additional club roles</summary>${table(additional)}</details>`:''}</section>`;
 }
 function markup(data,selected,snapshot=null){
  const record=data[selected],candidates=record.candidates||[];
@@ -33,5 +43,5 @@ function load(selected,years){
  target.querySelector('[data-history-snapshot]')?.addEventListener('change',e=>{snapshotIndex=Number(e.target.value);load();});
  target.querySelector('[data-history-export]').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob(['\ufeff'+csv(root.BSSCBodElectionHistoryData[year])],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='BSSC_BOD_Election_'+year+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
 }
-root.BSSCBodElectionHistory={summaryLayoutStyle,markup,leadershipMarkup,csv,load};
+root.BSSCBodElectionHistory={lineupLabel,summaryLayoutStyle,markup,leadershipMarkup,csv,load};
 })(typeof window==='undefined'?globalThis:window);
