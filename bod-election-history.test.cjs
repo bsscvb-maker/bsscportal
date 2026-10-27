@@ -1,0 +1,10 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const context={};vm.createContext(context);
+vm.runInContext(fs.readFileSync('bod-election-history-data.js','utf8').replace('window.','globalThis.'),context);
+vm.runInContext(fs.readFileSync('bod-election-history.js','utf8'),context);
+const data=context.BSSCBodElectionHistoryData,api=context.BSSCBodElectionHistory;
+test('2026 certified outcome preserves six winners and retained president',()=>{assert.equal(data[2026].candidates.filter(c=>c.outcome==='Elected').length,6);assert.equal(data[2026].candidates.find(c=>c.name==='Gene Melfy').outcome,'Not elected');assert.equal(data[2026].ballots,30);assert.match(data[2026].retained[0],/Todd Humphrey/);});
+test('2025 totals and final slate remain separate from officer selection',()=>{assert.equal(data[2025].candidates.reduce((a,c)=>a+c.votes,0),383);assert.equal(data[2025].candidates.filter(c=>c.outcome==='Elected').length,10);assert.equal(data[2025].officers.find(o=>o.position==='Vice President').result,'7 to 4');});
+test('all sources retained; older ballots never imply winners',()=>{assert.equal(Object.values(data).reduce((a,r)=>a+r.sources.length,0),16);for(const y of [2014,2015,2016,2020,2021]){assert.ok(data[y].candidates.every(c=>c.votes===null&&c.outcome==='Unconfirmed'));assert.match(api.markup(data,y),/Results unconfirmed/);}assert.match(api.markup(data,2014),/Year conflict/);});
+test('every year renders and CSV preserves unknown values',()=>{for(let y=2014;y<=2026;y++){assert.match(api.markup(data,y),/data-history-year/);}assert.match(api.csv(data[2014]),/"","Unconfirmed"/);assert.ok(!api.markup(data,2026).includes('data-bod-manage'));});
+test('portal has separate history route and loads data before renderer',()=>{const s=fs.readFileSync('index.html','utf8');assert.match(s,/sheetName === 'BOD Election History'/);assert.ok(s.indexOf('<script src="bod-election-history-data.js')<s.indexOf('<script src="bod-election-history.js'));});
