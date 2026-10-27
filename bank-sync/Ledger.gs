@@ -87,8 +87,28 @@ function importBankLedger_(book,bankRows) {
     sheet.getRange(n,1,1,10).setValues([r.slice(0,10)]);
     sheet.getRange(n,13,1,5).setValues([r.slice(12,17)]);
     sheet.getRange(n,1).setNumberFormat('yyyy-mm-dd');
-    if(!sheet.getRange(n,11).getFormula())sheet.getRange(n-1,11,1,2).copyTo(sheet.getRange(n,11,1,2),SpreadsheetApp.CopyPasteType.PASTE_FORMULA,false);
+    sheet.getRange(n,11,1,2).setFormulas([[bankLedgerBalanceFormula_(n),bankLedgerBalanceFormula_(n,true)]]);
     sheet.getRange(n,18).setFormula('=IF(O'+n+'="Yes",IF(LEFT(M'+n+',8)="Transfer",0,J'+n+'),0)');
   });
   return {added:plan.additions.length,matched:plan.changes.length};
 }
+
+    // Reconciled September 30 snapshot, shared with financeCashSnapshot.
+    // Processor gross/fee/summary rows never move bank cash; net transfers do.
+    function bankLedgerBalanceFormula_(row, outstanding = false) {
+      const col = (c,start,end)=>`$${c}$${start}:$${c}${end}`;
+      const build = function formula(row,outstanding=false){
+ const sum=(start,end,status)=>{
+ const c=x=>col(x,start,end);
+ const eligible=`((${c('G')}="General Fund")+(${c('G')}="Bikes For Tykes"))`;
+ const bank=`(((${c('N')}<>"PayPal")*(${c('N')}<>"Chase Payments"))+REGEXMATCH(${c('M')},"^Transfer (In|Out)$"))`;
+ const active=`NOT(REGEXMATCH(LOWER(${['D','E','F','M','O','Q'].map(c).join('&" "&')}),"\\bvoid(ed)?\\b"))`;
+ const state=status==='bank'?`REGEXMATCH(LOWER(${c('O')}),"^(yes|pending at chase)$")`:`${c('O')}="No"`;
+ return `IFERROR(SUM(FILTER(${c('J')},${eligible}>0,${bank}>0,${active},${state})),0)`;
+ };
+ const opening=`IFERROR(SUM(FILTER($J$2:$J$357,$N$2:$N$357="Check",$O$2:$O$357="Yes",REGEXMATCH($Q$2:$Q$357,"(?i)\\bcheck\\s*#\\s*3635\\b"))),0)`;
+ return outstanding?`=IF($A${row}="","",ROUND(K${row}+${sum(358,row,'no')},2))`:`=IF($A${row}="","",ROUND(17919.79+${opening}+${sum(358,row,'bank')},2))`;
+};
+      return build(row, outstanding);
+    }
+
