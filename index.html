@@ -3063,7 +3063,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
     // Reconciled September 30 snapshot, shared with financeCashSnapshot.
     // Processor gross/fee/summary rows never move bank cash; net transfers do.
     function financeTransactionBalanceFormula(row, outstanding = false) {
-      const col = (c,start,end)=>`${c}${start}:${c}${end}`;
+      const col = (c,start,end)=>`$${c}$${start}:$${c}${end}`;
       const build = function formula(row,outstanding=false){
  const sum=(start,end,status)=>{
  const c=x=>col(x,start,end);
