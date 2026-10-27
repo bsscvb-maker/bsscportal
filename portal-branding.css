@@ -10,3 +10,10 @@ body.portal-authenticated .avatar.portal-skull-avatar{display:grid!important;wid
 .records-hero.dashboard-records-header>div:first-child:before{content:'';position:absolute;left:0;top:0;width:51px;height:63px;background:url('assets/club-skull.webp') center/contain no-repeat}
 .receipt-collection-art .receipt-program-logo{display:block;width:94%;height:94%;object-fit:contain;padding:12px}
 @media(max-width:650px){.brand-mark.portal-skull-mark{width:43px;height:48px}.portal-program-brand{padding:14px;gap:14px}.portal-program-brand img{width:135px;height:76px;max-width:42%}.portal-program-brand strong{font-size:15px}.portal-program-brand span{font-size:10px}#dashboard .home-view-switch>div{padding-left:60px}#dashboard .home-view-switch>div:before{width:47px;height:62px}}
+
+/* Keep the Control finance clock together at the right of its banner. */
+#financeControlTable .control-title{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 24px}
+#financeControlTable .control-title h2{flex:1 1 520px;min-width:0}
+#financeControlTable .control-title .live-eastern-time{display:inline-flex;align-items:center;justify-content:flex-end;gap:8px;margin:0 0 0 auto;max-width:100%;text-align:right}
+#financeControlTable .control-title .live-eastern-time span{margin-top:0}
+#financeControlTable .control-title .live-clock-dot{flex:0 0 9px}
