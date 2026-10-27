@@ -9,4 +9,13 @@ async function open(name,year){
 }
 document.addEventListener('click',e=>{const button=e.target.closest('[data-board-record-name]');if(button)open(button.dataset.boardRecordName,button.dataset.boardRecordYear);});
 window.BSSCBoardDocuments={open};
+async function fillAcceptances(panel,year){
+ const body=panel.querySelector('[data-acceptance-list]');body.textContent='Loading signed acceptances…';
+ try{const rows=await getSheetValues("'Board Service Records'!A2:N2000",'1G1GhywDG-FYEo00fY_FeWheScve333LIdBqZpqLbZZM');if(!panel.isConnected)return;body.replaceChildren();const records=rows.filter(r=>String(r[2])===String(year));
+ if(!records.length){body.textContent='No signed acceptances received for '+year+'.';return;}
+ for(const r of records){const article=document.createElement('article');article.style.cssText='padding:16px 0;border-top:1px solid #555';const button=document.createElement('button');button.type='button';button.className='board-record-name';button.textContent=r[3];button.onclick=()=>open(r[3],year);const info=document.createElement('p');info.textContent=(r[5]||'Board member')+' • '+r[12];const date=document.createElement('small');const at=new Date(r[1]);date.textContent='Received '+(isNaN(at)?r[1]:at.toLocaleString('en-US',{timeZone:'America/New_York',dateStyle:'medium',timeStyle:'short'}));article.append(button,info,date);body.append(article);}
+ }catch(error){body.textContent='Acceptances could not be loaded. Select Refresh acceptances to try again.';}
+}
+function mountAcceptances(){const target=document.getElementById('membershipContent');const picker=target?.querySelector('[data-bod-year],[data-history-year]');if(!picker)return;const year=picker.value;if(target.querySelector('[data-board-acceptance-panel]'))return;const panel=document.createElement('section');panel.className='bod-results-panel';panel.dataset.boardAcceptancePanel=year;const h=document.createElement('h3');h.textContent=year+' Board Acceptances';const note=document.createElement('p');note.textContent='Signed annual acknowledgments received. Click a member’s name to open their documents. Submissions await Secretary verification; they do not add a person to the elected roster.';const refresh=document.createElement('button');refresh.type='button';refresh.textContent='Refresh acceptances';refresh.onclick=()=>fillAcceptances(panel,year);const list=document.createElement('div');list.dataset.acceptanceList='';panel.append(h,note,refresh,list);const hero=target.querySelector('.bod-hero');if(hero)hero.after(panel);else target.prepend(panel);fillAcceptances(panel,year);}
+new MutationObserver(mountAcceptances).observe(document.body,{childList:true,subtree:true});mountAcceptances();
 })();
