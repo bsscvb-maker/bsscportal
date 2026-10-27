@@ -1,7 +1,7 @@
 (function(root){
   'use strict';
   function normalizeYearPicker(select,latestYear){
-    const options=Array.from(select.options),years=options.filter(option=>/^20\d{2}$/.test(option.textContent.trim())&&/^20\d{2}$/.test(option.value));
+    const options=Array.from(select.options),years=options.filter(option=>/^20\d{2}(?:\b|$)/.test(option.textContent.trim())&&/^20\d{2}$/.test(option.value));
     if(!years.length)return;
     const valid=years.filter(option=>Number(option.value)<=latestYear).sort((a,b)=>Number(b.value)-Number(a.value));
     const other=options.filter(option=>!years.includes(option));
