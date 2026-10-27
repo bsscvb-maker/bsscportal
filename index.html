@@ -2283,7 +2283,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       </div>
     </main>
   </div>
-  <script src="dues-matching.js?v=16"></script>
+  <script src="dues-matching.js?v=17"></script>
   <script>
     let rosterHeaderCleanup = null;
     function setupRosterFloatingHeader(target) {
@@ -8297,7 +8297,10 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
             await setup2027DuesReview(rows);
             setupMobileRosterView(rows, '2027');
           }
-          if (sheetName === '2026') setupMobileRosterView(rows, '2026');
+          if (/^\d{4}$/.test(sheetName) && sheetName !== '2027') {
+            await setupHistoricalDuesReview(rows, sheetName);
+            setupMobileRosterView(rows, sheetName);
+          }
           if (sheetName === '2026 - Non Renewal') {
             await setupRenewalDecisionReview(rows);
           }
