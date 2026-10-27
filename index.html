@@ -849,6 +849,18 @@
     .operations-membership-breakdown { display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:8px; color:#414a55; font-size:.85rem; line-height:1.35; }
     .operations-membership-breakdown b { color:#111113; font-size:1rem; }
     #operationsOverviewCards .operations-kpi { text-align:center; }
+    /* Shared label, value and detail rows keep dashboard amounts aligned. */
+    #operationsOverviewCards .operations-kpi > span { min-height:2.7em; line-height:1.35; display:flex; align-items:center; justify-content:center; }
+    #operationsOverviewCards .operations-kpi > strong { font-variant-numeric:tabular-nums; }
+    @media (min-width:1001px) {
+      #operationsOverviewCards { align-items:stretch; row-gap:8px; }
+      #operationsOverviewCards .operations-kpi { display:grid; grid-template-rows:subgrid; grid-row:span 3; row-gap:8px; }
+      #operationsOverviewCards .operations-kpi > strong { margin-top:0; align-self:start; }
+      #operationsOverviewCards .operations-kpi > small,
+      #operationsOverviewCards .operations-kpi > .operations-membership-breakdown,
+      #operationsOverviewCards .operations-kpi > .operations-fund-breakdown { margin-top:0; align-self:start; }
+    }
+
     .operations-membership-breakdown { justify-content:center; }
     .operations-fund-breakdown div { justify-content:center; }
     .operations-fund-breakdown { display:grid; gap:6px; margin-top:10px; color:#414a55; font-size:.85rem; line-height:1.35; }
@@ -2078,7 +2090,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
               <article class="operations-kpi"><span>Membership</span><strong>—</strong><small>Sign in to load the latest count.</small></article>
               <article class="operations-kpi"><span>Cash on Hand</span><strong>—</strong></article>
               <article class="operations-kpi"><span>Lifetime Community Impact</span><strong>—</strong></article>
-              <article class="operations-kpi"><span>Bikes for Tykes Raised to Date · 2026</span><strong>—</strong><small>Fundraising progress</small></article>
+              <article class="operations-kpi"><span>Bikes for Tykes Raised to Date 2026</span><strong>—</strong><small>Fundraising progress</small></article>
               <article class="operations-kpi"><span>Marketplace Cash to Collect</span><strong>—</strong></article>
             </div>
             <div class="operations-lower">
@@ -3002,8 +3014,8 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         membershipCard,
         `<article class="operations-kpi"><span>Cash on Hand</span><strong>${esc(String(financeRows[6]?.[1] || '—'))}</strong><div class="operations-fund-breakdown"><div>Bikes for Tykes <b>${esc(fundBalance(financeRows[11]?.[5]))}</b></div><div>General Fund <b>${esc(fundBalance(financeRows[11]?.[1]))}</b></div></div></article>`,
         `<article class="operations-kpi"><span>Lifetime Community Impact</span><strong>${esc(String(financeRows[6]?.[5] || '—'))}</strong><div class="operations-fund-breakdown"><div>2025 Full Year <b>${esc(fundBalance(impactRows[25]?.[4]))}</b></div><div>2026 Year to Date <b>${esc(fundBalance(impactRows[27]?.[1]))}</b></div></div></article>`,
-        card('Bikes for Tykes Raised to Date · 2026',bftRaised,bftRaisedNote),
-        card('Marketplace Cash to Collect',marketplaceDue || 'Unavailable',marketplaceDue ? 'Outstanding marketplace payments' : 'Marketplace data did not load · Refresh to retry')
+        card('Bikes for Tykes Raised to Date 2026',bftRaised,bftRaisedNote),
+        card('Marketplace Cash to Collect',marketplaceDue ? money(marketplaceDue) : 'Unavailable',marketplaceDue ? '' : 'Marketplace data did not load · Refresh to retry')
       ];
       target.innerHTML = cards.join('');
       const successful = results.filter(result => result.status === 'fulfilled').length;
