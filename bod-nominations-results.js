@@ -13,10 +13,10 @@
     return {year,nominations:'BOD Nominations '+year,candidates:'BOD Candidates '+year,audit:'BOD Nomination Changes '+year};
   }
   function availableYears(sheets=[]) {
-    const years=new Set(Array.from({length:Math.max(5,new Date().getFullYear()+4-2026)},(_,i)=>2026+i));
+    const years=new Set();
     Object.keys((typeof window!=='undefined'?window:globalThis).BSSCBodElectionHistoryData||{}).forEach(year=>years.add(Number(year)));
     sheets.forEach(entry=>{const match=/^BOD Nominations (20[0-9]{2}|2100)$/.exec(entry.properties?.title||'');if(match)years.add(Number(match[1]));});
-    return [...years].sort((a,b)=>b-a);
+    return [...years].filter(year=>Number.isInteger(year)&&year<=2027).sort((a,b)=>b-a);
   }
   function yearSelector(year,years) {
     return `<label class="bod-year-picker">Board service year <select data-bod-year aria-label="Board service year">${years.map(value=>`<option value="${value}" ${value===year?'selected':''}>${value}</option>`).join('')}</select></label>`;
