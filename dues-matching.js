@@ -396,3 +396,60 @@ function print2027UnpaidDues(context) {
   </style></head><body><div class="toolbar"><button onclick="window.print()">Print collection sheet</button></div>${sheets}</body></html>`);
   printWindow.document.close();printWindow.focus();
 }
+
+
+// Historical summaries use recorded annual values, never today's exemption rules.
+function historicalRenewalPeople(rows) {
+  const headers=(rows[0]||[]).map(v=>duesNorm(v).replace(/[^a-z0-9]/g,''));
+  const col=(...names)=>headers.findIndex(h=>names.includes(h));
+  const first=col('firstname','first'),last=col('lastname','last'),status=col('status'),dues=col('duespaid','dues','duesstatus'),email=col('email','emailaddress');
+  if(first<0||last<0) throw new Error('First Name / Last Name columns are unavailable.');
+  const people=new Map();
+  rows.slice(1).forEach(row=>{
+    const name=[row[first],row[last]].map(v=>String(v||'').trim()).filter(Boolean).join(' ');
+    if(!name)return;
+    const key=duesNorm(String(row[first]||'').trim()+'|'+String(row[last]||'').trim());
+    if(people.has(key))throw new Error('Duplicate member names need review.');
+    const state=status<0?'':duesNorm(row[status]);
+    people.set(key,{key,name,first:duesNorm(row[first]),last:duesNorm(row[last]),email:email<0?'':duesNorm(row[email]),status:state,dues:dues<0?'':duesNorm(row[dues]),included:true});
+  });
+  return {people:[...people.values()],hasDues:dues>=0};
+}
+function historicalRenewalSummary(rows,previousRows) {
+  const current=historicalRenewalPeople(rows),previous=previousRows?historicalRenewalPeople(previousRows):null;
+  const members=current.people;
+  const starting=previous?.people.filter(p=>p.included)??null;
+  const matches=(person,list)=>list.filter(p=>p.key===person.key || (p.first===person.last && p.last===person.first) || (person.email && p.email===person.email && (p.last===person.last || p.first===person.last || p.last===person.first)));
+  const matched=starting?members.filter(p=>matches(p,starting).length===1 && matches(matches(p,starting)[0],members).length===1):[];
+  const matchedPrior=new Set(matched.map(p=>matches(p,starting)[0].key));
+  const renewed=starting?matched:null;
+  const added=starting?members.filter(p=>!matched.includes(p)):null;
+  const missing=starting?starting.filter(p=>!matchedPrior.has(p.key)):null;
+  const paid=members.filter(p=>/^(yes|paid|1\/2|half)$/.test(p.dues));
+  const exempt=members.filter(p=>/^(exempt|waived|n\/a|honorary)$/.test(p.dues));
+  const owes=members.filter(p=>/^(no|unpaid|owing|owes|not paid)$/.test(p.dues));
+  const known=new Set([...paid,...exempt,...owes].map(p=>p.key));
+  const unknown=members.filter(p=>!known.has(p.key));
+  return {members,starting,renewed,added,missing,paid,exempt,owes,unknown};
+}
+async function setupHistoricalDuesReview(rows,year) {
+  const target=document.getElementById('membershipContent');
+  let previousRows=null;
+  const prior=String(Number(year)-1),config=membershipSheetConfig[prior];
+  if(config)try{previousRows=await getSheetValues(config.range,MEMBERSHIP_SPREADSHEET_ID);}catch(_){}
+  if(currentMembershipSheet!==year)return;
+  const panel=document.createElement('section');panel.className='dues-manager-launch';
+  panel.style.cssText='display:block;border-left:6px solid #c8102e;padding:16px 18px;';
+  try{
+    const summary=historicalRenewalSummary(rows,previousRows);
+    const colors={green:'background:#dcfce7;color:#166534',blue:'background:#dbeafe;color:#1e40af',gray:'background:#f3f4f6;color:#374151',red:'background:#fee2e2;color:#991b1b',yellow:'background:#fef3c7;color:#92400e'};
+    const badge=(label,members,color='gray')=>'<span tabindex="0" data-dues-names="'+esc(members.map(p=>p.name).sort((a,b)=>a.localeCompare(b)).join('\n')||'No members').replace(/"/g,'&quot;')+'" style="'+colors[color]+';border:1px solid currentColor;border-radius:8px;padding:7px 10px;cursor:help">'+label+'</span>';
+    const b=(members,label,color)=>members===null?'':badge(members.length+' '+label,members,color);
+    panel.innerHTML='<strong style="font-size:1.05rem">'+esc(year)+' Membership Dues & Renewal Progress</strong><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-weight:900">'+
+      b(summary.renewed,'RENEWED','green')+b(summary.added,'NEW / RETURNING','blue')+b(summary.missing,'DID NOT RENEW','gray')+
+      b(summary.members,'ROSTER MEMBERS','gray')+badge((summary.paid.length+summary.exempt.length)+' / '+summary.members.length+' DUES COMPLETE',[...summary.paid,...summary.exempt],'green')+
+      b(summary.paid,'PAID','green')+b(summary.exempt,'EXEMPT','blue')+b(summary.owes,'RECORDED UNPAID','red')+b(summary.unknown,'DUES NOT RECORDED','yellow')+b(summary.starting,'STARTING MEMBERS','gray')+
+      '</div><p style="margin:12px 0 0">'+(summary.starting?'Compared with the '+prior+' roster. Renewed means listed in both years; new / returning means absent from the previous roster.':'The '+prior+' roster is unavailable, so renewal and starting counts cannot be calculated.')+' Includes all named annual roster records, including former members. Matches allow reversed first / last names or a unique email with a matching name part. Dues reflect this year’s recorded values. Reasons for non-renewal are not inferred.</p>';
+    target.prepend(panel);setupDuesNamePreviews(panel);
+  }catch(error){panel.textContent=year+' renewal summary unavailable: '+error.message;target.prepend(panel);}
+}
