@@ -1,16 +1,6 @@
 window.BSSCBodElectionHistoryData = {
   "2014": {
     "year": 2014,
-    "sources": [
-      {
-        "title": "Board Nominees for 2014.pdf",
-        "url": "https://drive.google.com/file/d/1BPV1-ossuu0Rxd29nq7o8zDeQrK2Xmti/view?usp=drivesdk"
-      },
-      {
-        "title": "2014 BOD Ballot.pdf",
-        "url": "https://drive.google.com/file/d/18bepS4YMH2BxAfiQxUIYRzZp3E0L4YRY/view?usp=drivesdk"
-      }
-    ],
     "candidates": [
       {
         "name": "George Bruch",
@@ -98,20 +88,108 @@ window.BSSCBodElectionHistoryData = {
         "outcome": "Unconfirmed"
       }
     ],
-    "notes": [
-      "The nominee document lists Michelle Bozeman twice; displayed once here. Names retain source spelling.",
-      "Year conflict: the file named 2014 BOD Ballot says 2015 inside and lists a different slate. Review the original before assigning that ballot or any results to a year. The nominees shown here come from Board Nominees for 2014."
+    "officers": [],
+    "leadershipSnapshots": [
+      {
+        "label": "2014",
+        "rows": [
+          {
+            "position": "President",
+            "name": "George Bruch",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Ric Weise",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Robert Reed",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Terri Bruch",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Tracy Winkler",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Dale Oran",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Unestablished",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Josh Butts",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Chuck Hoffman",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Jennifer Reed",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Jennifer Reed",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Billy Stemple",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Steven Winkler",
+            "status": false,
+            "additional": false
+          }
+        ]
+      }
     ],
-    "officers": []
+    "reviewedOn": "2026-10-27"
   },
   "2015": {
     "year": 2015,
-    "sources": [
-      {
-        "title": "2015 BOD Ballot.pdf",
-        "url": "https://drive.google.com/file/d/1vhUS8WWO_vdeOB7bofQPgJT1Ir0IO57I/view?usp=drivesdk"
-      }
-    ],
     "candidates": [
       {
         "name": "Glenn Bozeman",
@@ -199,49 +277,213 @@ window.BSSCBodElectionHistoryData = {
         "outcome": "Unconfirmed"
       }
     ],
-    "notes": [
-      "Ballot allows up to 11 selections. No certified tally or winner list was found among these election files."
+    "officers": [
+      {
+        "position": "President",
+        "name": "David Jaffe",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Vice President",
+        "name": "Ric Wiese",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Srg at Arms",
+        "name": "Dennis Powell",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Treasurer",
+        "name": "Terri Bruch",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Secretary",
+        "name": "Jennifer Lynch",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Parliamentarian",
+        "name": "Kelley Buckoske",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Steven Winkler",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Tracy Winkler",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "George Bruch",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Juliann Shutter",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Chuck Hoffman",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      }
     ],
-    "officers": []
+    "leadershipSnapshots": [
+      {
+        "label": "2015",
+        "rows": [
+          {
+            "position": "President",
+            "name": "David Jaffe",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Ric Wiese",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Dennis Powell",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Terri Bruch",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Jennifer Lynch",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Kelley Buckoske",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Unestablished",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Steven Winkler",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Tracy Winkler",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "George Bruch",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Juliann Shutter",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Chuck Hoffman",
+            "status": false,
+            "additional": false
+          }
+        ]
+      }
+    ],
+    "confirmedBoard": [
+      "David Jaffe",
+      "Ric Wiese",
+      "Dennis Powell",
+      "Terri Bruch",
+      "Jennifer Lynch",
+      "Kelley Buckoske",
+      "Steven Winkler",
+      "Tracy Winkler",
+      "George Bruch",
+      "Juliann Shutter",
+      "Chuck Hoffman"
+    ],
+    "outcomeRecorded": true,
+    "reviewedOn": "2026-10-27"
   },
   "2016": {
     "year": 2016,
-    "sources": [
-      {
-        "title": "2016 BALLOT.pdf",
-        "url": "https://drive.google.com/file/d/1YRhksRlMUrH-mDyh-aWPyjVv07rS4xGx/view?usp=drivesdk"
-      }
-    ],
     "candidates": [
       {
         "name": "Glenn Bozeman",
         "votes": null,
-        "outcome": "Unconfirmed"
+        "outcome": "Elected"
       },
       {
         "name": "Michelle Bozeman",
         "votes": null,
-        "outcome": "Unconfirmed"
+        "outcome": "Elected"
       },
       {
         "name": "Zeb Brevard",
         "votes": null,
-        "outcome": "Unconfirmed"
+        "outcome": "Elected"
       },
       {
         "name": "Sergio Bruner",
         "votes": null,
-        "outcome": "Unconfirmed"
+        "outcome": "Elected"
       },
       {
         "name": "Jim Capasso",
         "votes": null,
-        "outcome": "Unconfirmed"
+        "outcome": "Elected"
       },
       {
         "name": "Kelley Buckoske",
         "votes": null,
-        "outcome": "Unconfirmed"
+        "outcome": "Elected"
       },
       {
         "name": "Rodney Gravitt",
@@ -261,12 +503,12 @@ window.BSSCBodElectionHistoryData = {
       {
         "name": "David Jaffe",
         "votes": null,
-        "outcome": "Unconfirmed"
+        "outcome": "Elected"
       },
       {
         "name": "Ron Moore",
         "votes": null,
-        "outcome": "Unconfirmed"
+        "outcome": "Elected"
       },
       {
         "name": "Deanna Moreland",
@@ -281,12 +523,12 @@ window.BSSCBodElectionHistoryData = {
       {
         "name": "Andrea Powell",
         "votes": null,
-        "outcome": "Unconfirmed"
+        "outcome": "Elected"
       },
       {
         "name": "Dennis Powell",
         "votes": null,
-        "outcome": "Unconfirmed"
+        "outcome": "Elected"
       },
       {
         "name": "Juliann Shutter",
@@ -296,7 +538,7 @@ window.BSSCBodElectionHistoryData = {
       {
         "name": "Jason Starnes",
         "votes": null,
-        "outcome": "Unconfirmed"
+        "outcome": "Elected"
       },
       {
         "name": "Steve Winkler",
@@ -309,40 +551,593 @@ window.BSSCBodElectionHistoryData = {
         "outcome": "Unconfirmed"
       }
     ],
-    "notes": [
-      "Ballot allows up to 11 selections. No certified tally or winner list was found among these election files."
+    "officers": [
+      {
+        "position": "President",
+        "name": "Ron Moore",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Vice President",
+        "name": "David Jaffe",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Srg at Arms",
+        "name": "Sergio Bruner",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Treasurer",
+        "name": "Kelley Buckoske",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Secretary",
+        "name": "Andrea Powell",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Parliamentarian",
+        "name": "Glenn Bozeman",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Michelle Bozeman",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Zeb Brevard",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Jim Capasso",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Dennis Powell",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Jason Starnes",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      }
     ],
-    "officers": []
+    "leadershipSnapshots": [
+      {
+        "label": "2016",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Ron Moore",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "David Jaffe",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Sergio Bruner",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Kelley Buckoske",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Andrea Powell",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Glenn Bozeman",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Unestablished",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Michelle Bozeman",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Zeb Brevard",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Jim Capasso",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Dennis Powell",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Jason Starnes",
+            "status": false,
+            "additional": false
+          }
+        ]
+      }
+    ],
+    "confirmedBoard": [
+      "Glenn Bozeman",
+      "Michelle Bozeman",
+      "Zeb Brevard",
+      "Sergio Bruner",
+      "Kelley Buckoske",
+      "Jim Capasso",
+      "David Jaffe",
+      "Ron Moore",
+      "Andrea Powell",
+      "Dennis Powell",
+      "Jason Starnes"
+    ],
+    "outcomeRecorded": true,
+    "reviewedOn": "2026-10-27"
   },
   "2017": {
     "year": 2017,
-    "sources": [],
-    "candidates": [],
-    "notes": [],
-    "officers": []
+    "candidates": [
+      {
+        "name": "George Bruch",
+        "votes": null,
+        "outcome": "Seated — uncontested"
+      },
+      {
+        "name": "Terri Bruch",
+        "votes": null,
+        "outcome": "Seated — uncontested"
+      },
+      {
+        "name": "Glenn Bozeman",
+        "votes": null,
+        "outcome": "Seated — uncontested"
+      },
+      {
+        "name": "Michelle Bozeman",
+        "votes": null,
+        "outcome": "Seated — uncontested"
+      },
+      {
+        "name": "Kelley Buckoske",
+        "votes": null,
+        "outcome": "Seated — uncontested"
+      },
+      {
+        "name": "Jim Capasso",
+        "votes": null,
+        "outcome": "Seated — uncontested"
+      },
+      {
+        "name": "Jim Howley",
+        "votes": null,
+        "outcome": "Seated — uncontested"
+      },
+      {
+        "name": "Ron Moore",
+        "votes": null,
+        "outcome": "Seated — uncontested"
+      },
+      {
+        "name": "Jason Starnes",
+        "votes": null,
+        "outcome": "Seated — uncontested"
+      },
+      {
+        "name": "Gordon Waite",
+        "votes": null,
+        "outcome": "Seated — uncontested"
+      },
+      {
+        "name": "Ric Wiese",
+        "votes": null,
+        "outcome": "Seated — uncontested"
+      }
+    ],
+    "officers": [
+      {
+        "position": "President",
+        "name": "Jason Starnes",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Vice President",
+        "name": "Ric Wiese",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Srg at Arms",
+        "name": "Jim Capasso",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Treasurer",
+        "name": "Kelley Buckoske",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Secretary",
+        "name": "Michelle Bozeman",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Parliamentarian",
+        "name": "Jim Howley",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "George Bruch",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Glenn Bozeman",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Ron Moore",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Terri Bruch",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      }
+    ],
+    "leadershipSnapshots": [
+      {
+        "label": "2017",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Jason Starnes",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Ric Wiese",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Jim Capasso",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Kelley Buckoske",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Michelle Bozeman",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Jim Howley",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Unestablished",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "George Bruch",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Glenn Bozeman",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Ron Moore",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Terri Bruch",
+            "status": false,
+            "additional": false
+          }
+        ]
+      }
+    ],
+    "confirmedBoard": [
+      "George Bruch",
+      "Terri Bruch",
+      "Glenn Bozeman",
+      "Michelle Bozeman",
+      "Kelley Buckoske",
+      "Jim Capasso",
+      "Jim Howley",
+      "Ron Moore",
+      "Jason Starnes",
+      "Gordon Waite",
+      "Ric Wiese"
+    ],
+    "outcomeRecorded": true,
+    "reviewedOn": "2026-10-27"
   },
   "2018": {
     "year": 2018,
-    "sources": [],
     "candidates": [],
-    "notes": [],
-    "officers": []
+    "officers": [],
+    "leadershipSnapshots": [
+      {
+        "label": "2018",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Jim Capasso",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Mike Swift",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Glenn Bozeman",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Coleen Gamache",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Michelle Bozeman",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Steven Kunemund",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Unestablished",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Jim Howley",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Ed Monroe",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "William Anderson (BJ)",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Rod Gravitt",
+            "status": false,
+            "additional": false
+          }
+        ]
+      }
+    ],
+    "reviewedOn": "2026-10-27"
   },
   "2019": {
     "year": 2019,
-    "sources": [],
     "candidates": [],
-    "notes": [],
-    "officers": []
+    "officers": [],
+    "leadershipSnapshots": [
+      {
+        "label": "2019",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Mike Swift",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "William Anderson (BJ)",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Ric Wiese",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Amanda Crandall",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Debby Farland",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Rod Gravitt",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Unestablished",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Cindy Anderson",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Ed Monroe",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Jim Capasso",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Jim Howley",
+            "status": false,
+            "additional": false
+          }
+        ]
+      }
+    ],
+    "reviewedOn": "2026-10-27"
   },
   "2020": {
     "year": 2020,
-    "sources": [
-      {
-        "title": "2020 Ballot.pdf",
-        "url": "https://drive.google.com/file/d/1JPG-JCwK33AWtoQoUu-I6qd5dHsTHGc5/view?usp=drivesdk"
-      }
-    ],
     "candidates": [
       {
         "name": "BJ Anderson",
@@ -410,23 +1205,191 @@ window.BSSCBodElectionHistoryData = {
         "outcome": "Unconfirmed"
       }
     ],
-    "notes": [
-      "Ballot provides 10 Director openings and states Mike retains a Board seat as exiting President. His full name is not supplied."
+    "officers": [],
+    "leadershipSnapshots": [
+      {
+        "label": "2020-Voted",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Mike Swift",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Ric Wiese",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Rob McManes",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Amanda Swift",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Michelle Bozeman",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Rod Gravitt",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Unestablished",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "BJ Anderson",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Cindy Anderson",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Debby Farland",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Jeff Powell",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Dennis Browne",
+            "status": false,
+            "additional": false
+          }
+        ]
+      },
+      {
+        "label": "2020-Update#1",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Mike Swift",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Ric Wiese",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Rob McManes",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Amanda Swift",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Michelle Bozeman",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Removed 5/27/20",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Unestablished",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "BJ Anderson",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Cindy Anderson",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Debby Farland",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Jeff Powell",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Dennis Browne",
+            "status": false,
+            "additional": false
+          }
+        ]
+      }
     ],
-    "officers": []
+    "reviewedOn": "2026-10-27"
   },
   "2021": {
     "year": 2021,
-    "sources": [
-      {
-        "title": "2021 Ballot – Full Board Election.pdf",
-        "url": "https://drive.google.com/file/d/1biZVMFb_PROcKQONi9pp5Gq9atqyL4gB/view?usp=drivesdk"
-      },
-      {
-        "title": "2021 Ballot – President Retains Seat (Mike).pdf",
-        "url": "https://drive.google.com/file/d/1ZbgNhXp0IZ59stSZKbHZPUb9Hl8ErNnK/view?usp=drivesdk"
-      }
-    ],
     "candidates": [
       {
         "name": "BJ Anderson",
@@ -499,52 +1462,961 @@ window.BSSCBodElectionHistoryData = {
         "outcome": "Unconfirmed"
       }
     ],
-    "notes": [
-      "Two ballot versions survive: one selects 11 nominees; the other selects 10 with Mike retaining a seat. Neither establishes which version was used or who won."
+    "officers": [],
+    "leadershipSnapshots": [
+      {
+        "label": "2021-Voted",
+        "rows": [
+          {
+            "position": "President",
+            "name": "William Anderson (BJ)",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Dominic Tovias",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Andrea Powell",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Theresa Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Debby Farland",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Al Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Unestablished",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Jim Capasso",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Jeff Powell",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Mike Swift",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Ric Wiese",
+            "status": false,
+            "additional": false
+          }
+        ]
+      },
+      {
+        "label": "2021-Update#1",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Ric Wiese",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Al Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Andrea Powell",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Theresa Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Debby Farland",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Al Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Unestablished",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Jim Capasso",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Jeff Powell",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Mike Swift",
+            "status": false,
+            "additional": false
+          }
+        ]
+      }
     ],
-    "officers": []
+    "reviewedOn": "2026-10-27"
   },
   "2022": {
     "year": 2022,
-    "sources": [],
     "candidates": [],
-    "notes": [],
-    "officers": []
+    "officers": [],
+    "leadershipSnapshots": [
+      {
+        "label": "2022-Voted",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Ric Wiese",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Al Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Ryan Jones",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Theresa Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Debby Farland",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Unestablished",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "John Farland",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Carrie Kline",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Lee Kline",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Jeff Powell",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Paul Semenko",
+            "status": false,
+            "additional": false
+          }
+        ]
+      }
+    ],
+    "reviewedOn": "2026-10-27"
   },
   "2023": {
     "year": 2023,
-    "sources": [],
-    "candidates": [],
-    "notes": [],
-    "officers": []
+    "candidates": [
+      {
+        "name": "Jim Capasso",
+        "votes": null,
+        "outcome": "Elected"
+      },
+      {
+        "name": "Debby Farland",
+        "votes": null,
+        "outcome": "Elected"
+      },
+      {
+        "name": "John Farland",
+        "votes": null,
+        "outcome": "Elected"
+      },
+      {
+        "name": "Carrie Kline",
+        "votes": null,
+        "outcome": "Elected"
+      },
+      {
+        "name": "Lee Kline",
+        "votes": null,
+        "outcome": "Elected"
+      },
+      {
+        "name": "Dave Manning",
+        "votes": null,
+        "outcome": "Elected"
+      },
+      {
+        "name": "Frank Mendoza",
+        "votes": null,
+        "outcome": "Elected"
+      },
+      {
+        "name": "Al Steven",
+        "votes": null,
+        "outcome": "Elected"
+      },
+      {
+        "name": "Theresa Steven",
+        "votes": null,
+        "outcome": "Elected"
+      },
+      {
+        "name": "Brad Stoughton",
+        "votes": null,
+        "outcome": "Elected"
+      },
+      {
+        "name": "Ric Wiese",
+        "votes": null,
+        "outcome": "Elected"
+      },
+      {
+        "name": "Cheyenne Jones",
+        "votes": null,
+        "outcome": "Not elected"
+      },
+      {
+        "name": "Ryan Jones",
+        "votes": null,
+        "outcome": "Not elected"
+      },
+      {
+        "name": "Tammy Lupton",
+        "votes": null,
+        "outcome": "Not elected"
+      },
+      {
+        "name": "Rob McManes",
+        "votes": null,
+        "outcome": "Not elected"
+      },
+      {
+        "name": "Joe Perot",
+        "votes": null,
+        "outcome": "Not elected"
+      },
+      {
+        "name": "Tammie Wilson",
+        "votes": null,
+        "outcome": "Not elected"
+      }
+    ],
+    "officers": [
+      {
+        "position": "President",
+        "name": "Ric Wiese",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Vice President",
+        "name": "Al Steven",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Srg at Arms",
+        "name": "Brad Stroughton",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Treasurer",
+        "name": "Theresa Steven",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Secretary",
+        "name": "Debby Farland",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Parliamentarian",
+        "name": "John Farland",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Media Director",
+        "name": "Carrie Kline",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Frank Mendoza",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Jim Capasso",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Lee Kline",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      }
+    ],
+    "leadershipSnapshots": [
+      {
+        "label": "2023-Voted",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Ric Wiese",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Al Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Brad Stroughton",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Theresa Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Debby Farland",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "John Farland",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Dave Manning",
+            "status": false,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Carrie Kline",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Jim Capasso",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Lee Kline",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Good Will Ambassador",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": true
+          }
+        ]
+      }
+    ],
+    "confirmedBoard": [
+      "Jim Capasso",
+      "Debby Farland",
+      "John Farland",
+      "Carrie Kline",
+      "Lee Kline",
+      "Dave Manning",
+      "Frank Mendoza",
+      "Al Steven",
+      "Theresa Steven",
+      "Brad Stoughton",
+      "Ric Wiese"
+    ],
+    "outcomeRecorded": true,
+    "reviewedOn": "2026-10-27"
   },
   "2024": {
     "year": 2024,
-    "sources": [],
     "candidates": [],
-    "notes": [],
-    "officers": []
+    "officers": [
+      {
+        "position": "President",
+        "name": "Al Steven",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Vice President",
+        "name": "Frank Mendoza",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Srg at Arms",
+        "name": "Jim Capasso",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Treasurer",
+        "name": "Theresa Steven",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Secretary",
+        "name": "Debby Farland",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Parliamentarian",
+        "name": "Todd Humphrey",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Media Director",
+        "name": "Carrie Kline",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Tracy Hatfield",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Brad Stroughton",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Ric Wiese",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      },
+      {
+        "position": "Director",
+        "name": "Dave Manning",
+        "opponent": "",
+        "result": "Recorded in minutes / Officer List"
+      }
+    ],
+    "leadershipSnapshots": [
+      {
+        "label": "2024-Voted",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Al Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Jim Capasso",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Theresa Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Debby Farland",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Carrie Kline",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Tracy Hatfield",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Brad Stroughton",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Ric Wiese",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Dave Manning",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Good Will Ambassador",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": true
+          }
+        ]
+      },
+      {
+        "label": "2024-Update#1",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Al Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Jim Capasso",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Theresa Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Debby Farland",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Vacated-2/24",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Carrie Kline",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Tracy Hatfield",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Vacated-2/24",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Vacated-2/24",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Dave Manning",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Good Will Ambassador",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": true
+          }
+        ]
+      },
+      {
+        "label": "2024-Update#2",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Al Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Jim Capasso",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Theresa Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Debby Farland",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Unfilled",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Carrie Kline",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Tracy Hatfield",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Lee Kline-Aug/24",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Tammy Valentine Aug/24",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Dave Manning",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Good Will Ambassador",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": true
+          }
+        ]
+      },
+      {
+        "label": "2024-Update#3",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Al Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Jim Capasso",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Theresa Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Debby Farland",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Unfilled",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Unestablished",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Carrie Kline",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Tracy Hatfield",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Lee Kline-Aug/24",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Tammy Valentine Aug/24",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Resigned 10/29",
+            "status": true,
+            "additional": false
+          }
+        ]
+      }
+    ],
+    "confirmedBoard": [
+      "Al Steven",
+      "Frank Mendoza",
+      "Jim Capasso",
+      "Theresa Steven",
+      "Debby Farland",
+      "Todd Humphrey",
+      "Carrie Kline",
+      "Tracy Hatfield",
+      "Brad Stroughton",
+      "Ric Wiese",
+      "Dave Manning"
+    ],
+    "outcomeRecorded": true,
+    "reviewedOn": "2026-10-27"
   },
   "2025": {
     "year": 2025,
-    "sources": [
-      {
-        "title": "Board of Directors Election Results - 2025.xlsx",
-        "url": "https://docs.google.com/spreadsheets/d/1nrQySZWi5CjbpJZ60zwFGVquXbb-2_E3/edit?usp=drivesdk&ouid=114076732058272631580&rtpof=true&sd=true"
-      },
-      {
-        "title": "2025 Board of Directors Ballot.pdf",
-        "url": "https://drive.google.com/file/d/1xfxF02j97f6BZOft8YX4KRLZatP5qLyC/view?usp=drivesdk"
-      },
-      {
-        "title": "Board of Directors Election Results Physical Copies - 2025 - 42 Ballets.pdf",
-        "url": "https://drive.google.com/file/d/167faq0MlfcFQsl8zw2T5eL4wvtBZd1t6/view?usp=drivesdk"
-      },
-      {
-        "title": "Officer selections — December 30, 2024 board minutes",
-        "url": "https://drive.google.com/file/d/13NjnpTNLy91dX6iycmTSif_Wj0PgpG_T/view"
-      }
-    ],
     "candidates": [
       {
         "name": "Jennifer Lynch",
@@ -621,12 +2493,6 @@ window.BSSCBodElectionHistoryData = {
         "votes": 12,
         "outcome": "Not elected"
       }
-    ],
-    "notes": [
-      "Election year means the Board service year; the 2025 officer selections were held December 30, 2024.",
-      "The source tally totals 383 candidate selections across 42 ballots. Ten highest vote-getters fill the open seats; Al Steven retains a seat.",
-      "The officer-results source calls Director Jennifer “Jennifer Lynn”; the ballot and detailed tally say Jennifer Lynch. This discrepancy is retained for review.",
-      "The displayed Board is the election outcome, not a claim that no appointments, resignations or officer changes occurred later in the year."
     ],
     "officers": [
       {
@@ -705,32 +2571,403 @@ window.BSSCBodElectionHistoryData = {
     "retained": [
       "Al Steven — retained Board seat as sitting President"
     ],
-    "ballots": 42
+    "ballots": 42,
+    "leadershipSnapshots": [
+      {
+        "label": "2025-Voted",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Lee Kline",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Kevin Lynch",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Sheyanne Barnett",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Tracy Hatfield",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Steve Leone",
+            "status": false,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Jim Capasso",
+            "status": false,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Carrie Kline",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Matt Albright",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Jennifer Lynch",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Al Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Good Will Ambassador",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": true
+          }
+        ]
+      },
+      {
+        "label": "2025-Update#1",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Lee Kline",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "Expelled 5/25",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Sheyanne Barnett",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Tracy Hatfield",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Steve Leone",
+            "status": false,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "Resigned 5/25",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Carrie Kline",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Resigned 4/25",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Suspended 5/25",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Al Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Good Will Ambassador",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": true
+          }
+        ]
+      },
+      {
+        "label": "2025-Update#2",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Lee Kline",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Sheyanne Barnett",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Tracy Hatfield",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Resigned 7/27 (position not board)",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Carrie Kline",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Al Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Good Will Ambassador",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": true
+          }
+        ]
+      },
+      {
+        "label": "2025-Update#3",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Resigned 8/05",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Sheyanne Barnett",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Tracy Hatfield",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Media Director",
+            "name": "Resigned 8/06",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Al Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Good Will Ambassador",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": true
+          }
+        ]
+      },
+      {
+        "label": "2025-Update#4",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Assumed President Role",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Tracy Hatfield",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Al Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Good Will Ambassador",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": true
+          }
+        ]
+      },
+      {
+        "label": "2025-Update#5",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Steve Leone",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "James Hennings",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Sheyanne Barnett",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Tracy Hatfield",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Parliamentarian",
+            "name": "Position Sunset – 9/30/2025",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Austin Reiter (President Assigned)",
+            "status": false,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "OPEN",
+            "status": true,
+            "additional": true
+          },
+          {
+            "position": "Media Director",
+            "name": "Position Sunset – 9/30/2025",
+            "status": true,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "Al Steven",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Good Will Ambassador",
+            "name": "Frank Mendoza",
+            "status": false,
+            "additional": true
+          }
+        ]
+      }
+    ],
+    "reviewedOn": "2026-10-27"
   },
   "2026": {
     "year": 2026,
-    "sources": [
-      {
-        "title": "2026 BOD Election Results - 2025.12.09.pdf",
-        "url": "https://drive.google.com/file/d/16N1lu0g5Rui5PMZMnGwkB7C-L8gLDEhB/view?usp=drivesdk"
-      },
-      {
-        "title": "Final tally and elected Board — December 9, 2025 general minutes",
-        "url": "https://drive.google.com/file/d/1YqdG9fazMog4U0Bm_XrYsps7Tdl5s-aV/view"
-      },
-      {
-        "title": "Nomination confirmations and declines — November 25, 2025 board minutes",
-        "url": "https://drive.google.com/file/d/1JUAEpP8627tiWbkz8c6libHURMnDfm2o/view"
-      },
-      {
-        "title": "Nominations opened — November 4, 2025 general minutes",
-        "url": "https://drive.google.com/file/d/1raqd2O4ym2Bx3lGuY_PDRrubhMWKcHz3/view"
-      },
-      {
-        "title": "Potential Board Member List — August 13, 2025 (planning only)",
-        "url": "https://docs.google.com/spreadsheets/d/1mJhQpKHZ0eeriUmE0hX8HN4UWoY7_dKc/edit"
-      }
-    ],
     "candidates": [
       {
         "name": "Steve Leone",
@@ -768,13 +3005,50 @@ window.BSSCBodElectionHistoryData = {
         "outcome": "Not elected"
       }
     ],
-    "notes": [
-      "Six elected members plus the sitting President form the seven-member Board. Vote totals and winners come from the December 9, 2025 general minutes; the election PDF contains the scanned ballots.",
-      "Source spelling varies: James Hennings / James Henning and Melfry / Melfy. Display names use James Henning and Amy/Gene Melfy.",
-      "November 25 nomination minutes include Todd and omit Ben; the final ballot and election tally include Ben and exclude Todd from voting. The final slate is shown here.",
-      "No individual member’s nomination choices are reconstructed from anonymous ballots."
+    "officers": [
+      {
+        "position": "President",
+        "name": "Todd Humphrey",
+        "opponent": "Unopposed",
+        "result": "Unanimous"
+      },
+      {
+        "position": "Vice President",
+        "name": "Steve Leone",
+        "opponent": "Unopposed",
+        "result": "Unanimous"
+      },
+      {
+        "position": "Sergeant-at-Arms",
+        "name": "James Henning",
+        "opponent": "Unopposed",
+        "result": "Unanimous"
+      },
+      {
+        "position": "Treasurer",
+        "name": "Tracy Hatfield",
+        "opponent": "Unopposed",
+        "result": "Unanimous"
+      },
+      {
+        "position": "Secretary",
+        "name": "Amy Melfy",
+        "opponent": "Unopposed",
+        "result": "Unanimous"
+      },
+      {
+        "position": "Director",
+        "name": "David Reed",
+        "opponent": "",
+        "result": "Board seat"
+      },
+      {
+        "position": "Director",
+        "name": "Ben Dillon",
+        "opponent": "",
+        "result": "Board seat"
+      }
     ],
-    "officers": [],
     "retained": [
       "Todd Humphrey — sitting President; not subject to the general election"
     ],
@@ -785,7 +3059,140 @@ window.BSSCBodElectionHistoryData = {
     "declined": [
       "Mike Jaffe",
       "David Jaffe",
-      "Debby (surname not supplied in nomination minutes)"
-    ]
+      "Debby Farland"
+    ],
+    "leadershipSnapshots": [
+      {
+        "label": "2026-Voted*",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Steve Leone",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "James Hennings",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Tracy Hatfield",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Amy Melfy",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Austin Reiter (President Assigned)",
+            "status": false,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "David Reed (President Assigned)",
+            "status": false,
+            "additional": true
+          },
+          {
+            "position": "Director",
+            "name": "Ben Dillon",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "David Reed",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Good Will Ambassador",
+            "name": "Dale Oran (President Assigned)",
+            "status": false,
+            "additional": true
+          }
+        ]
+      },
+      {
+        "label": "2026-Update#1",
+        "rows": [
+          {
+            "position": "President",
+            "name": "Todd Humphrey",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Vice President",
+            "name": "Steve Leone",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Srg at Arms",
+            "name": "James Hennings",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Treasurer",
+            "name": "Tracy Hatfield",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Secretary",
+            "name": "Amy Melfy",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Road Captain non-board",
+            "name": "Austin Reiter (President Assigned)",
+            "status": false,
+            "additional": true
+          },
+          {
+            "position": "Tail Gunner non-board",
+            "name": "David Reed (President Assigned)",
+            "status": false,
+            "additional": true
+          },
+          {
+            "position": "Director",
+            "name": "Ben Dillon",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Director",
+            "name": "David Reed",
+            "status": false,
+            "additional": false
+          },
+          {
+            "position": "Good Will Ambassador",
+            "name": "David Reed (President Assigned)",
+            "status": false,
+            "additional": true
+          }
+        ]
+      }
+    ],
+    "reviewedOn": "2026-10-27"
   }
 };
