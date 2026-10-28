@@ -329,11 +329,34 @@
     marketplaceWorkspace:[['Artwork and production files','Approved Artwork']],
     membershipWorkspace:[['Ride safety and blank waiver','Ride Safety']]
   };
+  const bankStyle=document.createElement('style');
+  bankStyle.textContent=`
+    #financeWorkspace .finance-reference-toolbar{align-items:flex-start}
+    #financeWorkspace .finance-bank-reference{box-sizing:border-box;margin-left:auto;width:350px;max-width:100%;padding:12px 16px;background:#fff;color:#18212b;border:1px solid #b9c0c8;border-top:3px solid #ce0734;border-radius:10px;box-shadow:0 2px 5px #0000000a;font-size:13px;line-height:1.45;text-align:left}
+    #financeWorkspace .finance-bank-reference h2{margin:0 0 8px;font-size:14px;font-weight:800;color:#18212b}
+    #financeWorkspace .finance-bank-reference dl{margin:0 0 8px;padding:0 0 8px;border-bottom:1px solid #e0e4e8}
+    #financeWorkspace .finance-bank-reference dl>div,#financeWorkspace .finance-bank-reference p{display:flex;justify-content:space-between;gap:12px;margin:3px 0}
+    #financeWorkspace .finance-bank-reference dt{font-weight:600}
+    #financeWorkspace .finance-bank-reference dd{margin:0;font-weight:800}
+    #financeWorkspace .finance-bank-reference dd,#financeWorkspace .finance-bank-reference strong{font-variant-numeric:tabular-nums;white-space:nowrap;user-select:all}
+    #financeWorkspace .finance-bank-reference small{display:block;margin-top:6px;font-size:11px;color:#53606d}
+    @media(max-width:1100px){#financeWorkspace .finance-bank-reference{width:100%;margin-left:0}}
+  `;
+  document.head.append(bankStyle);
   function shortcuts(){
     for(const [id,links] of Object.entries(targets)){
       const host=document.getElementById(id);if(!host||host.querySelector('[data-record-shortcuts]'))continue;
       const bar=document.createElement('nav');bar.dataset.recordShortcuts='true';bar.className='club-toolbar';bar.setAttribute('aria-label','Related club documents');bar.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px';
-      links.forEach(([label,category])=>{const b=document.createElement('button');b.type='button';b.className='sponsor-tab';b.textContent=label;b.onclick=()=>go(category);bar.append(b);});host.prepend(bar);
+      links.forEach(([label,category])=>{const b=document.createElement('button');b.type='button';b.className='sponsor-tab';b.textContent=label;b.onclick=()=>go(category);bar.append(b);});
+      if(id==='financeWorkspace'){
+        bar.classList.add('finance-reference-toolbar');
+        const bank=document.createElement('section');
+        bank.className='finance-bank-reference';
+        bank.setAttribute('aria-label','Chase bank account details');
+        bank.innerHTML='<h2>Chase · Account details</h2><dl><div><dt>Bikes for Tykes Fund</dt><dd>5601788799</dd></div><div><dt>BSSC General Fund</dt><dd>2911527707</dd></div></dl><p><span>ACH / direct deposit</span><strong>044000037</strong></p><p><span>Wire transfers</span><strong>021000021</strong></p><small>Routing numbers apply to both accounts.</small>';
+        bar.append(bank);
+      }
+      host.prepend(bar);
     }
   }
   const shell=document.querySelector('.detail-shell');if(shell)new MutationObserver(shortcuts).observe(shell,{childList:true,subtree:true});shortcuts();
