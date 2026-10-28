@@ -332,6 +332,14 @@
   const bankStyle=document.createElement('style');
   bankStyle.textContent=`
     #financeWorkspace .finance-reference-toolbar{display:grid!important;grid-template-columns:minmax(0,1fr) 350px;gap:20px!important;align-items:start}
+    #financeWorkspace [data-finance-panel="control"]>.coming-soon{padding:0!important;border:0;background:transparent}
+    #financeWorkspace [data-finance-panel="control"]>.coming-soon>h2{display:none}
+    #financeControlStatus[hidden]{display:none!important}
+    #financeControlTable .control-title{margin-bottom:12px;padding:14px 18px}
+    #financeControlTable .control-card.tone-cash-total>h3{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    #financeControlTable #financeControlEditToggle{flex-shrink:0;background:transparent!important;color:#343434!important;border:1px solid #8c6b48!important;box-shadow:none!important;border-radius:6px;padding:6px 12px;font-size:13px;font-weight:600;text-transform:none;letter-spacing:normal;min-height:32px;cursor:pointer}
+    #financeControlTable #financeControlEditToggle:hover{background:#ffffff70!important}
+    #financeControlTable #financeControlEditToggle:focus-visible{outline:2px solid #1f4e79;outline-offset:3px}
     #financeWorkspace .finance-controls{min-width:0;display:grid;gap:14px}
     #financeWorkspace .finance-document-controls{display:flex;flex-wrap:wrap;gap:8px}
     #financeWorkspace .finance-controls .sponsor-tabs{display:flex!important;flex-wrap:wrap!important;overflow:visible!important;gap:8px;margin:0;padding:0!important}
@@ -352,6 +360,20 @@
     if(dashboardStatus){
       const redundant=dashboardStatus.textContent.trim()==='Executive dashboard connected to BSSC Finance System 2026.';
       if(dashboardStatus.hidden!==redundant)dashboardStatus.hidden=redundant;
+    }
+    const controlStatus=document.getElementById('financeControlStatus');
+    if(controlStatus){
+      const redundant=controlStatus.textContent.trim()==='Executive financial snapshot connected to Control-2026.';
+      if(controlStatus.hidden!==redundant)controlStatus.hidden=redundant;
+    }
+    const edit=document.getElementById('financeControlEditToggle');
+    const fundHeading=document.querySelector('#financeControlTable .control-card.tone-cash-total>h3');
+    if(edit&&fundHeading&&edit.parentElement!==fundHeading){
+      const oldBar=edit.closest('.control-action-bar');
+      fundHeading.append(edit);
+      if(oldBar&&!oldBar.children.length)oldBar.remove();
+      edit.setAttribute('aria-label',edit.getAttribute('aria-pressed')==='true'?'Save bank reconciliation edits':'Edit bank reconciliation');
+      if(edit.getAttribute('aria-pressed')!=='true')edit.textContent='Edit';
     }
     for(const [id,links] of Object.entries(targets)){
       const host=document.getElementById(id);if(!host||host.querySelector('[data-record-shortcuts]'))continue;
