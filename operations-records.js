@@ -331,7 +331,11 @@
   };
   const bankStyle=document.createElement('style');
   bankStyle.textContent=`
-    #financeWorkspace .finance-reference-toolbar{align-items:flex-start}
+    #financeWorkspace .finance-reference-toolbar{display:grid!important;grid-template-columns:minmax(0,1fr) 350px;gap:20px!important;align-items:start}
+    #financeWorkspace .finance-controls{min-width:0;display:grid;gap:14px}
+    #financeWorkspace .finance-document-controls{display:flex;flex-wrap:wrap;gap:8px}
+    #financeWorkspace .finance-controls .sponsor-tabs{display:flex!important;flex-wrap:wrap!important;overflow:visible!important;gap:8px;margin:0;padding:0!important}
+    #financeWorkspace .finance-controls .sponsor-tab{white-space:normal;text-align:center}
     #financeWorkspace .finance-bank-reference{box-sizing:border-box;margin-left:auto;width:350px;max-width:100%;padding:12px 16px;background:#fff;color:#18212b;border:1px solid #b9c0c8;border-top:3px solid #ce0734;border-radius:10px;box-shadow:0 2px 5px #0000000a;font-size:13px;line-height:1.45;text-align:left}
     #financeWorkspace .finance-bank-reference h2{margin:0 0 8px;font-size:14px;font-weight:800;color:#18212b}
     #financeWorkspace .finance-bank-reference dl{margin:0 0 8px;padding:0 0 8px;border-bottom:1px solid #e0e4e8}
@@ -340,16 +344,31 @@
     #financeWorkspace .finance-bank-reference dd{margin:0;font-weight:800}
     #financeWorkspace .finance-bank-reference dd,#financeWorkspace .finance-bank-reference strong{font-variant-numeric:tabular-nums;white-space:nowrap;user-select:all}
     #financeWorkspace .finance-bank-reference small{display:block;margin-top:6px;font-size:11px;color:#53606d}
-    @media(max-width:1100px){#financeWorkspace .finance-bank-reference{width:100%;margin-left:0}}
+    @media(max-width:1100px){#financeWorkspace .finance-reference-toolbar{grid-template-columns:minmax(0,1fr)}#financeWorkspace .finance-bank-reference{width:100%;margin-left:0}}
   `;
   document.head.append(bankStyle);
   function shortcuts(){
+    const dashboardStatus=document.getElementById('financeDashboardStatus');
+    if(dashboardStatus){
+      const redundant=dashboardStatus.textContent.trim()==='Executive dashboard connected to BSSC Finance System 2026.';
+      if(dashboardStatus.hidden!==redundant)dashboardStatus.hidden=redundant;
+    }
     for(const [id,links] of Object.entries(targets)){
       const host=document.getElementById(id);if(!host||host.querySelector('[data-record-shortcuts]'))continue;
       const bar=document.createElement('nav');bar.dataset.recordShortcuts='true';bar.className='club-toolbar';bar.setAttribute('aria-label','Related club documents');bar.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px';
       links.forEach(([label,category])=>{const b=document.createElement('button');b.type='button';b.className='sponsor-tab';b.textContent=label;b.onclick=()=>go(category);bar.append(b);});
       if(id==='financeWorkspace'){
         bar.classList.add('finance-reference-toolbar');
+        bar.setAttribute('aria-label','Finance controls and bank details');
+        const controls=document.createElement('div');
+        controls.className='finance-controls';
+        const documents=document.createElement('div');
+        documents.className='finance-document-controls';
+        while(bar.firstChild)documents.append(bar.firstChild);
+        controls.append(documents);
+        const tabs=host.querySelector('.sponsor-tabs');
+        if(tabs)controls.append(tabs);
+        bar.append(controls);
         const bank=document.createElement('section');
         bank.className='finance-bank-reference';
         bank.setAttribute('aria-label','Chase bank account details');
