@@ -2491,14 +2491,39 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       } catch (error) {}
     }
 
-    function startPortalSession() {
-      // Wait for the page's module definitions before restoring the chosen screen.
-      setTimeout(() => {
-        if (!accessToken) return;
-        loadAdminSystemStatus();
-        if (!document.getElementById('dashboard').classList.contains('hidden')) loadOperationsOverview();
-        setTimeout(() => { if (accessToken) loadSharedPortalAudit(); }, 1500);
-      }, 0);
+    async function startPortalSession() {
+      // Let all module definitions initialize before starting workbook loads.
+      await new Promise(resolve => setTimeout(resolve, 0));
+      if (!accessToken) return;
+      await Promise.allSettled([
+        loadAdminSystemStatus(),
+        !document.getElementById('dashboard').classList.contains('hidden') ? loadOperationsOverview() : Promise.resolve()
+      ]);
+      // Restoring a module may start its own queued workbook reads.
+      const deadline=Date.now()+45000;
+      do {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        if(!accessToken) return;
+      } while(Date.now()<deadline && (activeSheetReads || sheetReadQueue.length || sheetReadsInFlight.size));
+      setTimeout(() => { if (accessToken) loadSharedPortalAudit(); }, 1500);
+    }
+
+    async function finishPortalLogin() {
+      const gate=document.getElementById('authGate');
+      gate.classList.remove('hidden');
+      setAuthLoading(true);
+      try {
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        restorePortalView();
+        await startPortalSession();
+        if(!accessToken)throw new Error('Your session ended. Sign in again to continue.');
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        gate.classList.add('hidden');
+        setAuthLoading(false);
+      } catch(error) {
+        setAuthLoading(false);
+        document.getElementById('authError').textContent=error.message || 'The portal could not finish loading. Please try again.';
+      }
     }
 
     function setAuthLoading(loading) {
@@ -2537,15 +2562,11 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           portalAuditSharedState = 'not-loaded';
           portalAuditSharedError = '';
           saveSession(response.expires_in);
-          setAuthLoading(false);
-          document.getElementById('authGate').classList.add('hidden');
-          restorePortalView();
-          await startPortalSession();
+          await finishPortalLogin();
         }
       });
       if (restoreSession()) {
-        setTimeout(restorePortalView,0);
-        startPortalSession();
+        setTimeout(finishPortalLogin,0);
       }
     }
 
@@ -2575,13 +2596,9 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
             portalAuditSharedState = 'not-loaded';
             portalAuditSharedError = '';
             saveSession(response.expires_in);
-          setAuthLoading(false);
-            document.getElementById('authGate').classList.add('hidden');
-            restorePortalView();
-            await startPortalSession();
+          await finishPortalLogin();
           }
         });
-        setAuthLoading(true);
         tokenClient.requestAccessToken({prompt: 'consent'});
       } catch (error) {
         setAuthLoading(false);
