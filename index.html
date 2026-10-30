@@ -6184,13 +6184,24 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       return rows.slice(1).filter(row=>financeIsVoided(row) && /^(true|yes)$/i.test(String(row[15]||'').trim())).reduce((sum,row)=>sum+Math.abs(Number(String(row[9]||0).replace(/[$,]/g,''))),0);
     }
 
+    function financePendingGivingFundIncome(row, rows) {
+      if (String(row[13]||'').trim().toLowerCase() !== 'paypal' || String(row[12]||'').trim().toLowerCase() !== 'income') return false;
+      const note = String(row[16]||'');
+      const payout = note.match(/transaction\s+([A-Z0-9]+)/i)?.[1];
+      if (!payout || !/PPGF.*Payout received in PayPal/i.test(note)) return false;
+      // Once a linked bank transfer exists, it represents this payout instead.
+      return !rows.slice(1).some(other => !financeIsVoided(other) &&
+        /^transfer in$/i.test(String(other[12]||'').trim()) &&
+        /paypal/i.test(String(other[13]||'')) && String(other[16]||'').includes(payout));
+    }
+
     function financeCashSnapshot(rows,transactionRows) {
       const at=(r,c)=>String(rows[r]?.[c]||0);
       const numeric=value=>Number(String(value).replace(/[$,%(),▲▼]/g,'').trim())*(String(value).includes('(')?-1:1);
       const pendingForFund = fundName => transactionRows.slice(1).reduce((totals,row) => {
         const cleared=String(row[14]||'').trim().toLowerCase(),method=String(row[13]||'').trim().toLowerCase(),type=String(row[12]||'').trim().toLowerCase();
         const fund=String(row[6]||'').trim().toLowerCase();
-        if(financeIsVoided(row) || fund!==fundName.toLowerCase() || !['no','pending at chase'].includes(cleared) || (['paypal','chase payments'].includes(method) && !['transfer in','transfer out'].includes(type))) return totals;
+        if(financeIsVoided(row) || fund!==fundName.toLowerCase() || !['no','pending at chase'].includes(cleared) || (['paypal','chase payments'].includes(method) && !['transfer in','transfer out'].includes(type) && !financePendingGivingFundIncome(row,transactionRows))) return totals;
         const amount=numeric(row[9]||0);
         if(!Number.isFinite(amount)) return totals;
         if(amount>0) { if(method==='paypal') totals.paypal+=amount; else totals.otherDeposits+=amount; }
@@ -6298,7 +6309,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const number=value=>Number(String(value||0).replace(/[$,]/g,''));
       return rows.slice(1).filter(row=>{
         const fund=String(row[6]||'').trim().toLowerCase(),status=String(row[14]||'').trim().toLowerCase(),method=String(row[13]||'').trim().toLowerCase(),type=String(row[12]||'').trim().toLowerCase(),amount=number(row[9]);
-        if(financeIsVoided(row)||fund!==fundName.toLowerCase()||!['no','pending at chase'].includes(status)||!Number.isFinite(amount)||(['paypal','chase payments'].includes(method)&&!['transfer in','transfer out'].includes(type))) return false;
+        if(financeIsVoided(row)||fund!==fundName.toLowerCase()||!['no','pending at chase'].includes(status)||!Number.isFinite(amount)||(['paypal','chase payments'].includes(method)&&!['transfer in','transfer out'].includes(type)&&!financePendingGivingFundIncome(row,rows))) return false;
         return kind==='available'?amount<0&&status==='no':kind==='outgoing'?amount<0:kind==='paypal'?amount>0&&method==='paypal':amount>0&&method!=='paypal';
       });
     }
