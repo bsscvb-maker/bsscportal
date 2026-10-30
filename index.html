@@ -1077,7 +1077,7 @@
     #authGate.auth-loading #googleSignIn{display:none}
     #authGate.auth-loading #authError{color:#e4efff;font-size:17px;font-weight:700}
     @keyframes bssc-auth-logo-spin{to{transform:rotate(360deg)}}
-    @media(prefers-reduced-motion:reduce){#authGate.auth-loading .auth-logo{animation:none}}
+    #authGate.auth-loading img.auth-logo{animation:bssc-auth-logo-spin 1.8s linear infinite!important;animation-play-state:running!important;transform-origin:center}
     .auth-gate .auth-logo { display:block; width:min(240px,100%); height:240px; object-fit:contain; margin:0 auto 14px; }
     .auth-gate .auth-card h1 { color:#fff; font-size:clamp(24px,5vw,29px); line-height:1.2; margin:0 0 28px; }
     .auth-gate .google-btn { display:inline-flex; justify-content:center; align-items:center; gap:12px; width:100%; min-height:52px; padding:12px 18px; border:1px solid #d5dbe4; border-radius:9px; background:#e1e5e8; color:#1f2937; font-size:15px; font-weight:700; }
@@ -2632,6 +2632,35 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       } catch (error) {}
     }, 60000);
 
+
+
+/* Shared club-logo activity: keep overlapping data loads visible until settled. */
+(()=>{
+ let pending=0,timer=null,started=0;
+ const root=document.documentElement;
+ const style=document.createElement('style');
+ style.textContent='html.bssc-page-working .sidebar .brand-mark.portal-skull-mark img{animation:bssc-page-logo-spin 1.8s linear infinite!important;animation-play-state:running!important;transform-origin:center;will-change:transform}html.bssc-page-working .sidebar .brand-mark{overflow:visible!important}@keyframes bssc-page-logo-spin{to{transform:rotate(360deg)}}';
+ document.head.append(style);
+ function begin(){
+  clearTimeout(timer);
+  if(!root.classList.contains('bssc-page-working'))started=Date.now();
+  pending++;root.classList.add('bssc-page-working');
+  let ended=false;
+  return()=>{if(ended)return;ended=true;pending--;if(!pending)timer=setTimeout(()=>{if(!pending)root.classList.remove('bssc-page-working')},Math.max(300,1100-(Date.now()-started)))};
+ }
+ window.bsscActivity={begin};
+ const original=window.fetch;
+ window.fetch=async function(input,options){
+  const done=begin();
+  try{const response=await original.call(this,input,options);await response.clone().arrayBuffer();return response}finally{done()}
+ };
+ document.addEventListener('click',e=>{
+  if(!e.target.closest('button,a[href]')||e.target.closest('#authGate'))return;
+  const done=begin();requestAnimationFrame(()=>requestAnimationFrame(done));
+ },true);
+ const initialDone=begin();
+ if(document.readyState==='complete')initialDone();else addEventListener('load',initialDone,{once:true});
+})();
 
     let moduleLoadingKey='home';
     const moduleLoadingStates=new Map();
