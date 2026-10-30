@@ -6,6 +6,9 @@
   <meta name="theme-color" content="#0a0a0b">
   <meta name="description" content="Private operations portal for BoneShakers Social Club.">
   <title>BSSC Management Portal</title>
+<style>html.bssc-session-pending #authGate{display:none!important}</style><script>
+try{const saved=JSON.parse(localStorage.getItem('bssc-google-session-edit-v2')||'null');if(saved?.accessToken&&Date.now()<saved.expiresAt&&Date.now()-saved.lastActivity<60*60*1000)document.documentElement.classList.add('bssc-session-pending')}catch{}
+</script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="icon" type="image/png" sizes="128x128" href="bssc-favicon.png?v=1">
   <style>
@@ -2565,8 +2568,10 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           await finishPortalLogin();
         }
       });
-      if (restoreSession()) {
-        setTimeout(finishPortalLogin,0);
+      const hasSavedSession=restoreSession();
+      document.documentElement.classList.remove('bssc-session-pending');
+      if (hasSavedSession) {
+        setTimeout(async()=>{const done=window.bsscActivity?.begin()||(()=>{});try{restorePortalView();await startPortalSession()}finally{done()}},0);
       }
     }
 
