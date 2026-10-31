@@ -20,3 +20,12 @@ test('invitation asks for interest before election and links to requirements',()
  const body=invitationText('Test One',2027,'November 20, 2026');
  assert.match(body,/Hello Test One/);assert.match(body,/November general membership meeting/);assert.match(body,/by November 20, 2026/);assert.match(body,/https:\/\/boneshakerssocialclub.com\/requirements-to-serve/);assert.match(body,/does not mean you have been elected/);assert.match(body,/December general membership meeting/);assert.doesNotMatch(invitationText('Test',2027,''),/ by \n/);
 });
+test('HTML invitations include professional green and red response buttons with personal links',()=>{
+ const {invitationHtml}=require('../bod-nominations-results.js');
+ const value=invitationHtml('<Test Member>',2027,'November 20, 2026',{yes:'https://example.com/respond?token=abc&choice=yes',no:'https://example.com/respond?token=abc&choice=no'});
+ assert.match(value,/Yes, I Accept/);assert.match(value,/No, I Decline/);assert.match(value,/#187447/);assert.match(value,/#b82835/);assert.match(value,/token=abc&amp;choice=yes/);assert.match(value,/&lt;Test Member&gt;/);assert.doesNotMatch(value,/<Test Member>/);assert.match(value,/confirm your choice/);
+});
+test('portal distinguishes pending, accepted and declined responses and escapes names',()=>{
+ const {responseMarkup}=require('../bod-nominations-results.js');const output=responseMarkup({nominees:[{name:'A'},{name:'B'},{name:'C'},{name:'<D>'}]},[{name:'A',status:'Accepted',responded_at:'2026-11-04T15:00:00Z'},{name:'B',status:'Declined'},{name:'C',status:'Awaiting Response'}]);
+ assert.match(output,/accepted/);assert.match(output,/declined/);assert.match(output,/Awaiting Response/);assert.match(output,/Not sent/);assert.match(output,/&lt;D&gt;/);
+});
