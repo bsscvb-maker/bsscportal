@@ -134,7 +134,7 @@
     return rows.slice(1).filter(row=>row.some(value=>String(value??'').trim())).map(row=>({at:String(row[0]||''),actor:String(row[1]||''),action:String(row[2]||''),name:String(row[3]||''),reference:String(row[4]||''),reason:String(row[5]||''),before:String(row[6]||'[]'),after:String(row[7]||'[]'),id:String(row[8]||'')})).reverse();
   }
   function historyMarkup(history) {
-    return `<section class="bod-results bod-results-panel bod-history-panel" id="bod-history"><div class="bod-panel-heading"><div><p class="bod-panel-eyebrow">A CLEAR RECORD</p><h3>Change history</h3></div><span class="bod-total-badge">${history.length} change${history.length===1?'':'s'}</span></div><div class="bod-history-list">${history.slice(0,50).map((item,index)=>`<article class="bod-history-row" ${index>=5?'data-bod-more-history hidden':''}><span class="bod-history-icon" aria-hidden="true">${icon(item.action==='reset'?'reset':'edit')}</span><div class="bod-history-copy"><div class="bod-history-top"><div><strong>${html(item.name)}</strong><span class="bod-history-kind ${item.action==='reset'?'reset':''}">${item.action==='reset'?'Member reset':'Selections updated'}</span></div><time>${html(formatHistoryTime(item.at))}</time></div><p>${html(item.reason)}</p><small>${html(item.actor)} · ${html(item.reference)}</small></div></article>`).join('')||'<p class="bod-history-empty">No corrections or resets yet. Each change will be recorded here.</p>'}</div>${history.length>5?'<button class="bod-panel-more" type="button" data-bod-history-toggle aria-expanded="false">View recent changes '+icon('arrow')+'</button>':''}</section>`;
+    return `<section class="bod-results bod-results-panel bod-history-panel" id="bod-history"><div class="bod-panel-heading"><div><p class="bod-panel-eyebrow">A CLEAR RECORD</p><h3>Change history</h3></div><span class="bod-total-badge">${history.length} change${history.length===1?'':'s'}</span></div><div class="bod-cleanup-actions"><label><input type="checkbox" data-bod-history-all> Select all changes</label><button type="button" data-bod-history-delete>Delete selected test history</button><button type="button" data-bod-history-restore>Restore deleted history</button><p>Deletes history entries only; nomination totals and member submissions stay as they are. Deleted entries can be restored.</p><p data-bod-cleanup-status role="status"></p></div><div class="bod-history-list">${history.map((item,index)=>`<article class="bod-history-row" ${index>=5?'data-bod-more-history hidden':''}><label><input type="checkbox" data-bod-history-select="${html(item.id)}" aria-label="Select history for ${html(item.name)}" ${item.id?'':'disabled'}></label><span class="bod-history-icon" aria-hidden="true">${icon(item.action==='reset'?'reset':'edit')}</span><div class="bod-history-copy"><div class="bod-history-top"><div><strong>${html(item.name)}</strong><span class="bod-history-kind ${item.action==='reset'?'reset':''}">${item.action==='reset'?'Member reset':'Selections updated'}</span></div><time>${html(formatHistoryTime(item.at))}</time></div><p>${html(item.reason)}</p><small>${html(item.actor)} · ${html(item.reference)}</small></div></article>`).join('')||'<p class="bod-history-empty">No corrections or resets yet. Each change will be recorded here.</p>'}</div>${history.length>5?'<button class="bod-panel-more" type="button" data-bod-history-toggle aria-expanded="false">View recent changes '+icon('arrow')+'</button>':''}</section>`;
   }
   function formatHistoryTime(value) {
     const date=new Date(value);
@@ -187,6 +187,7 @@
     `;
 
     style.textContent += '.bod-year-picker{display:flex;align-items:center;gap:12px;font-size:14px;font-weight:700;color:#fff;margin-bottom:20px}.bod-year-picker select{font:inherit;color:#fff;background:#292929;border:1px solid #aaa;border-radius:8px;min-height:44px;padding:8px 36px 8px 12px}' + '.bod-admin-choice[hidden],.bod-admin-other[hidden]{display:none!important}.bod-search-label{display:block;max-width:460px;font-weight:700;font-size:14px;margin:16px 0}.bod-search-label input,.bod-admin-dialog input[type=search],.bod-admin-dialog textarea,.bod-admin-dialog select{display:block;width:100%;margin-top:7px;padding:12px;border:1px solid #9ba3ad;border-radius:8px;background:#fff;color:#161616;font:inherit}.bod-manage-actions{padding:0 14px 16px}.bod-manage-actions button{min-height:44px}.bod-admin-dialog{color:#161616;background:#f8f9fa;border:1px solid #707984;border-radius:16px;width:min(680px,calc(100vw - 24px));max-height:88dvh;padding:0;box-shadow:0 14px 60px #0007}.bod-admin-dialog::backdrop{background:#0008}.bod-admin-dialog header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px;border-bottom:3px solid #c8102e;background:#111;color:#fff}.bod-admin-dialog header h2{margin:0 0 5px;font-size:23px}.bod-admin-dialog header p{font-size:12px;margin:0;color:#ddd;overflow-wrap:anywhere}.bod-admin-dialog button{min-height:44px;border:1px solid #888;border-radius:8px;padding:10px 15px;font:700 14px Arial,sans-serif;cursor:pointer;background:#fff;color:#161616}.bod-admin-dialog button:disabled{opacity:.6;cursor:wait}.bod-admin-dialog [data-bod-close]{flex:0 0 auto;background:transparent;color:#fff;border-color:#aaa}.bod-admin-body{padding:18px}.bod-admin-candidates{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:32dvh;overflow:auto;padding:3px;margin:12px -3px}.bod-admin-choice{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid #aeb6c0;border-radius:8px;background:#fff;font-size:14px;min-height:52px}.bod-admin-choice:has(input:checked){border-color:#c8102e;background:#fff0f2}.bod-admin-choice input{width:22px;height:22px;accent-color:#c8102e;flex:0 0 22px}.bod-admin-choice small{display:block;color:#555;margin-top:3px}.bod-admin-reason{display:block;margin-top:14px;font-size:14px;font-weight:700}.bod-admin-dialog textarea{resize:vertical;min-height:72px}.bod-admin-count{font-size:13px;font-weight:700;margin:10px 0}.bod-admin-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.bod-admin-dialog .bod-admin-save{background:#176c39;color:#fff;border-color:#176c39}.bod-admin-dialog .bod-admin-reset{color:#a10d25;border-color:#a10d25}.bod-admin-reset-check{background:#fff0f2;border:1px solid #a10d25;padding:14px;border-radius:8px;margin-top:14px;line-height:1.5}.bod-admin-status{line-height:1.5;font-size:14px;margin:12px 0 0;white-space:pre-wrap}.bod-admin-status:empty{display:none}.bod-admin-status[data-state=busy]{color:#6b4b00;background:#fff0b7;padding:10px;border-radius:7px}.bod-admin-status[data-state=error]{color:#a10d25}.bod-admin-status[data-state=saved]{color:#176c39}.bod-admin-dialog :focus-visible{outline:3px solid #2867ad;outline-offset:3px}[data-bod-name][hidden]{display:none!important}.bod-admin-toast{padding:12px;background:#dcf3e4;border-left:4px solid #176c39;border-radius:6px;color:#145c30}@media(max-width:600px){.bod-admin-dialog{width:calc(100vw - 16px);max-height:94dvh;border-radius:12px}.bod-admin-dialog header,.bod-admin-body{padding:14px}.bod-admin-candidates{grid-template-columns:1fr;max-height:35dvh}.bod-admin-actions>*{flex:1}.bod-admin-dialog button{min-height:48px}}';
+    style.textContent += '.bod-cleanup-actions{margin:16px 0;padding:14px;border:1px solid #e0e3e8;border-radius:10px;background:#f8f9fb}.bod-cleanup-actions button,#bod-invitations button{min-height:44px;padding:10px 14px;margin:6px;border:1px solid #b8bec7;border-radius:8px;background:#fff;color:#333;font-weight:700}.bod-cleanup-actions p,#bod-invitations p{font-size:13px;line-height:1.6}.bod-cleanup-actions input,.bod-history-row input{width:20px;height:20px;accent-color:#c8102e}.bod-admin-dialog input[type=date]{display:block;padding:10px;border:1px solid #888;border-radius:6px;font:inherit;margin:8px 0}.bod-admin-dialog li{margin:12px 0;overflow-wrap:anywhere}.bod-cleanup-actions label{display:flex;align-items:center;gap:8px}';
     document.head.appendChild(style);
   }
 
@@ -258,6 +259,122 @@
     historyToggle?.addEventListener('click',()=>{const expand=historyToggle.getAttribute('aria-expanded')!=='true';historyToggle.setAttribute('aria-expanded',String(expand));target.querySelectorAll('[data-bod-more-history]').forEach(row=>{row.hidden=!expand;});historyToggle.innerHTML=(expand?'Show fewer changes':'View recent changes')+' '+icon('arrow');});
   }
 
+  const INVITE_HEADERS=['Nominee','Email','Status','Updated At','Sender','Gmail Message ID','Body'];
+  const REQUIREMENTS_URL='https://boneshakerssocialclub.com/requirements-to-serve';
+  const sheetRange=(name,range)=>"'"+name.replace(/'/g,"''")+"'!"+range;
+  const cellRows=values=>({values:values.map(value=>({userEnteredValue:{stringValue:String(value??'')}}))});
+  function cleanupRequests(rows,ids,auditId,archiveId,actor,at) {
+    parseHistory(rows);
+    const wanted=new Set(ids),found=new Set(),requests=[],archive=[];
+    rows.slice(1).forEach((row,index)=>{if(!wanted.has(String(row[8]||'')))return;if(found.has(row[8]))throw Error('Duplicate change IDs. Review the source sheet.');found.add(row[8]);archive.push(cellRows([...Array.from({length:9},(_,i)=>row[i]||''),at,actor]));requests.push({repeatCell:{range:{sheetId:auditId,startRowIndex:index+1,endRowIndex:index+2,startColumnIndex:0,endColumnIndex:9},cell:{},fields:'userEnteredValue'}});});
+    if(!wanted.size||found.size!==wanted.size)throw Error('Selected history changed. Refresh before deleting.');
+    return [{appendCells:{sheetId:archiveId,rows:archive,fields:'userEnteredValue'}},...requests];
+  }
+  function invitationText(name,year,deadline) {
+    return `Hello ${name},\n\nCongratulations! You were nominated at our November general membership meeting to serve on the BoneShakers Social Club Board of Directors for ${year}. Your fellow members recognize the contribution you could make to our club and community.\n\nWe would like to know whether you are interested in accepting this nomination and being considered in the December election. Before deciding, please review the Board Service Requirements and Expectations:\n${REQUIREMENTS_URL}\n\nBoard service includes:\n• Meeting the membership, good-standing, renewal and attendance qualifications verified by the Secretary.\n• Preparing for and attending Board and general membership meetings.\n• Supporting club events, community service and fundraising.\n• Completing assigned work and communicating between meetings.\n• Protecting confidential information, disclosing conflicts and following our bylaws and operating policies.\n\nPlease reply to this email${deadline?' by '+deadline:''} with either “Yes, I accept the nomination and would like to be considered” or “No, thank you, I decline the nomination.” You are welcome to include any questions about the responsibilities or time commitment.\n\nAccepting a nomination places your name into consideration; it does not mean you have been elected or assigned an officer position. Voting will take place at our December general membership meeting.\n\nThank you for considering this opportunity to serve. We appreciate everything you do to support BoneShakers.\n\nWith appreciation,\nTodd Humphrey\nPresident, BoneShakers Social Club`;
+  }
+  function invitationRecipients(model,roster) {
+    const headers=(roster[0]||[]).map(normalize),first=headers.indexOf('first name'),last=headers.indexOf('last name'),email=headers.indexOf('email');
+    if([first,last,email].some(i=>i<0))throw Error('Roster First Name, Last Name and Email columns are required.');
+    return model.nominees.map(person=>{
+      const matches=roster.slice(1).filter(row=>normalize([row[first],row[last]].map(v=>String(v||'').trim()).join(' '))===normalize(person.name));
+      const address=matches.length===1?String(matches[0][email]||'').trim().toLowerCase():'';
+      return {name:person.name,email:address,error:matches.length!==1?'No unique roster match':!/^[a-z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(address)?'Missing or invalid roster email':''};
+    });
+  }
+  function invitationPanel(year) {
+    return `<section class="bod-results bod-results-panel bod-history-panel" id="bod-invitations"><div class="bod-panel-heading"><div><p class="bod-panel-eyebrow">NEXT STEP</p><h3>Invite nominees to serve · ${year}</h3></div></div><p>After nominations close, review the nominees and send a personal invitation to each member. Replies go to the club account you choose when sending.</p><p><a href="${REQUIREMENTS_URL}" target="_blank" rel="noopener">Read requirements to serve ↗</a> · Opens without a member account.</p><button type="button" data-bod-invite-preview>Review nominee invitations</button><p data-bod-invite-summary role="status"></p><p>Nomination acceptance is collected by email reply. Record responses with the Secretary before preparing the December ballot.</p></section>`;
+  }
+  async function adminBatch(requests) {
+    const actor=normalize(await getPortalAuditActor());
+    if(!ADMIN_EMAILS.includes(actor)||!accessToken)throw Error('Sign in with the President or bsscvb account.');
+    const response=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+':batchUpdate',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({requests}),signal:AbortSignal.timeout(30000)});
+    if(!response.ok){const data=await response.json().catch(()=>({}));throw Error(data.error?.message||'Could not save. Refresh to check the current records before trying again.');}
+  }
+  async function ensureAdminSheet(name,headers) {
+    let metadata=await fetchSheetRead('https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+'?fields=sheets.properties');
+    let sheet=metadata.sheets.find(s=>s.properties.title===name);
+    if(!sheet){const id=crypto.getRandomValues(new Uint32Array(1))[0]%2000000000;await adminBatch([{addSheet:{properties:{sheetId:id,title:name}}},{updateCells:{start:{sheetId:id,rowIndex:0,columnIndex:0},rows:[cellRows(headers)],fields:'userEnteredValue'}}]);sheet={properties:{sheetId:id,title:name}};}
+    const rows=await getSheetValues(sheetRange(name,'A:K'),MEMBERSHIP_SPREADSHEET_ID);
+    if(headers.some((h,i)=>rows[0]?.[i]!==h))throw Error('Unexpected headers in '+name+'. Review the source sheet.');
+    return {id:sheet.properties.sheetId,rows};
+  }
+  function bindNextStep(target,model,context) {
+    const status=target.querySelector('[data-bod-cleanup-status]');
+    target.querySelector('[data-bod-history-all]').onchange=e=>target.querySelectorAll('[data-bod-history-select]:not(:disabled)').forEach(c=>c.checked=e.target.checked);
+    let cleaning=false;
+    async function cleanup(restore) {
+      if(cleaning)return;
+      const ids=[...target.querySelectorAll('[data-bod-history-select]:checked')].map(c=>c.dataset.bodHistorySelect);
+      if(!restore&&!ids.length){status.textContent='Select the test history entries you want to delete.';return;}
+      if(!window.confirm(restore?'Restore all deleted history for '+context.year+'?':'Delete the '+ids.length+' selected history entries? Submissions and totals will stay unchanged. You can restore this history later.'))return;
+      cleaning=true;status.textContent=restore?'Restoring history…':'Deleting selected history…';
+      try {
+        const actor=normalize(await getPortalAuditActor()),archiveName='BOD Deleted Changes '+context.year;
+        const archive=await ensureAdminSheet(archiveName,[...AUDIT_HEADERS,'Deleted At','Deleted By']);
+        const rows=await getSheetValues(sheetRange(context.auditSheet,'A:I'),MEMBERSHIP_SPREADSHEET_ID);
+        let requests;
+        if(restore){const history=parseHistory(rows),existing=new Set(history.map(h=>h.id)),restoreRows=[];requests=[];
+          archive.rows.slice(1).forEach((row,i)=>{if(!row[8])return;if(!existing.has(row[8])){restoreRows.push(cellRows(row.slice(0,9)));existing.add(row[8]);}requests.push({repeatCell:{range:{sheetId:archive.id,startRowIndex:i+1,endRowIndex:i+2,startColumnIndex:0,endColumnIndex:11},cell:{},fields:'userEnteredValue'}});});
+          if(!requests.length){status.textContent='No deleted history to restore.';return;}
+          if(restoreRows.length)requests.unshift({appendCells:{sheetId:context.auditSheetId,rows:restoreRows,fields:'userEnteredValue'}});
+        }else{const fresh=parseHistory(rows);for(const id of ids){if(JSON.stringify(fresh.find(h=>h.id===id))!==JSON.stringify(context.history.find(h=>h.id===id)))throw Error('History changed. Refresh before deleting.');}requests=cleanupRequests(rows,ids,context.auditSheetId,archive.id,actor,new Date().toISOString());}
+        await adminBatch(requests);await load(restore?'Deleted history restored.':'Selected test history deleted. Nomination totals were unchanged.');
+      }catch(error){status.textContent=error.message;}finally{cleaning=false;}
+    }
+    target.querySelector('[data-bod-history-delete]').onclick=()=>cleanup(false);
+    target.querySelector('[data-bod-history-restore]').onclick=()=>cleanup(true);
+    target.querySelector('[data-bod-invite-preview]').onclick=async event=>{
+      event.target.disabled=true;const summary=target.querySelector('[data-bod-invite-summary]');summary.textContent='Loading roster and invitation history…';
+      try{const roster=await getSheetValues(sheetRange(String(context.year),'A:AZ'),MEMBERSHIP_SPREADSHEET_ID),recipients=invitationRecipients(model,roster);if(!recipients.length)throw Error('No nominees yet. Invitations will be available once members are nominated.');
+        const log=await ensureAdminSheet('BOD Invitations '+context.year,INVITE_HEADERS);openInvitations(recipients,model,context,log);summary.textContent='Review the email and recipients before sending.';
+      }catch(error){summary.textContent=error.message;}finally{event.target.disabled=false;}
+    };
+  }
+  function mailToken() {
+    return new Promise((resolve,reject)=>{google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email',include_granted_scopes:false,callback:r=>{if(r.error)return reject(Error(r.error_description||r.error));if(!google.accounts.oauth2.hasGrantedAllScopes(r,'https://www.googleapis.com/auth/gmail.send','https://www.googleapis.com/auth/userinfo.email'))return reject(Error('Google mail permission was not granted. No invitations sent.'));resolve(r.access_token);},error_callback:()=>reject(Error('Google authorization was closed or blocked. No invitations sent.'))}).requestAccessToken({prompt:'select_account'});});
+  }
+  function openInvitations(recipients,model,context,log) {
+    const prior=new Map(log.rows.slice(1).filter(r=>r[0]).map(r=>[normalize(r[0]),r]));
+    const dialog=document.createElement('dialog');dialog.className='bod-admin-dialog';
+    dialog.innerHTML=`<header><div><h2>Nominee invitations · ${context.year}</h2><p>Review the recipients and message. One email per nominee.</p></div><button type="button" data-close>Close</button></header><div class="bod-admin-body"><label>Reply deadline (optional)<input type="date" data-deadline></label><h3>Recipients</h3><ul>${recipients.map(r=>`<li><strong>${html(r.name)}</strong> — ${html(r.error||r.email)} <span>${html(prior.get(normalize(r.name))?.[2]||'Not sent')}</span></li>`).join('')}</ul><p>Fix missing or ambiguous email addresses in the ${context.year} roster, then reopen this preview. Previously attempted invitations are skipped; check your Sent folder before resolving an uncertain send in the source sheet.</p><label>Email preview<select data-person>${recipients.map((r,i)=>`<option value="${i}">${html(r.name)}</option>`).join('')}</select></label><p><strong>Subject:</strong> Your ${context.year} BoneShakers Board nomination — invitation to serve</p><pre data-body style="white-space:pre-wrap;font:14px/1.6 Arial"></pre><label style="display:flex;gap:10px;align-items:start"><input type="checkbox" data-closed style="width:22px;height:22px;flex:0 0 22px">I confirm nominations are closed and I have reviewed this recipient list and email.</label><p>This confirmation does not close the public nomination form. Close nominations there first. Google will ask you to select a club sender account and allow sending email.</p><div class="bod-admin-actions"><button type="button" class="bod-admin-save" data-send disabled>Send nominee invitations</button></div><p data-status class="bod-admin-status" role="status"></p></div>`;
+    document.body.append(dialog);dialog.showModal();let sending=false;
+    const $=s=>dialog.querySelector(s),deadline=()=>{const v=$('[data-deadline]').value;return v?new Date(v+'T12:00:00').toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}):'';};
+    const preview=()=>{$('[data-body]').textContent=invitationText(recipients[Number($('[data-person]').value)].name,context.year,deadline());};preview();$('[data-person]').onchange=preview;$('[data-deadline]').onchange=preview;
+    const pending=recipients.filter(r=>!prior.has(normalize(r.name)));const blocked=pending.some(r=>r.error);
+    const ready=()=>{$('[data-send]').disabled=!$('[data-closed]').checked||blocked||!pending.length||sending;};$('[data-closed]').onchange=ready;
+    if(blocked)$('[data-status]').textContent='Correct the roster email issues before sending.';else if(!pending.length)$('[data-status]').textContent='All nominees already have an invitation attempt on record.';
+    $('[data-close]').onclick=()=>{if(!sending){dialog.close();dialog.remove();}};dialog.addEventListener('cancel',e=>{if(sending)e.preventDefault();else dialog.remove();});
+    $('[data-send]').onclick=async()=>{
+      if(sending||!$('[data-closed]').checked||blocked||!pending.length)return;
+      sending=true;ready();$('[data-deadline]').disabled=true;$('[data-closed]').disabled=true;let sent=0;
+      // Start consent directly from the button gesture so popup blockers do not interfere.
+      const tokenPromise=mailToken();$('[data-status]').textContent='Waiting for Google email authorization…';
+      try{const token=await tokenPromise;const info=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)}).then(r=>r.json());const sender=normalize(info.email);if(!ADMIN_EMAILS.includes(sender))throw Error('Choose the President or bsscvb club account. No invitations sent.');
+        const fresh=buildModel(await getSheetValues(sheetRange(context.nominationSheet,'A:G'),MEMBERSHIP_SPREADSHEET_ID));if(tallyCsv(fresh)!==tallyCsv(model))throw Error('Nomination totals changed. Close this window, refresh and review again.');
+        const roster=await getSheetValues(sheetRange(String(context.year),'A:AZ'),MEMBERSHIP_SPREADSHEET_ID);if(JSON.stringify(invitationRecipients(fresh,roster))!==JSON.stringify(recipients))throw Error('Roster addresses changed. Reopen the preview.');
+        for(const person of pending){
+          const latest=await getSheetValues(sheetRange('BOD Invitations '+context.year,'A:G'),MEMBERSHIP_SPREADSHEET_ID);if(latest.slice(1).some(r=>normalize(r[0])===normalize(person.name)))continue;
+          const body=invitationText(person.name,context.year,deadline()),at=new Date().toISOString();
+          const row=[person.name,person.email,'Sending — check Sent before retry',at,sender,'',body];
+          // Record before Gmail is called. A lost response never causes an automatic resend.
+          await adminBatch([{appendCells:{sheetId:log.id,rows:[cellRows(row)],fields:'userEnteredValue'}}]);
+          const reserved=await getSheetValues(sheetRange('BOD Invitations '+context.year,'A:G'),MEMBERSHIP_SPREADSHEET_ID);const matches=reserved.map((r,i)=>({r,i})).filter(x=>normalize(x.r[0])===normalize(person.name));if(matches.length!==1)throw Error('Another administrator may be sending this invitation. Check the invitation log and Sent folder.');const index=matches[0].i;
+          $('[data-status]').textContent='Sending to '+person.name+'… '+sent+' sent.';
+          const utf8=value=>btoa(Array.from(new TextEncoder().encode(value),b=>String.fromCharCode(b)).join(''));
+          const mime=['To: '+person.email,'From: '+sender,'Subject: =?UTF-8?B?'+utf8('Your '+context.year+' BoneShakers Board nomination — invitation to serve')+'?=','MIME-Version: 1.0','Content-Type: text/plain; charset=UTF-8','Content-Transfer-Encoding: base64','',utf8(body).match(/.{1,76}/g).join('\r\n')].join('\r\n');
+          const response=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({raw:utf8(mime).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}),signal:AbortSignal.timeout(30000)});
+          const result=await response.json().catch(()=>({}));
+          if(!response.ok||!result.id)throw Error(result.error?.message||'Gmail did not confirm delivery. Check the Sent folder before retrying.');
+          sent++;row[2]='Sent';row[3]=new Date().toISOString();row[5]=result.id;
+          await adminBatch([{updateCells:{start:{sheetId:log.id,rowIndex:index,columnIndex:0},rows:[cellRows(row)],fields:'userEnteredValue'}}]);
+        }
+        $('[data-status]').textContent=sent+' invitation(s) sent. Replies will arrive in '+sender+'.';$('[data-send]').textContent='Invitations processed';
+      }catch(error){$('[data-status]').textContent=sent+' confirmed sent. '+error.message+' Close and reopen this preview to refresh statuses. If Gmail access is blocked, the Google Cloud project may need Gmail API and gmail.send consent enabled.';}
+      finally{sending=false;$('[data-send]').disabled=true;$('[data-closed]').disabled=true;$('[data-deadline]').disabled=true;}
+    };
+  }
+
   async function load(notice) {
     const request = ++sequence;
     const names=yearSheets(selectedYear),year=names.year;
@@ -283,17 +400,18 @@
           const candidateSheet=(metadata.sheets||[]).find(entry=>entry.properties?.title===names.candidates),auditSheet=(metadata.sheets||[]).find(entry=>entry.properties?.title===names.audit);
           if(!candidateSheet||!auditSheet)throw Error('Nomination admin setup is not complete.');
           const [candidateRows,auditRows]=await Promise.all([getSheetValues("'"+names.candidates+"'!A:D",MEMBERSHIP_SPREADSHEET_ID),getSheetValues("'"+names.audit+"'!A:I",MEMBERSHIP_SPREADSHEET_ID)]);
-          if(!auditRows.length)throw Error('The nomination change-history header is missing.');history=parseHistory(auditRows);context={year,nominationSheet:names.nominations,auditSheet:names.audit,candidates:parseCandidates(candidateRows),nominationSheetId:sheet.properties.sheetId,auditSheetId:auditSheet.properties.sheetId};admin=true;
+          if(!auditRows.length)throw Error('The nomination change-history header is missing.');history=parseHistory(auditRows);context={history,year,nominationSheet:names.nominations,auditSheet:names.audit,candidates:parseCandidates(candidateRows),nominationSheetId:sheet.properties.sheetId,auditSheetId:auditSheet.properties.sheetId};admin=true;
         } catch(error){adminError=error.message;}
       }
       if (!active()) return;
       const sourceUrl='https://docs.google.com/spreadsheets/d/'+MEMBERSHIP_SPREADSHEET_ID+'/edit'+(sheet?'#gid='+sheet.properties.sheetId:'');
       const updatedAt = new Date().toLocaleString('en-US',{timeZone:'America/New_York',timeZoneName:'short'});
-      target.innerHTML=(typeof notice==='string'?'<p class="bod-admin-toast" role="status">'+html(notice)+'</p>':'')+markup(model,updatedAt,sourceUrl,admin,year,availableYears(metadata.sheets))+(admin?historyMarkup(history):'')+(adminError?'<p class="bod-results-note" role="alert">Results are available, but administrative controls could not load: '+html(adminError)+'</p>':'');
+      target.innerHTML=(typeof notice==='string'?'<p class="bod-admin-toast" role="status">'+html(notice)+'</p>':'')+markup(model,updatedAt,sourceUrl,admin,year,availableYears(metadata.sheets))+(admin?invitationPanel(year)+historyMarkup(history):'')+(adminError?'<p class="bod-results-note" role="alert">Results are available, but administrative controls could not load: '+html(adminError)+'</p>':'');
       status.textContent='BOD Nominations '+year+' · '+model.submissions.length+' member submission'+(model.submissions.length===1?'':'s');
       target.querySelector('[data-bod-refresh]').addEventListener('click',()=>load());
       target.querySelector('[data-bod-year]').addEventListener('change',event=>{selectedYear=yearSheets(event.target.value).year;load();});
       bindDashboard(target,model,context);
+      if(admin)bindNextStep(target,model,context);
       target.querySelector('[data-bod-export]').addEventListener('click',()=>{
         const url=URL.createObjectURL(new Blob(['\ufeff'+tallyCsv(model)],{type:'text/csv;charset=utf-8'}));
         const link=document.createElement('a');link.href=url;link.download='BSSC_BOD_Nomination_Tally_'+year+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -306,5 +424,5 @@
     }
   }
   if(typeof document!=='undefined')document.getElementById('bodAdministrationLink')?.addEventListener('click',()=>{currentMembershipSheet=SHEET;showModule('membership');});
-  return {yearSheets,availableYears,yearSelector,selectYear,load,buildModel,tallyCsv,markup,buildAdminMutation,parseCandidates,parseHistory,historyMarkup,changeReason,CHANGE_REASONS,installStyle,bindDashboard};
+  return {invitationText,invitationRecipients,cleanupRequests,yearSheets,availableYears,yearSelector,selectYear,load,buildModel,tallyCsv,markup,buildAdminMutation,parseCandidates,parseHistory,historyMarkup,changeReason,CHANGE_REASONS,installStyle,bindDashboard};
 });
