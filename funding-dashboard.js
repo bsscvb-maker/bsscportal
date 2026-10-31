@@ -47,7 +47,7 @@
       const closedState=state==='DELETED'||closed!==null||/^(CLOSED|COMPLETED|PAID|PRESIDENT_DENIED|BOARD_DENIED)$/.test(state);
       const submitted=instant(r[1]);const decisionAt=instant(r[24])??events.find(e=>/BOARD_(APPROVED|DENIED)/.test(e.action))?.time??null;
       return {sourceRow:requests.indexOf(r)+1,raw:Array.from({length:35},(_,i)=>r[i]??''),headers:requests[0]||[],id,contact,recipient,subject,category,test,state,stateLabel:titles[state]||state.replace(/_/g,' ').toLowerCase(),purpose:r[11]||'No summary recorded',organization:r[5],benefit:r[12],justification:r[13],email:r[6],phone:r[7],requested:r[9],approved:r[33],paid:r[29],submitted,closed,closedState,decisionAt,events,ballots,president:r[17],presidentAt:instant(r[18]),presidentNotes:r[19],treasurer:r[20],treasurerAt:instant(r[21]),treasurerNotes:r[22],board:r[23],boardComments:r[25],paymentMethod:r[26],paymentRef:r[27],paidAt:instant(r[28])};
-    }).sort((a,b)=>(b.submitted||0)-(a.submitted||0));
+    }).sort((a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true,sensitivity:'base'}));
   }
   function editBatch(original,next,row,headers,actor,at,sheets,voteRows=[]) {
     if(String(original[0])!==String(next[0]))throw new Error('The reference number cannot be changed.');
