@@ -95,7 +95,7 @@
         const yearHost=body.querySelector('[data-fr-years]');yearHost.hidden=selectedYear!==null;
         body.querySelector('[data-fr-year-detail]').hidden=selectedYear===null;
         body.querySelector('[data-fr-year-back]').hidden=selectedYear===null;
-        yearHost.innerHTML=years.map(year=>{const summary=yearSummary(all,year);return '<button type="button" class="fr-year-card" data-fr-year="'+esc(year)+'"><span>Funding requests</span><h3>'+esc(year==='Undated'?'Undated requests':year+' Requests')+'</h3><dl><div><dt>Requests</dt><dd>'+summary.count+'</dd></div><div><dt>Open requests</dt><dd>'+summary.open+'</dd></div><div><dt>Total paid</dt><dd>'+money(summary.paid)+'</dd></div></dl><strong>View requests →</strong></button>';}).join('');
+        yearHost.innerHTML=years.map(year=>{const summary=yearSummary(all,year);return '<button type="button" class="fr-year-card" data-fr-year="'+esc(year)+'"><span>Funding requests</span><h3>'+esc(year==='Undated'?'Undated requests':year+' Requests')+'</h3><dl><div><dt>Requests</dt><dd>'+summary.count+'</dd></div><div><dt>Open requests</dt><dd>'+summary.open+'</dd></div><div><dt>Total paid</dt><dd>'+money(summary.paid)+'</dd></div></dl></button>';}).join('');
         yearHost.querySelectorAll('[data-fr-year]').forEach(button=>button.onclick=()=>{selectedYear=button.dataset.frYear;paint();});
         body.querySelector('[data-fr-year-back]').onclick=()=>{selectedYear=null;paint();};
         const includeTests=body.querySelector('[data-fr-tests]').checked;
