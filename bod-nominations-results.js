@@ -298,10 +298,10 @@
     const response=await fetch(RESPONSE_ORIGIN+'/api/admin/'+path+'?year='+year,{method:data?'POST':'GET',headers:{Authorization:'Bearer '+accessToken,...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{}),signal:AbortSignal.timeout(30000)});
     const result=await response.json();if(!response.ok)throw Error(result.error||'Responses could not be loaded.');return result;
   }
-  function responseMarkup(model,records,samples=[]){
+  function responseMarkup(model,records){
     const byName=new Map(records.map(r=>[normalize(r.name),r]));
     const nominees=model.nominees.length?'<table class="bod-response-table"><thead><tr><th>Nominee</th><th>Response</th><th>Received</th></tr></thead><tbody>'+model.nominees.map(person=>{const record=byName.get(normalize(person.name)),state=record?.status||'Not sent';return '<tr><td>'+html(person.name)+'</td><td><span class="bod-response-badge '+(state==='Accepted'?'accepted':state==='Declined'?'declined':'waiting')+'">'+html(state)+'</span></td><td>'+html(record?.responded_at?formatHistoryTime(record.responded_at):'—')+'</td></tr>';}).join('')+'</tbody></table>':'';
-    return nominees+samples.map(record=>'<section style="margin-top:20px;padding:16px;border:1px dashed #aeb6c3;border-radius:8px"><strong>Sample email test</strong><p>Purchasing review: <span class="bod-response-badge '+(record.status==='Accepted'?'accepted':'declined')+'">'+html(record.status)+'</span></p><small>'+html(formatHistoryTime(record.responded_at))+' · Test only — excluded from nominees and election totals.</small></section>').join('');
+    return nominees;
   }
   async function adminBatch(requests) {
     const actor=normalize(await getPortalAuditActor());
@@ -320,7 +320,7 @@
   function bindNextStep(target,model,context) {
     const panel=target.querySelector('#bod-invitations'),list=panel.querySelector('[data-bod-response-list]');
     let refreshing=false;
-    async function refreshResponses(){if(refreshing||!panel.isConnected)return;refreshing=true;try{const result=await responseApi('responses',context.year);if(panel.isConnected)list.innerHTML=responseMarkup(model,result.responses,result.samples);}catch(error){if(panel.isConnected)list.textContent=error.message;}finally{refreshing=false;}}
+    async function refreshResponses(){if(refreshing||!panel.isConnected)return;refreshing=true;try{const result=await responseApi('responses',context.year);if(panel.isConnected)list.innerHTML=responseMarkup(model,result.responses);}catch(error){if(panel.isConnected)list.textContent=error.message;}finally{refreshing=false;}}
     panel.querySelector('[data-bod-response-refresh]').onclick=refreshResponses;
     refreshResponses();
     const poll=()=>setTimeout(async()=>{if(!panel.isConnected)return;await refreshResponses();poll();},30000);poll();
