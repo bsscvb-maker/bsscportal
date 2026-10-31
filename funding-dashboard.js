@@ -27,7 +27,9 @@
     return requests.slice(1).filter(r=>r[0]).map(r=>{
       const id=String(r[0]);const contact=[r[3],r[4]].filter(Boolean).join(' ');const recipient=String(r[34]||'').trim();const subject=recipient||contact;
       const test=/AUTHORIZED_TEST/.test(audit.filter(a=>a[1]===id).map(a=>a[3]).join(' '))||/\btest\b/i.test([r[3],r[4],r[5],r[11]].join(' '));
-      const matches=active.filter(m=>norm([m[col('First Name')],m[col('Last Name')]].join(' '))===norm(subject)||(!recipient&&norm(m[col('Email')])===norm(r[6])&&norm(r[6])));
+      const recipientMatches=active.filter(m=>norm([m[col('First Name')],m[col('Last Name')]].join(' '))===norm(subject));
+      const requesterMatches=active.filter(m=>norm([m[col('First Name')],m[col('Last Name')]].join(' '))===norm(contact)||(norm(r[6])&&norm(m[col('Email')])===norm(r[6])));
+      const matches=recipientMatches.length?recipientMatches:requesterMatches;
       const member=matches.length===1?matches[0]:null;
       const memberName=member?norm([member[col('First Name')],member[col('Last Name')]].join(' ')):'';
       const position=member?String(member[col('Director Position')]||'').trim():'';
