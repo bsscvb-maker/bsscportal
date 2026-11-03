@@ -17,3 +17,17 @@ body.portal-authenticated .avatar.portal-skull-avatar{display:grid!important;wid
 #financeControlTable .control-title .live-eastern-time{display:inline-flex;align-items:center;justify-content:flex-end;gap:8px;margin:0 0 0 auto;max-width:100%;text-align:right}
 #financeControlTable .control-title .live-eastern-time span{margin-top:0}
 #financeControlTable .control-title .live-clock-dot{flex:0 0 9px}
+
+/* Fit reimbursement labels in the desktop transaction ledger. */
+@media (min-width:1501px){
+  #financeTransactions2026Table .data-table:not(.transaction-picking) th:nth-child(7),
+  #financeTransactions2026Table .data-table.transaction-picking th:nth-child(8),
+  #financeTransactions2026Table .data-table td[data-label="Subcategory"]{
+    width:120px;
+    min-width:120px;
+  }
+  #financeTransactions2026Table .data-table td[data-label="Subcategory"]{
+    overflow-wrap:normal;
+    word-break:normal;
+  }
+}
