@@ -76,12 +76,39 @@
     return {submissions, nominees, total:submissions.reduce((sum,record) => sum + record.names.length,0), excluded, duplicates};
   }
 
-  function tallyCsv(model) {
+  function csvRows(rows) {
     const cell = value => {
       const text = String(value ?? '');
       return '"' + (/^[\s]*[=+@-]/.test(text) ? "'" + text : text).replace(/"/g,'""') + '"';
     };
-    return [['Nominee','Nominations'],...model.nominees.map(p => [p.name,p.count])].map(row => row.map(cell).join(',')).join('\r\n') + '\r\n';
+    return rows.map(row => row.map(cell).join(',')).join('\r\n') + '\r\n';
+  }
+
+  function tallyCsv(model) {
+    return csvRows([['Nominee','Nominations'],...model.nominees.map(person => [person.name,person.count])]);
+  }
+
+  function nominatorsFor(model, name) {
+    const key = normalize(name);
+    return model.submissions.filter(record => record.names.some(choice => normalize(choice) === key))
+      .sort((a,b) => a.nominator.localeCompare(b.nominator));
+  }
+
+  function detailCsv(model, year) {
+    return csvRows([['Board service year','Nominee','Nominated by','Submitted at'],
+      ...model.nominees.flatMap(person => nominatorsFor(model,person.name)
+        .map(record => [year,person.name,record.nominator,record.timestamp]))]);
+  }
+
+  function downloadCsv(csv, filename) {
+    const url = URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url),1000);
   }
 
   const initials = name => String(name).trim().split(/\s+/).filter(Boolean).filter(word=>word!== '"').map(word=>word[0]).filter(Boolean).filter((_,i,list)=>i===0||i===list.length-1).join('').toUpperCase();
@@ -90,18 +117,18 @@
     return `<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${paths[name]||paths.nominees}</svg>`;
   };
 
-  function markup(model, updatedAt, sourceUrl, admin = false, year = 2027, years = availableYears()) {
+  function markup(model, updatedAt, sourceUrl, admin = false, year = 2027, years = availableYears(), canExportDetails = admin) {
     const top=model.nominees[0]?.count||0,tied=model.nominees.filter(person=>person.count===top).length;
     const stats=[['Submissions',model.submissions.length,'members have submitted','people','submissions'],['Members nominated',model.nominees.length,'members on the nomination list','nominees','totals'],['Total nominations',model.total,'across all member submissions','total','totals']];
     let rank=0,previous=-1;
     return `<section class="bod-results" aria-label="BOD nomination results">
-      <header class="bod-hero">${yearSelector(year,years)}<div class="bod-hero-top"><p class="bod-results-kicker">BONESHAKERS · BOARD OF DIRECTORS</p><span class="bod-connection"><i aria-hidden="true"></i>Connected</span></div><div class="bod-hero-main"><div><h2>Nominations <span>${year}</span></h2><p>Your board. Your members. Every nomination in one place.</p></div><div class="bod-results-actions"><button type="button" data-bod-refresh>${icon('refresh')}<span>Refresh totals</span></button><button type="button" data-bod-export ${model.nominees.length?'':'disabled'}>${icon('download')}<span>Export CSV</span></button></div></div><div class="bod-hero-footer"><span>${icon('clock')}Updated ${html(updatedAt)}</span>${admin?'<button type="button" data-bod-jump="bod-submissions">Manage submissions '+icon('arrow')+'</button>':''}</div></header>
+      <header class="bod-hero">${yearSelector(year,years)}<div class="bod-hero-top"><p class="bod-results-kicker">BONESHAKERS · BOARD OF DIRECTORS</p><span class="bod-connection"><i aria-hidden="true"></i>Connected</span></div><div class="bod-hero-main"><div><h2>Nominations <span>${year}</span></h2><p>Your board. Your members. Every nomination in one place.</p></div><div class="bod-results-actions"><button type="button" data-bod-refresh>${icon('refresh')}<span>Refresh totals</span></button><button type="button" data-bod-export ${model.nominees.length?'':'disabled'}>${icon('download')}<span>Export totals CSV</span></button>${canExportDetails?`<button type="button" data-bod-export-details ${model.total?'':'disabled'}>${icon('download')}<span>Export nominations CSV</span></button>`:''}</div></div><div class="bod-hero-footer"><span>${icon('clock')}Updated ${html(updatedAt)}</span>${admin?'<button type="button" data-bod-jump="bod-submissions">Manage submissions '+icon('arrow')+'</button>':''}</div></header>
       <div class="bod-results-stats">${stats.map(([label,value,caption,symbol,jump],i)=>`<button type="button" class="bod-stat bod-stat-${i}" data-bod-jump="bod-${jump}"><span class="bod-stat-top"><span>${html(label)}</span><i>${icon(symbol)}</i></span><strong>${value}</strong><span class="bod-stat-caption">${html(caption)}</span></button>`).join('')}</div>
       ${model.excluded?`<p class="bod-results-note" role="alert">${model.excluded} incomplete or invalid log row(s) excluded from the totals. Review the source sheet before using these results.</p>`:''}
       ${model.duplicates?`<p class="bod-results-note">${model.duplicates} duplicate or superseded row(s) excluded. Each member is counted once.</p>`:''}
       <div class="bod-dashboard-grid"><section class="bod-results-panel" id="bod-totals"><div class="bod-panel-heading"><div><p class="bod-panel-eyebrow">THE NOMINEES</p><h3>Nomination totals</h3></div><span class="bod-total-badge">${model.nominees.length} member${model.nominees.length===1?'':'s'}</span></div>
       ${top?`<div class="bod-tally-context"><span class="bod-context-mark" aria-hidden="true"></span><span>Top count: <strong>${top} nomination${top===1?'':'s'}</strong>${tied>1?` · ${tied} members tied`:''}</span></div>`:''}
-      <ol class="bod-leaderboard">${model.nominees.map((person,index)=>{if(person.count!==previous){rank=index+1;previous=person.count;}return `<li class="bod-leader" ${index>=8?'data-bod-more-nominee hidden':''}><span class="bod-rank" aria-label="Rank ${rank}">${String(rank).padStart(2,'0')}</span><div class="bod-leader-identity"><strong>${html(person.name)}</strong><div class="bod-tally-track" aria-hidden="true"><span style="width:${Math.max(5,Math.round(person.count/top*100))}%"></span></div></div><span class="bod-leader-count"><strong>${person.count}</strong><small>${person.count===1?'nomination':'nominations'}</small></span></li>`;}).join('')}</ol>
+      <ol class="bod-leaderboard">${model.nominees.map((person,index)=>{if(person.count!==previous){rank=index+1;previous=person.count;}return `<li class="bod-leader" ${index>=8?'data-bod-more-nominee hidden':''}><span class="bod-rank" aria-label="Rank ${rank}">${String(rank).padStart(2,'0')}</span><div class="bod-leader-identity"><details class="bod-nominator-detail"><summary><strong>${html(person.name)}</strong></summary><ul aria-label="Nominated by">${nominatorsFor(model,person.name).map(record=>`<li>${html(record.nominator)}</li>`).join('')}</ul></details><div class="bod-tally-track" aria-hidden="true"><span style="width:${Math.max(5,Math.round(person.count/top*100))}%"></span></div></div><span class="bod-leader-count"><strong>${person.count}</strong><small>${person.count===1?'nomination':'nominations'}</small></span></li>`;}).join('')}</ol>
       ${model.nominees.length>8?`<button class="bod-panel-more" type="button" data-bod-totals-toggle aria-expanded="false">View all ${model.nominees.length} nominees ${icon('arrow')}</button>`:''}
       ${!model.nominees.length?`<div class="bod-empty">${icon('nominees')}<strong>${model.excluded?'No valid submissions are available.':'No nominations received yet.'}</strong><p>${model.excluded?'Review the source sheet.':'Member nominations will appear here after submission.'}</p></div>`:''}
       </section>
@@ -432,16 +459,16 @@
       if (!active()) return;
       const sourceUrl='https://docs.google.com/spreadsheets/d/'+MEMBERSHIP_SPREADSHEET_ID+'/edit'+(sheet?'#gid='+sheet.properties.sheetId:'');
       const updatedAt = new Date().toLocaleString('en-US',{timeZone:'America/New_York',timeZoneName:'short'});
-      target.innerHTML=(typeof notice==='string'?'<p class="bod-admin-toast" role="status">'+html(notice)+'</p>':'')+markup(model,updatedAt,sourceUrl,admin,year,availableYears(metadata.sheets))+(admin?invitationPanel(year)+historyMarkup(history):'')+(adminError?'<p class="bod-results-note" role="alert">Results are available, but administrative controls could not load: '+html(adminError)+'</p>':'');
+      target.innerHTML=(typeof notice==='string'?'<p class="bod-admin-toast" role="status">'+html(notice)+'</p>':'')+markup(model,updatedAt,sourceUrl,admin,year,availableYears(metadata.sheets),ADMIN_EMAILS.includes(actor))+(admin?invitationPanel(year)+historyMarkup(history):'')+(adminError?'<p class="bod-results-note" role="alert">Results are available, but administrative controls could not load: '+html(adminError)+'</p>':'');
       status.textContent='BOD Nominations '+year+' · '+model.submissions.length+' member submission'+(model.submissions.length===1?'':'s');
       target.querySelector('[data-bod-refresh]').addEventListener('click',()=>load());
       target.querySelector('[data-bod-year]').addEventListener('change',event=>{selectedYear=yearSheets(event.target.value).year;load();});
       bindDashboard(target,model,context);
       if(admin)bindNextStep(target,model,context);
-      target.querySelector('[data-bod-export]').addEventListener('click',()=>{
-        const url=URL.createObjectURL(new Blob(['\ufeff'+tallyCsv(model)],{type:'text/csv;charset=utf-8'}));
-        const link=document.createElement('a');link.href=url;link.download='BSSC_BOD_Nomination_Tally_'+year+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-      });
+      target.querySelector('[data-bod-export]').addEventListener('click',()=>
+        downloadCsv(tallyCsv(model),'BSSC_BOD_Nomination_Tally_'+year+'.csv'));
+      target.querySelector('[data-bod-export-details]')?.addEventListener('click',()=>
+        downloadCsv(detailCsv(model,year),'BSSC_BOD_Nominations_'+year+'.csv'));
     } catch (error) {
       if (!active()) return;
       status.textContent='BOD nomination results could not be loaded.';
@@ -450,5 +477,5 @@
     }
   }
   if(typeof document!=='undefined')document.getElementById('bodAdministrationLink')?.addEventListener('click',()=>{currentMembershipSheet=SHEET;showModule('membership');});
-  return {invitationHtml,responseMarkup,invitationText,invitationRecipients,cleanupRequests,yearSheets,availableYears,yearSelector,selectYear,load,buildModel,tallyCsv,markup,buildAdminMutation,parseCandidates,parseHistory,historyMarkup,changeReason,CHANGE_REASONS,installStyle,bindDashboard};
+  return {invitationHtml,responseMarkup,invitationText,invitationRecipients,cleanupRequests,yearSheets,availableYears,yearSelector,selectYear,load,buildModel,tallyCsv,detailCsv,markup,buildAdminMutation,parseCandidates,parseHistory,historyMarkup,changeReason,CHANGE_REASONS,installStyle,bindDashboard};
 });
