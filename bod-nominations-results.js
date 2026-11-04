@@ -330,7 +330,7 @@
   const DEFAULT_2027_DEADLINE='Tuesday, November 10, 2026, at 11:59 p.m. Eastern';
   function invitationText(name,year,deadline,links) {
     deadline=deadline||(Number(year)===2027?DEFAULT_2027_DEADLINE:'');
-    return `Hi ${name},\n\nYou’ve been nominated to serve on the ${year} BoneShakers Social Club Board of Directors. Thank you for considering the opportunity to help lead our club.\n\nBefore responding, please review the requirements to serve:\n${REQUIREMENTS_URL}\n\nWould you like to accept your nomination and be considered in December’s election?\n\nYes, I Accept${links?': '+links.yes:''}\nNo, I Decline${links?': '+links.no:''}\n\n${deadline?'Please respond by '+deadline+'. ':''}Questions? Simply reply to this email.\n\nThank you,\nTodd Humphrey\nPresident, BoneShakers Social Club`;
+    return `Hi ${name},\n\nYou’ve been nominated to serve on the ${year} BoneShakers Social Club Board of Directors. Thank you for considering the opportunity to help lead our club.\n\nBefore responding, please review the requirements to serve:\n${REQUIREMENTS_URL}\n\nWould you like to accept your nomination and be considered in December’s election?\n\nYes, I Accept${links?': '+links.yes:''}\nNo, I Decline${links?': '+links.no:''}\n\n${deadline?'Please respond by '+deadline+'. ':''}If we do not receive your acceptance before the deadline, your nomination will be treated as declined and your name will not appear on the ballot. Questions? Simply reply to this email.\n\nThank you,\nTodd Humphrey\nPresident, BoneShakers Social Club`;
   }
   function invitationRecipients(model,roster) {
     const headers=(roster[0]||[]).map(normalize),first=headers.indexOf('first name'),last=headers.indexOf('last name'),email=headers.indexOf('email');
@@ -344,7 +344,7 @@
   function invitationHtml(name,year,deadline,links) {
     deadline=deadline||(Number(year)===2027?DEFAULT_2027_DEADLINE:'');
     const button=(url,label,color)=>`<a href="${html(url)}" style="display:inline-block;background:${color};border:1px solid ${color};border-radius:7px;color:#fff;text-decoration:none;padding:14px 23px;font:bold 16px Arial;text-align:center">${label}</a>`;
-    return `<html><body style="margin:0;background:#f2f3f5;font:16px Arial,sans-serif;color:#252932"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:28px 12px"><table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#fff;border:1px solid #dde1e6;border-radius:12px"><tr><td style="padding:28px"><p style="font-size:12px;font-weight:bold;letter-spacing:2px;color:#596372">BONESHAKERS SOCIAL CLUB</p><h1 style="font-size:24px;line-height:1.4;margin:20px 0">Your ${year} Board Nomination</h1><p style="line-height:1.65">Hi ${html(name)},</p><p style="line-height:1.65">You’ve been nominated to serve on the <strong>${year} BoneShakers Social Club Board of Directors</strong>. Thank you for considering the opportunity to help lead our club.</p><p style="line-height:1.65">Before responding, please review the <a href="${REQUIREMENTS_URL}" style="color:#9f1930">requirements to serve</a>.</p><p style="font-weight:bold;line-height:1.65;margin-top:24px">Would you like to accept your nomination and be considered in December’s election?</p><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="padding:10px 12px 20px 0">${button(links.yes,'Yes, I Accept','#187447')}</td><td style="padding:10px 0 20px">${button(links.no,'No, I Decline','#b82835')}</td></tr></table><p style="line-height:1.65">${deadline?'Please respond by <strong>'+html(deadline)+'</strong>. ':''}Questions? Simply reply to this email.</p><p style="line-height:1.65;margin-top:24px">Thank you,<br><strong>Todd Humphrey</strong><br>President, BoneShakers Social Club</p></td></tr></table></td></tr></table></body></html>`;
+    return `<html><body style="margin:0;background:#f2f3f5;font:16px Arial,sans-serif;color:#252932"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:28px 12px"><table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#fff;border:1px solid #dde1e6;border-radius:12px"><tr><td style="padding:28px"><p style="font-size:12px;font-weight:bold;letter-spacing:2px;color:#596372">BONESHAKERS SOCIAL CLUB</p><h1 style="font-size:24px;line-height:1.4;margin:20px 0">Your ${year} Board Nomination</h1><p style="line-height:1.65">Hi ${html(name)},</p><p style="line-height:1.65">You’ve been nominated to serve on the <strong>${year} BoneShakers Social Club Board of Directors</strong>. Thank you for considering the opportunity to help lead our club.</p><p style="line-height:1.65">Before responding, please review the <a href="${REQUIREMENTS_URL}" style="color:#9f1930">requirements to serve</a>.</p><p style="font-weight:bold;line-height:1.65;margin-top:24px">Would you like to accept your nomination and be considered in December’s election?</p><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="padding:10px 12px 20px 0">${button(links.yes,'Yes, I Accept','#187447')}</td><td style="padding:10px 0 20px">${button(links.no,'No, I Decline','#b82835')}</td></tr></table><p style="line-height:1.65">${deadline?'Please respond by <strong>'+html(deadline)+'</strong>. ':''}If we do not receive your acceptance before the deadline, your nomination will be treated as declined and your name will not appear on the ballot. Questions? Simply reply to this email.</p><p style="line-height:1.65;margin-top:24px">Thank you,<br><strong>Todd Humphrey</strong><br>President, BoneShakers Social Club</p></td></tr></table></td></tr></table></body></html>`;
   }
   function invitationPanel(year) {
     return `<section class="bod-results bod-results-panel bod-history-panel" id="bod-invitations"><div class="bod-panel-heading"><h3>Nominees &amp; Decisions · ${year}</h3></div><button type="button" data-bod-invite-preview>Review nominee invitations</button><button type="button" data-bod-response-refresh>Refresh responses</button><p data-bod-invite-summary role="status"></p><div data-bod-response-list></div></section>`;
@@ -414,25 +414,60 @@
     return new Promise((resolve,reject)=>{google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email',include_granted_scopes:false,callback:r=>{if(r.error)return reject(Error(r.error_description||r.error));if(!google.accounts.oauth2.hasGrantedAllScopes(r,'https://www.googleapis.com/auth/gmail.send','https://www.googleapis.com/auth/userinfo.email'))return reject(Error('Google mail permission was not granted. No invitations sent.'));resolve(r.access_token);},error_callback:()=>reject(Error('Google authorization was closed or blocked. No invitations sent.'))}).requestAccessToken({prompt:'select_account'});});
   }
   function openInvitations(recipients,model,context,log) {
+    const exclusionReasons=['Declined in person','Declined by phone','Declined by text','Declined by email','Asked not to be contacted','Confirmed ineligible','Other administrative reason'];
     const prior=new Map(log.rows.slice(1).filter(r=>r[0]).map(r=>[normalize(r[0]),r]));
     const dialog=document.createElement('dialog');dialog.className='bod-admin-dialog';
-    dialog.innerHTML=`<header><div><h2>Nominee invitations · ${context.year}</h2><p>Review the recipients and message. One email per nominee.</p></div><button type="button" data-close>Close</button></header><div class="bod-admin-body"><label>Reply deadline (11:59 p.m. Eastern)<input type="date" data-deadline value="${context.year===2027?'2026-11-10':''}" required></label><h3>Recipients</h3><p>Uncheck anyone you want to skip. The preview only changes whose email you see.</p><ul>${recipients.map((r,i)=>`<li><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-recipient="${i}" ${r.error||prior.has(normalize(r.name))?'disabled':'checked'}><span><strong>${html(r.name)}</strong> — ${html(r.error||r.email)} <span>${html(prior.get(normalize(r.name))?.[2]||'Not sent')}</span></span></label></li>`).join('')}</ul><p>Fix missing or ambiguous email addresses in the ${context.year} roster, then reopen this preview. Previously attempted invitations are skipped; check your Sent folder before resolving an uncertain send in the source sheet.</p><label>Email preview<select data-person>${recipients.map((r,i)=>`<option value="${i}">${html(r.name)}</option>`).join('')}</select></label><p><strong>Subject:</strong> Your ${context.year} BoneShakers Board nomination — invitation to serve</p><div data-body class="bod-email-preview"></div><label style="display:flex;gap:10px;align-items:start"><input type="checkbox" data-closed style="width:22px;height:22px;flex:0 0 22px">I confirm nominations are closed and I have reviewed this recipient list and email.</label><p>This confirmation does not close the public nomination form. Close nominations there first. Google will ask you to select a club sender account and allow sending email.</p><div class="bod-admin-actions"><button type="button" class="bod-admin-save" data-send disabled>Send nominee invitations</button></div><p data-status class="bod-admin-status" role="status"></p></div>`;
+    dialog.innerHTML=`<header><div><h2>Nominee invitations · ${context.year}</h2><p>Review the recipients and message. One email per nominee.</p></div><button type="button" data-close>Close</button></header><div class="bod-admin-body"><label>Reply deadline (11:59 p.m. Eastern)<input type="date" data-deadline value="${context.year===2027?'2026-11-10':''}" required></label><h3>Recipients</h3><p>Choose a reason to exclude someone, then save exclusions. A saved exclusion prevents an invitation from being sent. The preview only changes whose email you see.</p><ul>${recipients.map((r,i)=>`<li><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-recipient="${i}" ${r.error||prior.has(normalize(r.name))?'disabled':'checked'}><span><strong>${html(r.name)}</strong> — ${html(r.error||r.email)} <span>${html(prior.get(normalize(r.name))?.[2]||'Not sent')}</span></span></label>${prior.has(normalize(r.name))?'':`<label>Exclusion reason for ${html(r.name)}<select data-exclusion="${i}"><option value="">None</option>${exclusionReasons.map(reason=>`<option>${html(reason)}</option>`).join('')}</select></label>`}</li>`).join('')}</ul><p>Fix missing or ambiguous email addresses in the ${context.year} roster, then reopen this preview. Previously attempted invitations are skipped; check your Sent folder before resolving an uncertain send in the source sheet.</p><label>Email preview<select data-person>${recipients.map((r,i)=>`<option value="${i}">${html(r.name)}</option>`).join('')}</select></label><p><strong>Subject:</strong> Your ${context.year} BoneShakers Board nomination — invitation to serve</p><div data-body class="bod-email-preview"></div><label style="display:flex;gap:10px;align-items:start"><input type="checkbox" data-closed style="width:22px;height:22px;flex:0 0 22px">I confirm nominations are closed and I have reviewed this recipient list and email.</label><p>This confirmation does not close the public nomination form. Close nominations there first. Google will ask you to select a club sender account and allow sending email.</p><div class="bod-admin-actions"><button type="button" data-save-exclusions disabled>Save exclusions</button><button type="button" class="bod-admin-save" data-send disabled>Send nominee invitations</button></div><p data-status class="bod-admin-status" role="status"></p></div>`;
     document.body.append(dialog);dialog.showModal();let sending=false;
     const $=s=>dialog.querySelector(s),deadline=()=>{const v=$('[data-deadline]').value;return v?new Date(v+'T12:00:00Z').toLocaleDateString('en-US',{timeZone:'America/New_York',weekday:'long',year:'numeric',month:'long',day:'numeric'})+' at 11:59 p.m. Eastern':'';};
     const preview=()=>{$('[data-body]').innerHTML=invitationHtml(recipients[Number($('[data-person]').value)].name,context.year,deadline(),{yes:'#preview-yes',no:'#preview-no'});$('[data-body]').querySelectorAll('a').forEach(a=>a.onclick=e=>e.preventDefault());};preview();$('[data-person]').onchange=preview;$('[data-deadline]').onchange=preview;
+    let saving=false;
+    const exclusions=()=>Array.from(dialog.querySelectorAll('[data-exclusion]:not(:disabled)')).filter(input=>input.value);
     const selected=()=>Array.from(dialog.querySelectorAll('[data-recipient]:checked:not(:disabled)'),input=>recipients[Number(input.dataset.recipient)]);
     const ready=()=>{
       const count=selected().length;
-      $('[data-send]').disabled=!$('[data-closed]').checked||!$('[data-deadline]').value||!count||sending;
+      $('[data-send]').disabled=!$('[data-closed]').checked||!$('[data-deadline]').value||!count||sending||saving||exclusions().length>0;
+      $('[data-save-exclusions]').disabled=sending||saving||!exclusions().length;
       $('[data-send]').textContent='Send '+count+' selected invitation'+(count===1?'':'s');
     };
     dialog.querySelectorAll('[data-recipient], [data-closed], [data-deadline]').forEach(input=>input.addEventListener('change',ready));
+    dialog.querySelectorAll('[data-exclusion]').forEach(input=>input.addEventListener('change',()=>{
+      const checkbox=$('[data-recipient="'+input.dataset.exclusion+'"]');
+      if(input.value)checkbox.checked=false;
+      checkbox.disabled=Boolean(input.value)||Boolean(recipients[Number(input.dataset.exclusion)].error);
+      ready();
+    }));
     ready();
-    $('[data-close]').onclick=()=>{if(!sending){dialog.close();dialog.remove();}};dialog.addEventListener('cancel',e=>{if(sending)e.preventDefault();else dialog.remove();});
+    $('[data-save-exclusions]').onclick=async()=>{
+      if(saving||sending)return;
+      const chosen=exclusions();
+      if(!chosen.length)return;
+      saving=true;ready();
+      dialog.querySelectorAll('[data-exclusion]').forEach(input=>{input.disabled=true;});
+      try{
+        const actor=normalize(await getPortalAuditActor());
+        const latest=await getSheetValues(sheetRange('BOD Invitations '+context.year,'A:G'),MEMBERSHIP_SPREADSHEET_ID);
+        const recorded=new Set(latest.slice(1).map(row=>normalize(row[0])));
+        const at=new Date().toISOString();
+        const rows=chosen.map(input=>{
+          const person=recipients[Number(input.dataset.exclusion)];
+          if(recorded.has(normalize(person.name)))throw Error('An invitation record changed. Reopen this review before saving.');
+          return cellRows([person.name,person.email,'Excluded: '+input.value,at,actor,'','']);
+        });
+        await adminBatch([{appendCells:{sheetId:log.id,rows,fields:'userEnteredValue'}}]);
+        chosen.forEach(input=>{input.dataset.saved='true';});
+        $('[data-status]').textContent='Exclusions saved. These nominees will not receive invitations.';
+      }catch(error){$('[data-status]').textContent=error.message;}
+      finally{
+        dialog.querySelectorAll('[data-exclusion]').forEach(input=>{input.disabled=input.dataset.saved==='true';});
+        saving=false;ready();
+      }
+    };
+    $('[data-close]').onclick=()=>{if(!sending&&!saving){dialog.close();dialog.remove();}};dialog.addEventListener('cancel',e=>{if(sending||saving)e.preventDefault();else dialog.remove();});
     $('[data-send]').onclick=async()=>{
       const pending=selected();
-      if(sending||!$('[data-closed]').checked||!$('[data-deadline]').value||!pending.length)return;
-      sending=true;ready();dialog.querySelectorAll('[data-recipient]').forEach(input=>{input.disabled=true;});$('[data-deadline]').disabled=true;$('[data-closed]').disabled=true;let sent=0;
+      if(sending||saving||exclusions().length||!$('[data-closed]').checked||!$('[data-deadline]').value||!pending.length)return;
+      sending=true;ready();dialog.querySelectorAll('[data-recipient], [data-exclusion]').forEach(input=>{input.disabled=true;});$('[data-deadline]').disabled=true;$('[data-closed]').disabled=true;let sent=0;
       // Start consent directly from the button gesture so popup blockers do not interfere.
       const tokenPromise=mailToken();$('[data-status]').textContent='Waiting for Google email authorization…';
       try{const token=await tokenPromise;const info=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)}).then(r=>r.json());const sender=normalize(info.email);if(!ADMIN_EMAILS.includes(sender))throw Error('Choose the President or bsscvb club account. No invitations sent.');
