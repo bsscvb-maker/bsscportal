@@ -349,7 +349,7 @@
     return `<html><body style="margin:0;background:#f2f3f5;font:16px Arial,sans-serif;color:#252932"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:28px 12px"><table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#fff;border:1px solid #dde1e6;border-radius:12px"><tr><td style="padding:28px"><p style="font-size:12px;font-weight:bold;letter-spacing:2px;color:#596372">BONESHAKERS SOCIAL CLUB</p><h1 style="font-size:24px;line-height:1.4;margin:20px 0">Your ${year} Board Nomination</h1><p style="line-height:1.65">Hi ${html(name)},</p><p style="line-height:1.65">You’ve been nominated to serve on the <strong>${year} BoneShakers Social Club Board of Directors</strong>. Thank you for considering the opportunity to help lead our club.</p><p style="line-height:1.65">Before responding, please review the <a href="${REQUIREMENTS_URL}" style="color:#9f1930">requirements to serve</a>.</p><p style="font-weight:bold;line-height:1.65;margin-top:24px">Would you like to accept your nomination and be considered in December’s election?</p><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="padding:10px 12px 20px 0">${button(links.yes,'Yes, I Accept','#187447')}</td><td style="padding:10px 0 20px">${button(links.no,'No, I Decline','#b82835')}</td></tr></table><p style="line-height:1.65">${deadline?'Please respond by <strong>'+html(deadline)+'</strong>. ':''}If we do not receive your acceptance before the deadline, your nomination will be treated as declined and your name will not appear on the ballot. Questions? Simply reply to this email.</p><p style="line-height:1.65;margin-top:24px">Thank you,<br><strong>BoneShakers Social Club</strong><br>Board Elections</p></td></tr></table></td></tr></table></body></html>`;
   }
   function invitationPanel(year) {
-    return `<section class="bod-results bod-results-panel bod-history-panel" id="bod-invitations"><div class="bod-panel-heading"><h3>Nominees &amp; Decisions · ${year}</h3></div><button type="button" data-bod-invite-preview>Review nominee invitations</button><button type="button" data-bod-invite-rehearsal>Preview as closed</button><button type="button" data-bod-response-refresh>Refresh responses</button><p data-bod-invite-summary role="status"></p><div data-bod-response-list></div></section>`;
+    return `<section class="bod-results bod-results-panel bod-history-panel" id="bod-invitations"><nav class="bod-results-actions" aria-label="Board Elections"><button type="button" data-bod-section="nominations">${year} Nominations</button><button type="button" data-bod-section="election">${year} Election</button></nav><div class="bod-panel-heading"><h3>Nominees &amp; Decisions · ${year}</h3></div><button type="button" data-bod-invite-preview>Review nominee invitations</button><button type="button" data-bod-invite-rehearsal>Preview as closed</button><button type="button" data-bod-response-refresh>Refresh responses</button><p data-bod-invite-summary role="status"></p><div data-bod-response-list></div><section data-bod-election hidden><h3>${year} Election</h3><p>Two open seats · Up to two choices per ballot</p><h4>Accepted nominees · qualification review pending</h4><ul data-bod-real-slate></ul><h4>Rehearsal slate · test only</h4><div data-bod-test-slate></div><button type="button" data-bod-ballot>Preview Ballot</button> <button type="button" data-bod-test-ballot-mail>Send test voter email to Purchasing</button><p data-bod-ballot-status role="status"></p><details><summary>Draft voter email</summary><p>Subject: Vote in the ${year} BoneShakers Board Election</p><p>Two board seats are open. Eligible members may select up to two candidates. Use [ballot link] to verify your eligibility and submit one private ballot.</p><p>Voting opens [date and time Eastern] and closes [date and time Eastern].</p><p>BoneShakers Social Club · Board Elections</p></details></section></section>`;
   }
   async function responseApi(path,year,data) {
     const response=await fetch(RESPONSE_ORIGIN+'/api/admin/'+path+'?year='+year,{method:data?'POST':'GET',headers:{Authorization:'Bearer '+accessToken,...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{}),signal:AbortSignal.timeout(30000)});
@@ -376,8 +376,47 @@
   }
   function bindNextStep(target,model,context) {
     const panel=target.querySelector('#bod-invitations'),list=panel.querySelector('[data-bod-response-list]');
-    let refreshing=false;
-    async function refreshResponses(){if(refreshing||!panel.isConnected)return;refreshing=true;try{const result=await responseApi('responses',context.year);if(panel.isConnected)list.innerHTML=responseMarkup(model,result.responses);}catch(error){if(panel.isConnected)list.textContent=error.message;}finally{refreshing=false;}}
+    let refreshing=false,testResponses=[];
+    const election=panel.querySelector('[data-bod-election]');
+    const accepted=records=>records.filter(record=>record.status==='Accepted');
+    const names=records=>records.map(record=>'<li>'+html(record.name)+'</li>').join('')||'<li>None yet</li>';
+    panel.querySelectorAll('[data-bod-section]').forEach(button=>button.onclick=()=>{
+      election.hidden=button.dataset.bodSection!=='election';
+      if(!election.hidden){refreshResponses();election.scrollIntoView({block:'start'});}
+      else panel.scrollIntoView({block:'start'});
+    });
+    panel.querySelector('[data-bod-ballot]').onclick=()=>{
+      const dialog=document.createElement('dialog');dialog.className='bod-admin-dialog';
+      const options=group=>accepted(testResponses).map(record=>'<label><input type="radio" name="'+group+'" value="'+html(record.name)+'"> '+html(record.name)+'</label>').join('');
+      dialog.innerHTML='<div class="bod-admin-body"><h2>'+context.year+' Board Election Ballot</h2><p>Rehearsal only · Choose up to two different candidates.</p><fieldset><legend>First selection</legend>'+options('first')+'</fieldset><fieldset><legend>Second selection (optional)</legend><label><input type="radio" name="second" checked>No second selection</label>'+options('second')+'</fieldset><form method="dialog"><button>Close preview</button></form></div>';
+      dialog.addEventListener('close',()=>dialog.remove());document.body.append(dialog);dialog.showModal();
+    };
+    panel.querySelector('[data-bod-test-ballot-mail]').onclick=async event=>{
+      const button=event.currentTarget,status=panel.querySelector('[data-bod-ballot-status]');
+      button.disabled=true;
+      try{
+        const token=await mailToken();
+        const info=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)}).then(r=>r.json());
+        if(normalize(info.email)!==ELECTION_EMAIL)throw Error('Choose '+ELECTION_EMAIL+' to send the test.');
+        const {url}=await responseApi('issue-rehearsal-ballot',context.year,{});
+        const body='<h1>'+context.year+' Board Election</h1><p><strong>TEST ONLY · Purchasing inbox rehearsal</strong></p><p>Two seats are open. Choose up to two different candidates and submit one private ballot.</p><p><a href="'+html(url)+'">Open your test ballot</a></p><p>The official opening and closing times will be provided in the election notice.</p><p>BoneShakers Social Club<br>Board Elections</p>';
+        await sendInvitationMail(token,'purchasing@boneshakerssocialclub.com','[TEST] Vote in the '+context.year+' BoneShakers Board Election',body);
+        status.textContent='Test voter email sent to Purchasing.';
+      }catch(error){status.textContent=error.message;}finally{button.disabled=false;}
+    };
+    async function refreshResponses(){
+      if(refreshing||!panel.isConnected)return;refreshing=true;
+      try{
+        const result=await responseApi('responses',context.year);
+        if(panel.isConnected){list.innerHTML=responseMarkup(model,result.responses);panel.querySelector('[data-bod-real-slate]').innerHTML=names(accepted(result.responses));}
+      }catch(error){if(panel.isConnected)list.textContent=error.message;}
+      try{
+        const result=await responseApi('rehearsals',context.year);
+        testResponses=result.responses;
+        panel.querySelector('[data-bod-test-slate]').innerHTML='<p>'+Number(result.ballots||0)+' test ballot(s) recorded</p><ul>'+accepted(testResponses).map(r=>'<li>'+html(r.name)+' · '+Number(result.totals?.find(t=>t.name===r.name)?.votes||0)+' test vote(s)</li>').join('')+'</ul><details><summary>All test responses</summary><ul>'+testResponses.map(r=>'<li>'+html(r.name)+' · '+html(r.status)+'</li>').join('')+'</ul></details>';
+      }catch(error){panel.querySelector('[data-bod-test-slate]').textContent=error.message;}
+      finally{refreshing=false;}
+    }
     panel.querySelector('[data-bod-response-refresh]').onclick=refreshResponses;
     refreshResponses();
     const poll=()=>setTimeout(async()=>{if(!panel.isConnected)return;await refreshResponses();poll();},30000);poll();
@@ -437,7 +476,7 @@
     const exclusionReasons=['Declined in person','Declined by phone','Declined by text','Declined by email','Asked not to be contacted','Confirmed ineligible','Other administrative reason'];
     const prior=new Map(log.rows.slice(1).filter(r=>r[0]).map(r=>[normalize(r[0]),r]));
     const dialog=document.createElement('dialog');dialog.className='bod-admin-dialog';
-    dialog.innerHTML=`<header><div><h2>Nominee invitations · ${context.year}</h2><p>${rehearsal?'Rehearsal only. Nominations are treated as closed for this preview. No emails or records will change.':'Review the recipients and message. One email per nominee.'}</p></div><button type="button" data-close>Close</button></header><div class="bod-admin-body"><label>Reply deadline (11:59 p.m. Eastern)<input type="date" data-deadline value="${context.year===2027?'2026-11-10':''}" ${context.year===2027?'readonly':''} required></label><h3>Recipients</h3><p>Choose a reason to exclude someone, then save exclusions. A saved exclusion prevents an invitation from being sent. The preview only changes whose email you see.</p><ul>${recipients.map((r,i)=>`<li><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-recipient="${i}" ${r.error||prior.has(normalize(r.name))?'disabled':'checked'}><span><strong>${html(r.name)}</strong> — ${html(r.error||r.email)} <span>${html(prior.get(normalize(r.name))?.[2]||'Not sent')}</span></span></label>${prior.has(normalize(r.name))?'':`<label>Exclusion reason for ${html(r.name)}<select data-exclusion="${i}"><option value="">None</option>${exclusionReasons.map(reason=>`<option>${html(reason)}</option>`).join('')}</select></label>`}</li>`).join('')}</ul><p>Fix missing or ambiguous email addresses in the ${context.year} roster, then reopen this preview. Previously attempted invitations are skipped; check your Sent folder before resolving an uncertain send in the source sheet.</p><label>Email preview<select data-person>${recipients.map((r,i)=>`<option value="${i}">${html(r.name)}</option>`).join('')}</select></label><p><strong>From:</strong> ${html(ELECTION_SENDER)} &lt;${html(ELECTION_EMAIL)}&gt;<br><strong>Reply to:</strong> ${html(ELECTION_EMAIL)}<br><strong>Subject:</strong> Your ${context.year} BoneShakers Board nomination — invitation to serve</p><div data-body class="bod-email-preview"></div><label style="display:flex;gap:10px;align-items:start"><input type="checkbox" data-closed ${rehearsal?'checked':''} style="width:22px;height:22px;flex:0 0 22px">I confirm nominations are closed and I have reviewed this recipient list and email.</label><p>This confirmation does not close the public nomination form. Close nominations there first. Google will ask you to select the Web Administrator account (bsscvb@boneshakerssocialclub.com) and allow sending email.</p><div class="bod-admin-actions">${rehearsal?'<button type="button" data-test-invitation>Send one test invitation to Purchasing</button>':''}<button type="button" data-save-exclusions disabled>Save exclusions</button><button type="button" class="bod-admin-save" data-send disabled>Send nominee invitations</button></div><p data-status class="bod-admin-status" role="status"></p></div>`;
+    dialog.innerHTML=`<header><div><h2>Nominee invitations · ${context.year}</h2><p>${rehearsal?'Rehearsal only. Nominations are treated as closed for this preview. No emails or records will change.':'Review the recipients and message. One email per nominee.'}</p></div><button type="button" data-close>Close</button></header><div class="bod-admin-body"><label>Reply deadline (11:59 p.m. Eastern)<input type="date" data-deadline value="${context.year===2027?'2026-11-10':''}" ${context.year===2027?'readonly':''} required></label><h3>Recipients</h3><p>Choose a reason to exclude someone, then save exclusions. A saved exclusion prevents an invitation from being sent. The preview only changes whose email you see.</p><ul>${recipients.map((r,i)=>`<li><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-recipient="${i}" ${r.error||prior.has(normalize(r.name))?'disabled':'checked'}><span><strong>${html(r.name)}</strong> — ${html(r.error||r.email)} <span>${html(prior.get(normalize(r.name))?.[2]||'Not sent')}</span></span></label>${prior.has(normalize(r.name))?'':`<label>Exclusion reason for ${html(r.name)}<select data-exclusion="${i}"><option value="">None</option>${exclusionReasons.map(reason=>`<option>${html(reason)}</option>`).join('')}</select></label>`}</li>`).join('')}</ul><p>Fix missing or ambiguous email addresses in the ${context.year} roster, then reopen this preview. Previously attempted invitations are skipped; check your Sent folder before resolving an uncertain send in the source sheet.</p><label>Email preview<select data-person>${recipients.map((r,i)=>`<option value="${i}">${html(r.name)}</option>`).join('')}</select></label><p><strong>From:</strong> ${html(ELECTION_SENDER)} &lt;${html(ELECTION_EMAIL)}&gt;<br><strong>Reply to:</strong> ${html(ELECTION_EMAIL)}<br><strong>Subject:</strong> Your ${context.year} BoneShakers Board nomination — invitation to serve</p><div data-body class="bod-email-preview"></div><label style="display:flex;gap:10px;align-items:start"><input type="checkbox" data-closed ${rehearsal?'checked':''} style="width:22px;height:22px;flex:0 0 22px">I confirm nominations are closed and I have reviewed this recipient list and email.</label><p>This confirmation does not close the public nomination form. Close nominations there first. Google will ask you to select the Web Administrator account (bsscvb@boneshakerssocialclub.com) and allow sending email.</p><div class="bod-admin-actions">${rehearsal?'<button type="button" data-test-invitation>Send selected test invitations to Purchasing</button>':''}<button type="button" data-save-exclusions disabled>Save exclusions</button><button type="button" class="bod-admin-save" data-send disabled>Send nominee invitations</button></div><p data-status class="bod-admin-status" role="status"></p></div>`;
     document.body.append(dialog);dialog.showModal();let sending=false;
     const $=s=>dialog.querySelector(s),deadline=()=>{const v=$('[data-deadline]').value;return v?new Date(v+'T12:00:00Z').toLocaleDateString('en-US',{timeZone:'America/New_York',weekday:'long',year:'numeric',month:'long',day:'numeric'})+' at 11:59 p.m. Eastern':'';};
     const preview=()=>{$('[data-body]').innerHTML=invitationHtml(recipients[Number($('[data-person]').value)].name,context.year,deadline(),{yes:'#preview-yes',no:'#preview-no'});$('[data-body]').querySelectorAll('a').forEach(a=>a.onclick=e=>e.preventDefault());};preview();$('[data-person]').onchange=preview;$('[data-deadline]').onchange=preview;
@@ -490,18 +529,22 @@
     };
     $('[data-close]').onclick=()=>{if(!sending&&!saving){dialog.close();dialog.remove();}};dialog.addEventListener('cancel',e=>{if(sending||saving)e.preventDefault();else dialog.remove();});
     if(rehearsal)$('[data-test-invitation]').onclick=async()=>{
-      if(sending||saving||!$('[data-deadline]').value)return;
+      const pending=selected();
+      if(sending||saving||!pending.length||!$('[data-deadline]').value)return;
       const button=$('[data-test-invitation]');
-      sending=true;button.disabled=true;ready();
+      sending=true;button.disabled=true;ready();let sent=0;
       try{
         const token=await mailToken();
         const info=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)}).then(r=>r.json());
         if(normalize(info.email)!==ELECTION_EMAIL)throw Error('Choose '+ELECTION_EMAIL+' to send the test.');
-        const links={yes:RESPONSE_ORIGIN+'/?sample=accept',no:RESPONSE_ORIGIN+'/?sample=decline'};
-        const body=invitationHtml('Test Nominee',context.year,deadline(),links).replace('<h1 style=', '<p><strong>TEST ONLY · This message uses sample responses.</strong></p><h1 style=');
-        await sendInvitationMail(token,'purchasing@boneshakerssocialclub.com','[TEST] Your '+context.year+' BoneShakers Board nomination — invitation to serve',body);
-        $('[data-status]').textContent='Test invitation sent to purchasing@boneshakerssocialclub.com.';
-      }catch(error){$('[data-status]').textContent=error.message;}
+        for(const person of pending){
+          const links=await responseApi('issue-rehearsal',context.year,{name:person.name});
+          const body=invitationHtml(person.name,context.year,deadline(),links).replace('<h1 style=', '<p><strong>TEST ONLY · This message uses rehearsal responses.</strong></p><h1 style=');
+          await sendInvitationMail(token,'purchasing@boneshakerssocialclub.com','[TEST] '+person.name+' · '+context.year+' BoneShakers Board nomination',body);
+          sent++;
+        }
+        $('[data-status]').textContent=sent+' test invitation(s) sent to purchasing@boneshakerssocialclub.com.';
+      }catch(error){$('[data-status]').textContent=sent+' confirmed sent. '+error.message;}
       finally{sending=false;button.disabled=false;ready();}
     };
     $('[data-send]').onclick=async()=>{
