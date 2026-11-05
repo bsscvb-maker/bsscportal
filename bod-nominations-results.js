@@ -394,7 +394,7 @@
     return `<nav data-bod-gallery class="bod-stage-cards" aria-label="Board Elections"><button type="button" data-bod-section="nominations"><img class="bod-stage-art" src="assets/board-nominations-form.webp" alt="" width="1000" height="440"><strong>Nominations</strong></button><button type="button" data-bod-section="election"><img class="bod-stage-art" src="assets/board-elections-card.webp" alt="" width="1000" height="440"><strong>Elections</strong></button></nav><button type="button" class="membership-tab" data-bod-back hidden>← Back to Board Elections</button>`;
   }
   function invitationPanel(year) {
-    return `<section class="bod-results bod-results-panel bod-history-panel" id="bod-invitations"><div class="bod-panel-heading"><h3>Nominees &amp; Decisions · ${year}</h3></div><button type="button" data-bod-invite-preview>Review nominee invitations</button><button type="button" data-bod-invite-rehearsal>Preview as closed</button><button type="button" data-bod-response-refresh>Refresh responses</button><p data-bod-invite-summary role="status"></p><div data-bod-response-list></div><section data-bod-election hidden><header class="bod-election-header"><div><h3>${year} Board Election</h3><p>Two open seats · Up to two choices per ballot</p></div><button type="button" data-bod-election-refresh>Refresh responses</button></header>${Number(year)===2027?'<section class="bod-certification" data-bod-certification><div class="bod-cert-actions"><span class="bod-cert-light" data-bod-cert-light>Not certified</span><button type="button" data-bod-cert-review disabled>Review and certify</button></div><p data-bod-cert-status role="status"></p><div data-bod-cert-details></div></section>':''}<label>Responses to show <select data-bod-response-mode><option value="rehearsal" selected>Test Responses</option><option value="official">Live Data</option></select></label><h4 data-bod-response-heading>Test nomination responses</h4><p data-bod-response-note>These are rehearsal results.</p><div data-bod-real-slate role="status">Loading test responses…</div><section class="bod-election-rehearsal"><h4>Ballot rehearsal</h4><p>Send a test voter email to Purchasing to check the link to the club’s Election page.</p><section data-bod-test-slate aria-live="polite"><h4>Test ballot results</h4><p>Loading test tally…</p></section><button type="button" data-bod-reset-test-ballots>Reset test ballots</button> <p data-bod-receipt-status role="status"></p><button type="button" data-bod-test-ballot-mail>Send test voter email to Purchasing</button><p data-bod-ballot-status role="status"></p><details><summary>Draft voter email</summary><p>Subject: Vote in the ${year} BoneShakers Board Election</p>${voterEmailHtml(year)}</details></section></section></section>`;
+    return `<section class="bod-results bod-results-panel bod-history-panel" id="bod-invitations"><div class="bod-panel-heading"><h3>Nominees &amp; Decisions · ${year}</h3></div><button type="button" data-bod-invite-preview>Review nominee invitations</button><button type="button" data-bod-invite-rehearsal>Preview as closed</button><button type="button" data-bod-response-refresh>Refresh responses</button><p data-bod-invite-summary role="status"></p><div data-bod-response-list></div><section data-bod-election hidden><header class="bod-election-header"><div><h3>${year} Board Election</h3><p>Two open seats · Up to two choices per ballot</p></div><button type="button" data-bod-election-refresh>Refresh responses</button></header>${Number(year)===2027?'<section class="bod-certification" data-bod-certification><div class="bod-cert-actions"><span class="bod-cert-light" data-bod-cert-light>Not certified</span><button type="button" data-bod-cert-review disabled>Review and certify</button></div><p data-bod-cert-status role="status"></p><div data-bod-cert-details></div></section>':''}<label>Responses to show <select data-bod-response-mode><option value="official" selected>Live Data</option><option value="rehearsal">Test Responses</option></select></label><h4 data-bod-response-heading>Official nominee responses</h4><p data-bod-response-note>Accepted nominees are pending qualification review.</p><div data-bod-real-slate role="status">Loading nominee responses…</div><section class="bod-election-rehearsal" hidden><h4>Ballot rehearsal</h4><p>Send a test voter email to Purchasing to check the link to the club’s Election page.</p><section data-bod-test-slate aria-live="polite" hidden><h4>Test ballot results</h4><p>Loading test tally…</p></section><button type="button" data-bod-reset-test-ballots>Reset test ballots</button> <p data-bod-receipt-status role="status"></p><button type="button" data-bod-test-ballot-mail>Send test voter email to Purchasing</button><p data-bod-ballot-status role="status"></p><details><summary>Draft voter email</summary><p>Subject: Vote in the ${year} BoneShakers Board Election</p>${voterEmailHtml(year)}</details></section></section></section>`;
   }
   async function responseApi(path,year,data) {
     const response=await fetch(RESPONSE_ORIGIN+'/api/admin/'+path+'?year='+year,{method:data?'POST':'GET',headers:{Authorization:'Bearer '+accessToken,...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{}),signal:AbortSignal.timeout(30000)});
@@ -498,7 +498,13 @@
       const nominees=rehearsal?[...new Map([...model.nominees,...results].map(person=>[normalize(person.name),person])).values()]:model.nominees;
       responseColumns.innerHTML=electionResponseColumns({nominees},results,rehearsal);
     }
-    responseMode.onchange=()=>{renderElectionResponses();panel.querySelector('[data-bod-test-slate]').hidden=responseMode.value==='official';};
+    function updateElectionResponseMode(){
+      const showTestResponses=responseMode.value==='rehearsal';
+      election.querySelector('.bod-election-rehearsal').hidden=!showTestResponses;
+      election.querySelector('[data-bod-test-slate]').hidden=!showTestResponses;
+      renderElectionResponses();
+    }
+    responseMode.onchange=updateElectionResponseMode;
     const gallery=target.querySelector('[data-bod-gallery]');
     const back=target.querySelector('[data-bod-back]');
     const cards=gallery.querySelectorAll('[data-bod-section]');
@@ -521,7 +527,12 @@
         destination.scrollIntoView({block:'nearest'});
         (card?back:returnCard).focus({preventScroll:true});
       }
-      if(showElection){refreshResponses();refreshCertification();}
+      if(showElection){
+        responseMode.value='official';
+        updateElectionResponseMode();
+        refreshResponses();
+        refreshCertification();
+      }
     }
     let returnCard;
     cards.forEach(button=>button.onclick=()=>showView(button,true));
