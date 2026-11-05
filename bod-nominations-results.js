@@ -486,7 +486,11 @@
       try{
         const result=await responseApi('rehearsals',context.year);
         testResponses=result.responses;
-        panel.querySelector('[data-bod-test-slate]').innerHTML='<p>'+Number(result.ballots||0)+' test ballot(s) recorded</p><ul>'+accepted(testResponses).map(r=>'<li>'+html(r.name)+' · '+Number(result.totals?.find(t=>t.name===r.name)?.votes||0)+' test vote(s)</li>').join('')+'</ul><details><summary>All test responses</summary><ul>'+testResponses.map(r=>'<li>'+html(r.name)+' · '+html(r.status)+'</li>').join('')+'</ul></details>';
+        const rows=[...testResponses].sort((a,b)=>a.name.localeCompare(b.name));
+        panel.querySelector('[data-bod-test-slate]').innerHTML='<h5>Test nomination responses</h5>'+
+          (rows.length?'<ul>'+rows.map(r=>'<li><strong>'+html(r.name)+'</strong> · Test — '+html(r.status)+'</li>').join('')+'</ul>':'<p>No test responses yet.</p>')+
+          '<p>'+Number(result.ballots||0)+' test ballot(s) recorded</p>';
+
       }catch(error){panel.querySelector('[data-bod-test-slate]').textContent=error.message;}
       finally{refreshing=false;}
     }
