@@ -390,7 +390,7 @@
     return `<nav data-bod-gallery class="bod-stage-cards" aria-label="Board Elections"><button type="button" data-bod-section="nominations"><img class="bod-stage-art" src="assets/board-nominations-form.webp" alt="" width="1000" height="440"><strong>Nominations</strong></button><button type="button" data-bod-section="election"><img class="bod-stage-art" src="assets/board-elections-card.webp" alt="" width="1000" height="440"><strong>Elections</strong></button></nav><button type="button" class="membership-tab" data-bod-back hidden>← Back to Board Elections</button>`;
   }
   function invitationPanel(year) {
-    return `<section class="bod-results bod-results-panel bod-history-panel" id="bod-invitations"><div class="bod-panel-heading"><h3>Nominees &amp; Decisions · ${year}</h3></div><button type="button" data-bod-invite-preview>Review nominee invitations</button><button type="button" data-bod-invite-rehearsal>Preview as closed</button><button type="button" data-bod-response-refresh>Refresh responses</button><p data-bod-invite-summary role="status"></p><div data-bod-response-list></div><section data-bod-election hidden><header class="bod-election-header"><div><h3>${year} Board Election</h3><p>Two open seats · Up to two choices per ballot</p></div><button type="button" data-bod-election-refresh>Refresh responses</button></header><label>Responses to show <select data-bod-response-mode><option value="rehearsal" selected>Test responses (rehearsal)</option><option value="official">Official responses</option></select></label><h4 data-bod-response-heading>Test nomination responses</h4><p data-bod-response-note>These are rehearsal results.</p><div data-bod-real-slate role="status">Loading test responses…</div><section class="bod-election-rehearsal"><h4>Ballot rehearsal</h4><p>Send a test voter email to Purchasing to check the link to the club’s Election page.</p><div data-bod-test-slate></div><button type="button" data-bod-open-test-ballot>Generate private test ballot</button> <button type="button" data-bod-connect-ballot-mail>Connect club Gmail</button> <button type="button" data-bod-test-ballot-mail disabled>Send test voter email to Purchasing</button><p data-bod-ballot-status role="status"></p><details><summary>Draft voter email</summary><p>Subject: Vote in the ${year} BoneShakers Board Election</p>${voterEmailHtml(year)}</details></section></section></section>`;
+    return `<section class="bod-results bod-results-panel bod-history-panel" id="bod-invitations"><div class="bod-panel-heading"><h3>Nominees &amp; Decisions · ${year}</h3></div><button type="button" data-bod-invite-preview>Review nominee invitations</button><button type="button" data-bod-invite-rehearsal>Preview as closed</button><button type="button" data-bod-response-refresh>Refresh responses</button><p data-bod-invite-summary role="status"></p><div data-bod-response-list></div><section data-bod-election hidden><header class="bod-election-header"><div><h3>${year} Board Election</h3><p>Two open seats · Up to two choices per ballot</p></div><button type="button" data-bod-election-refresh>Refresh responses</button></header><label>Responses to show <select data-bod-response-mode><option value="rehearsal" selected>Test responses (rehearsal)</option><option value="official">Official responses</option></select></label><h4 data-bod-response-heading>Test nomination responses</h4><p data-bod-response-note>These are rehearsal results.</p><div data-bod-real-slate role="status">Loading test responses…</div><section class="bod-election-rehearsal"><h4>Ballot rehearsal</h4><p>Send a test voter email to Purchasing to check the link to the club’s Election page.</p><div data-bod-test-slate></div><button type="button" data-bod-connect-ballot-mail>Connect club Gmail</button> <button type="button" data-bod-test-ballot-mail disabled>Send test voter email to Purchasing</button><p data-bod-ballot-status role="status"></p><details><summary>Draft voter email</summary><p>Subject: Vote in the ${year} BoneShakers Board Election</p>${voterEmailHtml(year)}</details></section></section></section>`;
   }
   async function responseApi(path,year,data) {
     const response=await fetch(RESPONSE_ORIGIN+'/api/admin/'+path+'?year='+year,{method:data?'POST':'GET',headers:{Authorization:'Bearer '+accessToken,...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{}),signal:AbortSignal.timeout(30000)});
@@ -482,19 +482,6 @@
       if(url.origin!==RESPONSE_ORIGIN||url.pathname!=='/rehearsal-ballot'||url.searchParams.get('year')!==String(context.year)||!(/^[a-f0-9]{64}$/).test(url.searchParams.get('token')||''))throw Error('The test ballot link is invalid.');
       return url.href;
     }
-    panel.querySelector('[data-bod-open-test-ballot]').onclick=async event=>{
-      const button=event.currentTarget,status=panel.querySelector('[data-bod-ballot-status]');
-      button.disabled=true;
-      status.textContent='Preparing your private test ballot…';
-      try{
-        const link=document.createElement('a');
-        link.href=await issuePrivateBallot();
-        link.target='_blank';
-        link.rel='noopener noreferrer';
-        link.textContent='Open private test ballot';
-        status.replaceChildren(link);
-      }catch(error){status.textContent=error.message;}finally{button.disabled=false;}
-    };
     const connectMail=panel.querySelector('[data-bod-connect-ballot-mail]');
     const sendBallot=panel.querySelector('[data-bod-test-ballot-mail]');
     const ballotStatus=panel.querySelector('[data-bod-ballot-status]');
