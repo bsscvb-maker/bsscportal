@@ -2644,7 +2644,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
  let pending=0,timer=null,started=0;
  const root=document.documentElement;
  const style=document.createElement('style');
- style.textContent='html.bssc-page-working .sidebar .brand-mark.portal-skull-mark img{animation:bssc-page-logo-spin 1.8s linear infinite!important;animation-play-state:running!important;transform-origin:center;will-change:transform}html.bssc-page-working .sidebar .brand-mark{overflow:visible!important}@keyframes bssc-page-logo-spin{to{transform:rotate(360deg)}}';
+ style.textContent='html.bssc-page-working:not(:has(.bod-invitation-dialog[open])) .sidebar .brand-mark.portal-skull-mark img{animation:bssc-page-logo-spin 1.8s linear infinite!important;animation-play-state:running!important;transform-origin:center;will-change:transform}html.bssc-page-working .sidebar .brand-mark{overflow:visible!important}@keyframes bssc-page-logo-spin{to{transform:rotate(360deg)}}';
  document.head.append(style);
  function begin(){
   clearTimeout(timer);
@@ -2660,7 +2660,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
   try{const response=await original.call(this,input,options);await response.clone().arrayBuffer();return response}finally{done()}
  };
  document.addEventListener('click',e=>{
-  if(!e.target.closest('button,a[href]')||e.target.closest('#authGate'))return;
+  if(!e.target.closest('button,a[href]')||e.target.closest('#authGate,.bod-mail-footer'))return;
   const done=begin();requestAnimationFrame(()=>requestAnimationFrame(done));
  },true);
  const initialDone=begin();
@@ -10193,7 +10193,7 @@ document.addEventListener('click',function(event){
 
 
 <script src="portal-navigation.js?v=20261024-browser-nav"></script>
-<script src="bod-nominations-results.js?v=20261105-fast-exclusion-save"></script>
+<script src="bod-nominations-results.js?v=20261105-nomination-timeline-footer"></script>
 <script src="bod-election-history-data.js?v=20261027-combined-1"></script>
 <script src="bod-election-history.js?v=20261027-descriptive-1"></script>
 <script src="board-service-records.js?v=20261027-filenames-1"></script>
