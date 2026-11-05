@@ -244,6 +244,7 @@
 @media(max-width:460px){.bod-hero{padding:17px 16px 42px}.bod-hero-top{align-items:flex-start}.bod-results-kicker{font-size:8px;letter-spacing:1.3px;line-height:1.6;max-width:165px}.bod-connection{font-size:8px;padding:5px 7px}.bod-hero-main{margin-top:17px;gap:17px}.bod-hero h2{font-size:30px;letter-spacing:-1px}.bod-hero-main p{font-size:11px;max-width:250px;line-height:1.6}.bod-results-actions{width:100%}.bod-results-actions button{font-size:11px;min-height:43px;flex:1;padding:10px}.bod-results-actions button svg{width:16px;height:16px;flex-basis:16px}.bod-hero-footer{margin-top:17px;align-items:flex-start;flex-direction:column;gap:13px}.bod-hero-footer>span{font-size:8px}.bod-hero-footer button{font-size:10px;padding:3px 0}.bod-results-stats{gap:6px;margin-left:8px;margin-right:8px}.bod-stat{padding:11px 9px;border-radius:10px}.bod-stat-top{font-size:10px;line-height:1.5;align-items:flex-start}.bod-stat-top i{display:none}.bod-stat strong{font-size:29px;margin:9px 0 6px}.bod-stat-caption{display:none}.bod-results-panel{padding:16px;border-radius:13px}.bod-panel-eyebrow{font-size:8px}.bod-panel-heading h3{font-size:18px}.bod-total-badge{font-size:9px}.bod-leader{gap:8px}.bod-rank{flex-basis:21px;font-size:10px}.bod-leader-count{min-width:55px;flex-basis:55px}.bod-leader-count small{font-size:9px}.bod-submission-card{padding:12px}.bod-avatar{width:32px;height:32px;flex-basis:32px}.bod-choice-tags>span{font-size:11px}.bod-card-actions button{font-size:12px;min-height:44px}.bod-dashboard-footer{font-size:9px}.bod-history-row{gap:9px}.bod-history-icon{width:26px;height:26px;flex-basis:26px}}
     `;
 
+    style.textContent += '.bod-mail-footer{position:sticky;bottom:0;padding:14px 0 4px;background:#fff;border-top:1px solid #d3d6da}.bod-mail-footer .bod-admin-actions button{font-weight:800;border:1px solid transparent}.bod-mail-footer button[data-mail-state=locked]{background:#d5d8dd;color:#4d535d}.bod-mail-footer button[data-mail-state=ready]{background:#b41933;color:#fff}.bod-mail-footer button[data-mail-state=working]{background:#f7ca42;color:#1b1b1b;opacity:1}.bod-mail-footer button[data-mail-state=done]{background:#19734a;color:#fff;opacity:1}.bod-mail-footer .bod-admin-status{margin:8px 0 0;color:#252932;min-height:1.5em}';
     style.textContent += '.bod-year-picker{display:flex;align-items:center;gap:12px;font-size:14px;font-weight:700;color:#fff;margin-bottom:20px}.bod-year-picker select{font:inherit;color:#fff;background:#292929;border:1px solid #aaa;border-radius:8px;min-height:44px;padding:8px 36px 8px 12px}' + '.bod-admin-choice[hidden],.bod-admin-other[hidden]{display:none!important}.bod-search-label{display:block;max-width:460px;font-weight:700;font-size:14px;margin:16px 0}.bod-search-label input,.bod-admin-dialog input[type=search],.bod-admin-dialog textarea,.bod-admin-dialog select{display:block;width:100%;margin-top:7px;padding:12px;border:1px solid #9ba3ad;border-radius:8px;background:#fff;color:#161616;font:inherit}.bod-manage-actions{padding:0 14px 16px}.bod-manage-actions button{min-height:44px}.bod-admin-dialog{color:#161616;background:#f8f9fa;border:1px solid #707984;border-radius:16px;width:min(680px,calc(100vw - 24px));max-height:88dvh;padding:0;box-shadow:0 14px 60px #0007}.bod-admin-dialog::backdrop{background:#0008}.bod-admin-dialog header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px;border-bottom:3px solid #c8102e;background:#111;color:#fff}.bod-admin-dialog header h2{margin:0 0 5px;font-size:23px}.bod-admin-dialog header p{font-size:12px;margin:0;color:#ddd;overflow-wrap:anywhere}.bod-admin-dialog button{min-height:44px;border:1px solid #888;border-radius:8px;padding:10px 15px;font:700 14px Arial,sans-serif;cursor:pointer;background:#fff;color:#161616}.bod-admin-dialog button:disabled{opacity:.6;cursor:wait}.bod-admin-dialog [data-bod-close]{flex:0 0 auto;background:transparent;color:#fff;border-color:#aaa}.bod-admin-body{padding:18px}.bod-admin-candidates{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:32dvh;overflow:auto;padding:3px;margin:12px -3px}.bod-admin-choice{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid #aeb6c0;border-radius:8px;background:#fff;font-size:14px;min-height:52px}.bod-admin-choice:has(input:checked){border-color:#c8102e;background:#fff0f2}.bod-admin-choice input{width:22px;height:22px;accent-color:#c8102e;flex:0 0 22px}.bod-admin-choice small{display:block;color:#555;margin-top:3px}.bod-admin-reason{display:block;margin-top:14px;font-size:14px;font-weight:700}.bod-admin-dialog textarea{resize:vertical;min-height:72px}.bod-admin-count{font-size:13px;font-weight:700;margin:10px 0}.bod-admin-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.bod-admin-dialog .bod-admin-save{background:#176c39;color:#fff;border-color:#176c39}.bod-admin-dialog .bod-admin-reset{color:#a10d25;border-color:#a10d25}.bod-admin-reset-check{background:#fff0f2;border:1px solid #a10d25;padding:14px;border-radius:8px;margin-top:14px;line-height:1.5}.bod-admin-status{line-height:1.5;font-size:14px;margin:12px 0 0;white-space:pre-wrap}.bod-admin-status:empty{display:none}.bod-admin-status[data-state=busy]{color:#6b4b00;background:#fff0b7;padding:10px;border-radius:7px}.bod-admin-status[data-state=error]{color:#a10d25}.bod-admin-status[data-state=saved]{color:#176c39}.bod-admin-dialog :focus-visible{outline:3px solid #2867ad;outline-offset:3px}[data-bod-name][hidden]{display:none!important}.bod-admin-toast{padding:12px;background:#dcf3e4;border-left:4px solid #176c39;border-radius:6px;color:#145c30}@media(max-width:600px){.bod-admin-dialog{width:calc(100vw - 16px);max-height:94dvh;border-radius:12px}.bod-admin-dialog header,.bod-admin-body{padding:14px}.bod-admin-candidates{grid-template-columns:1fr;max-height:35dvh}.bod-admin-actions>*{flex:1}.bod-admin-dialog button{min-height:48px}}';
     style.textContent += '.bod-cleanup-actions{margin:16px 0;padding:14px;border:1px solid #e0e3e8;border-radius:10px;background:#f8f9fb}.bod-cleanup-actions button,#bod-invitations button{min-height:44px;padding:10px 14px;margin:6px;border:1px solid #b8bec7;border-radius:8px;background:#fff;color:#333;font-weight:700}.bod-cleanup-actions p,#bod-invitations p{font-size:13px;line-height:1.6}.bod-cleanup-actions input,.bod-history-row input{width:20px;height:20px;accent-color:#c8102e}.bod-admin-dialog input[type=date]{display:block;padding:10px;border:1px solid #888;border-radius:6px;font:inherit;margin:8px 0}.bod-admin-dialog li{margin:12px 0;overflow-wrap:anywhere}.bod-cleanup-actions label{display:flex;align-items:center;gap:8px}';
     style.textContent += '.bod-response-table{width:100%;border-collapse:collapse;margin-top:18px;font-size:14px}.bod-response-table th,.bod-response-table td{text-align:left;padding:14px 10px;border-bottom:1px solid #e6e8ed}.bod-response-badge{display:inline-block;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:700}.bod-response-badge.accepted{background:#def3e7;color:#17643b}.bod-response-badge.declined{background:#fce3e6;color:#a51f2e}.bod-response-badge.waiting{background:#eef0f4;color:#5c6674}.bod-email-preview{max-height:48vh;overflow:auto;border:1px solid #dce0e7;border-radius:10px;margin:18px 0;background:#f2f3f5}.bod-response-table td{overflow-wrap:anywhere}@media(max-width:600px){.bod-response-table{font-size:12px}.bod-response-table th,.bod-response-table td{padding:12px 5px}}';
@@ -534,27 +535,36 @@
     const exclusionReasons=['Declined in person','Declined by phone','Declined by text','Declined by email','Asked not to be contacted','Confirmed ineligible','Other administrative reason'];
     const prior=new Map(log.rows.slice(1).filter(r=>r[0]).map(r=>[normalize(r[0]),r]));
     const dialog=document.createElement('dialog');dialog.className='bod-admin-dialog';
-    dialog.innerHTML=`<header><div><h2>Nominee invitations · ${context.year}</h2><p>${rehearsal?'Rehearsal only. Nominations are treated as closed. Test invitations go only to Purchasing and responses are kept separate from the actual election.':'Review the recipients and message. One email per nominee.'}</p></div><button type="button" data-close>Close</button></header><div class="bod-admin-body"><label>Reply deadline (11:59 p.m. Eastern)<input type="date" data-deadline value="${context.year===2027?'2026-11-10':''}" ${context.year===2027?'readonly':''} required></label><h3>Recipients</h3><p>Choose a reason to exclude someone, then save exclusions. A saved exclusion prevents an invitation from being sent. The preview only changes whose email you see.</p><ul>${recipients.map((r,i)=>`<li><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-recipient="${i}" ${r.error||prior.has(normalize(r.name))?'disabled':'checked'}><span><strong>${html(r.name)}</strong> — ${html(r.error||r.email)} <span>${html(prior.get(normalize(r.name))?.[2]||'Not sent')}</span></span></label>${prior.has(normalize(r.name))?'':`<label>Exclusion reason for ${html(r.name)}<select data-exclusion="${i}"><option value="">None</option>${exclusionReasons.map(reason=>`<option>${html(reason)}</option>`).join('')}</select></label>`}</li>`).join('')}</ul><p>Fix missing or ambiguous email addresses in the ${context.year} roster, then reopen this preview. Previously attempted invitations are skipped; check your Sent folder before resolving an uncertain send in the source sheet.</p><label>Email preview<select data-person>${recipients.map((r,i)=>`<option value="${i}">${html(r.name)}</option>`).join('')}</select></label><p><strong>From:</strong> ${html(ELECTION_SENDER)} &lt;${html(ELECTION_EMAIL)}&gt;<br><strong>Reply to:</strong> ${html(ELECTION_EMAIL)}<br><strong>Subject:</strong> Your ${context.year} BoneShakers Board nomination — invitation to serve</p>${rehearsal?'<label>Test email scenario<select data-email-scenario><option value="invitation">Nomination invitation</option><option value="accepted">Acceptance confirmation</option><option value="declined">Decline confirmation</option></select></label>':''}<div data-body class="bod-email-preview"></div><label style="display:flex;gap:10px;align-items:start"><input type="checkbox" data-closed ${rehearsal?'checked':''} style="width:22px;height:22px;flex:0 0 22px">I confirm nominations are closed and I have reviewed this recipient list and email.</label><p>This confirmation does not close the public nomination form. Close nominations there first. Google may ask you to authorize Gmail for bsscvb@boneshakerssocialclub.com.</p><div class="bod-admin-actions"><button type="button" data-save-exclusions disabled>Save exclusions</button><button type="button" class="bod-admin-save" data-send disabled>Send nominee invitations</button></div><p data-status class="bod-admin-status" role="status"></p></div>`;
+    dialog.innerHTML=`<header><div><h2>Nominee invitations · ${context.year}</h2><p>${rehearsal?'Rehearsal only. Nominations are treated as closed. Test invitations go only to Purchasing and responses are kept separate from the actual election.':'Review the recipients and message. One email per nominee.'}</p></div><button type="button" data-close>Close</button></header><div class="bod-admin-body"><label>Reply deadline (11:59 p.m. Eastern)<input type="date" data-deadline value="${context.year===2027?'2026-11-10':''}" ${context.year===2027?'readonly':''} required></label><h3>Recipients</h3><p>Choose a reason to exclude someone, then save exclusions. A saved exclusion prevents an invitation from being sent. The preview only changes whose email you see.</p><ul>${recipients.map((r,i)=>`<li><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-recipient="${i}" ${r.error||prior.has(normalize(r.name))?'disabled':'checked'}><span><strong>${html(r.name)}</strong> — ${html(r.error||r.email)} <span>${html(prior.get(normalize(r.name))?.[2]||'Not sent')}</span></span></label>${prior.has(normalize(r.name))?'':`<label>Exclusion reason for ${html(r.name)}<select data-exclusion="${i}"><option value="">None</option>${exclusionReasons.map(reason=>`<option>${html(reason)}</option>`).join('')}</select></label>`}</li>`).join('')}</ul><p>Fix missing or ambiguous email addresses in the ${context.year} roster, then reopen this preview. Previously attempted invitations are skipped; check your Sent folder before resolving an uncertain send in the source sheet.</p><label>Email preview<select data-person>${recipients.map((r,i)=>`<option value="${i}">${html(r.name)}</option>`).join('')}</select></label><p><strong>From:</strong> ${html(ELECTION_SENDER)} &lt;${html(ELECTION_EMAIL)}&gt;<br><strong>Reply to:</strong> ${html(ELECTION_EMAIL)}<br><strong>Subject:</strong> Your ${context.year} BoneShakers Board nomination — invitation to serve</p>${rehearsal?'<label>Test email scenario<select data-email-scenario><option value="invitation">Nomination invitation</option><option value="accepted">Acceptance confirmation</option><option value="declined">Decline confirmation</option></select></label>':''}<div data-body class="bod-email-preview"></div><label style="display:flex;gap:10px;align-items:start"><input type="checkbox" data-closed ${rehearsal?'checked':''} style="width:22px;height:22px;flex:0 0 22px">${rehearsal?'Simulate closed nominations for this rehearsal':'I confirm nominations are closed and I have reviewed this recipient list and email.'}</label><p>${rehearsal?'Preview as Closed checks this box for the rehearsal.':'Close the public nomination form before confirming here.'} Review your exclusions, then save them even if there are none. Google may ask you to authorize Gmail for bsscvb@boneshakerssocialclub.com.</p><div class="bod-mail-footer"><div class="bod-admin-actions"><button type="button" data-save-exclusions>Save Exclusions</button><button type="button" data-send disabled>Send nominee invitations</button></div><p data-status class="bod-admin-status" role="status" aria-live="polite">Review and save exclusions to unlock Send.</p></div></div>`;
     document.body.append(dialog);dialog.showModal();let sending=false;
     const $=s=>dialog.querySelector(s),deadline=()=>{const v=$('[data-deadline]').value;return v?new Date(v+'T12:00:00Z').toLocaleDateString('en-US',{timeZone:'America/New_York',weekday:'long',year:'numeric',month:'long',day:'numeric'})+' at 11:59 p.m. Eastern':'';};
     const scenario=()=> $('[data-email-scenario]')?.value||'invitation';
     const preview=()=>{const name=recipients[Number($('[data-person]').value)].name;$('[data-body]').innerHTML=scenario()==='invitation'?invitationHtml(name,context.year,deadline(),{yes:'#preview-yes',no:'#preview-no'}):responseReceiptHtml(name,context.year,scenario()==='accepted');$('[data-body]').querySelectorAll('a').forEach(a=>a.onclick=e=>e.preventDefault());};preview();$('[data-person]').onchange=preview;$('[data-deadline]').onchange=preview;
-    let saving=false;
+    let saving=false, exclusionsSaved=false, liveAttempted=false;
+    const sentScenarios=new Set();
     const exclusions=()=>Array.from(dialog.querySelectorAll('[data-exclusion]:not(:disabled)')).filter(input=>input.value);
     const selected=()=>Array.from(dialog.querySelectorAll('[data-recipient]:checked:not(:disabled)'),input=>recipients[Number(input.dataset.recipient)]);
+    const buttonState=(button,state,label,disabled)=>{
+      button.dataset.mailState=state;
+      button.textContent=label;
+      button.disabled=disabled;
+    };
     const ready=()=>{
-      const count=rehearsal&&scenario()!=='invitation'?1:selected().length;
-      $('[data-send]').disabled=!$('[data-closed]').checked||!$('[data-deadline]').value||!count||sending||saving||exclusions().length>0;
-      $('[data-save-exclusions]').disabled=sending||saving||!exclusions().length;
-      if(rehearsal&&scenario()!=='invitation'){
-        $('[data-send]').disabled=sending||saving;
-        $('[data-send]').textContent='Send test '+(scenario()==='accepted'?'acceptance':'decline')+' confirmation to Purchasing';
-        return;
-      }
-      $('[data-send]').textContent='Send '+count+' selected '+(rehearsal?'test ':'')+'invitation'+(count===1?'':'s')+(rehearsal?' to Purchasing':'');
+      const key=scenario(), receipt=key!=='invitation', count=receipt?1:selected().length;
+      const label=receipt?'Send test '+(key==='accepted'?'acceptance':'decline')+' confirmation to Purchasing':
+        'Send '+count+' selected '+(rehearsal?'test ':'')+'invitation'+(count===1?'':'s')+(rehearsal?' to Purchasing':'');
+      buttonState($('[data-save-exclusions]'),saving?'working':exclusionsSaved?'done':sending||liveAttempted?'locked':'ready',
+        saving?'Saving Exclusions…':exclusionsSaved?'Exclusions Saved':'Save Exclusions',saving||sending||exclusionsSaved||liveAttempted);
+      const done=sentScenarios.has(key);
+      const locked=saving||!exclusionsSaved||!count||liveAttempted||(!receipt&&(!$('[data-closed]').checked||!$('[data-deadline]').value));
+      buttonState($('[data-send]'),sending?'working':done?'done':locked?'locked':'ready',
+        sending?'Sending…':done?(rehearsal?'Test Email Sent':'Invitations Sent'):label,sending||done||locked);
+      if(rehearsal)$('[data-email-scenario]').disabled=saving||sending;
     };
     dialog.querySelectorAll('[data-recipient], [data-closed], [data-deadline]').forEach(input=>input.addEventListener('change',ready));
     dialog.querySelectorAll('[data-exclusion]').forEach(input=>input.addEventListener('change',()=>{
+      exclusionsSaved=false;
+      $('[data-status]').textContent='Exclusions changed. Save them before sending.';
       const checkbox=$('[data-recipient="'+input.dataset.exclusion+'"]');
       if(input.value)checkbox.checked=false;
       checkbox.disabled=Boolean(input.value)||Boolean(recipients[Number(input.dataset.exclusion)].error);
@@ -563,15 +573,16 @@
     if(rehearsal)$('[data-email-scenario]').onchange=()=>{preview();ready();};
     ready();
     $('[data-save-exclusions]').onclick=async()=>{
-      if(saving||sending)return;
+      if(saving||sending||exclusionsSaved||liveAttempted)return;
       const chosen=exclusions();
-      if(!chosen.length)return;
       saving=true;ready();
       dialog.querySelectorAll('[data-exclusion]').forEach(input=>{input.disabled=true;});
       try{
-        if(rehearsal){
+        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+        if(rehearsal||!chosen.length){
           chosen.forEach(input=>{input.dataset.saved='true';});
-          $('[data-status]').textContent='Rehearsal: exclusions applied in this window only.';
+          exclusionsSaved=true;
+          $('[data-status]').textContent=chosen.length?'Rehearsal exclusions saved for this preview.':'Exclusions reviewed. None to save. You can now send.';
           return;
         }
         const actor=normalize(await getPortalAuditActor());
@@ -585,6 +596,7 @@
         });
         await adminBatch([{appendCells:{sheetId:log.id,rows,fields:'userEnteredValue'}}]);
         chosen.forEach(input=>{input.dataset.saved='true';});
+        exclusionsSaved=true;
         $('[data-status]').textContent='Exclusions saved. These nominees will not receive invitations.';
       }catch(error){$('[data-status]').textContent=error.message;}
       finally{
@@ -594,6 +606,7 @@
     };
     $('[data-close]').onclick=()=>{if(!sending&&!saving){dialog.close();dialog.remove();}};dialog.addEventListener('cancel',e=>{if(sending||saving)e.preventDefault();else dialog.remove();});
     if(rehearsal)$('[data-send]').onclick=async()=>{
+      if($('[data-send]').disabled)return;
       const emailScenario=scenario();
       if(emailScenario!=='invitation'){
         if(sending||saving)return;
@@ -605,6 +618,7 @@
           const accepted=emailScenario==='accepted';
           const body=responseReceiptHtml(name,context.year,accepted).replace('<h1 style=','<p><strong>TEST ONLY · Sample response receipt.</strong></p><h1 style=');
           await sendInvitationMail(token,'purchasing@boneshakerssocialclub.com','[TEST] '+(accepted?'Acceptance':'Decline')+' confirmation · '+context.year+' BoneShakers Board nomination',body);
+          sentScenarios.add(emailScenario);
           $('[data-status]').textContent='Test confirmation sent to purchasing@boneshakerssocialclub.com.';
         }catch(error){$('[data-status]').textContent=error.message;}
         finally{sending=false;ready();}
@@ -626,14 +640,16 @@
           sent++;
           $('[data-recipient="'+recipients.indexOf(person)+'"]').checked=false;
         }
+        sentScenarios.add(emailScenario);
         $('[data-status]').textContent=sent+' test invitation(s) sent to purchasing@boneshakerssocialclub.com.';
       }catch(error){$('[data-status]').textContent=sent+' confirmed sent. '+error.message;}
       finally{sending=false;button.disabled=false;ready();}
     };
     else $('[data-send]').onclick=async()=>{
+      if($('[data-send]').disabled)return;
       const pending=selected();
       if(sending||saving||exclusions().length||!$('[data-closed]').checked||!$('[data-deadline]').value||!pending.length)return;
-      sending=true;ready();dialog.querySelectorAll('[data-recipient], [data-exclusion]').forEach(input=>{input.disabled=true;});$('[data-deadline]').disabled=true;$('[data-closed]').disabled=true;let sent=0;
+      sending=true;liveAttempted=true;ready();dialog.querySelectorAll('[data-recipient], [data-exclusion]').forEach(input=>{input.disabled=true;});$('[data-deadline]').disabled=true;$('[data-closed]').disabled=true;let sent=0;
       // Start consent directly from the button gesture so popup blockers do not interfere.
       const tokenPromise=mailToken();$('[data-status]').textContent='Waiting for Google email authorization…';
       try{const token=await tokenPromise;const sender=ELECTION_EMAIL;
@@ -653,9 +669,9 @@
           sent++;row[2]='Sent';row[3]=new Date().toISOString();row[5]=result.id;
           await adminBatch([{updateCells:{start:{sheetId:log.id,rowIndex:index,columnIndex:0},rows:[cellRows(row)],fields:'userEnteredValue'}}]);
         }
-        $('[data-status]').textContent=sent+' invitation(s) sent. Accept and Decline responses will appear in this portal.';$('[data-send]').textContent='Invitations processed';
+        $('[data-status]').textContent=sent+' invitation(s) sent. Accept and Decline responses will appear in this portal.';if(sent>0)sentScenarios.add('invitation');
       }catch(error){$('[data-status]').textContent=sent+' confirmed sent. '+error.message+' Close and reopen this preview to refresh statuses. If Gmail access is blocked, the Google Cloud project may need Gmail API and gmail.send consent enabled.';}
-      finally{sending=false;$('[data-send]').disabled=true;$('[data-closed]').disabled=true;$('[data-deadline]').disabled=true;}
+      finally{sending=false;ready();}
     };
   }
 
