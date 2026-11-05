@@ -423,8 +423,6 @@
       button.disabled=true;
       try{
         const token=await mailToken();
-        const info=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)}).then(r=>r.json());
-        if(normalize(info.email)!==ELECTION_EMAIL)throw Error('Choose '+ELECTION_EMAIL+' to send the test.');
         const {url}=await responseApi('issue-rehearsal-ballot',context.year,{});
         const body='<h1>'+context.year+' Board Election</h1><p><strong>TEST ONLY · Purchasing inbox rehearsal</strong></p><p>Two seats are open. Choose up to two different candidates and submit one private ballot.</p><p><a href="'+html(url)+'">Open your test ballot</a></p><p>The official opening and closing times will be provided in the election notice.</p><p>BoneShakers Social Club<br>Board Elections</p>';
         await sendInvitationMail(token,'purchasing@boneshakerssocialclub.com','[TEST] Vote in the '+context.year+' BoneShakers Board Election',body);
@@ -488,15 +486,39 @@
       }catch(error){summary.textContent=error.message;}finally{event.target.disabled=false;}
     };
   }
-  function mailToken() {
-    return new Promise((resolve,reject)=>{google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email',include_granted_scopes:false,callback:r=>{if(r.error)return reject(Error(r.error_description||r.error));if(!google.accounts.oauth2.hasGrantedAllScopes(r,'https://www.googleapis.com/auth/gmail.send','https://www.googleapis.com/auth/userinfo.email'))return reject(Error('Google mail permission was not granted. No invitations sent.'));resolve(r.access_token);},error_callback:()=>reject(Error('Google authorization was closed or blocked. No invitations sent.'))}).requestAccessToken({prompt:'select_account'});});
+  let electionMailGrant;
+  async function mailToken() {
+    if(electionMailGrant?.portalToken===accessToken && electionMailGrant.expiresAt>Date.now())return electionMailGrant.token;
+    const portalToken=accessToken;
+    const sendScope='https://www.googleapis.com/auth/gmail.send', identityScope='https://www.googleapis.com/auth/userinfo.email';
+    const grant=await new Promise((resolve,reject)=>{
+      google.accounts.oauth2.initTokenClient({
+        client_id:GOOGLE_CLIENT_ID,
+        scope:sendScope+' '+identityScope,
+        hint:ELECTION_EMAIL,
+        include_granted_scopes:false,
+        callback:result=>{
+          if(result.error)return reject(Error(result.error_description||result.error));
+          if(!google.accounts.oauth2.hasGrantedAllScopes(result,sendScope,identityScope))return reject(Error('Allow Gmail sending for '+ELECTION_EMAIL+' to continue.'));
+          resolve(result);
+        },
+        error_callback:()=>reject(Error('Google authorization was closed or blocked. No invitations sent.'))
+      }).requestAccessToken({prompt:''});
+    });
+    const identity=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+grant.access_token},signal:AbortSignal.timeout(15000)});
+    if(!identity.ok)throw Error('Google could not verify the election sender. Try authorizing Gmail again.');
+    if(normalize((await identity.json()).email)!==ELECTION_EMAIL)throw Error('Sign in to '+ELECTION_EMAIL+' in Google before sending. No invitations sent.');
+    if(portalToken!==accessToken)throw Error('The portal session changed. Reopen the invitation review.');
+    electionMailGrant={token:grant.access_token,portalToken,expiresAt:Date.now()+Math.max(0,Number(grant.expires_in||0)-60)*1000};
+    return grant.access_token;
   }
   async function sendInvitationMail(token,email,subject,body) {
     const utf8=value=>btoa(Array.from(new TextEncoder().encode(value),b=>String.fromCharCode(b)).join(''));
     const mime=['To: '+email,'From: '+ELECTION_SENDER+' <'+ELECTION_EMAIL+'>','Reply-To: '+ELECTION_EMAIL,'Subject: =?UTF-8?B?'+utf8(subject)+'?=','MIME-Version: 1.0','Content-Type: text/html; charset=UTF-8','Content-Transfer-Encoding: base64','',utf8(body).match(/.{1,76}/g).join('\r\n')].join('\r\n');
     const response=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({raw:utf8(mime).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}),signal:AbortSignal.timeout(30000)});
     const result=await response.json().catch(()=>({}));
-    if(!response.ok||!result.id)throw Error(result.error?.message||'Gmail did not confirm delivery. Check the Sent folder before retrying.');
+    if(response.status===401)electionMailGrant=undefined;
+    if(!response.ok||!result.id)throw Error('Gmail send: '+(result.error?.message||'No message ID returned. Check Sent before retrying.'));
     return result;
   }
   function openInvitations(recipients,model,context,log,rehearsal=false) {
@@ -562,8 +584,6 @@
       sending=true;button.disabled=true;ready();let sent=0;
       try{
         const token=await mailToken();
-        const info=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)}).then(r=>r.json());
-        if(normalize(info.email)!==ELECTION_EMAIL)throw Error('Choose '+ELECTION_EMAIL+' to send the test.');
         for(const person of pending){
           const links=await responseApi('issue-rehearsal',context.year,{name:person.name});
           const body=invitationHtml(person.name,context.year,deadline(),links).replace('<h1 style=', '<p><strong>TEST ONLY · This message uses rehearsal responses.</strong></p><h1 style=');
@@ -580,7 +600,7 @@
       sending=true;ready();dialog.querySelectorAll('[data-recipient], [data-exclusion]').forEach(input=>{input.disabled=true;});$('[data-deadline]').disabled=true;$('[data-closed]').disabled=true;let sent=0;
       // Start consent directly from the button gesture so popup blockers do not interfere.
       const tokenPromise=mailToken();$('[data-status]').textContent='Waiting for Google email authorization…';
-      try{const token=await tokenPromise;const info=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)}).then(r=>r.json());const sender=normalize(info.email);if(sender!==ELECTION_EMAIL)throw Error('Choose '+ELECTION_EMAIL+' to send election invitations. No invitations sent.');
+      try{const token=await tokenPromise;const sender=ELECTION_EMAIL;
         const fresh=buildModel(await getSheetValues(sheetRange(context.nominationSheet,'A:G'),MEMBERSHIP_SPREADSHEET_ID));if(tallyCsv(fresh)!==tallyCsv(model))throw Error('Nomination totals changed. Close this window, refresh and review again.');
         const roster=await getSheetValues(sheetRange(String(context.year),'A:AZ'),MEMBERSHIP_SPREADSHEET_ID);if(JSON.stringify(invitationRecipients(fresh,roster))!==JSON.stringify(recipients))throw Error('Roster addresses changed. Reopen the preview.');
         for(const person of pending){
