@@ -390,10 +390,10 @@
       `<section class="bod-election-column ${key}"><h5>${label} <span>${people.length}</span></h5>${people.length?'<ul>'+people.map(({name,detail})=>`<li><strong>${html(name)}</strong>${detail?'<small>'+html(detail)+'</small>':''}</li>`).join('')+'</ul>':'<p>None yet</p>'}</section>`
     ).join('')+'</div>';
   }
-  async function adminBatch(requests) {
+  async function adminBatch(requests,signal=AbortSignal.timeout(30000)) {
     const actor=normalize(await getPortalAuditActor());
     if(!ADMIN_EMAILS.includes(actor)||!accessToken)throw Error('Sign in with the President or bsscvb account.');
-    const response=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+':batchUpdate',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({requests}),signal:AbortSignal.timeout(30000)});
+    const response=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+':batchUpdate',{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({requests}),signal});
     if(!response.ok){const data=await response.json().catch(()=>({}));throw Error(data.error?.message||'Could not save. Refresh to check the current records before trying again.');}
   }
   async function ensureAdminSheet(name,headers) {
@@ -596,15 +596,19 @@
       saving=true;ready();
       dialog.querySelectorAll('[data-exclusion]').forEach(input=>{input.disabled=true;});
       try{
-        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
         if(rehearsal||!chosen.length){
+          await new Promise(resolve=>setTimeout(resolve,120));
           chosen.forEach(input=>{input.dataset.saved='true';});
           exclusionsSaved=true;
           $('[data-status]').textContent=chosen.length?'Rehearsal exclusions saved for this preview.':'Exclusions reviewed. None to save. You can now send.';
           return;
         }
+        const signal=AbortSignal.timeout(5000);
+        const range=sheetRange('BOD Invitations '+context.year,'A:G');
+        const response=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+'/values/'+encodeURIComponent(range),{headers:{Authorization:'Bearer '+accessToken},signal});
+        if(!response.ok)throw Error('Could not verify the current exclusions. Reopen the review and try again.');
+        const latest=(await response.json()).values||[];
         const actor=normalize(await getPortalAuditActor());
-        const latest=await getSheetValues(sheetRange('BOD Invitations '+context.year,'A:G'),MEMBERSHIP_SPREADSHEET_ID);
         const recorded=new Set(latest.slice(1).map(row=>normalize(row[0])));
         const at=new Date().toISOString();
         const rows=chosen.map(input=>{
@@ -612,11 +616,11 @@
           if(recorded.has(normalize(person.name)))throw Error('An invitation record changed. Reopen this review before saving.');
           return cellRows([person.name,person.email,'Excluded: '+input.value,at,actor,'','']);
         });
-        await adminBatch([{appendCells:{sheetId:log.id,rows,fields:'userEnteredValue'}}]);
+        await adminBatch([{appendCells:{sheetId:log.id,rows,fields:'userEnteredValue'}}],signal);
         chosen.forEach(input=>{input.dataset.saved='true';});
         exclusionsSaved=true;
         $('[data-status]').textContent='Exclusions saved. These nominees will not receive invitations.';
-      }catch(error){$('[data-status]').textContent=error.message;}
+      }catch(error){$('[data-status]').textContent=error.name==='TimeoutError'?'Google Sheets took too long to confirm the save. Reopen the review to check what was saved.':error.message;}
       finally{
         dialog.querySelectorAll('[data-exclusion]').forEach(input=>{input.disabled=input.dataset.saved==='true';});
         saving=false;ready();
