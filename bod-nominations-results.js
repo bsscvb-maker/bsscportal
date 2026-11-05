@@ -385,7 +385,7 @@
     return `<nav data-bod-gallery class="bod-stage-cards" aria-label="Board Elections"><button type="button" data-bod-section="nominations"><img class="bod-stage-art" src="assets/board-nominations-form.webp" alt="" width="1000" height="440"><strong>Nominations</strong></button><button type="button" data-bod-section="election"><img class="bod-stage-art" src="assets/board-elections-card.webp" alt="" width="1000" height="440"><strong>Elections</strong></button></nav><button type="button" class="membership-tab" data-bod-back hidden>← Back to Board Elections</button>`;
   }
   function invitationPanel(year) {
-    return `<section class="bod-results bod-results-panel bod-history-panel" id="bod-invitations"><div class="bod-panel-heading"><h3>Nominees &amp; Decisions · ${year}</h3></div><button type="button" data-bod-invite-preview>Review nominee invitations</button><button type="button" data-bod-invite-rehearsal>Preview as closed</button><button type="button" data-bod-response-refresh>Refresh responses</button><p data-bod-invite-summary role="status"></p><div data-bod-response-list></div><section data-bod-election hidden><header class="bod-election-header"><div><h3>${year} Board Election</h3><p>Two open seats · Up to two choices per ballot</p></div><button type="button" data-bod-election-refresh>Refresh responses</button></header><h4>Official nominee responses</h4><p>Accepted nominees are pending qualification review.</p><div data-bod-real-slate role="status">Loading nominee responses…</div><section class="bod-election-rehearsal"><h4>Ballot rehearsal</h4><p>Preview the ballot, review test responses, or send a test voter email to Purchasing.</p><div data-bod-test-slate></div><button type="button" data-bod-ballot>Preview Ballot</button> <button type="button" data-bod-test-ballot-mail>Send test voter email to Purchasing</button><p data-bod-ballot-status role="status"></p><details><summary>Draft voter email</summary><p>Subject: Vote in the ${year} BoneShakers Board Election</p><p>Two board seats are open. Eligible members may select up to two candidates. Use [ballot link] to verify your eligibility and submit one private ballot.</p><p>Voting opens [date and time Eastern] and closes [date and time Eastern].</p><p>BoneShakers Social Club · Board Elections</p></details></section></section></section>`;
+    return `<section class="bod-results bod-results-panel bod-history-panel" id="bod-invitations"><div class="bod-panel-heading"><h3>Nominees &amp; Decisions · ${year}</h3></div><button type="button" data-bod-invite-preview>Review nominee invitations</button><button type="button" data-bod-invite-rehearsal>Preview as closed</button><button type="button" data-bod-response-refresh>Refresh responses</button><p data-bod-invite-summary role="status"></p><div data-bod-response-list></div><section data-bod-election hidden><header class="bod-election-header"><div><h3>${year} Board Election</h3><p>Two open seats · Up to two choices per ballot</p></div><button type="button" data-bod-election-refresh>Refresh responses</button></header><label>Responses to show <select data-bod-response-mode><option value="rehearsal" selected>Test responses (rehearsal)</option><option value="official">Official responses</option></select></label><h4 data-bod-response-heading>Test nomination responses</h4><p data-bod-response-note>These are rehearsal results.</p><div data-bod-real-slate role="status">Loading test responses…</div><section class="bod-election-rehearsal"><h4>Ballot rehearsal</h4><p>Preview the ballot, review test responses, or send a test voter email to Purchasing.</p><div data-bod-test-slate></div><button type="button" data-bod-ballot>Preview Ballot</button> <button type="button" data-bod-test-ballot-mail>Send test voter email to Purchasing</button><p data-bod-ballot-status role="status"></p><details><summary>Draft voter email</summary><p>Subject: Vote in the ${year} BoneShakers Board Election</p><p>Two board seats are open. Eligible members may select up to two candidates. Use [ballot link] to verify your eligibility and submit one private ballot.</p><p>Voting opens [date and time Eastern] and closes [date and time Eastern].</p><p>BoneShakers Social Club · Board Elections</p></details></section></section></section>`;
   }
   async function responseApi(path,year,data) {
     const response=await fetch(RESPONSE_ORIGIN+'/api/admin/'+path+'?year='+year,{method:data?'POST':'GET',headers:{Authorization:'Bearer '+accessToken,...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{}),signal:AbortSignal.timeout(30000)});
@@ -396,7 +396,7 @@
     const nominees=model.nominees.length?'<table class="bod-response-table"><thead><tr><th>Nominee</th><th>Response</th><th>Received</th></tr></thead><tbody>'+[...model.nominees].sort((a,b)=>a.name.localeCompare(b.name)).map(person=>{const record=byName.get(normalize(person.name)),state=record?.status||'Not sent';return '<tr><td>'+html(person.name)+'</td><td><span class="bod-response-badge '+(state==='Accepted'?'accepted':state==='Declined'?'declined':'waiting')+'">'+html(state)+'</span></td><td>'+html(record?.responded_at?formatHistoryTime(record.responded_at):'—')+'</td></tr>';}).join('')+'</tbody></table>':'<p class="bod-panel-intro">Nominated members and their decisions will appear here.</p>';
     return nominees;
   }
-  function electionResponseColumns(model,records){
+  function electionResponseColumns(model,records,rehearsal=false){
     const byName=new Map(records.map(record=>[normalize(record.name),record]));
     const groups=[
       {key:'accepted',label:'Accepted',people:[]},
@@ -406,7 +406,7 @@
     for(const person of [...model.nominees].sort((a,b)=>a.name.localeCompare(b.name))){
       const record=byName.get(normalize(person.name));
       const group=record?.status==='Accepted'?groups[0]:record?.status==='Declined'?groups[1]:groups[2];
-      group.people.push({name:person.name,detail:record?.responded_at&&group.key!=='waiting'?formatHistoryTime(record.responded_at):group.key==='waiting'?(record?'Awaiting reply':'Invitation not sent'):''});
+      group.people.push({name:person.name,detail:record?.responded_at&&group.key!=='waiting'?formatHistoryTime(record.responded_at):group.key==='waiting'?(record?'Awaiting reply':rehearsal?'Test invitation not sent':'Invitation not sent'):''});
     }
     return '<div class="bod-election-columns">'+groups.map(({key,label,people})=>
       `<section class="bod-election-column ${key}"><h5>${label} <span>${people.length}</span></h5>${people.length?'<ul>'+people.map(({name,detail})=>`<li><strong>${html(name)}</strong>${detail?'<small>'+html(detail)+'</small>':''}</li>`).join('')+'</ul>':'<p>None yet</p>'}</section>`
@@ -431,7 +431,20 @@
     let refreshing=false,testResponses=[];
     const election=panel.querySelector('[data-bod-election]');
     const accepted=records=>records.filter(record=>record.status==='Accepted');
-    const officialSlate=panel.querySelector('[data-bod-real-slate]');
+    const responseColumns=panel.querySelector('[data-bod-real-slate]');
+    const responseMode=panel.querySelector('[data-bod-response-mode]');
+    let officialResults=null,rehearsalResults=null,officialError='',rehearsalError='';
+    function renderElectionResponses(){
+      const rehearsal=responseMode.value==='rehearsal';
+      panel.querySelector('[data-bod-response-heading]').textContent=rehearsal?'Test nomination responses':'Official nominee responses';
+      panel.querySelector('[data-bod-response-note]').textContent=rehearsal?'These are rehearsal results.':'Accepted nominees are pending qualification review.';
+      const results=rehearsal?rehearsalResults:officialResults;
+      const error=rehearsal?rehearsalError:officialError;
+      if(error||!results){responseColumns.textContent=error||'Loading nominee responses…';return;}
+      const nominees=rehearsal?[...new Map([...model.nominees,...results].map(person=>[normalize(person.name),person])).values()]:model.nominees;
+      responseColumns.innerHTML=electionResponseColumns({nominees},results,rehearsal);
+    }
+    responseMode.onchange=renderElectionResponses;
     const gallery=target.querySelector('[data-bod-gallery]');
     const back=target.querySelector('[data-bod-back]');
     const cards=gallery.querySelectorAll('[data-bod-section]');
@@ -481,17 +494,14 @@
       if(refreshing||!panel.isConnected)return;refreshing=true;
       try{
         const result=await responseApi('responses',context.year);
-        if(panel.isConnected){list.innerHTML=responseMarkup(model,result.responses);officialSlate.innerHTML=electionResponseColumns(model,result.responses);}
-      }catch(error){if(panel.isConnected){list.textContent=error.message;officialSlate.textContent=error.message;}}
+        if(panel.isConnected){list.innerHTML=responseMarkup(model,result.responses);officialResults=result.responses;officialError='';renderElectionResponses();}
+      }catch(error){if(panel.isConnected){list.textContent=error.message;officialError=error.message;renderElectionResponses();}}
       try{
         const result=await responseApi('rehearsals',context.year);
         testResponses=result.responses;
-        const rows=[...testResponses].sort((a,b)=>a.name.localeCompare(b.name));
-        panel.querySelector('[data-bod-test-slate]').innerHTML='<h5>Test nomination responses</h5>'+
-          (rows.length?'<ul>'+rows.map(r=>'<li><strong>'+html(r.name)+'</strong> · Test — '+html(r.status)+'</li>').join('')+'</ul>':'<p>No test responses yet.</p>')+
-          '<p>'+Number(result.ballots||0)+' test ballot(s) recorded</p>';
-
-      }catch(error){panel.querySelector('[data-bod-test-slate]').textContent=error.message;}
+        rehearsalResults=testResponses;rehearsalError='';renderElectionResponses();
+        panel.querySelector('[data-bod-test-slate]').textContent=Number(result.ballots||0)+' test ballot(s) recorded';
+      }catch(error){rehearsalError=error.message;renderElectionResponses();panel.querySelector('[data-bod-test-slate]').textContent=error.message;}
       finally{refreshing=false;}
     }
     panel.querySelector('[data-bod-response-refresh]').onclick=refreshResponses;
