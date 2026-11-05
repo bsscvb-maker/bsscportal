@@ -390,7 +390,7 @@
     return `<nav data-bod-gallery class="bod-stage-cards" aria-label="Board Elections"><button type="button" data-bod-section="nominations"><img class="bod-stage-art" src="assets/board-nominations-form.webp" alt="" width="1000" height="440"><strong>Nominations</strong></button><button type="button" data-bod-section="election"><img class="bod-stage-art" src="assets/board-elections-card.webp" alt="" width="1000" height="440"><strong>Elections</strong></button></nav><button type="button" class="membership-tab" data-bod-back hidden>← Back to Board Elections</button>`;
   }
   function invitationPanel(year) {
-    return `<section class="bod-results bod-results-panel bod-history-panel" id="bod-invitations"><div class="bod-panel-heading"><h3>Nominees &amp; Decisions · ${year}</h3></div><button type="button" data-bod-invite-preview>Review nominee invitations</button><button type="button" data-bod-invite-rehearsal>Preview as closed</button><button type="button" data-bod-response-refresh>Refresh responses</button><p data-bod-invite-summary role="status"></p><div data-bod-response-list></div><section data-bod-election hidden><header class="bod-election-header"><div><h3>${year} Board Election</h3><p>Two open seats · Up to two choices per ballot</p></div><button type="button" data-bod-election-refresh>Refresh responses</button></header><label>Responses to show <select data-bod-response-mode><option value="rehearsal" selected>Test responses (rehearsal)</option><option value="official">Official responses</option></select></label><h4 data-bod-response-heading>Test nomination responses</h4><p data-bod-response-note>These are rehearsal results.</p><div data-bod-real-slate role="status">Loading test responses…</div><section class="bod-election-rehearsal"><h4>Ballot rehearsal</h4><p>Send a test voter email to Purchasing to check the link to the club’s Election page.</p><div data-bod-test-slate></div><button type="button" data-bod-connect-ballot-mail>Connect club Gmail</button> <button type="button" data-bod-test-ballot-mail disabled>Send test voter email to Purchasing</button><p data-bod-ballot-status role="status"></p><details><summary>Draft voter email</summary><p>Subject: Vote in the ${year} BoneShakers Board Election</p>${voterEmailHtml(year)}</details></section></section></section>`;
+    return `<section class="bod-results bod-results-panel bod-history-panel" id="bod-invitations"><div class="bod-panel-heading"><h3>Nominees &amp; Decisions · ${year}</h3></div><button type="button" data-bod-invite-preview>Review nominee invitations</button><button type="button" data-bod-invite-rehearsal>Preview as closed</button><button type="button" data-bod-response-refresh>Refresh responses</button><p data-bod-invite-summary role="status"></p><div data-bod-response-list></div><section data-bod-election hidden><header class="bod-election-header"><div><h3>${year} Board Election</h3><p>Two open seats · Up to two choices per ballot</p></div><button type="button" data-bod-election-refresh>Refresh responses</button></header><label>Responses to show <select data-bod-response-mode><option value="rehearsal" selected>Test responses (rehearsal)</option><option value="official">Official responses</option></select></label><h4 data-bod-response-heading>Test nomination responses</h4><p data-bod-response-note>These are rehearsal results.</p><div data-bod-real-slate role="status">Loading test responses…</div><section class="bod-election-rehearsal"><h4>Ballot rehearsal</h4><p>Send a test voter email to Purchasing to check the link to the club’s Election page.</p><section data-bod-test-slate aria-live="polite"><h4>Test ballot results</h4><p>Loading test tally…</p></section><button type="button" data-bod-reset-test-ballots>Reset test ballots</button> <p data-bod-receipt-status role="status"></p><button type="button" data-bod-connect-ballot-mail>Connect club Gmail</button> <button type="button" data-bod-test-ballot-mail disabled>Send test voter email to Purchasing</button><p data-bod-ballot-status role="status"></p><details><summary>Draft voter email</summary><p>Subject: Vote in the ${year} BoneShakers Board Election</p>${voterEmailHtml(year)}</details></section></section></section>`;
   }
   async function responseApi(path,year,data) {
     const response=await fetch(RESPONSE_ORIGIN+'/api/admin/'+path+'?year='+year,{method:data?'POST':'GET',headers:{Authorization:'Bearer '+accessToken,...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{}),signal:AbortSignal.timeout(30000)});
@@ -521,6 +521,34 @@
     };
     updateBallotMail();
     showView([...cards].find(card=>card.dataset.bodSection===initialView),false);
+    const testTally=panel.querySelector('[data-bod-test-slate]');
+    const receiptStatus=panel.querySelector('[data-bod-receipt-status]');
+    panel.querySelector('[data-bod-reset-test-ballots]').onclick=async event=>{
+      if(!window.confirm('Reset the test tally and retire its old ballot links? Send a new test voter email to start again.'))return;
+      const button=event.currentTarget;
+      button.disabled=true;
+      try{
+        await responseApi('reset-test-ballots',context.year,{});
+        ballotStatus.textContent='Test ballots reset. Send a new test voter email to start again.';
+        await refreshResponses();
+      }catch(error){ballotStatus.textContent=error.message;}finally{button.disabled=false;}
+    };
+    async function deliverTestReceipt(){
+      if(election.hidden)return;
+      const token=currentElectionMailToken();
+      if(!token){receiptStatus.textContent='Connect club Gmail and keep Elections open to deliver queued test receipts.';return;}
+      const receipt=await responseApi('test-ballot-receipt',context.year,{action:'claim'});
+      if(!receipt.id)return;
+      try{
+        const body=electionEmail('Your vote was recorded',receipt.firstName,'<p><strong>Thank you for voting. Your voice was heard.</strong></p><p>By showing up today, you’re helping shape the BoneShakers of tomorrow. Thank you for taking an active part in the club.</p><p>This is your confirmation that your test ballot was recorded.</p>',context.year);
+        await sendInvitationMail(token,'purchasing@boneshakerssocialclub.com','[TEST] Thank you for voting · '+context.year+' Board Election',body);
+      }catch(error){
+        await responseApi('test-ballot-receipt',context.year,{action:'failed',id:receipt.id});
+        throw error;
+      }
+      await responseApi('test-ballot-receipt',context.year,{action:'sent',id:receipt.id});
+      receiptStatus.textContent='Test vote confirmation sent to Purchasing.';
+    }
     async function refreshResponses(){
       updateBallotMail();
       if(refreshing||!panel.isConnected)return;refreshing=true;
@@ -532,14 +560,20 @@
         const result=await responseApi('rehearsals',context.year);
         testResponses=result.responses;
         rehearsalResults=testResponses;rehearsalError='';renderElectionResponses();
-        panel.querySelector('[data-bod-test-slate]').textContent=Number(result.ballots||0)+' test ballot(s) recorded';
-      }catch(error){rehearsalError=error.message;renderElectionResponses();panel.querySelector('[data-bod-test-slate]').textContent=error.message;}
+        const totals=[...result.totals].sort((a,b)=>b.votes-a.votes||a.name.localeCompare(b.name));
+        testTally.innerHTML='<h4>Test ballot results</h4><p><strong>'+Number(result.ballots||0)+'</strong> test ballot(s) recorded</p>'+
+          (totals.length?'<table class="bod-response-table"><thead><tr><th>Candidate</th><th>Test votes</th></tr></thead><tbody>'+
+          totals.map(row=>'<tr><td>'+html(row.name)+'</td><td>'+Number(row.votes)+'</td></tr>').join('')+'</tbody></table>':'');
+        if(result.ballots)election.querySelector('.bod-election-header').after(testTally);
+        else panel.querySelector('[data-bod-reset-test-ballots]').before(testTally);
+        try{if(result.ballots)await deliverTestReceipt();}catch(error){receiptStatus.textContent='Test receipt could not be confirmed: '+error.message;}
+      }catch(error){rehearsalError=error.message;renderElectionResponses();testTally.textContent=error.message;}
       finally{refreshing=false;}
     }
     panel.querySelector('[data-bod-response-refresh]').onclick=refreshResponses;
     panel.querySelector('[data-bod-election-refresh]').onclick=refreshResponses;
     refreshResponses();
-    const poll=()=>setTimeout(async()=>{if(!panel.isConnected)return;await refreshResponses();poll();},30000);poll();
+    const poll=()=>setTimeout(async()=>{if(!panel.isConnected)return;await refreshResponses();poll();},election.hidden?30000:5000);poll();
     const status=target.querySelector('[data-bod-cleanup-status]');
     target.querySelector('[data-bod-history-all]').onchange=e=>target.querySelectorAll('[data-bod-history-select]:not(:disabled)').forEach(c=>c.checked=e.target.checked);
     let cleaning=false;
