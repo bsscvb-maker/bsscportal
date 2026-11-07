@@ -256,9 +256,10 @@
     if (document.getElementById('bod-results-style')) return;
     const style = document.createElement('style'); style.id='bod-results-style';
     style.textContent=`
-.bod-election-column li.bod-has-evidence{position:relative;padding-right:38px}
-.bod-results .bod-evidence-bubble[data-bod-view-response-evidence]{position:absolute;top:8px;right:0;display:grid;place-items:center;width:28px;height:28px;min-width:0;min-height:0;margin:0;padding:0;background:#b91c32;color:#fff;border:1px solid #fc8494;border-radius:50%;cursor:pointer}
-.bod-evidence-bubble svg{width:16px;height:16px}
+.bod-evidence-name{display:flex;align-items:center;gap:6px}
+.bod-election-column button.bod-evidence-bubble[data-bod-view-response-evidence]{display:inline-grid!important;place-items:center;flex:none;width:24px!important;height:24px!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:4px;background:transparent!important;box-shadow:none!important;color:#ff5266!important;cursor:pointer}
+.bod-evidence-bubble svg{display:block;width:18px;height:18px}
+.bod-evidence-bubble:focus-visible{outline:2px solid #ff5266;outline-offset:2px}
 .bod-evidence-dialog{box-sizing:border-box;width:min(460px,calc(100% - 24px));max-height:90dvh;overflow:auto;padding:18px;border:1px solid #59616b;border-radius:12px;background:#1b1f24;color:#fff}
 .bod-evidence-dialog::backdrop{background:#000a}
 .bod-evidence-dialog header{display:flex;gap:12px;align-items:center;justify-content:space-between}
@@ -429,7 +430,7 @@
       group.people.push({name:person.name,note:rehearsal?'':record?.evidenceNote,hasEvidence,detail:responseTime&&group.key!=='waiting'?formatHistoryTime(responseTime):group.key==='waiting'?(record?'Awaiting reply':rehearsal?'Test invitation not sent':'Invitation not sent'):''});
     }
     return '<div class="bod-election-columns">'+groups.map(({key,label,people})=>
-      `<section class="bod-election-column ${key}"><h5>${label} <span>${people.length}</span></h5>${people.length?'<ul>'+people.map(({name,detail,note,hasEvidence})=>`<li${hasEvidence?' class="bod-has-evidence"':''}><strong>${html(name)}</strong>${detail?'<small>'+html(detail)+'</small>':''}${note&&!hasEvidence?'<small>'+html(note)+'</small>':''}${hasEvidence?`<button type="button" class="bod-evidence-bubble" data-bod-view-response-evidence="${html(note||'')}" aria-label="View evidence for ${html(name)}" title="View evidence" aria-haspopup="dialog"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11h-8l-5 4v-4H4z"/><path d="M8 9h8m-8 3h6"/></svg></button>`:''}</li>`).join('')+'</ul>':'<p>None yet</p>'}</section>`
+      `<section class="bod-election-column ${key}"><h5>${label} <span>${people.length}</span></h5>${people.length?'<ul>'+people.map(({name,detail,note,hasEvidence})=>`<li><div class="bod-evidence-name"><strong>${html(name)}</strong>${note?`<button type="button" class="bod-evidence-bubble" data-bod-view-response-evidence="${html(note)}" data-bod-evidence-image="${Boolean(hasEvidence)}" aria-label="View evidence for ${html(name)}" title="View evidence" aria-haspopup="dialog"><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M3 4h18v13h-9l-5 4v-4H3z"/><path fill="none" stroke="#1b1f24" stroke-width="1.6" stroke-linecap="round" d="M7 9h10m-10 4h7"/></svg></button>`:''}</div>${detail?'<small>'+html(detail)+'</small>':''}</li>`).join('')+'</ul>':'<p>None yet</p>'}</section>`
     ).join('')+'</div>';
   }
   async function adminBatch(requests,signal=AbortSignal.timeout(30000)) {
@@ -507,10 +508,13 @@
       dialog.innerHTML='<header><h2>Nominee response evidence</h2><form method="dialog"><button type="submit">Close</button></form></header><p></p><div role="status">Loading evidence…</div>';
       dialog.querySelector('p').textContent=button.dataset.bodViewResponseEvidence;
       const result=dialog.querySelector('[role=status]');
+      const hasImage=button.dataset.bodEvidenceImage==='true';
+      if(!hasImage)result.remove();
       const request=new AbortController();
       dialog.addEventListener('close',()=>{request.abort();dialog.remove();button.focus();},{once:true});
       document.body.append(dialog);
       dialog.showModal();
+      if(!hasImage)return;
       let objectUrl;
       try{
         const response=await fetch(RESPONSE_ORIGIN+'/api/admin/response-evidence?year='+context.year,{headers:{Authorization:'Bearer '+accessToken},signal:AbortSignal.any([request.signal,AbortSignal.timeout(30000)])});
