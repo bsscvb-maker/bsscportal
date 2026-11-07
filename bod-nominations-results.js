@@ -415,10 +415,10 @@
     for(const person of [...model.nominees].sort((a,b)=>a.name.localeCompare(b.name))){
       const record=byName.get(normalize(person.name));
       const group=record?.status==='Accepted'?groups[0]:record?.status==='Declined'?groups[1]:groups[2];
-      group.people.push({name:person.name,detail:record?.responded_at&&group.key!=='waiting'?formatHistoryTime(record.responded_at):group.key==='waiting'?(record?'Awaiting reply':rehearsal?'Test invitation not sent':'Invitation not sent'):''});
+      group.people.push({name:person.name,note:rehearsal?'':record?.evidenceNote,hasEvidence:!rehearsal&&record?.hasEvidence,detail:record?.responded_at&&group.key!=='waiting'?formatHistoryTime(record.responded_at):group.key==='waiting'?(record?'Awaiting reply':rehearsal?'Test invitation not sent':'Invitation not sent'):''});
     }
     return '<div class="bod-election-columns">'+groups.map(({key,label,people})=>
-      `<section class="bod-election-column ${key}"><h5>${label} <span>${people.length}</span></h5>${people.length?'<ul>'+people.map(({name,detail})=>`<li><strong>${html(name)}</strong>${detail?'<small>'+html(detail)+'</small>':''}</li>`).join('')+'</ul>':'<p>None yet</p>'}</section>`
+      `<section class="bod-election-column ${key}"><h5>${label} <span>${people.length}</span></h5>${people.length?'<ul>'+people.map(({name,detail,note,hasEvidence})=>`<li><strong>${html(name)}</strong>${detail?'<small>'+html(detail)+'</small>':''}${note?'<small>'+html(note)+'</small>':''}${hasEvidence?'<div><button type="button" data-bod-view-response-evidence>View evidence</button><div data-bod-response-evidence role="status"></div></div>':''}</li>`).join('')+'</ul>':'<p>None yet</p>'}</section>`
     ).join('')+'</div>';
   }
   async function adminBatch(requests,signal=AbortSignal.timeout(30000)) {
@@ -487,6 +487,33 @@
     const election=panel.querySelector('[data-bod-election]');
     const responseColumns=panel.querySelector('[data-bod-real-slate]');
     const responseMode=panel.querySelector('[data-bod-response-mode]');
+    responseColumns.addEventListener('click',async event=>{
+      const button=event.target.closest('[data-bod-view-response-evidence]');
+      if(!button)return;
+      const result=button.parentElement.querySelector('[data-bod-response-evidence]');
+      const image=result.querySelector('img');
+      if(image){
+        result.hidden=!result.hidden;
+        button.textContent=result.hidden?'View evidence':'Hide evidence';
+        return;
+      }
+      button.disabled=true;
+      result.textContent='Loading evidence…';
+      let objectUrl;
+      try{
+        const response=await fetch(RESPONSE_ORIGIN+'/api/admin/response-evidence?year='+context.year,{headers:{Authorization:'Bearer '+accessToken},signal:AbortSignal.timeout(30000)});
+        if(!response.ok||!response.headers.get('Content-Type')?.startsWith('image/png'))throw Error('Evidence could not be loaded. Refresh your session and retry.');
+        objectUrl=URL.createObjectURL(await response.blob());
+        const screenshot=new Image();
+        screenshot.alt='iMessage screenshot showing James relaying Gene Lindsey’s decision';
+        screenshot.style.cssText='display:block;max-width:100%;height:auto;margin-top:.5rem';
+        screenshot.src=objectUrl;
+        await screenshot.decode();
+        result.replaceChildren(screenshot);
+        button.textContent='Hide evidence';
+      }catch(error){result.textContent=error.message;}
+      finally{if(objectUrl)URL.revokeObjectURL(objectUrl);button.disabled=false;}
+    });
     let officialResults=null,rehearsalResults=null,officialError='',rehearsalError='';
     function renderElectionResponses(){
       const rehearsal=responseMode.value==='rehearsal';
