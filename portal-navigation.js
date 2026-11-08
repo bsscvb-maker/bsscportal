@@ -171,7 +171,7 @@
 function init(){
 const side=document.querySelector('#sidebar,.th-sidebar');if(!side)return;
 const bssc=side.id==='sidebar',labels=[...side.querySelectorAll(bssc?'.nav-label':'.th-nav-label')],items=[...side.querySelectorAll(bssc?'button[data-module]':'a.th-nav-link')];if(!labels.length||!items.length)return;
-const key='sidebar-order-v1:'+(bssc?'bssc':'tiszod'),id=e=>bssc?e.dataset.module:e.getAttribute('href'),map=new Map(items.map(e=>[id(e),e]));
+const key=bssc?'sidebar-order-v2:bssc':'sidebar-order-v1:tiszod',id=e=>bssc?e.dataset.module:e.getAttribute('href'),map=new Map(items.map(e=>[id(e),e]));
 const groups=labels.map((label,index)=>({label,index,host:bssc?label.nextElementSibling:label.parentElement}));
 const defaults=items.map(el=>{let group=0;for(const g of groups)if(g.label.compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING)group=g.index;return{id:id(el),group}});
 function normalize(rows){const seen=new Set();return [...(Array.isArray(rows)?rows:[]),...defaults].filter(r=>r&&map.has(r.id)&&!seen.has(r.id)&&seen.add(r.id)).map(r=>({id:r.id,group:Number.isInteger(r.group)&&groups[r.group]?r.group:0}))}
