@@ -1658,11 +1658,19 @@ body:has(#recordsWorkspace.active) .detail-shell{overflow:clip}.minutes-breadcru
       body.portal-authenticated .mobile-app-nav button[data-mobile-module="more"].active{background:#c8102e}
       body.portal-authenticated .mobile-more-sheet{display:none;position:fixed;inset:auto 8px calc(var(--mobile-nav-h) + 8px + env(safe-area-inset-bottom)) 8px;z-index:1001;padding:12px;border:1px solid #34353a;border-radius:17px;background:#111216;box-shadow:0 14px 38px #0008}
       body.portal-authenticated .mobile-more-sheet.open{display:block}
+      body.portal-authenticated .mobile-more-sheet{max-height:calc(100dvh - var(--mobile-nav-h) - env(safe-area-inset-bottom) - 16px);overflow-y:auto;overscroll-behavior:contain}
+      body.portal-authenticated .topbar>div:has(>.page-title){min-width:0;flex:1}
+      body.portal-authenticated .mobile-search-toggle{min-width:44px;min-height:44px;padding:6px;border:1px solid #555;border-radius:9px;background:#202126;color:#fff;font:650 12px system-ui}
+      body.portal-authenticated .topbar:has(.mobile-search-open){height:auto!important;flex-wrap:wrap;padding-block:6px!important}
+      body.portal-authenticated .topbar .portal-search.mobile-search-open{display:block!important;order:3;flex:1 0 100%;width:100%;max-width:none;margin:0}
+      body.portal-authenticated .portal-search-panel{max-height:min(45dvh,420px);overscroll-behavior:contain}
+      body.portal-authenticated:has(.mobile-search-open) .back{top:112px!important}
+      body.portal-authenticated dialog[open]{box-sizing:border-box;max-inline-size:calc(100vw - 24px);max-block-size:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain}
       body.portal-authenticated .mobile-more-sheet h3{margin:2px 4px 10px;color:#fff;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em}
       body.portal-authenticated .mobile-more-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
       body.portal-authenticated .mobile-more-grid button{min-height:50px;border:1px solid #34353a;border-radius:10px;background:#1c1d21;color:#fff;font:800 .78rem system-ui}
     }
-    @media(min-width:761px){.mobile-app-nav,.mobile-more-sheet{display:none!important}}
+    @media(min-width:761px){.mobile-app-nav,.mobile-more-sheet,.mobile-search-toggle{display:none!important}}
 
 .finance-detail-plus{border:1px solid #64748b;border-radius:50%;width:28px;height:28px;margin-left:10px;background:white;color:#111;font-weight:700;cursor:pointer}
 .finance-breakdown-dialog{width:min(660px,calc(100vw - 32px));max-height:75vh;overflow:auto;border:0;border-radius:12px;padding:22px;color:#111;background:white;box-shadow:0 20px 60px #0005}
@@ -10095,7 +10103,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
     (function(){
       const mq=window.matchMedia('(max-width:760px)');
       const mainItems=[['home','⌂','Home'],['membership','♟','Members'],['bft','◇','BFT'],['records','▤','Records']];
-      const moreItems=[['tracker','Task Tracker'],['finance','Finance'],['bikenights','Bike Nights'],['marketplace','Marketplace'],['sponsorsnew','Sponsorships'],['storage','Storage'],['volunteers','Events & Volunteers'],['admin','Administration']];
+      let moreItems=[];
       function authenticated(){return document.getElementById('authGate')?.classList.contains('hidden');}
       function current(){if(!document.getElementById('dashboard')?.classList.contains('hidden'))return 'home';return document.querySelector('.sidebar [data-module].active')?.dataset.module||'home';}
       function sync(key=current()){document.querySelectorAll('[data-mobile-module]').forEach(b=>{const k=b.dataset.mobileModule;b.classList.toggle('active',k===key||(k==='more'&&moreItems.some(x=>x[0]===key)));});}
@@ -10104,6 +10112,20 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         if(!mq.matches||!authenticated())return;
         document.body.classList.add('portal-authenticated');
         if(document.querySelector('.mobile-app-nav')){sync();return;}
+        const primary=new Set(mainItems.map(([key])=>key));
+        moreItems=[...document.querySelectorAll('.sidebar [data-module]')].filter(button=>!primary.has(button.dataset.module))
+          .map(button=>[button.dataset.module,button.textContent.trim()])
+          .sort((a,b)=>a[1].localeCompare(b[1],'en'));
+        const search=document.getElementById('portalSearch');
+        const toggle=document.createElement('button');toggle.type='button';toggle.className='mobile-search-toggle';toggle.textContent='Search';
+        toggle.setAttribute('aria-controls','portalSearch');toggle.setAttribute('aria-expanded','false');
+        function toggleSearch(open){
+          search.classList.toggle('mobile-search-open',open);toggle.setAttribute('aria-expanded',String(open));
+          if(open)document.getElementById('portalSearchInput').focus();
+        }
+        toggle.onclick=()=>toggleSearch(toggle.getAttribute('aria-expanded')!=='true');
+        search.before(toggle);
+        document.addEventListener('keydown',event=>{if(event.key==='Escape'&&toggle.getAttribute('aria-expanded')==='true'){toggleSearch(false);toggle.focus()}});
         const nav=document.createElement('nav');nav.className='mobile-app-nav';nav.setAttribute('aria-label','Mobile navigation');
         nav.innerHTML=mainItems.map(([k,i,l])=>'<button type="button" data-mobile-module="'+k+'"><span class="mi">'+i+'</span><span>'+l+'</span></button>').join('')+'<button type="button" data-mobile-module="more"><span class="mi">•••</span><span>More</span></button>';
         const sheet=document.createElement('section');sheet.className='mobile-more-sheet';sheet.innerHTML='<h3>More modules</h3><div class="mobile-more-grid">'+moreItems.map(([k,l])=>'<button type="button" data-mobile-module="'+k+'">'+l+'</button>').join('')+'</div>';
