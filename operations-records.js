@@ -317,7 +317,7 @@
     };
     host.querySelector('[data-doc-query]').oninput=paint;
     host.querySelector('[data-doc-back]').onclick=recordsHome;
-    host.querySelector('[data-doc-refresh]').onclick=()=>loadClubFramework('records');paint();
+    host.querySelector('[data-doc-refresh]').onclick=()=>{savedPreviewPromise=null;return loadClubFramework('records');};paint();
   };
   function go(category){recordsDashboard=true;recordsCategory=category;clubFramework.records.active='Club Records';showModule('records');}
   const targets={
