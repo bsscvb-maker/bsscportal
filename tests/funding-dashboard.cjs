@@ -16,3 +16,36 @@ let batch=m.editBatch(before,next,5,Array.from({length:35},(_,i)=>'Field '+i),'q
 assert.equal(batch.requests.length,4);assert.equal(batch.requests[0].updateCells.range.startColumnIndex,34);assert.equal(batch.requests[0].updateCells.rows[0].values[0].userEnteredValue.stringValue,'Updated recipient');assert.equal(batch.requests.at(-1).appendCells.sheetId,1);assert.equal(batch.requests.at(-1).appendCells.rows[0].values[2].userEnteredValue.stringValue,'PORTAL_EDITED');
 const deleted=before.slice();deleted[2]='DELETED';batch=m.editBatch(before,deleted,5,[],'qa','now',{Requests:0,Audit:1,Votes:2},[[],['token',before[0]],['other','different-record']]);assert.equal(batch.requests.filter(r=>r.updateCells?.range.sheetId===2).length,1);assert.equal(batch.requests.find(r=>r.updateCells?.range.sheetId===2).updateCells.rows[0].values[0].userEnteredValue.stringValue,'FINALIZED');assert.equal(batch.requests.at(-1).appendCells.rows[0].values[2].userEnteredValue.stringValue,'PORTAL_DELETED');assert.ok(!JSON.stringify(batch).includes('deleteDimension'));assert.equal(m.editBatch(before,before.slice(),5,[],'qa','now',{}),null);const renamed=before.slice();renamed[0]='another';assert.throws(()=>m.editBatch(before,renamed,5,[],'qa','now',{}),/reference number/);
 console.log('PASS: atomic record edit plus audit entry, recoverable delete closes matching votes only, stable reference, no-op saves');
+
+const timed='2026-11-11T22:33:14.195Z';
+const paid=39032;
+const selection=value=>JSON.parse(JSON.stringify(m.dateSelection(value)));
+assert.deepEqual(selection(paid),{day:'2006-11-11',hour:'',minute:'',period:''});
+assert.equal(m.displayDate('39032'),'Nov 11, 2006');
+assert.deepEqual(selection(timed),{day:'2026-11-11',hour:'5',minute:'33',period:'PM'});
+assert.equal(m.editedDate(timed,selection(timed),'President Date'),timed);
+assert.equal(m.editedDate(paid,selection(paid),'Paid Date'),paid);
+assert.equal(m.editedDate(paid,{...selection(paid),day:'2026-11-12'},'Paid Date'),46338);
+assert.equal(m.editedDate(timed,{...selection(timed),minute:'45'},'President Date'),'2026-11-11T22:45:00.000Z');
+assert.equal(m.editedDate(timed,{...selection(timed),day:'2026-07-11'},'President Date'),'2026-07-11T21:33:00.000Z');
+assert.equal(m.editedDate(timed,selection(''),'President Date'),'');
+assert.throws(()=>m.editedDate('',{day:'2026-03-08',hour:'2',minute:'30',period:'AM'},'Paid Date'),/skipped/);
+assert.throws(()=>m.editedDate('',{day:'2026-11-12',hour:'5',minute:'',period:'PM'},'Paid Date'),/complete time/);
+assert.equal(m.instant('2026-11-01 01:30 AM'),Date.parse('2026-11-01T05:30:00Z'));
+const repeated='2026-11-01T06:30:44.125Z';
+assert.equal(m.editedDate(repeated,selection(repeated),'Paid Date'),repeated);
+assert.equal(m.instant(46337.5),Date.parse('2026-11-11T17:00:00Z'));
+assert.match(m.dateControl(28,'Paid Date',paid),/type="date"[^>]+value="2006-11-11"/);
+assert.match(m.dateControl(18,'President Date',timed),/value="PM" selected/);
+
+const dateBefore=before.slice();
+dateBefore[18]=timed;
+dateBefore[28]=paid;
+const dateNext=dateBefore.slice();
+dateNext[18]=m.editedDate(timed,{...selection(timed),minute:'45'},'President Date');
+dateNext[28]=m.editedDate(paid,selection(paid),'Paid Date');
+batch=m.editBatch(dateBefore,dateNext,5,[],'qa','now',{Requests:0,Audit:1,Votes:2});
+assert.deepEqual(Array.from(batch.requests.slice(0,-1),r=>r.updateCells.range.startColumnIndex),[18,31,32]);
+assert.deepEqual(JSON.parse(batch.requests.at(-1).appendCells.rows[0].values[5].userEnteredValue.stringValue).changes,
+  [{field:'Column 19',before:timed,after:'2026-11-11T22:45:00.000Z'}]);
+console.log('PASS: Eastern date/time controls, serial dates, DST, unchanged values and audited date save');

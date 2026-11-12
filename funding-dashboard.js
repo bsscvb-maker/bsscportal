@@ -5,17 +5,100 @@
   const norm=v=>String(v??'').trim().toLowerCase().replace(/\s+/g,' ');
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const money=v=>v===''||v===undefined||v===null?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(String(v).replace(/[$,]/g,''))||0);
-  function instant(value) {
-    if(value===''||value===null||value===undefined)return null;
-    if(typeof value==='string'&&/T.*(?:Z|[+-]\d\d:\d\d)$/.test(value)){const t=Date.parse(value);return Number.isFinite(t)?t:null;}
-    let wall;
-    if(typeof value==='number') wall=Math.round((value-25569)*86400000);
-    else {const m=String(value).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?: (\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);if(!m)return null;wall=Date.UTC(+m[3],+m[1]-1,+m[2],+m[4]||0,+m[5]||0,+m[6]||0);}
-    let result=wall;
-    for(let i=0;i<3;i++){const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:ZONE,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(result).map(x=>[x.type,x.value]));const local=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute,+p.second);result+=wall-local;}
-    return result;
+  const DAY=86400000,SHEETS_EPOCH=25569;
+  const dateFields=new Set([1,8,10,15,16,18,21,24,28,30]);
+  const easternClock=new Intl.DateTimeFormat('en-CA',{timeZone:ZONE,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
+  function easternParts(time){
+    return Object.fromEntries(easternClock.formatToParts(time).map(({type,value})=>[type,value]));
+  }
+  function wallTime(p){
+    return Date.UTC(+p.year,+p.month-1,+p.day,+p.hour||0,+p.minute||0,+p.second||0);
+  }
+  function easternInstant(wall){
+    if(!Number.isFinite(wall))return null;
+    const wholeSecond=Math.floor(wall/1000)*1000;
+    // Try both offsets at a daylight saving transition. Repeated times use the earlier occurrence.
+    const candidates=[wholeSecond-DAY,wholeSecond+DAY].map(sample=>wholeSecond+sample-wallTime(easternParts(sample)));
+    const valid=candidates.filter(time=>wallTime(easternParts(time))===wholeSecond);
+    return valid.length?Math.min(...valid)+wall-wholeSecond:null;
+  }
+  function parsedDate(value){
+    const text=String(value??'').trim();
+    if(!text)return {time:null,dateOnly:false};
+    if(/T.*(?:Z|[+-]\d\d:?\d\d)$/i.test(text)){
+      const time=Date.parse(text);
+      return {time:Number.isFinite(time)?time:null,dateOnly:false};
+    }
+    if(/^[+-]?\d+(?:\.\d+)?$/.test(text)){
+      const serial=Number(text);
+      const wall=Math.round((serial-SHEETS_EPOCH)*DAY);
+      return {time:Math.abs(wall)<8.63e15?easternInstant(wall):null,dateOnly:Number.isInteger(serial)};
+    }
+    const [day,clock]=text.split(/[T ](?=\d{1,2}:)/,2);
+    const iso=day.match(/^(\d{4})-(\d\d)-(\d\d)$/);
+    const us=day.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    const parts=iso?{year:iso[1],month:iso[2],day:iso[3]}:us?{year:us[3],month:us[1],day:us[2]}:null;
+    const time=clock?.match(/^(\d{1,2}):(\d\d)(?::(\d\d)(?:\.(\d{1,3}))?)?(?:\s*(AM|PM))?$/i);
+    if(!parts||(clock&&!time))return {time:null,dateOnly:false};
+    if(time){
+      const hour=+time[1],period=time[5]?.toUpperCase();
+      if(hour>(period?12:23)||(period&&hour<1)||+time[2]>59||+(time[3]||0)>59)return {time:null,dateOnly:false};
+      Object.assign(parts,{hour:period?hour%12+(period==='PM'?12:0):hour,minute:time[2],second:time[3]});
+    }
+    const wall=wallTime(parts),check=new Date(wall);
+    const valid=check.getUTCFullYear()===+parts.year&&check.getUTCMonth()+1===+parts.month&&check.getUTCDate()===+parts.day;
+    return {time:valid?easternInstant(wall+Number((time?.[4]||'').padEnd(3,'0'))):null,dateOnly:!clock};
+  }
+  const instant=value=>parsedDate(value).time;
+  function dateSelection(value){
+    const {time,dateOnly}=parsedDate(value);
+    if(time===null)return {day:'',hour:'',minute:'',period:''};
+    const p=easternParts(time);
+    return {day:[p.year,p.month,p.day].join('-'),hour:dateOnly?'':String(+p.hour%12||12),minute:dateOnly?'':p.minute,period:dateOnly?'':+p.hour>=12?'PM':'AM'};
+  }
+  function editedDate(original,selection,label){
+    const {day,hour,minute,period}=selection;
+    const previous=dateSelection(original);
+    if(Object.keys(previous).every(key=>previous[key]===selection[key]))return original;
+    if(!day&&!hour&&!minute&&!period)return '';
+    if(!day||([hour,minute,period].some(Boolean)&&![hour,minute,period].every(Boolean))){
+      throw new Error(label+' needs a date and, if supplied, a complete time.');
+    }
+    if(!hour){
+      if(instant(day)===null)throw new Error(label+' needs a valid date.');
+      return Date.parse(day)/DAY+SHEETS_EPOCH;
+    }
+    const time=instant(day+' '+hour+':'+minute+' '+period);
+    if(time===null)throw new Error(label+' needs a valid Eastern time. During the spring clock change, 2:00–2:59 AM is skipped.');
+    return new Date(time).toISOString();
+  }
+  function dateControl(i,label,value){
+    const selection=dateSelection(value);
+    const picker=(key,name,options)=>'<label>'+name+'<select data-fr-date-part="'+key+'"><option value="">—</option>'+
+      options.map(option=>'<option value="'+option+'"'+(selection[key]===option?' selected':'')+'>'+option+'</option>').join('')+'</select></label>';
+    return '<fieldset class="fr-editor-date" data-fr-date="'+i+'"><legend>'+esc(label)+'</legend>'+
+      '<label>Date<input type="date" data-fr-date-part="day" value="'+selection.day+'"></label><div class="fr-editor-time">'+
+      picker('hour','Hour',Array.from({length:12},(_,i)=>String(i+1)))+
+      picker('minute','Minute',Array.from({length:60},(_,i)=>String(i).padStart(2,'0')))+
+      picker('period','AM/PM',['AM','PM'])+'</div>'+
+      (String(value??'').trim()&&!selection.day?'<small>Stored date could not be read. Enter a date to replace it.</small>':'')+'</fieldset>';
   }
   const date=t=>t===null?'Not recorded':new Intl.DateTimeFormat('en-US',{timeZone:ZONE,month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'}).format(t);
+  function displayDate(value){
+    const {time,dateOnly}=parsedDate(value);
+    return dateOnly&&time!==null?new Intl.DateTimeFormat('en-US',{timeZone:ZONE,dateStyle:'medium'}).format(time):date(time);
+  }
+  function auditDetails(action,details,headers){
+    if(!['PORTAL_EDITED','PORTAL_DELETED'].includes(action))return details;
+    try{
+      const {changes}=JSON.parse(details);
+      if(!Array.isArray(changes))return details;
+      return changes.map(({field,before,after})=>{
+        const show=value=>value===''?'Blank':dateFields.has(headers.indexOf(field))&&instant(value)!==null?displayDate(value):String(value);
+        return field+': '+show(before)+' → '+show(after);
+      }).join('\n');
+    }catch{return details;}
+  }
   function duration(start,end){if(start===null||end===null||end<start)return 'Not recorded';let sec=Math.floor((end-start)/1000);const d=Math.floor(sec/86400);sec%=86400;const h=Math.floor(sec/3600);sec%=3600;const m=Math.floor(sec/60);sec%=60;return [d?d+'d':'',h?h+'h':'',m?m+'m':'',sec||(!d&&!h&&!m)?sec+'s':''].filter(Boolean).join(' ');}
   const titles={PRESIDENT_REVIEW:'President review',TREASURER_REVIEW:'Treasurer review',BOARD_REVIEW:'Board voting',BOARD_VOTING:'Board voting',DELETED:'Deleted',FULFILLMENT_PENDING:'Awaiting fulfillment',PRESIDENT_DENIED:'Denied by President',BOARD_DENIED:'Denied by Board',CLOSED:'Closed',COMPLETED:'Completed',PAID:'Completed'};
   const actionTitles={PORTAL_EDITED:'Request edited in portal',PORTAL_DELETED:'Request deleted in portal',SUBMITTED:'Request submitted',PRESIDENT_APPROVED:'President approved',PRESIDENT_DENIED:'President denied',TREASURER_EMAIL_SENT:'Sent to Treasurer',FUNDS_VERIFIED:'Treasurer confirmed funds',FUNDS_UNAVAILABLE:'Returned to President — funds unavailable',OFFICER_BOARD_VOTES:'Two officer approvals counted as Yes votes',BOARD_VOTE_EMAILS_SENT:'Board voting opened',BOARD_APPROVED:'Board approved — majority reached',BOARD_DENIED:'Board denied',FULFILLMENT_RECORDED:'Fulfillment recorded'};
@@ -35,7 +118,7 @@
       const position=member?String(member[col('Director Position')]||'').trim():'';
       const onBoard=member&&(boardNames.has(memberName)||/^(president|vice president|srg at arms|sgt\.? at arms|sergeant at arms|treasurer|secretary|director)$/i.test(position));
       const category=test?'Test request':!roster.length?'Unverified':onBoard?'Board member':member?'Club member':'Community applicant';
-      const events=audit.slice(1).filter(a=>a[1]===id&&a[2]!=='BOARD_VOTE').map(a=>({action:a[2],title:actionTitles[a[2]]||String(a[2]).replace(/_/g,' ').toLowerCase(),by:a[3],time:instant(a[4]),details:a[5]||''}));
+      const events=audit.slice(1).filter(a=>a[1]===id&&a[2]!=='BOARD_VOTE').map(a=>({action:a[2],title:actionTitles[a[2]]||String(a[2]).replace(/_/g,' ').toLowerCase(),by:a[3],time:instant(a[4]),details:auditDetails(a[2],a[5]||'',requests[0]||[])}));
       if(!events.some(e=>e.action==='SUBMITTED'))events.push({action:'SUBMITTED',title:'Request submitted',by:r[14]||contact,time:instant(r[1]),details:'Submission timestamp from the request record.'});
       const ballots=votes.slice(1).filter(v=>v[1]===id).map(v=>{
         const cast=!!String(v[6]||'').trim();const matching=audit.slice(1).filter(a=>a[1]===id&&a[2]==='BOARD_VOTE'&&norm(a[3])===norm(v[4])&&norm(a[5])===norm(v[6]));
@@ -69,7 +152,7 @@
   }
   function requestYear(r){if(r.submitted===null)return 'Undated';return new Intl.DateTimeFormat('en-US',{timeZone:ZONE,year:'numeric'}).format(r.submitted);}
   function yearSummary(all,year){const rows=all.filter(r=>requestYear(r)===String(year)&&r.state!=='DELETED'&&!r.test);return {count:rows.length,open:rows.filter(r=>!r.closedState).length,paid:rows.reduce((sum,r)=>sum+(Number(String(r.paid||0).replace(/[$,]/g,''))||0),0)};}
-  window.BSSCFundingModel={build,instant,duration,date,editBatch,requestYear,yearSummary};
+  window.BSSCFundingModel={build,instant,duration,date,editBatch,requestYear,yearSummary,dateSelection,editedDate,dateControl,displayDate};
   if(typeof document==='undefined')return;
   const BOOK='1plh3eoqhZknnLLknAXQSH16h_ZEpRywa-SmF7XmgsR4';let generation=0;
   function open(hostId='recordsWorkspace') {
@@ -115,7 +198,7 @@
     function details(r,opener){
       const dialog=body.querySelector('[data-fr-dialog]');
       const detail=(label,value)=>'<dt>'+esc(label)+'</dt><dd>'+esc(value||'Not recorded')+'</dd>';
-      dialog.innerHTML='<header><div><span class="fr-eyebrow">'+esc(r.id)+'</span><h2>'+esc(r.subject)+'</h2><p>'+esc(r.category)+' · '+esc(r.stateLabel)+'</p></div><div class="fr-detail-actions"><button type="button" data-fr-edit>Edit</button><button type="button" data-fr-delete class="fr-danger">Delete</button><button type="button" data-fr-close aria-label="Close request details">Close ×</button></div></header><section class="fr-detail-summary"><h3>Request summary</h3><p>'+esc(r.purpose)+'</p><dl>'+detail('Assistance is for',r.recipient||'Not separately recorded on this older request')+detail('Submitted by / contact',r.contact)+detail('Organization',r.organization)+detail('Email',r.email)+detail('Phone',r.phone)+detail('Who benefits',r.benefit)+detail('Reason for support',r.justification)+detail('Requested amount',money(r.requested))+detail('President-approved amount',money(r.approved))+detail('President decision',r.president)+detail('President notes',r.presidentNotes)+detail('Treasurer funds available',r.treasurer)+detail('Treasurer notes',r.treasurerNotes)+detail('Board outcome',r.boardComments||r.board)+detail('Fulfillment',r.paymentMethod?[money(r.paid),r.paymentMethod,r.paymentRef,date(r.paidAt)].filter(Boolean).join(' · '):'Not yet recorded')+'</dl></section><section><h3>Timing</h3><div class="fr-timing"><div><span>Submitted</span><strong>'+date(r.submitted)+'</strong></div><div><span>Board decision</span><strong>'+date(r.decisionAt)+'</strong></div><div><span>Time to Board decision</span><strong>'+duration(r.submitted,r.decisionAt)+'</strong></div><div><span>Closed</span><strong>'+(r.closedState?date(r.closed):'Still open')+'</strong></div><div><span>'+(r.closedState?'Total completion time':'Elapsed so far')+'</span><strong>'+duration(r.submitted,r.closedState?r.closed:Date.now())+'</strong></div></div></section><section><h3>Board responses</h3><p class="fr-muted">Officer approvals count as Yes votes. A majority closes voting; remaining responses are no longer required.</p><div class="fr-ballots">'+(r.ballots.map(v=>'<div><strong>'+esc(v.name)+'</strong><span>'+esc(v.role)+'</span><b>'+esc(v.choice||((v.locked||r.board)?'Not needed — voting closed':'Awaiting response'))+'</b><small>'+(v.choice?date(v.time):'No vote cast')+(v.officer?' · Officer approval':'')+'</small></div>').join('')||(r.boardComments?'<p>'+esc(r.boardComments)+'</p><p>Individual voter details not recorded.</p>':'<p>Board voting has not started.</p>'))+'</div></section><section><h3>Audit trail</h3><p class="fr-muted">All times Eastern. Events are ordered by their recorded timestamp.</p><ol class="fr-timeline">'+r.events.map((event,i)=>'<li><div class="fr-event-head"><strong>'+esc(event.title)+'</strong><time>'+date(event.time)+'</time></div><p>'+esc(event.by)+'</p>'+(event.details?'<p class="fr-event-notes">'+esc(event.details)+'</p>':'')+'<small>'+ (i?'Since previous action: '+duration(r.events[i-1].time,event.time):'Start of request')+'</small></li>').join('')+'</ol></section>';
+      dialog.innerHTML='<header><div><span class="fr-eyebrow">'+esc(r.id)+'</span><h2>'+esc(r.subject)+'</h2><p>'+esc(r.category)+' · '+esc(r.stateLabel)+'</p></div><div class="fr-detail-actions"><button type="button" data-fr-edit>Edit</button><button type="button" data-fr-delete class="fr-danger">Delete</button><button type="button" data-fr-close aria-label="Close request details">Close ×</button></div></header><section class="fr-detail-summary"><h3>Request summary</h3><p>'+esc(r.purpose)+'</p><dl>'+detail('Assistance is for',r.recipient||'Not separately recorded on this older request')+detail('Submitted by / contact',r.contact)+detail('Organization',r.organization)+detail('Email',r.email)+detail('Phone',r.phone)+detail('Who benefits',r.benefit)+detail('Reason for support',r.justification)+detail('Requested amount',money(r.requested))+detail('President-approved amount',money(r.approved))+detail('President decision',r.president)+detail('President notes',r.presidentNotes)+detail('Treasurer funds available',r.treasurer)+detail('Treasurer notes',r.treasurerNotes)+detail('Board outcome',r.boardComments||r.board)+detail('Fulfillment',r.paymentMethod?[money(r.paid),r.paymentMethod,r.paymentRef,displayDate(r.raw[28])].filter(Boolean).join(' · '):'Not yet recorded')+'</dl></section><section><h3>Timing</h3><div class="fr-timing"><div><span>Submitted</span><strong>'+date(r.submitted)+'</strong></div><div><span>Board decision</span><strong>'+date(r.decisionAt)+'</strong></div><div><span>Time to Board decision</span><strong>'+duration(r.submitted,r.decisionAt)+'</strong></div><div><span>Closed</span><strong>'+(r.closedState?date(r.closed):'Still open')+'</strong></div><div><span>'+(r.closedState?'Total completion time':'Elapsed so far')+'</span><strong>'+duration(r.submitted,r.closedState?r.closed:Date.now())+'</strong></div></div></section><section><h3>Board responses</h3><p class="fr-muted">Officer approvals count as Yes votes. A majority closes voting; remaining responses are no longer required.</p><div class="fr-ballots">'+(r.ballots.map(v=>'<div><strong>'+esc(v.name)+'</strong><span>'+esc(v.role)+'</span><b>'+esc(v.choice||((v.locked||r.board)?'Not needed — voting closed':'Awaiting response'))+'</b><small>'+(v.choice?date(v.time):'No vote cast')+(v.officer?' · Officer approval':'')+'</small></div>').join('')||(r.boardComments?'<p>'+esc(r.boardComments)+'</p><p>Individual voter details not recorded.</p>':'<p>Board voting has not started.</p>'))+'</div></section><section><h3>Audit trail</h3><p class="fr-muted">All times Eastern. Events are ordered by their recorded timestamp.</p><ol class="fr-timeline">'+r.events.map((event,i)=>'<li><div class="fr-event-head"><strong>'+esc(event.title)+'</strong><time>'+date(event.time)+'</time></div><p>'+esc(event.by)+'</p>'+(event.details?'<p class="fr-event-notes">'+esc(event.details)+'</p>':'')+'<small>'+ (i?'Since previous action: '+duration(r.events[i-1].time,event.time):'Start of request')+'</small></li>').join('')+'</ol></section>';
       dialog.querySelector('[data-fr-close]').onclick=()=>dialog.close();
       dialog.querySelector('[data-fr-edit]').onclick=()=>edit(r,opener);
       dialog.querySelector('[data-fr-delete]').hidden=r.state==='DELETED';
@@ -145,6 +228,7 @@
       const fields=Array.from({length:35},(_,i)=>i).filter(i=>![0,31,32].includes(i));
       const input=i=>{
         const label=r.headers[i]||'Field '+(i+1),value=String(r.raw[i]??'');
+        if(dateFields.has(i))return dateControl(i,label,r.raw[i]);
         let control;
         if(i===2)control='<select data-fr-field="2">'+[...new Set([...stages,value])].filter(Boolean).map(v=>'<option value="'+esc(v)+'"'+(value===v?' selected':'')+'>'+esc(titles[v]||v.replace(/_/g,' '))+'</option>').join('')+'</select>';
         else if(long.has(i))control='<textarea data-fr-field="'+i+'" rows="3" maxlength="10000">'+esc(value)+'</textarea>';
@@ -154,14 +238,22 @@
       const requestFields=[34,3,4,5,6,7,8,9,10,11,12,13,14,15];
       const reviewFields=[2,33,17,18,19,20,21,22,23,24,25];
       const otherFields=fields.filter(i=>!requestFields.includes(i)&&!reviewFields.includes(i));
-      dialog.innerHTML='<header><div><span class="fr-eyebrow">'+esc(r.id)+'</span><h2>Edit request</h2></div><button type="button" data-fr-cancel>Cancel</button></header><form class="fr-editor"><p>Update the request record here. Saving does not send approval emails, cast votes, or send a payment. The reference number and original audit trail are kept.</p><h3>Person &amp; request</h3><div class="fr-editor-grid">'+requestFields.map(input).join('')+'</div><details><summary>Reviews, decisions &amp; status</summary><div class="fr-editor-grid">'+reviewFields.map(input).join('')+'</div></details><details><summary>Payment, completion &amp; other dates</summary><p>For a date and time, use ISO format, for example 2026-10-23T19:00:00Z.</p><div class="fr-editor-grid">'+otherFields.map(input).join('')+'</div></details><p data-fr-save-status role="status" aria-live="polite"></p><footer><button type="button" data-fr-cancel-bottom>Cancel</button><button type="submit" class="fr-save">Save changes</button></footer></form>';
+      dialog.innerHTML='<header><div><span class="fr-eyebrow">'+esc(r.id)+'</span><h2>Edit request</h2></div><button type="button" data-fr-cancel>Cancel</button></header><form class="fr-editor"><p>Update the request record here. Saving does not send approval emails, cast votes, or send a payment. The reference number and original audit trail are kept.</p><p>Date and time fields use Eastern Time. Time is optional.</p><h3>Person &amp; request</h3><div class="fr-editor-grid">'+requestFields.map(input).join('')+'</div><details><summary>Reviews, decisions &amp; status</summary><div class="fr-editor-grid">'+reviewFields.map(input).join('')+'</div></details><details><summary>Payment, completion &amp; other dates</summary><div class="fr-editor-grid">'+otherFields.map(input).join('')+'</div></details><p data-fr-save-status role="status" aria-live="polite"></p><footer><button type="button" data-fr-cancel-bottom>Cancel</button><button type="submit" class="fr-save">Save changes</button></footer></form>';
       const cancel=()=>details(r,opener);dialog.querySelector('[data-fr-cancel]').onclick=cancel;dialog.querySelector('[data-fr-cancel-bottom]').onclick=cancel;
       let busy=false;dialog.oncancel=event=>{if(busy)event.preventDefault();};
       dialog.querySelector('form').onsubmit=async event=>{
         event.preventDefault();if(busy)return;
         const next=r.raw.slice();dialog.querySelectorAll('[data-fr-field]').forEach(input=>{const i=Number(input.dataset.frField);next[i]=amounts.has(i)&&input.value!==''?Number(input.value):input.value;});
         if(!next[2])return;
-        const button=dialog.querySelector('.fr-save'),status=dialog.querySelector('[data-fr-save-status]');busy=true;
+        const button=dialog.querySelector('.fr-save'),status=dialog.querySelector('[data-fr-save-status]');
+        try{
+          for(const field of dialog.querySelectorAll('[data-fr-date]')){
+            const i=Number(field.dataset.frDate);
+            const selection=Object.fromEntries(Array.from(field.querySelectorAll('[data-fr-date-part]'),input=>[input.dataset.frDatePart,input.value]));
+            next[i]=editedDate(r.raw[i],selection,r.headers[i]||'Field '+(i+1));
+          }
+        }catch(error){status.textContent=error.message;return;}
+        busy=true;
         dialog.querySelectorAll('button').forEach(b=>b.disabled=true);button.textContent='Saving…';button.style.background='#9a6700';status.textContent='Saving your changes…';
         try{await save(r,next);button.style.background='#237a38';button.textContent='Saved';dialog.close();open(hostId);}
         catch(error){status.textContent='Could not save: '+error.message;button.textContent='Save changes';button.style.background='';dialog.querySelectorAll('button').forEach(b=>b.disabled=false);}

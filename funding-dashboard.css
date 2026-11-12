@@ -4,3 +4,8 @@
 .fr-years{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin:24px 0}.fr-year-card{display:block;text-align:left;background:#fff;border:1px solid #dce1e7;border-top:4px solid #b93832;border-radius:12px;padding:25px;color:#182432;font:inherit;cursor:pointer;box-shadow:0 3px 12px #14212f08}.fr-year-card:hover{border-color:#b93832;box-shadow:0 5px 18px #14212f15}.fr-year-card:focus-visible{outline:3px solid #2563eb;outline-offset:4px}.fr-year-card>span{font-size:12px;color:#5c6b7c}.fr-year-card h3{font-size:25px;margin:10px 0 22px}.fr-year-card dl{display:grid;gap:14px;margin:0 0 25px}.fr-year-card dl>div{display:flex;justify-content:space-between;gap:20px}.fr-year-card dt{color:#5c6b7c;font-size:14px}.fr-year-card dd{margin:0;font-weight:700}.fr-year-card>strong{font-size:14px;color:#a52e2a}.fr-year-back{margin:10px 0 20px;padding:10px 15px;border:1px solid #bbc5d0;border-radius:7px;background:#fff;color:#182432;cursor:pointer}.fr-years[hidden],.fr-year-back[hidden],[data-fr-year-detail][hidden]{display:none}
 
 .fr-badge.fr-club{background:#b4232c;color:#fff;border:1px solid #951b23;font-weight:700}.fr-badge.fr-community{background:#175cba;color:#fff;border:1px solid #124b99;font-weight:700}
+
+.fr-editor-date{min-width:0;margin:0;padding:0;border:0}
+.fr-editor-date legend{padding:0;margin-bottom:6px;font-weight:700}
+.fr-editor-time{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:6px}
+.fr-editor-date input,.fr-editor-time select{min-width:0;width:100%}
