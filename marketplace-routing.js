@@ -34,6 +34,7 @@
   };
   const style=document.createElement('style');
   style.textContent='.receive-customer-group{margin:24px 0;border:1px solid #bfc2c6;border-radius:14px;overflow:hidden;background:#f6f6f6}.receive-customer-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;background:#171717;color:#fff;border-left:5px solid #c8102e}.receive-customer-heading h3{margin:0;color:#fff;font-size:1.2rem}.receive-customer-heading span{color:#eee;font-size:.9rem}.receive-customer-orders{padding:0 12px}.receive-customer-orders .receive-order{margin:12px 0}';
+  style.textContent += '.receive-customer-heading{flex-wrap:wrap;column-gap:16px}.receive-customer-title{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;min-width:0}.receive-customer-heading .receive-status{padding:6px 12px;border-radius:999px;background:#49515e;color:#fff;font-size:.85rem;font-weight:800;line-height:1.3}.receive-customer-heading .receive-status.waiting{background:#c8102e}.receive-customer-heading .receive-status.delivery{background:#ffd54f;color:#302300}.receive-customer-heading .receive-status.partial{background:#245687}.receive-customer-heading .receive-status.ready,.receive-order header > .receive-status.ready{background:#79e89e;color:#10351f}';
   document.head.append(style);
   function groupCustomerOrders(){
     const target=document.getElementById('marketReceiving');if(!target)return;
@@ -57,7 +58,14 @@
       const header=document.createElement('header');header.className='receive-customer-heading';
       const heading=document.createElement('h3');heading.textContent=group.name;
       const count=document.createElement('span');count.textContent=group.orders.length+' '+(group.orders.length===1?'order':'orders')+' shown';
-      header.append(heading,count);section.append(header);
+      const titleGroup=document.createElement('div');
+      titleGroup.className='receive-customer-title';
+      titleGroup.append(heading);
+      if(group.orders.length===1){
+        const badge=group.orders[0].card.querySelector('.receive-status');
+        if(badge)titleGroup.append(badge);
+      }
+      header.append(titleGroup,count);section.append(header);
       const body=document.createElement('div');body.className='receive-customer-orders';
       group.orders.sort((a,b)=>(dateValue(a.row?.[0]).getTime()||0)-(dateValue(b.row?.[0]).getTime()||0)||String(a.id).localeCompare(String(b.id))).forEach(({card,row,id})=>{
         const title=card.querySelector('h3'),date=dateValue(row?.[0]);
