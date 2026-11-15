@@ -627,7 +627,14 @@ try{const saved=JSON.parse(localStorage.getItem('bssc-google-session-edit-v2')||
     .receive-tools input { flex:1; min-width:190px; }
     .receive-order { margin:12px 0; padding:17px 18px; border:1px solid #e0e3e8; border-left:4px solid #c8102e; border-radius:12px; box-shadow:0 2px 9px rgba(15,20,30,.035); }
     .receive-order header { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; padding-bottom:11px; }
-    .receive-order header > strong { color:#49515e; font-size:.78rem; font-weight:800; }
+    .receive-order header > .receive-status {
+      padding:6px 12px; border-radius:999px; background:#49515e; color:#fff;
+      font-size:.85rem; font-weight:800; line-height:1.3;
+    }
+    .receive-order header > .receive-status.waiting { background:#b3102b; }
+    .receive-order header > .receive-status.delivery { background:#ffd54f; color:#302300; }
+    .receive-order header > .receive-status.partial { background:#245687; }
+    .receive-order header > .receive-status.ready { background:#146438; }
     .receive-order h3 { margin:0 0 5px; font-size:1.04rem; }
     .receive-order header small,.receive-line small { color:#69717d; }
     .receive-line { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:9px 0; border-top:1px solid #edf0f2; }
@@ -5861,29 +5868,37 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const search = target.querySelector('[data-receive-search]')?.value || '';
       const filter = target.querySelector('[data-receive-filter]')?.value || 'open';
       const orders = merchandiseOrders.slice(1).filter(row => row[1] && row[4]);
-      const states = orders.map(row => ({row,state:merchandiseState(row,merchandiseLines,merchandiseEvents)}));
-      const counts = {
-        waiting:states.filter(x => !merchandiseOrderClosed(x.row) && !x.state.handed && !x.state.partial && !x.state.complete && !x.state.ready).length,
-        partial:states.filter(x => !merchandiseOrderClosed(x.row) && !x.state.handed && x.state.partial).length,
-        ready:states.filter(x => !merchandiseOrderClosed(x.row) && !x.state.handed && (x.state.complete || x.state.ready)).length,
-        handed:states.filter(x => !merchandiseOrderClosed(x.row) && x.state.handed).length,
-        cancelled:states.filter(x => merchandiseOrderClosed(x.row)).length
+      const statusLabels = {
+        waiting:'Waiting to Order', delivery:'Awaiting Delivery', partial:'Partially Received',
+        ready:'Ready for Pickup', handed:'Handed Out', cancelled:'Cancelled', removed:'Removed'
       };
+      const states = orders.map(row => {
+        const state = merchandiseState(row,merchandiseLines,merchandiseEvents);
+        const submitted = /^(true|yes|1)$/i.test(String(row[13] || '').trim());
+        let status;
+        if (merchandiseEvents.some(event => event[2] === String(row[1]) && event[1] === 'Deleted')) status = 'removed';
+        else if (merchandiseOrderClosed(row)) status = 'cancelled';
+        else if (state.handed) status = 'handed';
+        else if (state.complete || state.ready) status = 'ready';
+        else if (state.partial) status = 'partial';
+        else status = submitted ? 'delivery' : 'waiting';
+        return {row,state,status};
+      });
+      const counts = {waiting:0,delivery:0,partial:0,ready:0,handed:0,cancelled:0};
+      states.forEach(({status}) => counts[status === 'removed' ? 'cancelled' : status]++);
       const shown = states.filter(({row,state}) => {
         const match = (String(row[1])+' '+String(row[4])+' '+String(row[8])).toLowerCase().includes(search.toLowerCase());
         return match && (filter === 'all' || (filter === 'open' && !state.handed && !merchandiseOrderClosed(row)) || (filter === 'ready' && !state.handed && !merchandiseOrderClosed(row) && (state.complete || state.ready)) || (filter === 'handed' && state.handed) || (filter === 'cancelled' && merchandiseOrderClosed(row)));
       });
       target.innerHTML = `<div class="receive-summary">
-        <div>Awaiting Delivery<strong>${counts.waiting}</strong></div><div>Partially Received<strong>${counts.partial}</strong></div>
-        <div>Ready for Pickup<strong>${counts.ready}</strong></div><div>Handed Out<strong>${counts.handed}</strong></div><div>Cancelled<strong>${counts.cancelled}</strong></div></div>
+        ${Object.entries(counts).map(([status,count]) => `<div>${statusLabels[status]}<strong>${count}</strong></div>`).join('')}</div>
         <div class="receive-tools"><button type="button" data-receive-order>＋ Receive Order</button>${lastMerchandiseTickets.length ? '<button type="button" data-reprint-tickets>Reprint Last Tickets</button>' : ''}<input data-receive-search type="search" value="${esc(search)}" placeholder="Search customer, order, or item" aria-label="Search merchandise orders">
         <select data-receive-filter aria-label="Filter orders"><option value="open">Open orders</option><option value="ready">Ready for pickup</option><option value="handed">Handed out</option><option value="cancelled">Cancelled / removed</option><option value="all">All orders</option></select>
         <button type="button" data-receive-refresh>Refresh</button></div>
         <div class="receive-message" data-receive-message hidden></div>
-        ${shown.length ? shown.map(({row,state}) => {
+        ${shown.length ? shown.map(({row,state,status}) => {
           const id = String(row[1]), due = /pending|cash due/i.test(String(row[12] || ''));
-          const label = merchandiseEvents.some(event => event[2] === id && event[1] === 'Deleted') ? 'Removed' : merchandiseOrderClosed(row) ? 'Cancelled' : state.handed ? 'Handed Out' : (state.complete || state.ready ? 'Ready for Pickup' : state.partial ? 'Partially Received' : 'Awaiting Delivery');
-          return `<article class="receive-order"><header><div><h3>${esc(row[4])}</h3><small>${esc(id)} · ${esc(row[12] || 'Payment unknown')}</small></div><strong>${label}</strong></header>
+          return `<article class="receive-order"><header><div><h3>${esc(row[4])}</h3><small>${esc(id)} · ${esc(row[12] || 'Payment unknown')}</small></div><strong class="receive-status ${status}">${statusLabels[status]}</strong></header>
           ${state.items.length ? state.items.map(item => `<div class="receive-line"><span>${esc(item.item)}<br><small>Received ${item.received} of ${item.quantity}</small></span>
           ${!merchandiseOrderClosed(row) && !state.handed && item.received < item.quantity ? `<label>Qty <input type="number" min="1" max="${item.quantity-item.received}" value="${item.quantity-item.received}" data-receive-qty></label><button type="button" data-receive-item data-order="${esc(id)}" data-item="${esc(item.item)}">Receive</button>` : ''}</div>`).join('') : '<p>Item details unavailable. Check Sales History before receiving this order.</p>'}
           <div class="receive-order-actions">
