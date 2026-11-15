@@ -464,9 +464,32 @@
           state.closed?'Review the accepted nominees and eligible voter list before certifying.':'Review opens November 11 at midnight Eastern, after nominee responses close.';
         if(approved){
           const details=certification.querySelector('[data-bod-cert-details]');
-          details.innerHTML='<details><summary>View certified slate and voter list</summary><h5>Candidate slate</h5><ul>'+
-            approved.slate.map(name=>'<li>'+html(name)+'</li>').join('')+'</ul><h5>Eligible voters</h5><ul class="bod-cert-list">'+
+          const isOpen=details.querySelector('details')?.open;
+          const withdrawals=approved.withdrawals||[];
+          details.innerHTML='<details '+(isOpen?'open':'')+'><summary>View certified slate and voter list</summary><h5>Active candidate slate</h5><ul>'+
+            approved.slate.map(name=>'<li>'+html(name)+'</li>').join('')+'</ul>'+
+            (state.withdrawalsOpen&&approved.slate.length?'<details><summary>Record a candidate withdrawal</summary><form><p><label>Candidate <select name="name" required><option value="">Choose a candidate</option>'+
+              approved.slate.map(name=>'<option>'+html(name)+'</option>').join('')+'</select></label></p>'+
+              '<p><label>Withdrawal note <textarea name="note" rows="4" minlength="10" maxlength="1000" required placeholder="Record who requested the withdrawal and how they advised the club."></textarea></label></p>'+
+              '<p><label><input type="checkbox" required> I confirm this candidate asked to withdraw from the election.</label></p>'+
+              '<button type="submit">Record withdrawal</button><p role="status"></p></form></details>':'')+
+            (withdrawals.length?'<h5>Candidate withdrawal history</h5><ul>'+withdrawals.map(entry=>
+              '<li><strong>'+html(entry.name)+' · Withdrawn</strong><p>'+html(entry.note)+'</p><small>'+
+              html(new Date(entry.recordedAt).toLocaleString('en-US',{timeZone:'America/New_York',dateStyle:'medium',timeStyle:'short'}))+
+              ' ET · Recorded by '+html(entry.actor)+'</small></li>').join('')+'</ul>':'')+
+            '<h5>Eligible voters</h5><ul class="bod-cert-list">'+
             approved.voters.map(voter=>'<li>'+html(voter.name)+' · '+html(voter.email)+'</li>').join('')+'</ul></details>';
+          const form=details.querySelector('form');
+          if(form)form.onsubmit=async event=>{
+            event.preventDefault();
+            const submit=form.querySelector('[type=submit]'),message=form.querySelector('[role=status]');
+            const fields=new FormData(form);
+            submit.disabled=true;message.textContent='Recording withdrawal…';
+            try{
+              await responseApi('election-certification',context.year,{action:'withdraw',revision:approved.amendmentRevision,name:fields.get('name'),note:fields.get('note')});
+              await refreshCertification();
+            }catch(error){message.textContent=error.message;submit.disabled=false;}
+          };
         }
       }catch(error){status.textContent=error.message;button.disabled=true;}
     }
