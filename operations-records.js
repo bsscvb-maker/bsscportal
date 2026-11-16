@@ -645,6 +645,14 @@
     if(category==='Vendor Receipts'&&!selectedVendor){renderVendorFolders(host,allRows);return;}
     const rows=allRows.filter(r=>category!=='Vendor Receipts'||String(r.v[7]||'').split(' · ')[0]===selectedVendor);
     host.innerHTML='<nav class="minutes-breadcrumb"><button class="sponsor-tab" data-doc-back>← Club Records</button><button class="sponsor-tab" data-doc-refresh>Refresh</button></nav><section class="records-hero"><div><h2>'+esc(category==='Vendor Receipts'?selectedVendor+' — Receipts & Files':category)+'</h2><p style="display:block">'+esc(descriptions[category])+'</p></div></section><div class="rx-toolbar"><label class="rx-search">Find a document<input data-doc-query type="search" placeholder="Search titles, descriptions, or notes"></label><label>Status<select data-doc-status><option value="">All statuses</option>'+[...new Set(rows.map(r=>r.v[4]||'Needs review'))].sort().map(s=>'<option>'+esc(s)+'</option>').join('')+'</select></label><label>Sort<select data-doc-sort><option value="title">Title A–Z</option><option value="newest">Newest date first</option><option value="oldest">Oldest date first</option></select></label></div><p data-doc-count role="status"></p><div class="rx-grid" data-doc-results></div><div data-club-editor></div>';
+    if(category==='Purchase Evidence'&&accessToken){
+      const add=document.createElement('button');
+      add.type='button';
+      add.className='open-btn';
+      add.textContent='+ Add Purchase Evidence';
+      add.onclick=()=>editClubRecord('records');
+      host.querySelector('.minutes-breadcrumb').append(add);
+    }
     const paint=()=>{
       const q=host.querySelector('[data-doc-query]').value.trim().toLowerCase(),status=host.querySelector('[data-doc-status]').value,sort=host.querySelector('[data-doc-sort]').value;
       const selected=rows.filter(({v})=>(!status||(v[4]||'Needs review')===status)&&[v[1],v[7],purpose(v)].join(' ').toLowerCase().includes(q)).sort((a,b)=>{
