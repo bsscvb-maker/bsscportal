@@ -10,6 +10,37 @@
   const filters = document.querySelector("#filters");
   const originalHero = document.querySelector(".hero-banner");
   if (!catalog || !filters || !originalHero || typeof INVENTORY === "undefined") return;
+  const descriptions = {
+    "big-lick-pin": "Show your BoneShakers pride with the BSSC lapel pin. Wear it on a jacket or vest, or add it to your club memorabilia collection.",
+    "bssc-logo-sticker": "Put the BoneShakers Social Club emblem on your toolbox, gear case, or another smooth surface with this club logo sticker.",
+    "bssc-motorcycle-flag": "Fly the BoneShakers colors on your next ride. This black 12 × 18-inch motorcycle flag features the club’s white skull and crossbones, red accents, and Est. 2005 lettering.",
+    "bft-motorcycle-flag": "Celebrate BoneShakers’ Virginia Beach bicycle giveaway with this black 12 × 18-inch motorcycle flag. The club skull sits above colorful Bikes for Tykes lettering and two kids on bicycles.",
+    "bssc-ring": "Wear your BoneShakers affiliation with a club ring made to your selected size. Allow approximately 1–2 months for processing.",
+    "anniv-20-patch": "Mark 20 years of BoneShakers Social Club with this anniversary patch. Add it to a vest or jacket, or keep it with your club memorabilia.",
+    "challenge-coin": "Commemorate Bikes for Tykes, BoneShakers’ bicycle giveaway for local children, with this collectible challenge coin. Keep it on display or give it to a fellow supporter.",
+  };
+  const flagImages = {
+    "bssc-motorcycle-flag": "bssc-motorcycle-flag-12x18.svg",
+    "bft-motorcycle-flag": "bikes-for-tykes-motorcycle-flag-12x18.svg",
+  };
+  const imageBase = new URL(".", document.currentScript.src);
+  function refreshAccessoryProducts() {
+    const bftId = "bft-motorcycle-flag";
+    if (!INVENTORY.some(product => product.id === bftId)) {
+      INVENTORY.push({ id: bftId, name: "Bikes for Tykes Motorcycle Flag", category: "Accessories", visible: true, price: 0, stock: {} });
+    }
+    for (const product of INVENTORY) {
+      if (descriptions[product.id]) product.description = descriptions[product.id];
+      const artwork = flagImages[product.id];
+      if (!artwork) continue;
+      product.img = new URL(artwork, imageBase).href;
+      product.sizes = ["12 × 18 in"];
+      product.oneSize = true;
+      product.hasColors = false;
+      PICTURES_WITHOUT_TITLES.add(product.id);
+    }
+  }
+  refreshAccessoryProducts();
   const newElement = (tag, className, value) => {
     const element = document.createElement(tag);
     if (className) element.className = className;
@@ -44,6 +75,8 @@
     .market-category-result {font-size:.9rem}
     #catalog .product .imgwrap {width:100%;aspect-ratio:1}
     #catalog .product h3 {line-height:1.22}
+    #catalog .market-unpriced-flag :is(.optrow,.stockline,[data-help],.addBtn,.soldout) {display:none!important}
+    #productModal:has(.market-unpriced-flag) :is(.product-modal-options,.stockline,#modalHelp,#modalAddBtn) {display:none!important}
     .market-flag-placeholder {display:grid;align-content:center;justify-items:center;text-align:center;padding:24px;min-height:240px;border-style:dashed}
     .market-flag-placeholder p {color:#ccc;margin:0}
     @media(max-width:700px){.market-category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.market-category-caption{padding:12px}.market-category-sub{font-size:.78rem}}
@@ -119,7 +152,9 @@
     }
   }
 
-  const accessoryOrder = ["big-lick-pin", "bssc-logo-sticker", "bssc-motorcycle-flag", "flag-3x5", "bssc-ring", "anniv-20-patch", "challenge-coin"];
+  const accessoryOrder = ["big-lick-pin", "bssc-logo-sticker", "bssc-motorcycle-flag", "bft-motorcycle-flag", "flag-3x5", "bssc-ring", "anniv-20-patch", "challenge-coin"];
+  const isUnpricedFlag = product => Boolean(product && flagImages[product.id] &&
+    priceFor(product, product.sizes[0]) <= 0);
   function arrangeAccessories() {
     const cards = new Map([...catalog.querySelectorAll("article [data-open-product]")]
       .map(element => [element.dataset.openProduct, element.closest("article")]));
@@ -127,12 +162,19 @@
       const placeholder = newElement("article", "card product market-flag-placeholder");
       placeholder.dataset.category = "Accessories";
       placeholder.append(newElement("h3", "", "BoneShakers 3 × 5 ft Flag"),
+        newElement("p", "", "A full-size BoneShakers Social Club flag for the garage, clubhouse, or club events."),
         newElement("p", "", "Coming soon"));
       cards.set("flag-3x5", placeholder);
     }
     for (const id of accessoryOrder) {
       const card = cards.get(id);
-      if (card) catalog.append(card);
+      if (!card) continue;
+      const product = INVENTORY.find(product => product.id === id);
+      if (isUnpricedFlag(product)) {
+        card.classList.add("market-unpriced-flag");
+        card.querySelector(".price").textContent = "Price coming soon";
+      }
+      catalog.append(card);
     }
   }
   function updateVisibility() {
@@ -219,15 +261,27 @@
 
   const existingRender = renderCatalog;
   renderCatalog = function () {
+    refreshAccessoryProducts();
     existingRender();
     arrangeAccessories();
     updateVisibility();
+  };
+  const existingModalStock = updateModalStock;
+  updateModalStock = function () {
+    existingModalStock();
+    const product = INVENTORY.find(product => product.id === MODAL_PRODUCT_ID);
+    const unpriced = isUnpricedFlag(product);
+    document.querySelector("#modalProductImage").parentElement.classList.toggle("market-unpriced-flag", unpriced);
+    if (unpriced) {
+      document.querySelector("#modalProductPrice").textContent = "Price coming soon";
+      document.querySelector("#modalAddBtn").disabled = true;
+    }
   };
   function applyUrl(moveFocus) {
     const params = new URLSearchParams(host === window ? "" : host.location.search);
     navigate(byId(params.get("category")), false, moveFocus);
   }
-  arrangeAccessories();
+  renderCatalog();
   applyUrl(false);
   if (host !== window) host.addEventListener("popstate", () => applyUrl(true));
 
