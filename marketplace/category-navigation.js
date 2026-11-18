@@ -44,6 +44,8 @@
     .market-category-result {font-size:.9rem}
     #catalog .product .imgwrap {width:100%;aspect-ratio:1}
     #catalog .product h3 {line-height:1.22}
+    .market-flag-placeholder {display:grid;align-content:center;justify-items:center;text-align:center;padding:24px;min-height:240px;border-style:dashed}
+    .market-flag-placeholder p {color:#ccc;margin:0}
     @media(max-width:700px){.market-category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.market-category-caption{padding:12px}.market-category-sub{font-size:.78rem}}
     @media(max-width:360px){.market-category-grid{grid-template-columns:1fr}}
     @media(prefers-reduced-motion:reduce){.market-categories *{scroll-behavior:auto!important}}
@@ -117,6 +119,22 @@
     }
   }
 
+  const accessoryOrder = ["big-lick-pin", "bssc-logo-sticker", "bssc-motorcycle-flag", "flag-3x5", "bssc-ring", "anniv-20-patch", "challenge-coin"];
+  function arrangeAccessories() {
+    const cards = new Map([...catalog.querySelectorAll("article [data-open-product]")]
+      .map(element => [element.dataset.openProduct, element.closest("article")]));
+    if (!cards.has("flag-3x5")) {
+      const placeholder = newElement("article", "card product market-flag-placeholder");
+      placeholder.dataset.category = "Accessories";
+      placeholder.append(newElement("h3", "", "BoneShakers 3 × 5 ft Flag"),
+        newElement("p", "", "Coming soon"));
+      cards.set("flag-3x5", placeholder);
+    }
+    for (const id of accessoryOrder) {
+      const card = cards.get(id);
+      if (card) catalog.append(card);
+    }
+  }
   function updateVisibility() {
     const products = [...catalog.querySelectorAll("article[data-category]")];
     let matches = 0;
@@ -202,12 +220,14 @@
   const existingRender = renderCatalog;
   renderCatalog = function () {
     existingRender();
+    arrangeAccessories();
     updateVisibility();
   };
   function applyUrl(moveFocus) {
     const params = new URLSearchParams(host === window ? "" : host.location.search);
     navigate(byId(params.get("category")), false, moveFocus);
   }
+  arrangeAccessories();
   applyUrl(false);
   if (host !== window) host.addEventListener("popstate", () => applyUrl(true));
 
