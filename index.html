@@ -8376,10 +8376,16 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const close=()=>{modal.remove();document.removeEventListener('keydown',onKey);},onKey=e=>{if(e.key==='Escape')close();};
       modal.querySelector('.attendance-entry-close').addEventListener('click',close);modal.querySelector('.attendance-entry-cancel').addEventListener('click',close);modal.addEventListener('click',e=>{if(e.target===modal)close();});document.addEventListener('keydown',onKey);
       const select=modal.querySelector('#attendanceEventSelect'),next=modal.querySelector('.attendance-entry-next'),roster=modal.querySelector('#attendanceEntryRoster');
+      const passengerNames=new Set([
+        'tony biffle','toni biffle','debbie farland','debby farland',
+        'nicole fleck','tracy hatfield','lorraine hennings','larraine henning',
+        'missy chilton','amy melfi','amy melfy','teresa stevens'
+      ]);
+      const passengerRows=new Set(members.filter(m=>passengerNames.has(norm(m.first+' '+m.last))).map(m=>String(m.row)));
       const memberMotorcycles=modal.querySelector('[data-turnout-row="80"]');
       let autoCountMotorcycles=true;
       memberMotorcycles.addEventListener('input',()=>{autoCountMotorcycles=false;});
-      const count=()=>{const selected=modal.querySelectorAll('.attendance-person-check:checked').length,guests=Number(modal.querySelector('[data-turnout-row="75"]').value)||0;if(autoCountMotorcycles)memberMotorcycles.value=String(selected);modal.querySelector('#attendanceSelectedCount').textContent=selected+' of '+members.length+' marked present';modal.querySelector('#attendanceTotalCount').textContent='Total: '+(selected+guests)+' people';modal.querySelectorAll('.attendance-group-block').forEach(group=>group.querySelector('.attendance-group-selected').textContent=group.querySelectorAll('.attendance-person-check:checked').length+' selected');};
+      const count=()=>{const checked=[...modal.querySelectorAll('.attendance-person-check:checked')],selected=checked.length,guests=Number(modal.querySelector('[data-turnout-row="75"]').value)||0;if(autoCountMotorcycles)memberMotorcycles.value=String(checked.filter(input=>!passengerRows.has(input.dataset.sheetRow)).length);modal.querySelector('#attendanceSelectedCount').textContent=selected+' of '+members.length+' marked present';modal.querySelector('#attendanceTotalCount').textContent='Total: '+(selected+guests)+' people';modal.querySelectorAll('.attendance-group-block').forEach(group=>group.querySelector('.attendance-group-selected').textContent=group.querySelectorAll('.attendance-person-check:checked').length+' selected');};
       select.addEventListener('change',()=>next.disabled=!select.value);
       next.addEventListener('click',()=>{const event=events.find(e=>String(e.column)===select.value);if(!event||next.disabled)return;modal.querySelector('#attendanceSelectedEvent').textContent=event.label;modal.querySelector('#attendanceEntryStep').hidden=true;roster.hidden=false;modal.querySelectorAll('.attendance-person-check').forEach(input=>{const member=members.find(m=>m.row===Number(input.dataset.sheetRow)),value=String(member.values[event.column-1]||'').trim().toLowerCase();input.checked=value==='yes'||value==='hangaround';});turnoutFields.forEach(f=>{modal.querySelector('[data-turnout-row="'+f.row+'"]').value=String((rows[f.row-1]||[])[event.column-1]||'0').trim();});autoCountMotorcycles=String(rows[79]?.[event.column-1]??'').trim()==='';count();});
       modal.addEventListener('input',e=>{if(e.target.matches('[data-turnout-row]'))count();});
