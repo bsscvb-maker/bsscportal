@@ -7793,7 +7793,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       'Dashboard 2026':{range:"'Dashboard 2026'!A1:Z80",columns:26,dashboard:true,group:'Current'},
       '2027 Attendance Summary':{range:"'Dashboard 2027'!A1:P80",columns:16,attendanceSummary:true,group:'Current'},
       '2026 Attendance Summary':{range:"'Dashboard 2026'!A1:P80",columns:16,attendanceSummary:true,group:'Current'},
-      '2026-Attendance':{range:"'2026-Attendance'!A1:BP65",columns:68,editable:true,group:'Current'},
+      '2026-Attendance':{range:"'2026-Attendance'!A1:BP86",columns:68,editable:true,group:'Current'},
       '2027 Attendance Dashboard':{range:"'2027-Attendance'!A1:BP103",columns:68,attendanceDashboard:true,group:'Current'},
       '2026 Attendance Dashboard':{range:"'2026-Attendance'!A1:BP103",columns:68,attendanceDashboard:true,group:'Current'},
       '2026':{range:"'2026'!A1:AH855",columns:34,editable:true,group:'Current'},
@@ -8352,25 +8352,32 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         if(!label || /(?:750.*ride|ride.*750|20\d{2} Events Attended)/i.test(label))continue;
         const match=label.match(/\b(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
         const date=match?match[3]+'-'+match[1].padStart(2,'0')+'-'+match[2].padStart(2,'0'):'';
-        events.push({column:col,label,date});
+        const responses=members.map(member=>norm(member.values[col-1]));
+        const recorded=responses.some(value=>value==='yes'||value==='hangaround')||
+          responses.filter(value=>value==='no').length>1||
+          [75,80,81,82,83].some(row=>Number(rows[row-1]?.[col-1])>0);
+        events.push({column:col,label,date,recorded});
       }
-      const upcoming=events.filter(e=>e.date>=today).sort((a,b)=>a.date.localeCompare(b.date));
-      const past=events.filter(e=>e.date&&e.date<today).sort((a,b)=>b.date.localeCompare(a.date));
+      const byDate=(a,b)=>a.date.localeCompare(b.date);
+      const recent=events.filter(e=>e.date&&e.date<today&&!e.recorded).sort(byDate);
+      const upcoming=events.filter(e=>e.date>=today).sort(byDate);
+      const recorded=events.filter(e=>e.date&&e.date<today&&e.recorded).sort((a,b)=>byDate(b,a));
       const undated=events.filter(e=>!e.date);
       if(!events.length){alert('No 2026 event columns found. No attendance cells changed.');return;}
-      const eventGroup=(name,list,disabled=false)=>list.length?'<optgroup label="'+name+'">'+list.map(e=>'<option value="'+e.column+'"'+(disabled?' disabled':'')+'>'+esc(e.label)+'</option>').join('')+'</optgroup>':'';
-      const options=eventGroup('Today and upcoming',upcoming)+eventGroup('Past events',past,true)+eventGroup('Date unavailable',undated,true);
+      const eventGroup=(name,list,style='')=>list.length?'<optgroup label="'+name+'">'+list.map(e=>'<option value="'+e.column+'"'+(style?' style="'+style+'"':'')+'>'+esc(e.label)+'</option>').join('')+'</optgroup>':'';
+      const options=eventGroup('Recent · attendance needed',recent)+eventGroup('Upcoming',upcoming,'font-weight:700')+
+        eventGroup('Attendance recorded',recorded,'color:#666')+eventGroup('Date unavailable',undated);
       const categories=Object.keys(groups).map((name,i)=>'<details class="attendance-group-block"'+(i<4?' open':'')+'><summary><span>'+esc(name)+'</span><strong class="attendance-group-selected" aria-live="polite">0 selected</strong><b>'+groups[name].length+'</b><small>members</small><span class="attendance-group-tools"><button type="button" data-group-action="all">All</button><button type="button" data-group-action="none">None</button></span></summary><div class="attendance-group-people">'+(groups[name].map(m=>'<label class="attendance-person"><input type="checkbox" class="attendance-person-check" data-sheet-row="'+m.row+'"><span class="attendance-person-name">'+esc(m.first+' '+m.last)+'</span><span class="attendance-person-meta">'+esc(m.classification)+'</span></label>').join('')||'<p>No members in this group.</p>')+'</div></details>').join('');
       const turnoutFields=[{row:80,label:'Member motorcycles'},{row:82,label:'Member cages'},{row:75,label:'Guest count'},{row:81,label:'Guest motorcycles'},{row:83,label:'Guest cages'}];
       const turnoutHTML='<section class="attendance-turnout"><h3>Guests, motorcycles &amp; cages</h3><div class="attendance-turnout-fields">'+turnoutFields.map(f=>'<label'+(f.row===75?' class="attendance-guest-count"':'')+'>'+f.label+'<input type="number" min="0" step="1" value="0" required data-turnout-row="'+f.row+'"></label>').join('')+'</div></section>';
       const modal=document.createElement('div');modal.id='attendanceEntryModal';modal.className='attendance-entry-overlay';
-      modal.innerHTML='<div class="attendance-entry-dialog" role="dialog" aria-modal="true" aria-labelledby="attendanceEntryTitle"><header class="attendance-entry-header"><div><span class="attendance-entry-eyebrow">2026 · MEMBERSHIP</span><h2 id="attendanceEntryTitle">Record event attendance</h2></div><button type="button" class="attendance-entry-close" aria-label="Close">×</button></header><div class="attendance-entry-step" id="attendanceEntryStep"><label for="attendanceEventSelect">1 · Choose the event</label><select id="attendanceEventSelect"><option value="">Choose a 2026 event…</option>'+options+'</select><p>Past events appear below upcoming events. To edit a past event, open it from the Attendance Dashboard.</p><button type="button" class="attendance-entry-next" disabled>Continue to roster →</button></div><div class="attendance-entry-roster" id="attendanceEntryRoster" hidden><div class="attendance-entry-selected-event"><span>Selected event</span><strong id="attendanceSelectedEvent"></strong></div><div class="attendance-entry-roster-top"><p>Check each attendee. Unchecked members will be marked <strong>No</strong> after confirmation.</p><div class="attendance-entry-roster-actions"><button type="button" data-roster-action="all">Check all</button><button type="button" data-roster-action="none">Clear all</button></div></div><div class="attendance-entry-groups">'+categories+'</div>'+turnoutHTML+'<footer class="attendance-entry-footer"><span id="attendanceSelectedCount"></span><strong id="attendanceTotalCount" aria-live="polite"></strong><div><button type="button" class="attendance-entry-cancel">Cancel</button><button type="button" class="attendance-entry-save">Review &amp; save</button></div></footer></div></div>';
+      modal.innerHTML='<div class="attendance-entry-dialog" role="dialog" aria-modal="true" aria-labelledby="attendanceEntryTitle"><header class="attendance-entry-header"><div><span class="attendance-entry-eyebrow">2026 · MEMBERSHIP</span><h2 id="attendanceEntryTitle">Record event attendance</h2></div><button type="button" class="attendance-entry-close" aria-label="Close">×</button></header><div class="attendance-entry-step" id="attendanceEntryStep"><label for="attendanceEventSelect">1 · Choose the event</label><select id="attendanceEventSelect"><option value="">Choose a 2026 event…</option>'+options+'</select><p>Recent events that need attendance appear first. You can still select and edit events with attendance already recorded.</p><button type="button" class="attendance-entry-next" disabled>Continue to roster →</button></div><div class="attendance-entry-roster" id="attendanceEntryRoster" hidden><div class="attendance-entry-selected-event"><span>Selected event</span><strong id="attendanceSelectedEvent"></strong></div><div class="attendance-entry-roster-top"><p>Check each attendee. Unchecked members will be marked <strong>No</strong> after confirmation.</p><div class="attendance-entry-roster-actions"><button type="button" data-roster-action="all">Check all</button><button type="button" data-roster-action="none">Clear all</button></div></div><div class="attendance-entry-groups">'+categories+'</div>'+turnoutHTML+'<footer class="attendance-entry-footer"><span id="attendanceSelectedCount"></span><strong id="attendanceTotalCount" aria-live="polite"></strong><div><button type="button" class="attendance-entry-cancel">Cancel</button><button type="button" class="attendance-entry-save">Review &amp; save</button></div></footer></div></div>';
       document.body.appendChild(modal);
       const close=()=>{modal.remove();document.removeEventListener('keydown',onKey);},onKey=e=>{if(e.key==='Escape')close();};
       modal.querySelector('.attendance-entry-close').addEventListener('click',close);modal.querySelector('.attendance-entry-cancel').addEventListener('click',close);modal.addEventListener('click',e=>{if(e.target===modal)close();});document.addEventListener('keydown',onKey);
       const select=modal.querySelector('#attendanceEventSelect'),next=modal.querySelector('.attendance-entry-next'),roster=modal.querySelector('#attendanceEntryRoster');
       const count=()=>{const selected=modal.querySelectorAll('.attendance-person-check:checked').length,guests=Number(modal.querySelector('[data-turnout-row="75"]').value)||0;modal.querySelector('#attendanceSelectedCount').textContent=selected+' of '+members.length+' marked present';modal.querySelector('#attendanceTotalCount').textContent='Total: '+(selected+guests)+' people';modal.querySelectorAll('.attendance-group-block').forEach(group=>group.querySelector('.attendance-group-selected').textContent=group.querySelectorAll('.attendance-person-check:checked').length+' selected');};
-      select.addEventListener('change',()=>next.disabled=!select.value||(select.selectedOptions[0].disabled&&select.value!==String(selectedEventColumn)));
+      select.addEventListener('change',()=>next.disabled=!select.value);
       next.addEventListener('click',()=>{const event=events.find(e=>String(e.column)===select.value);if(!event||next.disabled)return;modal.querySelector('#attendanceSelectedEvent').textContent=event.label;modal.querySelector('#attendanceEntryStep').hidden=true;roster.hidden=false;modal.querySelectorAll('.attendance-person-check').forEach(input=>{const member=members.find(m=>m.row===Number(input.dataset.sheetRow)),value=String(member.values[event.column-1]||'').trim().toLowerCase();input.checked=value==='yes'||value==='hangaround';});turnoutFields.forEach(f=>{modal.querySelector('[data-turnout-row="'+f.row+'"]').value=String((rows[f.row-1]||[])[event.column-1]||'0').trim();});count();});
       modal.addEventListener('input',e=>{if(e.target.matches('[data-turnout-row]'))count();});
       modal.addEventListener('change',e=>{if(e.target.classList.contains('attendance-person-check'))count();});
@@ -8547,7 +8554,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         }
         else {
           const editOptions = config.editable ? {sheetName,spreadsheetId:MEMBERSHIP_SPREADSHEET_ID,formulaRows:formulasOrRoster} : null;
-          renderDataTable('membershipContent','membershipStatus',rows,0,sheetName === 'Lifer' ? 8 : config.columns,editOptions);
+          renderDataTable('membershipContent','membershipStatus',sheetName === '2026-Attendance' ? rows.slice(0,65) : rows,0,sheetName === 'Lifer' ? 8 : config.columns,editOptions);
           if (sheetName === '2026-Attendance') addAttendanceEntryLauncher(rows);
           if (sheetName === '2027') {
             await setup2027DuesReview(rows);
