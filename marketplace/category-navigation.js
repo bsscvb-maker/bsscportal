@@ -3,9 +3,7 @@
     { id: "apparel", title: "Apparel", categories: ["Men's Apparel", "Women's Apparel", "Unisex Apparel"], picture: "mens-short-sleeve", subtitle: "T-shirts, tanks and hoodies" },
     { id: "headwear", title: "Headwear", categories: ["Headwear"], picture: "flexfit-hat", subtitle: "Hats, visors and beanies" },
     { id: "drinkware", title: "Drinkware & Coozies", categories: ["Drinkware"], picture: "standard-can-koozie", subtitle: "Can and bottle coozies" },
-    { id: "patches-pins", title: "Patches & Pins", categories: ["Patches & Pins"], picture: "anniv-20-patch", subtitle: "Club patches and lapel pins" },
-    { id: "challenge-coins", title: "Challenge Coins", categories: ["Coins"], picture: "challenge-coin", subtitle: "Club and charity collectibles" },
-    { id: "accessories", title: "Accessories", categories: ["Accessories"], picture: "bssc-motorcycle-flag", subtitle: "Flags, rings and stickers" },
+    { id: "accessories", title: "Accessories & Collectibles", categories: ["Accessories", "Patches & Pins", "Coins"], picture: "anniv-20-patch", subtitle: "Patches, pins, challenge coins, flags and more" },
   ];
   const all = { id: "all", title: "All Products" };
   const catalog = document.querySelector("#catalog");
@@ -27,15 +25,14 @@
     .market-categories h2 {font-size:clamp(1.8rem,4vw,3.2rem);font-weight:850}
     .market-categories p {margin:10px 0 0;color:#cdcdcd}
     .market-shop-intro {padding:clamp(24px,5vw,60px);border:1px solid #353030;border-radius:20px;background:radial-gradient(ellipse at 98% 0%,#431712 0%,transparent 66%),linear-gradient(120deg,#191414,#0a0a0a);margin:0 0 22px}
-    .market-category-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+    .market-category-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
     .market-category-card {appearance:none;display:flex;flex-direction:column;min-width:0;overflow:hidden;width:100%;padding:0;border:1px solid #323232;border-radius:16px;color:#fff;background:#111;text-align:left;font:inherit;cursor:pointer}
     .market-category-card:hover,.market-category-card:focus-visible {border-color:#e26760;background:#191414}
-    .market-category-photo {aspect-ratio:16/9;width:100%;position:relative;display:grid;place-items:center;background:radial-gradient(ellipse,#201d1d,#090909);overflow:hidden}
+    .market-category-photo {aspect-ratio:2/1;width:100%;position:relative;display:grid;place-items:center;background:radial-gradient(ellipse,#201d1d,#090909);overflow:hidden}
     .market-category-photo img {width:100%;height:100%;position:absolute;inset:0;object-fit:contain}
-    .market-category-caption {padding:14px 17px 17px;display:grid;width:100%;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center}
+    .market-category-caption {padding:14px 17px 17px;display:grid;width:100%;gap:4px}
     .market-category-name {font-size:clamp(1rem,2vw,1.18rem);font-weight:800;line-height:1.25}
     .market-category-sub {color:#c3c3c3;font-size:.86rem;grid-column:1}
-    .market-category-arrow {color:#ff8077;font-size:1.23rem;grid-column:2;grid-row:1/3}
     .market-category-actions,.market-category-tabs {display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}
     .market-category-actions button,.market-category-tabs button {background:#171717;color:#fff;border:1px solid #424242;border-radius:999px;padding:8px 14px;min-height:42px;font:inherit;font-size:.88rem;font-weight:700;cursor:pointer}
     .market-category-actions button:hover,.market-category-tabs button:hover {border-color:#e26760}
@@ -97,7 +94,10 @@
     control.addEventListener("click", action);
     return control;
   };
-  const byId = id => [all, ...groups].find(group => group.id === id) ?? null;
+  const byId = id => {
+    const categoryId = ["patches-pins", "challenge-coins"].includes(id) ? "accessories" : id;
+    return [all, ...groups].find(group => group.id === categoryId) ?? null;
+  };
   function routeUrl(group) {
     const url = new URL(host === window ? "https://boneshakerssocialclub.com/marketplace" : host.location.href);
     if (group) url.searchParams.set("category", group.id);
@@ -182,9 +182,7 @@
       photo.append(img);
     }
     const caption = newElement("span", "market-category-caption");
-    const arrow = newElement("span", "market-category-arrow", "→");
-    arrow.setAttribute("aria-hidden", "true");
-    caption.append(newElement("span", "market-category-name", group.title), newElement("span", "market-category-sub", group.subtitle), arrow);
+    caption.append(newElement("span", "market-category-name", group.title), newElement("span", "market-category-sub", group.subtitle));
     tile.append(photo, caption);
     tiles.append(tile);
     const tab = button(group.title, () => navigate(group));
