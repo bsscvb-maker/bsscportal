@@ -2084,11 +2084,11 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 #dashboard #operationsOverviewCards{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));gap:0!important;border:1px solid #47433e;border-radius:12px;background:linear-gradient(135deg,#1b1c1d,#0d0e0f);overflow:hidden;padding:0!important;scroll-snap-type:none}
 #dashboard #operationsOverviewCards .operations-kpi{position:relative;display:grid!important;grid-template-rows:subgrid;grid-row:span 3;gap:0!important;min-width:0;min-height:0!important;padding:27px 18px 25px!important;border:0;border-radius:0;background:transparent!important;box-shadow:none;flex:none!important;color:#f7f4ef;text-align:center!important}
 #dashboard #operationsOverviewCards .operations-kpi:not(:last-child):after{content:'';position:absolute;right:0;top:32px;bottom:30px;width:1px;background:#ffffff22}
-#dashboard #operationsOverviewCards .operations-kpi:nth-child(4){background:linear-gradient(#c61b331c,transparent)!important;border-top:5px solid #cf1637;padding-top:22px!important}
+
 #dashboard #operationsOverviewCards .operations-kpi>.command-kpi-heading{display:flex;flex-direction:column;justify-content:flex-start;align-items:center;gap:14px;min-height:122px;padding:0 0 18px;line-height:1.4;color:#d5ab87;font-size:clamp(10px,.78vw,13px);letter-spacing:.075em}
 #dashboard .command-icon{display:grid;place-items:center;width:60px;height:60px;flex:0 0 60px;border:1.5px solid #ba8d69;border-radius:50%;color:#d5ab87;font-style:normal}
 #dashboard .command-icon svg{width:32px;height:32px}
-#dashboard #operationsOverviewCards .operations-kpi:nth-child(4)>.command-kpi-heading,#dashboard #operationsOverviewCards .operations-kpi:nth-child(4) .command-icon{color:#ff3858;border-color:#d82141}
+#dashboard #operationsOverviewCards .operations-kpi:nth-child(4) .command-icon{color:#ff3858;border-color:#d82141}
 #dashboard #operationsOverviewCards .operations-kpi>strong{display:block;font-size:clamp(23px,2.1vw,38px);line-height:1.2;white-space:nowrap;overflow-wrap:normal;font-variant-numeric:tabular-nums;letter-spacing:-.04em;color:#fff;margin:0;padding:7px 0 20px;align-self:start}
 #dashboard #operationsOverviewCards .operations-kpi>small,#dashboard #operationsOverviewCards .operations-kpi>.operations-membership-breakdown,#dashboard #operationsOverviewCards .operations-kpi>.operations-fund-breakdown{margin:0;padding-top:18px;border-top:1px solid #ffffff25;align-self:start;font-size:13px;line-height:1.5;color:#d1ceca;letter-spacing:0}
 #dashboard #operationsOverviewCards .operations-kpi:nth-child(5)>strong{padding-bottom:20px}
@@ -2097,7 +2097,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 #dashboard .operations-fund-breakdown b{color:#fff;font-size:13px}
 #dashboard .operations-membership-breakdown{display:grid;gap:7px}
 #dashboard .operations-membership-breakdown span{color:#d1ceca;font-size:12px;letter-spacing:0;text-transform:none;font-weight:400}
-#dashboard .operations-membership-breakdown b{color:#ff3655;font-size:15px;margin-left:6px}
+#dashboard .operations-membership-breakdown b{color:#fff;font-size:15px;margin-left:6px}
 #dashboard .command-goal[hidden]{display:none!important}
 #dashboard .command-goal{margin:16px 0 0;padding:23px 26px;border:1px solid #b2243a;border-radius:12px;background:linear-gradient(115deg,#251519 0%,#141415 45%,#0c0d0e 100%)}
 #dashboard .command-goal-top{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;color:#c9c5c2;font-size:13px}
@@ -2183,7 +2183,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
               <article class="operations-kpi"><span>Membership</span><strong>—</strong><small>Sign in to load the latest count.</small></article>
               <article class="operations-kpi"><span>Cash on Hand</span><strong>—</strong></article>
               <article class="operations-kpi"><span>Lifetime Community Impact</span><strong>—</strong></article>
-              <article class="operations-kpi"><span>Bikes for Tykes Raised to Date 2026</span><strong>—</strong><small>Fundraising progress</small></article>
+              <article class="operations-kpi"><span>Bikes for Tykes Raised to Date</span><strong>—</strong><small>Fundraising progress</small></article>
               <article class="operations-kpi"><span>Marketplace Cash to Collect</span><strong>—</strong></article>
             </div>
             <section class="command-goal" id="commandGoal" aria-label="Bikes for Tykes fundraising goal" hidden></section>
@@ -3187,7 +3187,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         membershipCard,
         `<article class="operations-kpi"><span>Cash on Hand</span><strong>${esc(String(financeRows[6]?.[1] || '—'))}</strong><div class="operations-fund-breakdown"><div>Bikes for Tykes <b>${esc(fundBalance(financeRows[11]?.[5]))}</b></div><div>General Fund <b>${esc(fundBalance(financeRows[11]?.[1]))}</b></div></div></article>`,
         `<article class="operations-kpi"><span>Lifetime Community Impact</span><strong>${esc(String(financeRows[6]?.[5] || '—'))}</strong><div class="operations-fund-breakdown"><div>2025 Full Year <b>${esc(fundBalance(impactRows[25]?.[4]))}</b></div><div>2026 Year to Date <b>${esc(fundBalance(impactRows[27]?.[1]))}</b></div></div></article>`,
-        statsCard('BFT Raised to Date',bftRaised,[['Fundraising costs',bftTotals ? money(bftTotals.expenses) : '—',false],['Net raised',bftTotals ? money(bftTotals.available) : '—',!!bftTotals && bftTotals.available > 0]]),
+        statsCard('Bikes for Tykes Raised to Date',bftRaised,[['Fundraising costs',bftTotals ? money(bftTotals.expenses) : '—',false],['Net raised',bftTotals ? money(bftTotals.available) : '—',!!bftTotals && bftTotals.available > 0]]),
         statsCard('Marketplace Cash to Collect',marketplaceDue ? money(marketplaceDue) : 'Unavailable',[['Net profit',marketplaceProfit !== null ? money(marketplaceProfit) : '—',marketplaceProfit > 0],['Profit margin',marketplaceMargin,marketplaceProfit > 0]])
       ];
       const commandIcons = [
