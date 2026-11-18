@@ -1,10 +1,17 @@
 (() => {
   const groups = [
-    { id: "apparel", title: "Apparel", categories: ["Men's Apparel", "Women's Apparel", "Unisex Apparel"], picture: "mens-short-sleeve", subtitle: "T-shirts, tanks and hoodies" },
-    { id: "headwear", title: "Headwear", categories: ["Headwear"], picture: "flexfit-hat", subtitle: "Hats, visors and beanies" },
-    { id: "drinkware", title: "Drinkware & Coozies", categories: ["Drinkware"], picture: "standard-can-koozie", subtitle: "Can and bottle coozies" },
-    { id: "accessories", title: "Accessories & Collectibles", categories: ["Accessories", "Patches & Pins", "Coins"], picture: "anniv-20-patch", subtitle: "Patches, pins, challenge coins, flags and more" },
+    { id: "apparel", title: "Apparel", categories: ["Men's Apparel", "Women's Apparel", "Unisex Apparel"], subtitle: "T-shirts, tanks and hoodies" },
+    { id: "headwear", title: "Headwear", categories: ["Headwear"], subtitle: "Hats, visors and beanies" },
+    { id: "drinkware", title: "Drinkware & Coozies", categories: ["Drinkware"], subtitle: "Can and bottle coozies" },
+    { id: "accessories", title: "Accessories & Collectibles", categories: ["Accessories", "Patches & Pins", "Coins"], subtitle: "Patches, pins, challenge coins, flags and more" },
   ];
+  const storefrontImages = "https://img1.wsimg.com/isteam/ip/6b7b89b2-dd4f-422d-8d29-7971f64bd923/";
+  const categoryPhotos = {
+    apparel: storefrontImages + "357B1582-78D6-444F-9390-ABF0ECC4FBB9.png",
+    headwear: storefrontImages + "Fitted%20Hat.png",
+    drinkware: storefrontImages + "1DB94A6C-F5C0-49D3-9256-1E1224D00D5C.png",
+    accessories: "https://img1.wsimg.com/isteam/ip/a61a7501-5b4e-4a14-8b09-6b6b40dc23cf/BSSC%2020th%20Year%20Logo.jpg",
+  };
   const all = { id: "all", title: "All Products" };
   const catalog = document.querySelector("#catalog");
   const filters = document.querySelector("#filters");
@@ -85,7 +92,12 @@
     .market-category-card {appearance:none;display:flex;flex-direction:column;min-width:0;overflow:hidden;width:100%;padding:0;border:1px solid #323232;border-radius:16px;color:#fff;background:#111;text-align:left;font:inherit;cursor:pointer}
     .market-category-card:hover,.market-category-card:focus-visible {border-color:#e26760;background:#191414}
     .market-category-photo {aspect-ratio:2/1;width:100%;position:relative;display:grid;place-items:center;background:radial-gradient(ellipse,#201d1d,#090909);overflow:hidden}
-    .market-category-photo img {width:100%;height:100%;position:absolute;inset:0;object-fit:contain}
+    .market-category-photo img {position:absolute;height:auto;max-width:none;transform:translate(-50%,-50%)}
+    /* Crop the original photo backgrounds to the product silhouettes. */
+    .market-category-photo[data-group="apparel"] img {width:73%;left:51%;top:45%;clip-path:polygon(8.0808% 46.1756%, 10.1010% 38.7158%, 11.7845% 31.3503%, 14.1414% 27.0066%, 24.5791% 19.3579%, 25.2525% 14.2587%, 27.2727% 12.7479%, 32.7273% 13.9754%, 38.7879% 12.7479%, 40.7407% 14.1643%, 42.6936% 19.3579%, 51.1785% 25.9679%, 52.7273% 29.2729%, 54.8822% 22.8517%, 58.5859% 19.5467%, 63.3670% 13.9754%, 67.1380% 12.9367%, 71.9192% 13.7866%, 76.4983% 12.9367%, 78.4512% 14.6364%, 79.4613% 18.3192%, 85.5892% 22.7573%, 88.9562% 27.9509%, 91.3131% 35.1275%, 93.1987% 42.7762%, 89.0909% 45.9868%, 85.3872% 47.7809%, 83.5690% 77.4315%, 84.7811% 92.3513%, 79.6633% 94.2398%, 69.1582% 95.0897%, 60.9428% 94.2398%, 55.1515% 92.3513%, 55.9596% 78.2814%, 54.8822% 59.0179%, 52.7273% 46.6478%, 50.9091% 44.7592%, 47.1380% 46.9311%, 44.6465% 61.8508%, 43.9057% 76.2984%, 44.9158% 91.5958%, 41.6162% 93.2956%, 34.6801% 95.0897%, 24.2424% 94.3343%, 16.7677% 91.9736%, 17.8451% 78.1870%, 17.1044% 63.4561%, 15.6902% 50.5194%, 13.6700% 49.0085%)}
+    .market-category-photo[data-group="headwear"] img {width:76%;left:50%;top:45%;clip-path:polygon(0.6868% 75.8333%, 3.2967% 68.0556%, 7.4176% 60.0000%, 7.9670% 45.0926%, 9.2720% 36.0185%, 11.6071% 31.2963%, 15.3159% 27.2222%, 22.4588% 23.4259%, 28.1593% 20.8333%, 28.7775% 19.3519%, 30.3571% 18.7963%, 32.0055% 18.9815%, 32.6923% 20.7407%, 38.3242% 22.4074%, 44.7115% 26.3889%, 48.4203% 30.8333%, 51.0989% 37.7778%, 52.3352% 46.8519%, 52.4725% 53.1481%, 54.8764% 53.1481%, 55.7005% 44.6296%, 57.4863% 37.4074%, 60.5082% 31.7593%, 65.7967% 26.8519%, 74.2445% 23.4259%, 74.8626% 22.1296%, 76.7857% 21.6667%, 78.7088% 22.0370%, 79.2582% 23.3333%, 84.4780% 25.3704%, 88.4615% 27.7778%, 92.1703% 31.8519%, 94.7802% 37.6852%, 96.4286% 44.0741%, 97.8022% 53.9815%, 98.6264% 64.1667%, 98.3516% 68.6111%, 96.0852% 71.6667%, 90.6593% 74.7222%, 82.1429% 76.7593%, 73.6264% 77.3148%, 64.9038% 75.9259%, 59.5467% 73.7963%, 55.4945% 70.0926%, 54.5330% 67.5000%, 54.7390% 53.2407%, 52.4725% 53.2407%, 52.2665% 62.4074%, 49.1758% 65.4630%, 45.3984% 66.6667%, 43.4066% 71.9444%, 39.3544% 78.0556%, 33.5165% 83.2407%, 28.1593% 86.0185%, 21.9780% 86.6667%, 13.6676% 84.2593%, 6.3187% 80.9259%, 2.0604% 79.1667%)}
+    .market-category-photo[data-group="drinkware"] img {width:38%;left:50%;top:41%;clip-path:polygon(29.0055% 21.8232%, 29.8343% 20.7873%, 35.6354% 19.5442%, 47.6059% 19.0608%, 60.6814% 19.3370%, 67.7716% 20.3039%, 70.5341% 21.5470%, 70.9945% 22.9972%, 69.3370% 24.5166%, 72.9282% 28.0387%, 75.8748% 28.4530%, 77.9006% 29.9724%, 77.8085% 87.5691%, 77.3481% 90.5387%, 76.4273% 92.2652%, 75.3223% 94.8895%, 72.4678% 96.7541%, 67.0350% 98.0663%, 32.9650% 98.2735%, 28.3610% 97.1685%, 25.0460% 95.1657%, 23.7569% 92.7486%, 22.2836% 90.7459%, 21.9153% 31.9751%, 21.6390% 29.8343%, 23.0203% 28.7293%, 25.9669% 27.9006%, 30.1105% 24.3785%, 29.0055% 23.2044%)}
+    .market-category-photo[data-group="accessories"] img {width:43%;left:50%;top:50%;clip-path:polygon(21.6981% 3.6223%, 23.5849% 3.7516%, 22.1024% 6.0802%, 16.9811% 12.5485%, 13.7466% 19.6636%, 11.5903% 27.1669%, 11.1860% 33.6352%, 13.2075% 39.5860%, 16.1725% 41.2678%, 23.1806% 39.9741%, 23.9892% 33.3765%, 24.6631% 27.4256%, 27.7628% 21.0867%, 34.2318% 16.0414%, 38.5445% 13.3247%, 47.1698% 10.4787%, 50.2695% 9.1850%, 58.2210% 10.6080%, 66.4420% 13.0660%, 68.7332% 15.1358%, 69.0027% 10.7374%, 70.0809% 9.3144%, 70.6199% 10.4787%, 69.9461% 15.1358%, 74.6631% 8.9263%, 75.7412% 8.9263%, 75.3369% 10.2199%, 71.8329% 16.0414%, 76.9542% 12.2898%, 79.1105% 12.2898%, 78.7062% 13.5834%, 73.5849% 17.4644%, 79.9191% 15.3946%, 82.0755% 15.6533%, 81.8059% 16.5589%, 75.2022% 19.9224%, 78.7062% 21.4748%, 83.8275% 23.0272%, 87.7358% 26.7788%, 89.0836% 30.9185%, 87.8706% 35.5757%, 84.3666% 39.0686%, 87.6011% 40.6210%, 89.2183% 43.5964%, 87.7358% 46.9599%, 84.9057% 48.6417%, 89.0836% 53.1695%, 89.6226% 57.5679%, 87.8706% 61.0608%, 88.8140% 68.1759%, 87.1968% 73.4799%, 82.3450% 79.3014%, 74.1240% 84.8642%, 63.6119% 89.5213%, 50.8086% 93.6611%, 38.8140% 95.9897%, 42.4528% 91.3325%, 46.7655% 87.8396%, 47.8437% 84.6054%, 43.5310% 83.1824%, 33.1536% 79.9483%, 38.6792% 76.7141%, 31.6712% 78.0078%, 22.9111% 76.8435%, 19.1375% 74.5149%, 16.4420% 71.0220%, 15.2291% 67.0116%, 15.6334% 62.0957%, 12.5337% 59.3790%, 11.3208% 56.0155%, 12.5337% 52.3933%, 14.0162% 47.0893%, 12.2642% 44.2432%, 10.1078% 38.9392%, 8.7601% 32.6003%, 9.4340% 25.2264%, 11.1860% 18.4994%, 14.6900% 11.7723%, 18.4636% 6.9858%)}
     .market-category-caption {padding:14px 17px 17px;display:grid;width:100%;gap:4px}
     .market-category-name {font-size:clamp(1rem,2vw,1.18rem);font-weight:800;line-height:1.25}
     .market-category-sub {color:#c3c3c3;font-size:.86rem;grid-column:1}
@@ -106,7 +118,6 @@
     :is(#catalog .product .imgwrap,#productModal .picture-preview)[data-clean-picture="yes"] :is(.productImg,.product-modal-image) {height:100%;align-self:center}
     :is(#catalog .product .imgwrap,#productModal .picture-preview):is([data-open-product="flexfit-hat"],[data-open-product="beanie"],[data-open-product="visor"])::after {display:none!important}
     :is(#catalog .product .imgwrap,#productModal .picture-preview):is([data-open-product="flexfit-hat"],[data-open-product="beanie"]) :is(.productImg,.product-modal-image) {height:100%;align-self:center}
-    .market-category-photo .market-photo-with-heading {clip-path:inset(22% 0 0)}
     #catalog .market-unpriced-flag :is(.optrow,.stockline,[data-help],.addBtn,.soldout) {display:none!important}
     #productModal:has(.market-unpriced-flag) :is(.product-modal-options,.stockline,#modalHelp,#modalAddBtn) {display:none!important}
     @media(max-width:700px){.market-category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.market-category-caption{padding:12px}.market-category-sub{font-size:.78rem}}
@@ -253,20 +264,13 @@
   for (const group of groups) {
     const tile = button("", () => navigate(group));
     tile.className = "market-category-card";
-    const representative = INVENTORY.find(product => product.visible && product.id === group.picture)
-      || INVENTORY.find(product => product.visible && group.categories.includes(product.category));
     const photo = newElement("span", "market-category-photo");
-    if (representative?.img) {
-      const img = newElement("img");
-      img.src = representative.img;
-      img.alt = "";
-      img.decoding = "async";
-      if (!PICTURES_WITHOUT_TITLES.has(representative.id) &&
-          !["flexfit-hat", "beanie", "visor"].includes(representative.id)) {
-        img.classList.add("market-photo-with-heading");
-      }
-      photo.append(img);
-    }
+    photo.dataset.group = group.id;
+    const img = newElement("img");
+    img.src = categoryPhotos[group.id];
+    img.alt = "";
+    img.decoding = "async";
+    photo.append(img);
     const caption = newElement("span", "market-category-caption");
     caption.append(newElement("span", "market-category-name", group.title), newElement("span", "market-category-sub", group.subtitle));
     tile.append(photo, caption);
