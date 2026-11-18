@@ -11,6 +11,21 @@
   const originalHero = document.querySelector(".hero-banner");
   if (!catalog || !filters || !originalHero || typeof INVENTORY === "undefined") return;
   const descriptions = {
+    "mens-short-sleeve": "A classic crew-neck tee with short sleeves for everyday wear or layering under a riding jacket. Use the color swatches to preview the BoneShakers artwork on each shirt color.",
+    "mens-long-sleeve": "A crew-neck long-sleeve tee with BSSC lettering down the sleeves. The extra sleeve coverage makes it a practical layer for cool mornings, club meetings, and outdoor events.",
+    "mens-tank": "A sleeveless BoneShakers top with an open arm cut for warm days. Wear it on its own at a cookout or layer it under an open shirt.",
+    "mens-pullover-hoodie": "A pullover sweatshirt with a drawstring hood and a front pouch pocket. It layers over a tee for cool-weather club events and keeps the BoneShakers artwork in view.",
+    "mens-zip-hoodie": "A full-zip sweatshirt with a drawstring hood and split front pockets. The pictured design pairs a chest emblem with a large skull-and-crossbones graphic on the back and BSSC lettering down the sleeves.",
+    "womens-vneck": "A women’s short-sleeve shirt with a V-neck and BoneShakers artwork. The V-shaped neckline sits lower than a crew neck and works on its own or under an open jacket.",
+    "womens-racerback": "A women’s sleeveless top with straps that meet between the shoulder blades, leaving more of the shoulders open. Its racerback cut works well for warm weather and casual layering.",
+    "womens-vneck-long-sleeve": "A women’s V-neck tee with full-length sleeves. It offers more arm coverage for cooler days and layers under a vest or jacket, with BoneShakers artwork shown in the product photo.",
+    "flexfit-hat": "A curved-bill cap with a stretch-fit band. Choose your size for the fitted shape and use the color swatches to compare the club artwork on each cap.",
+    "flat-bill-hat": "A BoneShakers cap with a straight, flat brim and a defined front profile. The broad front panel puts the club artwork in clear view.",
+    "visor": "An open-top visor that shades the eyes while leaving the crown uncovered. Its low-profile design suits sunny club events and works with a ponytail. Choose a color to preview the design.",
+    "beanie": "A brimless knit cap for cool mornings and outdoor club events. It pulls down over the ears, and the product photo shows where the BoneShakers artwork sits on the cap.",
+    "standard-can-koozie": "An insulating sleeve sized for a standard-width beverage can. It gives you a place to grip the can and helps keep condensation off your hand.",
+    "slim-can-koozie": "An insulating sleeve shaped for tall, narrow beverage cans. Its narrower profile makes it the better fit for slim cans such as those commonly used for seltzer.",
+    "zippered-bottle-koozie": "A bottle-shaped insulating sleeve with a zipper that opens for loading. Zip it around the bottle for an easy grip and a barrier between your hand and the cold container.",
     "big-lick-pin": "Show your BoneShakers pride with the BSSC lapel pin. Wear it on a jacket or vest, or add it to your club memorabilia collection.",
     "bssc-logo-sticker": "Put the BoneShakers Social Club emblem on your toolbox, gear case, or another smooth surface with this club logo sticker.",
     "bssc-motorcycle-flag": "Fly the BoneShakers colors on your next ride. This black 12 × 18-inch motorcycle flag features the club’s white skull and crossbones, red accents, and Est. 2005 lettering.",
@@ -84,7 +99,14 @@
     .market-category-status:empty {display:none}
     .market-category-result {font-size:.9rem}
     #catalog .product .imgwrap {width:100%;aspect-ratio:1}
-    #catalog .product h3 {line-height:1.22}
+    #catalog .product h3 {line-height:1.22;min-height:0;margin-top:0}
+    #catalog .product-description {min-height:0}
+    :is(#catalog .product .imgwrap,#productModal .picture-preview)::after {content:""!important;padding:0}
+    :is(#catalog .product .imgwrap,#productModal .picture-preview)[data-clean-picture="yes"]::after {display:none!important}
+    :is(#catalog .product .imgwrap,#productModal .picture-preview)[data-clean-picture="yes"] :is(.productImg,.product-modal-image) {height:100%;align-self:center}
+    :is(#catalog .product .imgwrap,#productModal .picture-preview):is([data-open-product="flexfit-hat"],[data-open-product="beanie"],[data-open-product="visor"])::after {display:none!important}
+    :is(#catalog .product .imgwrap,#productModal .picture-preview):is([data-open-product="flexfit-hat"],[data-open-product="beanie"]) :is(.productImg,.product-modal-image) {height:100%;align-self:center}
+    .market-category-photo .market-photo-with-heading {clip-path:inset(22% 0 0)}
     #catalog .market-unpriced-flag :is(.optrow,.stockline,[data-help],.addBtn,.soldout) {display:none!important}
     #productModal:has(.market-unpriced-flag) :is(.product-modal-options,.stockline,#modalHelp,#modalAddBtn) {display:none!important}
     @media(max-width:700px){.market-category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.market-category-caption{padding:12px}.market-category-sub{font-size:.78rem}}
@@ -239,6 +261,10 @@
       img.src = representative.img;
       img.alt = "";
       img.decoding = "async";
+      if (!PICTURES_WITHOUT_TITLES.has(representative.id) &&
+          !["flexfit-hat", "beanie", "visor"].includes(representative.id)) {
+        img.classList.add("market-photo-with-heading");
+      }
       photo.append(img);
     }
     const caption = newElement("span", "market-category-caption");
