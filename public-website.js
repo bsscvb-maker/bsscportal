@@ -140,3 +140,48 @@ var s=d.createElement('style');s.id='bssc-contact-main-navigation';
 s.textContent='@media(min-width:1024px){nav[data-nav-measure]>[data-ux="Container"]>[data-ux="Container"]{padding-left:24px!important;padding-right:24px!important}nav[data-nav-measure]>[data-ux="Container"]>[data-ux="Container"]>[data-ux="Block"]:first-child{flex:0 0 144px!important}nav[data-nav-measure]>[data-ux="Container"]>[data-ux="Container"]>[data-ux="Block"]:nth-child(2){flex:1 1 auto!important;min-width:0!important}[data-aid="NAV_RENDERED"]>ul>li{padding-left:10px!important;padding-right:10px!important}[data-aid="NAV_RENDERED"]>ul>li:first-child{padding-left:0!important}[data-aid="NAV_RENDERED"]>ul>li:nth-child(-n+8),[data-aid="NAV_RENDERED"]>ul>li:last-child{display:inline-block!important;visibility:visible!important}[data-aid="NAV_RENDERED"]>ul>li:nth-child(n+9):not(:last-child){display:none!important}[data-aid="NAV_RENDERED"]>ul>li:last-child>ul>li:nth-child(-n+8){display:none!important}[data-aid="NAV_RENDERED"]>ul>li:last-child>ul>li:nth-child(n+9){display:block!important}}';
 d.head.appendChild(s);
 }catch(e){}})();
+
+/* Send only action names and the public page path after Analytics consent. */
+(function () {
+  "use strict";
+  const origin = "https://boneshakerssocialclub.com";
+  let host;
+  try {
+    host = window.parent.location.origin === origin ? window.parent : window;
+    if (host.location.origin !== origin) return;
+  } catch { return; }
+  const currentPath = host.location.pathname.replace(/\/$/, "") || "/";
+  const targetPages = new Set(["/request-funding", "/request-event-support", "/club-event-request"]);
+  function track(event) {
+    const consent = Array.from(host.dataLayer || []).reverse().find(entry =>
+      entry?.[0] === "consent" && typeof entry[2]?.analytics_storage === "string");
+    if (consent?.[2].analytics_storage !== "granted" || typeof host.gtag !== "function") return;
+    host.gtag("event", event, {send_to:"G-DQ98X9H2ET", page_location:origin+currentPath});
+  }
+  function onClick(event) {
+    const control = event.target.closest?.("a[href], [data-open-product]");
+    if (!control) return;
+    if (currentPath === "/marketplace" && control.matches("#catalog [data-open-product]")) {
+      track("bssc_marketplace_item_open");
+      return;
+    }
+    if (!control.href) return;
+    const url = new URL(control.href, origin);
+    if (url.origin === origin && targetPages.has(url.pathname)) track("bssc_support_link_open");
+    if (url.origin === origin && url.pathname === "/event-calendar" && !control.closest("nav")) track("bssc_event_open");
+    if (currentPath === "/event-calendar" && url.hostname === "www.google.com" && url.pathname === "/calendar/render") track("bssc_calendar_add");
+    if (currentPath === "/bikes-for-tykes" && /^(www\.)?paypal\.com$/.test(url.hostname) && url.pathname.startsWith("/donate")) track("bssc_donate_click");
+  }
+  if (!document.documentElement.hasAttribute("data-bssc-action-tracking")) {
+    document.documentElement.setAttribute("data-bssc-action-tracking", "");
+    document.addEventListener("click", onClick, true);
+    if (currentPath === "/request-funding") {
+      const form = document.getElementById("bssc-fund-request");
+      form?.addEventListener("input", () => track("bssc_support_request_start"), {once:true});
+    }
+  }
+  if (host !== window && !host.document.documentElement.hasAttribute("data-bssc-action-tracking")) {
+    host.document.documentElement.setAttribute("data-bssc-action-tracking", "");
+    host.document.addEventListener("click", onClick, true);
+  }
+})();

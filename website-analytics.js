@@ -9,7 +9,9 @@
     candidate_open_austin_reiter:'Austin Reiter interview',
     candidate_open_debby_farland:'Debby Farland interview',
     candidate_open_toni_biffle:'Toni Biffle interview',
-    bssc_event_open:'Open event',
+    bssc_event_open:'Open event calendar',
+    bssc_calendar_add:'Add to calendar',
+    bssc_support_link_open:'Open a support request form',
     bssc_donate_click:'Donate',
     bssc_marketplace_item_open:'Open Marketplace item',
     bssc_support_request_start:'Start support request',
@@ -95,13 +97,13 @@
         .website-analytics th{white-space:nowrap;background:#f1f3f5}
         .website-analytics .wa-path{font-size:.8rem;color:#535b66;display:block;overflow-wrap:anywhere}
       </style>
-      <form><label>Date range<select><option value="7">Last 7 completed days</option><option value="30" selected>Last 30 completed days</option><option value="90">Last 90 completed days</option><option value="today">Today so far</option></select></label>
+      <form><label>Date range<select><option value="7">Last 7 completed days</option><option value="30">Last 30 completed days</option><option value="90">Last 90 completed days</option><option value="today" selected>Today so far</option></select></label>
       <button type="submit">Refresh report</button><a href="${analyticsUrl}" target="_blank" rel="noopener">Open Google Analytics</a></form>
       <p role="status">Refresh the report to load the club’s website activity.</p>
       <div data-report hidden>
         <div class="wa-cards" data-totals></div>
         <h2>Pages</h2><p>Click totals cover measured actions. A dash means no clicks were reported or configured for that page.</p>
-        <div class="wa-table"><table><thead><tr><th>Page</th><th>Views</th><th>Previous views</th><th>Visitors</th><th>Measured clicks</th></tr></thead><tbody data-pages></tbody></table></div>
+        <div class="wa-table"><table><thead><tr><th>Page</th><th>Views</th><th>Previous views</th><th>Visitors</th><th>Measured clicks</th><th>Clicks / 100 views</th></tr></thead><tbody data-pages></tbody></table></div>
         <h2>Clicks and actions</h2><p>Destination links and the site actions configured for measurement.</p>
         <div class="wa-table"><table><thead><tr><th>Page</th><th>Action or destination</th><th>Count</th></tr></thead><tbody data-actions></tbody></table></div>
         <h2>Where visitors came from</h2>
@@ -109,6 +111,8 @@
       </div>
     </section>`;
     const section = target.querySelector('.website-analytics');
+    const moduleStatus = document.getElementById('moduleLoading');
+    if (moduleStatus) moduleStatus.hidden = true;
     const form = section.querySelector('form');
     const button = form.querySelector('button');
     const range = form.querySelector('select');
@@ -172,6 +176,9 @@
     const actionRows = new Map(Object.entries(actionLabels).filter(([name])=>name.startsWith('candidate_open_')).map(([name,label])=>[
       '/meet-the-candidates|'+name,{path:'/meet-the-candidates',label,count:0}
     ]));
+    for (const [path,event] of [['/bikes-for-tykes','bssc_donate_click'],['/event-calendar','bssc_calendar_add'],['/marketplace','bssc_marketplace_item_open'],['/request-funding','bssc_support_request_start']]) {
+      actionRows.set(path+'|'+event,{path,label:actionLabels[event],count:0});
+    }
     for (const row of actions.rows || []) {
       const [path,event,domain] = row.dimensionValues.map(x=>x.value);
       if (!path.startsWith('/') || path.startsWith('/m/')) continue;
@@ -197,6 +204,7 @@
       cell(title,'span',path).className='wa-path';
       for (const value of [data.views,data.previous,data.users]) cell(row,'td',number.format(value));
       cell(row,'td',clickTotals.has(path)?number.format(clickTotals.get(path)):'—');
+      cell(row,'td',clickTotals.has(path)&&data.views?(100*clickTotals.get(path)/data.views).toFixed(1):'—');
     }
     const sourceTable = get('sources');
     const sourceRows = [...(sources.rows || [])].sort((a,b)=>Number(b.metricValues[0].value)-Number(a.metricValues[0].value));
