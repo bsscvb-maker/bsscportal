@@ -10,12 +10,12 @@
   const categoryPhotos = {
     apparel: [storefrontImages + "1CEDB8B3-830C-4023-9605-C01F62DF837D.png", storefrontImages + "AF058131-4096-486E-91A4-92477D96CD71.png", storefrontImages + "38F30EA0-EEF4-4715-A37D-3772CF6AAF23.png", storefrontImages + "8687855A-CF3D-4F45-9E37-B63BF396E78C.png"],
     drinkware: [storefrontImages + "1DB94A6C-F5C0-49D3-9256-1E1224D00D5C.png", storefrontImages + "2944D826-64EC-4459-826F-D9275E7A0BAB.png", storefrontImages + "D8ABCD70-4A0A-469A-9E76-5998298E665E.png"],
-    accessories: [new URL("bssc-wall-flag-3x5.svg", imageBase).href, new URL("bssc-motorcycle-flag-12x18.svg", imageBase).href],
+    accessories: [new URL("bft-wall-flag-3x5.svg", imageBase).href, new URL("bssc-motorcycle-flag-12x18.svg", imageBase).href],
   };
-  const headwearRows = [
-    { label: "Fitted Caps", id: "flexfit-hat", style: "cap" },
-    { label: "Visors", detail: "BSSC back", id: "visor", style: "visor" },
-    { label: "Beanies", id: "beanie", style: "beanie" },
+  const headwearGroups = [
+    { id: "flexfit-hat", style: "cap", positions: [[15,23],[38,20],[62,24],[85,21]] },
+    { id: "visor", style: "visor", positions: [[17,52],[50,49],[83,53],[35,78],[65,76]] },
+    { id: "beanie", style: "beanie", positions: [[10,79],[90,81]] },
   ];
   // Use the two-view visor photos here because the catalog can supply front-only thumbnails.
   const visorPhotoTimes = { Black: "32_45", Red: "34_29", White: "35_46", Gray: "36_44", "Baby Pink": "37_52" };
@@ -113,23 +113,22 @@
     @media(max-width:520px){.market-category-photo {aspect-ratio:1.6}.market-category-photo img {scale:.95}}
     .market-category-photo[data-group="apparel"] img:nth-child(3) {width:42%;left:46%;top:48%;clip-path:polygon(0.000% 74.456%, 0.766% 59.464%, 1.609% 41.290%, 2.912% 31.323%, 4.521% 24.372%, 6.513% 20.854%, 10.345% 18.760%, 17.701% 14.992%, 20.383% 12.563%, 23.142% 12.563%, 27.510% 12.982%, 33.640% 12.479%, 35.326% 14.238%, 39.004% 16.164%, 47.739% 20.352%, 49.502% 23.451%, 51.264% 28.141%, 52.414% 35.008%, 52.950% 44.556%, 53.487% 58.543%, 54.176% 79.146%, 53.027% 83.250%, 52.490% 89.447%, 48.812% 89.866%, 46.054% 89.447%, 46.437% 83.250%, 45.594% 79.983%, 44.368% 72.111%, 42.989% 47.069%, 43.295% 74.958%, 43.985% 85.595%, 44.368% 87.437%, 42.682% 88.526%, 37.471% 89.615%, 29.042% 90.452%, 18.927% 90.285%, 12.414% 89.531%, 9.119% 88.191%, 9.425% 84.171%, 10.115% 69.012%, 10.805% 50.670%, 8.889% 71.273%, 7.893% 81.072%, 7.126% 83.752%, 7.280% 88.945%, 5.594% 89.782%, 1.073% 89.615%, 0.996% 88.693%, 0.996% 83.166%, 0.000% 81.407%)}
     .market-category-photo[data-group="apparel"] img:nth-child(4) {width:43%;left:74%;top:48%;clip-path:polygon(0.000% 72.000%, 1.068% 56.250%, 1.754% 41.833%, 3.432% 32.500%, 4.882% 28.667%, 7.628% 26.250%, 10.831% 24.083%, 13.349% 22.083%, 13.272% 19.917%, 14.416% 16.833%, 15.408% 14.083%, 18.230% 12.500%, 22.731% 11.583%, 28.986% 11.417%, 34.477% 12.583%, 36.537% 14.583%, 37.300% 18.167%, 38.291% 20.667%, 38.291% 21.500%, 41.495% 23.167%, 44.928% 25.167%, 47.140% 27.833%, 48.436% 32.667%, 49.809% 40.750%, 50.572% 50.667%, 51.030% 68.750%, 50.420% 76.917%, 49.275% 80.667%, 48.207% 82.833%, 47.063% 89.083%, 43.555% 88.917%, 40.580% 88.000%, 41.114% 83.500%, 41.037% 81.333%, 39.893% 79.750%, 39.969% 86.250%, 38.520% 87.250%, 35.011% 88.333%, 28.604% 89.083%, 19.451% 88.833%, 13.501% 87.917%, 9.230% 86.667%, 8.391% 85.583%, 8.467% 81.000%, 7.933% 76.750%, 8.085% 79.500%, 7.170% 81.667%, 6.941% 87.083%, 4.500% 87.417%, 1.220% 87.250%, 1.297% 81.917%, 0.153% 79.500%, 0.000% 77.583%)}
-    .market-headwear-rows {width:100%;height:100%;display:grid;grid-template-rows:repeat(3,minmax(0,1fr));padding:8px 12px;box-sizing:border-box}
-    .market-headwear-row {min-height:0;display:grid;grid-template-columns:5.8em repeat(5,minmax(0,1fr));align-items:stretch;gap:4px}
-    .market-headwear-row + .market-headwear-row {border-top:1px solid #ffffff24}
-    .market-headwear-label {align-self:center;color:#f4e9ee;font-size:clamp(.67rem,1.12vw,.83rem);font-weight:750;line-height:1.2}
-    .market-headwear-detail {display:block;margin-top:3px;color:#dac7d0;font-size:.8em;font-weight:600}
-    .market-headwear-sample {position:relative;min-width:0;overflow:hidden;container-type:size}
-    .market-headwear-sample img {height:auto;scale:1}
-    .market-headwear-sample[data-style="cap"] img {width:min(183cqw,185cqh);left:50%;top:50%;transform:translate(-26%,-48%);clip-path:polygon(2.300% 54.400%, 2.500% 47.700%, 3.700% 40.500%, 6.300% 35.300%, 10.000% 31.700%, 15.100% 28.900%, 20.600% 26.900%, 24.100% 25.800%, 24.400% 24.900%, 25.600% 24.400%, 27.400% 24.500%, 28.600% 25.200%, 28.800% 25.900%, 33.800% 27.000%, 39.300% 29.100%, 43.200% 31.800%, 46.600% 35.700%, 48.600% 40.900%, 49.700% 47.400%, 49.900% 55.000%, 49.500% 57.300%, 47.700% 58.300%, 48.200% 64.300%, 48.300% 67.100%, 47.400% 70.000%, 45.900% 71.500%, 43.800% 72.200%, 39.400% 71.800%, 34.500% 70.800%, 27.500% 69.700%, 20.300% 69.600%, 13.500% 70.300%, 7.300% 71.800%, 3.700% 71.800%, 2.300% 70.600%, 1.900% 68.800%, 1.900% 65.400%, 2.400% 61.800%, 3.100% 58.100%, 2.500% 57.100%)}
-    .market-headwear-sample[data-style="visor"] img {width:min(183cqw,245cqh);left:50%;top:50%;transform:translate(-75%,-55%);clip-path:polygon(51.4% 44.5%,54% 47.7%,60% 50.1%,68% 51.4%,76% 51.8%,84% 51.1%,92.5% 49.4%,96% 47.4%,99.2% 46.8%,99.2% 55.5%,96.3% 59.6%,93.3% 60.2%,93.1% 62.7%,89.2% 64.3%,83% 65.6%,75% 66.4%,66.7% 65.8%,60.4% 64.6%,56.2% 63.1%,53.1% 60.7%,51.4% 57%)}
-    .market-headwear-sample[data-style="beanie"] img {width:min(91cqw,100cqh);left:50%;top:50%;transform:translate(-50%,-48%);clip-path:polygon(4.800% 85.600%, 5.500% 60.300%, 5.800% 57.900%, 8.800% 57.000%, 9.400% 46.100%, 11.700% 35.000%, 14.900% 27.500%, 18.400% 21.400%, 23.500% 16.200%, 30.100% 11.400%, 36.800% 8.100%, 43.600% 6.100%, 48.600% 5.400%, 54.500% 5.800%, 62.800% 7.600%, 70.700% 10.500%, 78.200% 15.600%, 84.000% 22.300%, 87.500% 29.900%, 89.600% 39.400%, 90.500% 57.100%, 93.100% 57.800%, 93.900% 60.000%, 95.000% 85.200%, 94.700% 87.800%, 92.900% 89.500%, 85.200% 90.100%, 49.800% 90.800%, 8.700% 90.000%, 6.000% 89.100%)}
+    .market-headwear-piece {position:absolute;left:var(--x);top:var(--y);width:var(--width);aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none}
+    .market-headwear-piece img {width:100%;height:auto;left:50%;top:50%;scale:1}
+    .market-headwear-piece[data-style="cap"] {--width:35%}
+    .market-headwear-piece[data-style="cap"] img {transform:translate(-26%,-48%);clip-path:polygon(2.300% 54.400%, 2.500% 47.700%, 3.700% 40.500%, 6.300% 35.300%, 10.000% 31.700%, 15.100% 28.900%, 20.600% 26.900%, 24.100% 25.800%, 24.400% 24.900%, 25.600% 24.400%, 27.400% 24.500%, 28.600% 25.200%, 28.800% 25.900%, 33.800% 27.000%, 39.300% 29.100%, 43.200% 31.800%, 46.600% 35.700%, 48.600% 40.900%, 49.700% 47.400%, 49.900% 55.000%, 49.500% 57.300%, 47.700% 58.300%, 48.200% 64.300%, 48.300% 67.100%, 47.400% 70.000%, 45.900% 71.500%, 43.800% 72.200%, 39.400% 71.800%, 34.500% 70.800%, 27.500% 69.700%, 20.300% 69.600%, 13.500% 70.300%, 7.300% 71.800%, 3.700% 71.800%, 2.300% 70.600%, 1.900% 68.800%, 1.900% 65.400%, 2.400% 61.800%, 3.100% 58.100%, 2.500% 57.100%)}
+    .market-headwear-piece[data-style="visor"] {--width:27%}
+    .market-headwear-piece[data-style="visor"] img {transform:translate(-50%,-52%);clip-path:polygon(1% 67.3%,1.8% 64.3%,4.8% 57.4%,6.2% 53%,6.6% 40.5%,8% 38.7%,11.6% 36.9%,18.3% 35.2%,24.7% 34.8%,31.7% 35.6%,38.3% 37.4%,45.5% 39.9%,49.9% 42%,50.5% 43.7%,49.7% 53.4%,49.1% 54.7%,44.5% 55.1%,42.9% 60.8%,40.8% 65.9%,38.1% 69%,34.8% 70.1%,31% 69.6%,24.5% 67.2%,17% 65.4%,10.6% 65%,5.5% 65.9%,1.8% 67.6%)}
+    .market-headwear-piece[data-style="visor"] img + img {clip-path:polygon(51.4% 57%,52.3% 45.3%,53.3% 43%,55.7% 40.7%,60.5% 37.9%,66.2% 36.1%,71.6% 35.3%,76.8% 35.2%,81.3% 35.9%,85.3% 37.3%,89% 39.2%,92% 41.5%,94% 43.5%,97.3% 45.1%,99.2% 47.4%,99.1% 55.5%,98.3% 57.9%,96.3% 59.6%,93.3% 60.2%,93.1% 62.7%,89.2% 64.3%,83% 65.6%,75% 66.4%,66.7% 65.8%,60.4% 64.6%,56.2% 63.1%,53.1% 60.7%)}
+    .market-headwear-piece[data-style="beanie"] {--width:14%}
+    .market-headwear-piece[data-style="beanie"] img {transform:translate(-50%,-48%);clip-path:polygon(4.800% 85.600%, 5.500% 60.300%, 5.800% 57.900%, 8.800% 57.000%, 9.400% 46.100%, 11.700% 35.000%, 14.900% 27.500%, 18.400% 21.400%, 23.500% 16.200%, 30.100% 11.400%, 36.800% 8.100%, 43.600% 6.100%, 48.600% 5.400%, 54.500% 5.800%, 62.800% 7.600%, 70.700% 10.500%, 78.200% 15.600%, 84.000% 22.300%, 87.500% 29.900%, 89.600% 39.400%, 90.500% 57.100%, 93.100% 57.800%, 93.900% 60.000%, 95.000% 85.200%, 94.700% 87.800%, 92.900% 89.500%, 85.200% 90.100%, 49.800% 90.800%, 8.700% 90.000%, 6.000% 89.100%)}
     .market-flag-comparison {width:100%;height:100%;display:grid;grid-template-columns:1.27fr 1fr;align-items:stretch;gap:12px;padding:12px 16px;box-sizing:border-box}
     .market-flag-example {min-width:0;display:grid;grid-template-rows:minmax(0,1fr) auto;align-items:center;text-align:center}
     .market-flag-picture {position:relative;width:100%;height:100%;display:block;container-type:size}
     .market-flag-picture img {width:min(100cqw,160cqh);left:50%;top:50%;scale:1;clip-path:inset(8% 6% 10% 6%)}
     .market-flag-example:nth-child(2) .market-flag-picture img {width:min(92cqw,130cqh);clip-path:polygon(8.5% 7.8%,14% 7.8%,15.5% 11.8%,89% 11.8%,89% 79%,15.5% 79%,15% 92.5%,11% 92.5%,11% 12%)}
     .market-flag-label {color:#fff;font-size:clamp(.7rem,1.2vw,.92rem);font-weight:750;line-height:1.25}
-    @media(max-width:520px){.market-category-grid {grid-template-columns:1fr!important}.market-headwear-row {grid-template-columns:4.6em repeat(5,minmax(0,1fr))}}
+    @media(max-width:520px){.market-category-grid {grid-template-columns:1fr!important}}
     .market-category-caption {padding:14px 17px 17px;display:grid;width:100%;gap:4px}
     .market-category-name {font-size:clamp(1rem,2vw,1.18rem);font-weight:800;line-height:1.25}
     .market-category-sub {color:#c3c3c3;font-size:.86rem;grid-column:1}
@@ -303,29 +302,26 @@
     const photo = newElement("span", "market-category-photo");
     photo.dataset.group = group.id;
     if (group.id === "headwear") {
-      const rows = newElement("span", "market-headwear-rows");
-      for (const { label, detail, id, style } of headwearRows) {
+      for (const { id, style, positions } of headwearGroups) {
         const product = INVENTORY.find(item => item.id === id);
         if (!product) continue;
-        const row = newElement("span", "market-headwear-row");
-        const rowLabel = newElement("span", "market-headwear-label", label);
-        if (detail) rowLabel.append(newElement("small", "market-headwear-detail", detail));
-        row.append(rowLabel);
-        for (const color of product.colors || []) {
+        (product.colors || []).forEach((color, index) => {
           const visorTime = style === "visor" ? visorPhotoTimes[color] : undefined;
           const source = visorTime
             ? storefrontImages + `ChatGPT%20Image%20Sep%201%2C%202026%2C%2007_${visorTime}%20AM.png`
             : product.colorImages?.[color];
-          if (!source) continue;
-          const sample = newElement("span", "market-headwear-sample");
-          sample.dataset.style = style;
-          sample.title = color;
-          sample.append(categoryImage(source, detail ? `${color} visor with BSSC on the back` : color));
-          row.append(sample);
-        }
-        rows.append(row);
+          const position = positions[index];
+          if (!source || !position) return;
+          const [x, y] = position;
+          const piece = newElement("span", "market-headwear-piece");
+          piece.dataset.style = style;
+          piece.style.setProperty("--x", `${x}%`);
+          piece.style.setProperty("--y", `${y}%`);
+          piece.append(categoryImage(source, `${color} ${style}`));
+          if (visorTime) piece.append(categoryImage(source, `Back of ${color} visor with BSSC lettering`));
+          photo.append(piece);
+        });
       }
-      photo.append(rows);
     } else if (group.id === "accessories") {
       const comparison = newElement("span", "market-flag-comparison");
       categoryPhotos.accessories.forEach((source, index) => {
