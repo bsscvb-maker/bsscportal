@@ -17,6 +17,8 @@
     { label: "Visors", detail: "BSSC back", id: "visor", style: "visor" },
     { label: "Beanies", id: "beanie", style: "beanie" },
   ];
+  // Use the two-view visor photos here because the catalog can supply front-only thumbnails.
+  const visorPhotoTimes = { Black: "32_45", Red: "34_29", White: "35_46", Gray: "36_44", "Baby Pink": "37_52" };
   const flagLabels = ["3 × 5 ft Wall Flag", "12 × 18 in Motorcycle Flag"];
   const all = { id: "all", title: "All Products" };
   const catalog = document.querySelector("#catalog");
@@ -310,7 +312,10 @@
         if (detail) rowLabel.append(newElement("small", "market-headwear-detail", detail));
         row.append(rowLabel);
         for (const color of product.colors || []) {
-          const source = product.colorImages?.[color];
+          const visorTime = style === "visor" ? visorPhotoTimes[color] : undefined;
+          const source = visorTime
+            ? storefrontImages + `ChatGPT%20Image%20Sep%201%2C%202026%2C%2007_${visorTime}%20AM.png`
+            : product.colorImages?.[color];
           if (!source) continue;
           const sample = newElement("span", "market-headwear-sample");
           sample.dataset.style = style;
