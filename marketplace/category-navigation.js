@@ -14,7 +14,7 @@
   };
   const headwearRows = [
     { label: "Fitted Caps", id: "flexfit-hat", style: "cap" },
-    { label: "Visors", id: "visor", style: "visor" },
+    { label: "Visors", detail: "BSSC back", id: "visor", style: "visor" },
     { label: "Beanies", id: "beanie", style: "beanie" },
   ];
   const flagLabels = ["3 × 5 ft Wall Flag", "12 × 18 in Motorcycle Flag"];
@@ -115,10 +115,11 @@
     .market-headwear-row {min-height:0;display:grid;grid-template-columns:5.8em repeat(5,minmax(0,1fr));align-items:stretch;gap:4px}
     .market-headwear-row + .market-headwear-row {border-top:1px solid #ffffff24}
     .market-headwear-label {align-self:center;color:#f4e9ee;font-size:clamp(.67rem,1.12vw,.83rem);font-weight:750;line-height:1.2}
+    .market-headwear-detail {display:block;margin-top:3px;color:#dac7d0;font-size:.8em;font-weight:600}
     .market-headwear-sample {position:relative;min-width:0;overflow:hidden;container-type:size}
     .market-headwear-sample img {height:auto;scale:1}
     .market-headwear-sample[data-style="cap"] img {width:min(183cqw,185cqh);left:50%;top:50%;transform:translate(-26%,-48%);clip-path:polygon(2.300% 54.400%, 2.500% 47.700%, 3.700% 40.500%, 6.300% 35.300%, 10.000% 31.700%, 15.100% 28.900%, 20.600% 26.900%, 24.100% 25.800%, 24.400% 24.900%, 25.600% 24.400%, 27.400% 24.500%, 28.600% 25.200%, 28.800% 25.900%, 33.800% 27.000%, 39.300% 29.100%, 43.200% 31.800%, 46.600% 35.700%, 48.600% 40.900%, 49.700% 47.400%, 49.900% 55.000%, 49.500% 57.300%, 47.700% 58.300%, 48.200% 64.300%, 48.300% 67.100%, 47.400% 70.000%, 45.900% 71.500%, 43.800% 72.200%, 39.400% 71.800%, 34.500% 70.800%, 27.500% 69.700%, 20.300% 69.600%, 13.500% 70.300%, 7.300% 71.800%, 3.700% 71.800%, 2.300% 70.600%, 1.900% 68.800%, 1.900% 65.400%, 2.400% 61.800%, 3.100% 58.100%, 2.500% 57.100%)}
-    .market-headwear-sample[data-style="visor"] img {width:min(183cqw,245cqh);left:50%;top:50%;transform:translate(-75%,-51%);clip-path:polygon(51.515% 56.858%, 52.233% 45.136%, 53.270% 42.982%, 55.662% 40.670%, 60.526% 37.879%, 66.188% 36.124%, 71.611% 35.327%, 76.794% 35.247%, 81.340% 35.885%, 85.327% 37.321%, 88.995% 39.155%, 92.026% 41.467%, 94.019% 43.461%, 97.289% 45.056%, 99.203% 47.368%, 99.123% 55.502%, 98.325% 57.895%, 96.252% 59.569%, 93.301% 60.207%, 93.062% 62.679%, 89.234% 64.274%, 83.014% 65.630%, 75.040% 66.348%, 66.667% 65.789%, 60.367% 64.593%, 56.220% 63.078%, 53.110% 60.686%)}
+    .market-headwear-sample[data-style="visor"] img {width:min(183cqw,245cqh);left:50%;top:50%;transform:translate(-75%,-55%);clip-path:polygon(51.4% 44.5%,54% 47.7%,60% 50.1%,68% 51.4%,76% 51.8%,84% 51.1%,92.5% 49.4%,96% 47.4%,99.2% 46.8%,99.2% 55.5%,96.3% 59.6%,93.3% 60.2%,93.1% 62.7%,89.2% 64.3%,83% 65.6%,75% 66.4%,66.7% 65.8%,60.4% 64.6%,56.2% 63.1%,53.1% 60.7%,51.4% 57%)}
     .market-headwear-sample[data-style="beanie"] img {width:min(91cqw,100cqh);left:50%;top:50%;transform:translate(-50%,-48%);clip-path:polygon(4.800% 85.600%, 5.500% 60.300%, 5.800% 57.900%, 8.800% 57.000%, 9.400% 46.100%, 11.700% 35.000%, 14.900% 27.500%, 18.400% 21.400%, 23.500% 16.200%, 30.100% 11.400%, 36.800% 8.100%, 43.600% 6.100%, 48.600% 5.400%, 54.500% 5.800%, 62.800% 7.600%, 70.700% 10.500%, 78.200% 15.600%, 84.000% 22.300%, 87.500% 29.900%, 89.600% 39.400%, 90.500% 57.100%, 93.100% 57.800%, 93.900% 60.000%, 95.000% 85.200%, 94.700% 87.800%, 92.900% 89.500%, 85.200% 90.100%, 49.800% 90.800%, 8.700% 90.000%, 6.000% 89.100%)}
     .market-flag-comparison {width:100%;height:100%;display:grid;grid-template-columns:1.27fr 1fr;align-items:stretch;gap:12px;padding:12px 16px;box-sizing:border-box}
     .market-flag-example {min-width:0;display:grid;grid-template-rows:minmax(0,1fr) auto;align-items:center;text-align:center}
@@ -301,18 +302,20 @@
     photo.dataset.group = group.id;
     if (group.id === "headwear") {
       const rows = newElement("span", "market-headwear-rows");
-      for (const { label, id, style } of headwearRows) {
+      for (const { label, detail, id, style } of headwearRows) {
         const product = INVENTORY.find(item => item.id === id);
         if (!product) continue;
         const row = newElement("span", "market-headwear-row");
-        row.append(newElement("span", "market-headwear-label", label));
+        const rowLabel = newElement("span", "market-headwear-label", label);
+        if (detail) rowLabel.append(newElement("small", "market-headwear-detail", detail));
+        row.append(rowLabel);
         for (const color of product.colors || []) {
           const source = product.colorImages?.[color];
           if (!source) continue;
           const sample = newElement("span", "market-headwear-sample");
           sample.dataset.style = style;
           sample.title = color;
-          sample.append(categoryImage(source, color));
+          sample.append(categoryImage(source, detail ? `${color} visor with BSSC on the back` : color));
           row.append(sample);
         }
         rows.append(row);
