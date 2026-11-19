@@ -9,15 +9,3 @@
  const visualOrder=['membership','finance','bft','bikenights','marketplace','sponsors','tracker','storage','volunteers','records','admin'];
  home.querySelectorAll('[data-module-card]').forEach(card=>{const index=visualOrder.indexOf(card.dataset.moduleCard);if(index>=0){const art=document.createElement('button');art.type='button';art.className='home-tile-art';art.setAttribute('aria-label','Open '+(card.querySelector('h2')?.textContent||'module'));art.style.border='0';art.style.padding='0';art.style.cursor='pointer';art.onclick=()=>card.querySelector('[data-open]')?.click();art.style.backgroundImage='url(assets/portal-'+card.dataset.moduleCard+'.webp)';card.prepend(art);}const a=accents[card.dataset.moduleCard]||accents.admin;card.style.setProperty('--home-accent',a[0]);card.style.setProperty('--home-rgb',a[1]);const button=card.querySelector('[data-open]');if(button){const original=button.textContent;button.dataset.classicLabel=original;const label=card.querySelector('h2')?.textContent||'module';button.setAttribute('aria-label','Open '+label)}});
 })();
-
-(() => {
-  const membership = document.getElementById('membershipStatus');
-  if (!membership) return;
-  const container = document.createElement('p');
-  const link = document.createElement('a');
-  link.className = 'membership-tab';
-  link.href = 'sister-patches/';
-  link.textContent = 'Sister Patches';
-  container.append(link);
-  membership.before(container);
-})();
