@@ -1,3 +1,6 @@
+Traceback (most recent call last):
+  File "<stdin>", line 6, in <module>
+ValueError: substring not found
 (() => {
   const groups = [
     { id: "apparel", title: "Apparel", categories: ["Men's Apparel", "Women's Apparel", "Unisex Apparel"], subtitle: "T-shirts, tanks and hoodies" },
