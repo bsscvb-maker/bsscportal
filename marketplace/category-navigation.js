@@ -1,6 +1,3 @@
-Traceback (most recent call last):
-  File "<stdin>", line 6, in <module>
-ValueError: substring not found
 (() => {
   const groups = [
     { id: "apparel", title: "Apparel", categories: ["Men's Apparel", "Women's Apparel", "Unisex Apparel"], subtitle: "T-shirts, tanks and hoodies" },
@@ -155,12 +152,23 @@ ValueError: substring not found
     #catalog .product .imgwrap {width:100%;aspect-ratio:1}
     #catalog .product h3 {line-height:1.22;min-height:0;margin-top:0}
     #catalog .product-description {min-height:0}
-    /* The legacy frame overlays hid part of the actual photo. Fit the whole source inside each preview. */
+    /* Fit the source first so title margins are measured on the photo, not the frame. */
     :is(#catalog .product .imgwrap,#productModal .picture-preview)::before,
     :is(#catalog .product .imgwrap,#productModal .picture-preview)::after {display:none!important}
     :is(#catalog .product .imgwrap,#productModal .picture-preview) > :is(.productImg,.product-modal-image) {
-      width:100%;height:100%;max-width:100%;min-width:0;align-self:center;object-fit:contain!important;object-position:center;clip-path:none!important
+      width:auto;height:auto;max-width:100%;max-height:100%;min-width:0;align-self:center;object-fit:contain!important;object-position:center;clip-path:inset(var(--product-title-margin,0%) 0 0)!important
     }
+    #productModal .picture-preview > .product-modal-image {max-height:min(100%,72vh)}
+    :is(#catalog .product .imgwrap,#productModal .picture-preview):is(
+      [data-open-product="mens-short-sleeve"],[data-open-product="mens-long-sleeve"],[data-open-product="mens-tank"],
+      [data-open-product="mens-pullover-hoodie"],[data-open-product="womens-vneck"],[data-open-product="womens-vneck-long-sleeve"]
+    ) {--product-title-margin:10.5%}
+    :is(#catalog .product .imgwrap,#productModal .picture-preview)[data-open-product="mens-zip-hoodie"] {--product-title-margin:11.5%}
+    :is(#catalog .product .imgwrap,#productModal .picture-preview)[data-open-product="visor"] {--product-title-margin:6%}
+    :is(#catalog .product .imgwrap,#productModal .picture-preview)[data-open-product="flat-bill-hat"] {--product-title-margin:24%}
+    :is(#catalog .product .imgwrap,#productModal .picture-preview):is(
+      [data-open-product="standard-can-koozie"],[data-open-product="slim-can-koozie"],[data-open-product="zippered-bottle-koozie"]
+    ) {--product-title-margin:17%}
     @media(max-width:700px){.market-category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.market-category-caption{padding:12px}.market-category-sub{font-size:.78rem}}
     @media(max-width:360px){.market-category-grid{grid-template-columns:1fr}}
     @media(prefers-reduced-motion:reduce){.market-categories *{scroll-behavior:auto!important}}
