@@ -447,10 +447,109 @@
     if(headers.some((h,i)=>rows[0]?.[i]!==h))throw Error('Unexpected headers in '+name+'. Review the source sheet.');
     return {id:sheet.properties.sheetId,rows};
   }
+  const CANDIDATE_ACTIVITY_EVENTS = [
+    ['page_view', 'Page views'],
+    ['candidate_open_austin_reiter', 'Austin Reiter'],
+    ['candidate_open_debby_farland', 'Debby Farland'],
+    ['candidate_open_toni_biffle', 'Toni Biffle']
+  ];
+  const CANDIDATE_ANALYTICS_PROPERTY = '565139028';
+  const CANDIDATE_ANALYTICS_URL = 'https://analytics.google.com/analytics/web/?authuser=bsscvb%40boneshakerssocialclub.com#/a416966110p565139028/reports/intelligenthome';
+  let candidateAnalyticsGrant;
+
+  function candidateActivityPanel(certification) {
+    const section = document.createElement('section');
+    section.className = 'bod-certification';
+    section.setAttribute('aria-label', 'Candidate page activity');
+    section.innerHTML = `<header class="bod-election-header"><div><h4>Candidate Page Activity</h4>
+      <p>Page views and interview opens since November 19, 2026. Repeat opens count.</p></div>
+      <button type="button">Load activity</button></header>
+      <p role="status"></p><dl hidden></dl>
+      <a href="${CANDIDATE_ANALYTICS_URL}" target="_blank" rel="noopener">Open Google Analytics</a>`;
+    certification.after(section);
+    const button = section.querySelector('button');
+    const status = section.querySelector('[role="status"]');
+    const totals = section.querySelector('dl');
+    button.onclick = async () => {
+      const session = accessToken;
+      if (!session) return;
+      button.disabled = true;
+      totals.hidden = true;
+      status.textContent = 'Loading activity…';
+      try {
+        if (candidateAnalyticsGrant?.session !== session || candidateAnalyticsGrant.expiresAt <= Date.now()) {
+          const scope = 'https://www.googleapis.com/auth/analytics.readonly';
+          const grant = await new Promise((resolve, reject) => {
+            google.accounts.oauth2.initTokenClient({
+              client_id: GOOGLE_CLIENT_ID,
+              scope,
+              hint: 'bsscvb@boneshakerssocialclub.com',
+              include_granted_scopes: false,
+              callback: result => {
+                if (result.error || !google.accounts.oauth2.hasGrantedAllScopes(result, scope)) {
+                  reject(Error('Allow read-only Analytics access with the club Google account.'));
+                  return;
+                }
+                resolve(result);
+              },
+              error_callback: () => reject(Error('Google authorization was closed or blocked.'))
+            }).requestAccessToken({prompt: ''});
+          });
+          if (accessToken !== session) return;
+          candidateAnalyticsGrant = {
+            session, token: grant.access_token,
+            expiresAt: Date.now() + Math.max(0, Number(grant.expires_in) - 60) * 1000
+          };
+        }
+        const response = await fetch('https://analyticsdata.googleapis.com/v1beta/properties/' + CANDIDATE_ANALYTICS_PROPERTY + ':runReport', {
+          method: 'POST',
+          headers: {Authorization: 'Bearer ' + candidateAnalyticsGrant.token, 'Content-Type': 'application/json'},
+          signal: AbortSignal.timeout(15000),
+          body: JSON.stringify({
+            dateRanges: [{startDate: '2026-11-19', endDate: 'today'}],
+            dimensions: [{name: 'eventName'}],
+            metrics: [{name: 'eventCount'}],
+            dimensionFilter: {andGroup: {expressions: [
+              {filter: {fieldName: 'eventName', inListFilter: {values: CANDIDATE_ACTIVITY_EVENTS.map(([event]) => event)}}},
+              {filter: {fieldName: 'pagePath', inListFilter: {values: ['/meet-the-candidates', '/meet-the-candidates/']}}}
+            ]}}
+          })
+        });
+        const result = await response.json();
+        if (accessToken !== session || !section.isConnected) return;
+        if (!response.ok) {
+          candidateAnalyticsGrant = undefined;
+          const reason = result.error?.details?.find(detail => detail.reason)?.reason;
+          if (reason === 'SERVICE_DISABLED') throw Error('The portal’s Google project still needs the Analytics Data API enabled. You can open Google Analytics below.');
+          if (response.status === 403) throw Error('Use a Google account with access to the club Analytics property.');
+          throw Error('Google Analytics could not return the activity counts.');
+        }
+        const counts = new Map((result.rows || []).map(row => [row.dimensionValues[0].value, Number(row.metricValues[0].value)]));
+        totals.replaceChildren(...CANDIDATE_ACTIVITY_EVENTS.map(([event, label]) => {
+          const row = document.createElement('div');
+          const name = document.createElement('dt');
+          const count = document.createElement('dd');
+          name.textContent = label;
+          count.textContent = (counts.get(event) || 0).toLocaleString('en-US');
+          row.append(name, count);
+          return row;
+        }));
+        totals.hidden = false;
+        status.textContent = counts.size ? 'Activity loaded. Google Analytics reports may lag.' : 'Google Analytics has no processed activity for this page yet.';
+        button.textContent = 'Refresh activity';
+      } catch (error) {
+        status.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    };
+  }
+
   function bindNextStep(target,model,context,membershipStatus,summary,initialView) {
     const panel=target.querySelector('#bod-invitations'),list=panel.querySelector('[data-bod-response-list]');
     let refreshing=false,testResponses=[];
     const certification=panel.querySelector('[data-bod-certification]');
+    if (certification) candidateActivityPanel(certification);
     async function refreshCertification(){
       if(!certification)return;
       const light=certification.querySelector('[data-bod-cert-light]'),button=certification.querySelector('[data-bod-cert-review]'),status=certification.querySelector('[data-bod-cert-status]');
