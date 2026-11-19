@@ -2155,6 +2155,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         <button data-module="membership"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Membership</button>
         <button data-module="sponsors"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="m8 12 2.5 2.5a2.12 2.12 0 0 0 3 0L19 9"/><path d="m15 5 4-2 4 4-3 3M9 5 5 3 1 7l4 4"/><path d="m5 10 6.5 6.5a2.12 2.12 0 0 0 3 0l5.5-6.5"/></svg></span>Sponsorships</button>
         <button data-module="storage"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="m3 7 9-4 9 4v14H3Z M3 7l9 4 9-4 M12 11v10"/></svg></span>Storage Inventory</button>
+        <button data-module="websiteAnalytics"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 4v16h16M8 16v-4m5 4V8m5 8V5"/></svg></span>Website Analytics</button>
         <button data-module="tracker"><span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m7 9 2 2 4-4M7 16h10M14 9h3"/></svg></span>Task Tracker</button>
       </nav>
       <div class="nav-label">System</div>
@@ -9885,6 +9886,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
     }
 
     const modules = {
+      websiteAnalytics:{title:"Website Analytics",description:"See how people find and use the public BoneShakers website.",tasks:[]},
       tracker:{title:"Task Tracker",description:"Manage club priorities and progress.",tasks:[]},
       storage:{title:"Storage Inventory",description:"Find supplies and check quantities, colors, and locations.",tasks:[]},
       volunteers:{title:'Events & Volunteers',description:'Plan events, assign shifts, and track volunteer participation and event tasks.',tasks:[]},
@@ -9954,7 +9956,8 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const recordsWorkspace=document.getElementById('recordsWorkspace');
       const taskGrid = document.getElementById('detailTasks');
       [membershipWorkspace,sponsorWorkspace,bftWorkspace,bikeNightsWorkspace,marketplaceWorkspace,financeWorkspace,adminWorkspace,volunteersWorkspace,recordsWorkspace,document.getElementById("storageWorkspace"),document.getElementById("trackerWorkspace")].forEach(workspace => workspace.classList.remove('active'));
-      if (key === 'tracker') { taskGrid.innerHTML='';document.getElementById('trackerWorkspace').classList.add('active');const frame=document.getElementById('taskTrackerFrame');if(!frame.getAttribute('src'))frame.src='task-tracker-command.html?v='+Date.now();
+      if (key === 'websiteAnalytics') { window.BSSCWebsiteAnalytics.render(taskGrid); }
+      else if (key === 'tracker') { taskGrid.innerHTML='';document.getElementById('trackerWorkspace').classList.add('active');const frame=document.getElementById('taskTrackerFrame');if(!frame.getAttribute('src'))frame.src='task-tracker-command.html?v='+Date.now();
       } else if (key === 'storage') { taskGrid.innerHTML='';document.getElementById('storageWorkspace').classList.add('active');loadStorage();
       } else if (key === 'records' || key === 'volunteers') {
         taskGrid.innerHTML='';
@@ -10273,6 +10276,7 @@ document.addEventListener('click',function(event){
 </script>
 
 
+<script src="website-analytics.js?v=20261119"></script>
 <script src="portal-navigation.js?v=20261107-fixed-sidebar"></script>
 <script src="bod-nominations-results.js?v=20261107-compact-note-icons"></script>
 <script src="bod-election-history-data.js?v=20261027-combined-1"></script>
