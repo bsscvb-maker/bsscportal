@@ -152,11 +152,12 @@
     #catalog .product .imgwrap {width:100%;aspect-ratio:1}
     #catalog .product h3 {line-height:1.22;min-height:0;margin-top:0}
     #catalog .product-description {min-height:0}
-    :is(#catalog .product .imgwrap,#productModal .picture-preview)::after {content:""!important;padding:0}
-    :is(#catalog .product .imgwrap,#productModal .picture-preview)[data-clean-picture="yes"]::after {display:none!important}
-    :is(#catalog .product .imgwrap,#productModal .picture-preview)[data-clean-picture="yes"] :is(.productImg,.product-modal-image) {height:100%;align-self:center}
-    :is(#catalog .product .imgwrap,#productModal .picture-preview):is([data-open-product="flexfit-hat"],[data-open-product="beanie"],[data-open-product="visor"])::after {display:none!important}
-    :is(#catalog .product .imgwrap,#productModal .picture-preview):is([data-open-product="flexfit-hat"],[data-open-product="beanie"]) :is(.productImg,.product-modal-image) {height:100%;align-self:center}
+    /* The legacy frame overlays hid part of the actual photo. Fit the whole source inside each preview. */
+    :is(#catalog .product .imgwrap,#productModal .picture-preview)::before,
+    :is(#catalog .product .imgwrap,#productModal .picture-preview)::after {display:none!important}
+    :is(#catalog .product .imgwrap,#productModal .picture-preview) > :is(.productImg,.product-modal-image) {
+      width:100%;height:100%;max-width:100%;min-width:0;align-self:center;object-fit:contain!important;object-position:center;clip-path:none!important
+    }
     @media(max-width:700px){.market-category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.market-category-caption{padding:12px}.market-category-sub{font-size:.78rem}}
     @media(max-width:360px){.market-category-grid{grid-template-columns:1fr}}
     @media(prefers-reduced-motion:reduce){.market-categories *{scroll-behavior:auto!important}}
