@@ -104,12 +104,14 @@
       border:1px solid #383434;border-radius:16px;text-align:left;
       background-color:#171415;
       background-image:linear-gradient(90deg,#0b0a0af5,#0b0a0a9c 44%,#0b0a0a12 76%),url("${new URL("campaign-hero.webp", imageBase).href}");
-      background-position:center,center 20%;background-size:cover;
+      background-position:center,center top;background-size:cover;
     }
     .market-shop-intro p {max-width:38ch;color:#fff}
     .market-shop-intro .market-category-actions button {background:#a92824;border-color:#e06a60;padding-inline:24px}
     .market-shop-intro .market-category-actions button:hover {background:#861d1a}
-    .market-category-photo[style] {background-position:center;background-size:cover}
+    .market-category-card .market-category-photo.market-modeled-photo {
+      aspect-ratio:16/9;background-position:center;background-size:cover;background-repeat:no-repeat;
+    }
     @media(max-width:620px){
       .market-shop-intro {justify-content:flex-end;min-height:0;padding-top:52%;background-image:linear-gradient(0deg,#0b0a0a 36%,#0b0a0ac0 51%,transparent 78%),url("${new URL("campaign-hero.webp", imageBase).href}");background-position:center,center top;background-size:cover,100% auto;background-repeat:no-repeat}
     }
@@ -364,7 +366,8 @@
     const photo = newElement("span", "market-category-photo");
     photo.dataset.group = group.id;
     if (group.id === "apparel" || group.id === "headwear") {
-      const source = new URL("campaign-" + group.id + ".webp", imageBase);
+      const source = new URL("campaign-" + group.id + "-full.webp", imageBase);
+      photo.classList.add("market-modeled-photo");
       photo.style.backgroundImage = 'url("' + source.href + '")';
     } else if (group.id === "accessories") {
       const comparison = newElement("span", "market-flag-comparison");
