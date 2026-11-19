@@ -154,10 +154,10 @@
     @supports (grid-template-rows:subgrid) {
       #catalog .product.market-aligned-card {
         display:grid;grid-row:span 12;grid-template-columns:minmax(0,1fr);
-        grid-template-rows:subgrid;row-gap:6px;align-items:start;min-width:0
+        grid-template-rows:subgrid;row-gap:6px;align-items:start;min-width:0;height:auto
       }
       #catalog .market-aligned-card > :last-child,
-      #catalog .market-aligned-card .optrow {display:contents}
+      #catalog .market-aligned-card .optrow {display:contents!important}
       #catalog .market-aligned-card .imgwrap {grid-row:1}
       #catalog .market-aligned-card h3 {grid-row:2}
       #catalog .market-aligned-card .market-product-category {grid-row:3}
