@@ -151,6 +151,32 @@
     .market-category-result {font-size:.9rem}
     #catalog .product .imgwrap {width:100%;aspect-ratio:1}
     #catalog .product h3 {line-height:1.22;min-height:0;margin-top:0}
+    @supports (grid-template-rows:subgrid) {
+      #catalog .product.market-aligned-card {
+        display:grid;grid-row:span 12;grid-template-columns:minmax(0,1fr);
+        grid-template-rows:subgrid;row-gap:6px;align-items:start;min-width:0
+      }
+      #catalog .market-aligned-card > :last-child,
+      #catalog .market-aligned-card .optrow {display:contents}
+      #catalog .market-aligned-card .imgwrap {grid-row:1}
+      #catalog .market-aligned-card h3 {grid-row:2}
+      #catalog .market-aligned-card .market-product-category {grid-row:3}
+      #catalog .market-aligned-card .product-description {grid-row:4}
+      #catalog .market-aligned-card .price {grid-row:5;align-self:center}
+      #catalog .market-aligned-card .size-help-link {grid-row:6;justify-self:center}
+      #catalog .market-size-options {grid-row:7}
+      #catalog .market-color-options {grid-row:8}
+      #catalog .market-quantity-options {grid-row:9}
+      #catalog .market-aligned-card .stockline {grid-row:10}
+      #catalog .market-aligned-card [data-help] {grid-row:11}
+      #catalog .market-aligned-card .row {grid-row:12;align-self:end;flex-wrap:wrap;margin-top:0!important}
+      #catalog :is(.market-size-options,.market-color-options,.market-quantity-options) {
+        display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;min-width:0
+      }
+      #catalog .market-color-options {flex-direction:column}
+      #catalog .market-color-options .swatches {display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+      #catalog .market-size-options select {max-width:100%}
+    }
     #catalog .product-description {min-height:0}
     /* Fit the source first so title margins are measured on the photo, not the frame. */
     :is(#catalog .product .imgwrap,#productModal .picture-preview)::before,
@@ -384,10 +410,32 @@
     return flagImages[product?.id] ? 999 : existingAvailableFor(product, size);
   };
 
+  function alignProductCards() {
+    if (!CSS.supports("grid-template-rows", "subgrid")) return;
+    for (const card of catalog.querySelectorAll("article.product")) {
+      const options = card.querySelector(".optrow");
+      if (!options || card.classList.contains("market-aligned-card")) continue;
+      card.classList.add("market-aligned-card");
+      card.querySelector("h3").nextElementSibling.classList.add("market-product-category");
+      const size = options.querySelector(".sizeSel");
+      const quantity = options.querySelector(".qtyInp");
+      const colors = options.querySelector(".swatches");
+      const colorName = options.querySelector("[data-colorname]");
+      const sizeGroup = newElement("div", "market-size-options");
+      const colorGroup = newElement("div", "market-color-options");
+      const quantityGroup = newElement("div", "market-quantity-options");
+      sizeGroup.append(size.previousElementSibling, size);
+      if (colors && colorName) colorGroup.append(colors, colorName);
+      quantityGroup.append(quantity.previousElementSibling, quantity);
+      options.append(sizeGroup, colorGroup, quantityGroup);
+    }
+  }
+
   const existingRender = renderCatalog;
   renderCatalog = function () {
     refreshAccessoryProducts();
     existingRender();
+    alignProductCards();
     arrangeAccessories();
     updateVisibility();
   };
