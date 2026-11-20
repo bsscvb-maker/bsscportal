@@ -1,0 +1,219 @@
+<style>
+:root{color-scheme:dark;--accent:#c63432;--line:#414146}
+*{box-sizing:border-box}body{margin:0;background:#080809;color:#fff;font:16px/1.5 system-ui,sans-serif}main{width:min(100% - 2rem,80rem);margin:auto;padding:clamp(1rem,4vw,2.5rem) 0}
+h1{font-size:clamp(2.5rem,7vw,4.5rem);letter-spacing:-.05em;line-height:1.04;margin:0 0 1rem}h2{margin:0 0 .7rem;font-size:1.4rem}p{margin:.5rem 0 1rem;color:#ddd}.steps{display:flex;justify-content:center;gap:.8rem 1.3rem;flex-wrap:wrap;padding:0;list-style:none;margin:0 0 1.1rem;color:#c4c4ca;font-size:.92rem}.steps [aria-current]{color:#ff8986;font-weight:750}
+section{padding:clamp(1rem,4vw,1.5rem);background:#101012;border:1px solid var(--line);border-radius:12px}fieldset{border:0;padding:0;margin:0;min-width:0}legend,label{font-weight:700}legend{margin-bottom:.5rem}.date{display:grid;grid-template-columns:1.25fr .8fr 1fr;gap:.65rem}.date label{display:grid;gap:.35rem;font-size:.88rem;min-width:0}
+select,button{font:inherit;min-height:45px;padding:.55rem .7rem;border-radius:7px}select{width:100%;background:#19191c;border:1px solid #5d5d64;color:#fff}button{margin-top:1rem;background:var(--accent);color:white;border:1px solid transparent;font-weight:750;cursor:pointer}button:disabled{background:#414147;color:#ddd;cursor:default}button[data-state="pending"]{background:#eab52e;color:#16120a}button[data-state="verified"]{background:#197b4a;color:white}.secondary{background:#26262b;border-color:var(--line)}.actions{display:flex;gap:.65rem;flex-wrap:wrap}:focus-visible{outline:2px solid #ffa09e;outline-offset:3px}[hidden]{display:none!important}#status:empty{display:none}#status{margin:.8rem 0 0}
+html,body,main,#pick{background:#000}#pick{border:0;padding:0}.roster-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;align-items:start}.roster-panel{border:1px solid #39393e;border-radius:12px;padding:1rem;min-width:0}.roster-panel h3,.roster-panel legend{margin:0 0 .7rem;font-size:1.16rem}.roster-panel legend{padding:0 .4rem}.roster-panel ul{margin:0;padding:0;list-style:none}.roster-panel li,.candidate{padding:.62rem 0;border-bottom:1px solid #28282e}.roster-panel li:last-child{border-bottom:0}.roster-panel .reason{font-size:.83rem;color:#c5c5ca;display:block;margin-top:.2rem}.eligible-panel{border-color:#bb393b}.candidate{display:flex;gap:.55rem;align-items:center;cursor:pointer}.candidate:has(:checked){color:#ff9a96}.candidate input{accent-color:#c63432}.pick-summary{border-top:2px solid #c63432;margin-top:1.3rem;padding:1rem 0 .2rem}.pick-summary p{margin:.3rem 0;color:#f4f4f4}@media(max-width:720px){.roster-grid{grid-template-columns:1fr}}.sister-patch-heading{display:flex;align-items:center;justify-content:center;gap:clamp(1rem,4vw,3rem);margin:0 auto 1.4rem;max-width:64rem}.sister-patch-heading h1{margin:0}.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.7rem;margin:1rem 0}.stat-grid>div{border:1px solid #39393e;border-top:3px solid #c63432;border-radius:8px;padding:.8rem}.stat-grid strong{font-size:1.8rem;display:block}.stat-grid span{font-size:.85rem;color:#ddd}#member-detail h2{margin-top:1rem}#service-record ul{padding-left:1.2rem}#service-record li{margin:.35rem 0}.eligible-panel .candidate input{display:none}.eligible-panel .candidate{pointer-events:none;cursor:default}.roster-grid{align-items:stretch}#pick-window{width:min(600px,92vw);background:#000;color:white;border:1px solid #555;border-radius:12px;padding:1.3rem}#pick-window::backdrop{background:#000c}.candidate-choice{display:block;width:100%;text-align:left;margin:.5rem 0}#eligible-choices{margin:1rem 0}
+#yes[data-state="loading"]{background:#197b4a;color:#fff;opacity:1}#yes[data-state="loading"]::after{content:"";display:inline-block;width:.8em;height:.8em;margin-left:.65em;border:2px solid #ffffff55;border-top-color:#fff;border-radius:50%;animation:loading-turn .8s linear infinite}@keyframes loading-turn{to{transform:rotate(360deg)}}.eligible-panel{border:2px solid #ec4946;background:linear-gradient(145deg,#2a0909,#000 75%);box-shadow:0 0 24px #b5202029}.eligible-panel legend{font-size:1.65rem;font-weight:850;color:#ff9994}.eligible-panel .candidate{font-size:1.14rem;font-weight:750;padding:1rem .2rem}.recipient-patch{width:38px;height:38px;object-fit:contain;vertical-align:middle;margin-right:.65rem}.pick-summary{text-align:center}#open-pick-window{font-size:1.2rem;padding:.85rem 2.3rem}.comparison-card td:first-child{padding-right:.45rem}.comparison-card{padding:.8rem}#verify,#confirm{width:100%;max-width:58rem;margin-inline:auto}.steps{width:100%;max-width:58rem;margin-inline:auto}
+
+.comparison-card h3{display:flex;align-items:baseline;gap:.28em;white-space:nowrap;font-size:1.05rem;letter-spacing:-.025em;min-height:1.65rem}.comparison-card h3 .road-name{font-size:.72em;letter-spacing:-.02em}
+</style>
+<main>
+<div class="sister-patch-heading"><h1>Sister Patches</h1><img src="https://raw.githubusercontent.com/bsscvb-maker/boneshakers-website/c7a399412af16622c147529ba9e56b1119f6b9f1/assets/sister-patch.png" alt="Red embroidered Sister Patch" style="width:300px;max-width:40vw;height:auto"></div>
+<ol class="steps" aria-label="Progress"><li aria-current="step">Verify membership</li><li>Confirm your name</li><li>Choose a member</li></ol>
+<section id="verify" aria-labelledby="verify-title">
+<h2 id="verify-title">Verify your membership</h2>
+<form id="birthday-form"><fieldset><legend>Date of birth</legend><div class="date"><label>Month<select name="month" required><option value="">Month</option></select></label><label>Day<select name="day" required><option value="">Day</option></select></label><label>Year<select name="year" required><option value="">Year</option></select></label></div></fieldset><button disabled>Submit</button></form>
+</section>
+<section id="confirm" hidden aria-labelledby="confirm-title"><h2 id="confirm-title"></h2><div class="actions"><button type="button" id="yes">Yes, that’s me</button><button type="button" id="retry" class="secondary">Try another date</button></div></section>
+<section id="pick" hidden aria-labelledby="pick-title"><div class="roster-grid">
+<div class="roster-panel"><h3>Current Sisters</h3><ul id="past-recipients"></ul></div>
+<div class="roster-panel"><h3>Non-eligible Sisters</h3><ul id="ineligible-members"></ul></div>
+<fieldset class="roster-panel eligible-panel"><legend>Eligible Sisters</legend><div id="members"></div></fieldset>
+</div><div class="pick-summary"><button type="button" id="open-pick-window">Pick your Sister</button><p id="selected-member" aria-live="polite"></p></div><button type="button" id="reset" class="secondary">Start over</button></section>
+<dialog id="pick-window" aria-labelledby="pick-window-title"><h2 id="pick-window-title">Pick your Sister</h2><p>Compare this year’s club involvement for each eligible Sister.</p><div id="eligible-choices"></div><button type="button" id="close-pick-window" class="secondary">Close</button></dialog><section id="member-detail" hidden aria-labelledby="detail-name"><button type="button" id="back-to-sisters" class="secondary">Back to sisters</button><h2 id="detail-name"></h2><div id="member-stats"></div><div id="service-record"></div></section><p id="status" role="status" aria-live="polite"></p>
+</main>
+<script>
+(()=>{
+ const endpoint='https://script.google.com/macros/s/AKfycbxgJbBXZ1d62JBh3RpJgGD6LZVEaTiMXRIQ0l1XZmXvXVWR15pmZ_XZERyZTXzaiI_t/exec';
+ const $=id=>document.getElementById(id),form=$('birthday-form'), submit=form.querySelector('button'), birth=form.elements;
+ let identity=null, pending=false;
+ const months=new Intl.DateTimeFormat('en-US',{month:'long',timeZone:'UTC'});
+ for(let i=1;i<=12;i++)birth.month.add(new Option(months.format(new Date(Date.UTC(2000,i-1,1))),String(i).padStart(2,'0')));
+ for(let i=1;i<=31;i++)birth.day.add(new Option(i,String(i).padStart(2,'0')));
+ for(let i=new Date().getFullYear();i>=1900;i--)birth.year.add(new Option(i,String(i)));
+ function dob(){
+  const value=[birth.year.value,birth.month.value,birth.day.value].join('-');
+  const date=new Date(value+'T00:00:00Z');
+  return Number.isFinite(date.getTime())&&date.toISOString().slice(0,10)===value?value:'';
+ }
+ function show(stage){
+  ['verify','confirm','pick'].forEach((id,i)=>$(id).hidden=i!==stage);
+  document.querySelectorAll('.steps li').forEach((el,i)=>i===stage?el.setAttribute('aria-current','step'):el.removeAttribute('aria-current'));
+ }
+ function reset(){
+  identity=null;window.sisterSavedBallot=null;window.sisterProfiles=[];pending=false;form.reset();submit.dataset.state='';submit.disabled=true;
+  for(const id of ['members','past-recipients','ineligible-members'])$(id).replaceChildren();$('selected-member').textContent='Choose an eligible member above.';$('status').textContent='';show(0);birth.month.focus({preventScroll:true});
+ }
+ form.addEventListener('change',()=>{if(!pending)submit.disabled=!dob();});
+ async function request(action,fields){
+  const result=await fetch(endpoint,{method:'POST',body:JSON.stringify({action,...fields}),signal:AbortSignal.timeout(45000)});
+  if(!result.ok)throw Error('Membership verification is temporarily unavailable.');
+  const data=await result.json();if(data.error)throw Error(data.error);return data;
+ }
+ form.addEventListener('submit',async e=>{
+  e.preventDefault();const birthday=dob();if(!birthday||pending)return;
+  pending=true;submit.disabled=true;submit.dataset.state='pending';$('status').textContent='';
+  try{
+   if(!endpoint)throw Error('The membership roster is not connected yet.');
+   else identity=await request('verify',{birthday});
+   if(!identity?.name)throw Error('We could not verify that date of birth.');
+   
+   submit.dataset.state='verified';
+   
+   $('confirm-title').textContent='Are you '+identity.name+'?';show(1);$('yes').focus({preventScroll:true});
+  }catch(error){$('status').textContent=error.message;}
+  finally{pending=false;submit.dataset.state='';submit.disabled=!dob();}
+ });
+ window.BSSCSisterVoting={cast:nominee=>request('castVote',{token:identity?.token,nominee})};
+ $('retry').addEventListener('click',reset);$('reset').addEventListener('click',reset);
+ $('yes').addEventListener('click',async()=>{
+  if(!identity||pending)return;pending=true;$('yes').disabled=true;$('yes').dataset.state='loading';$('yes').textContent='Loading sisters…';$('yes').setAttribute('aria-busy','true');$('status').textContent='';
+  try{
+   const result=await request('eligible',{token:identity.token});
+   const people=Array.isArray(result.members)?result.members:[];
+   const past=Array.isArray(result.pastRecipients)?result.pastRecipients:[], ineligible=Array.isArray(result.ineligible)?result.ineligible:[];
+   function rows(target,items,empty){
+    const nodes=items.map(person=>{const li=document.createElement('li');const name=document.createElement('strong');name.textContent=person.name;if(target==='past-recipients'){const badge=document.createElement('img');badge.src=document.querySelector('.sister-patch-heading img').src;badge.alt='Sister Patch recipient';badge.className='recipient-patch';li.append(badge);}li.append(name);for(const reason of person.reasons||[]){const detail=document.createElement('span');detail.className='reason';detail.textContent=reason;li.append(detail);}return li;});
+    if(!nodes.length){const li=document.createElement('li');li.textContent=empty;nodes.push(li);}
+    $(target).replaceChildren(...nodes);
+   }
+   rows('past-recipients',past,'No past recipients recorded.');
+   rows('ineligible-members',ineligible,'No ineligible members recorded.');
+   window.sisterProfiles=result.profiles||[];
+   window.sisterSavedBallot=result.ballot||null;
+   const options=people.map(person=>{const label=document.createElement('label');label.className='candidate';const radio=document.createElement('input');radio.type='radio';radio.name='sister-pick';radio.value=person.id;radio.addEventListener('change',()=>openMember(person));label.append(radio,document.createTextNode(person.name));return label;});
+   $('members').replaceChildren(...options);show(2);
+   if(!options.length)$('members').textContent='No eligible members to display.';
+   (options[0]?.querySelector('input')||$('reset')).focus({preventScroll:true});
+  }catch(error){$('status').textContent=error.message;}
+  finally{pending=false;$('yes').disabled=false;$('yes').dataset.state='';$('yes').textContent='Yes, that’s me';$('yes').removeAttribute('aria-busy');}
+ });
+let detailsSequence=0;
+ async function openMember(person){
+  const sequence=++detailsSequence;
+  $('selected-member').textContent=person.name;
+  $('pick').hidden=true;$('member-detail').hidden=false;$('detail-name').textContent=person.name;
+  $('member-stats').textContent='Loading member record…';$('service-record').replaceChildren();$('status').textContent='';
+  try{
+   const data=await request('details',{token:identity.token,member:person.id});
+   if(sequence!==detailsSequence)return;
+   const heading=document.createElement('p');heading.textContent=data.year+' recorded service';
+   const stats=document.createElement('div');stats.className='stat-grid';
+   for(const [value,label] of [[data.attendancePercent===null?'—':data.attendancePercent+'%','Overall attendance'],[data.total+' / '+data.tracked,'Attended / tracked'],[data.meetings+' / '+data.meetingTracked,'General meetings'],[data.rides+' / '+data.rideTracked,'Rides'],[data.bikeNights,'Bike nights'],[data.otherEvents,'Other events'],[data.volunteerCompleted,'Completed volunteer assignments'],[data.volunteerScheduled,'Scheduled volunteer assignments']]){
+    const tile=document.createElement('div'),number=document.createElement('strong'),caption=document.createElement('span');
+    number.textContent=value;caption.textContent=label;tile.append(number,caption);stats.append(tile);
+   }
+   $('member-stats').replaceChildren(heading,stats);
+   function record(title,items,empty){
+    const h=document.createElement('h3');h.textContent=title;const ul=document.createElement('ul');
+    for(const text of items){const li=document.createElement('li');li.textContent=text;ul.append(li);}
+    if(!items.length){const p=document.createElement('p');p.textContent=empty;$('service-record').append(h,p);}
+    else $('service-record').append(h,ul);
+   }
+   record('Attendance',data.attended.map(item=>item.date+' · '+item.name),'No attendance recorded for this year.');
+   record('Volunteer service',data.completed.map(item=>item.event+' · '+item.role),'No completed volunteer service recorded.');
+   record('Scheduled volunteering',data.scheduled.map(item=>item.event+' · '+item.role+' · '+item.status),'No scheduled volunteer assignments recorded.');
+  }catch(error){if(sequence===detailsSequence){$('member-stats').textContent='';$('status').textContent=error.message;}}
+ }
+ $('back-to-sisters').addEventListener('click',()=>{detailsSequence++;$('member-detail').hidden=true;show(2);});
+ $('reset').addEventListener('click',()=>{detailsSequence++;$('member-detail').hidden=true;});
+
+})();
+</script>    <style>
+html,body{overflow:hidden;overflow-anchor:none;scroll-behavior:auto}#reset,#selected-member{display:none!important}
+#pick-window{position:static;width:100%;max-width:100%;max-height:none;margin:0;border:1px solid #444;border-radius:12px;padding:1.1rem;background:#000;color:#fff;overflow:visible}
+#eligible-choices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem}
+.comparison-card{padding:1rem;border:1px solid #444;border-top:3px solid #c63432;border-radius:10px;min-width:0}
+.comparison-card h3{margin:0 0 .6rem;font-size:1.15rem}.comparison-card p{font-size:.88rem}
+.comparison-card table{width:100%;border-collapse:collapse;font-size:.88rem}.comparison-card td{padding:.35rem 0;border-bottom:1px solid #2e2e33}.comparison-card td:last-child{text-align:right;font-weight:700}
+.comparison-card details{margin-top:.65rem}.comparison-card ul{padding-left:1.1rem;font-size:.85rem}
+#close-pick-window{margin-bottom:1rem}#open-pick-window:disabled{background:#444}
+@media(max-width:900px){#eligible-choices{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:540px){#eligible-choices{grid-template-columns:1fr}}
+</style>
+
+<style>
+.sister-vote-review{margin-top:1.2rem;border:2px solid #c63432;background:#120404}
+.sister-vote-review h3{margin:0;font-size:1.3rem}
+.sister-vote-review[data-saved="true"]{border-color:#299b62;background:#06180f}
+.vote-person-name{font-size:1.3rem;font-weight:800;color:#fff}
+.comparison-card .sister-select{width:100%;margin-top:auto}
+.comparison-card{display:flex;flex-direction:column;gap:0}
+.comparison-card details{margin-bottom:1rem}
+.comparison-card[data-selected="true"]{outline:2px solid #f0817b;outline-offset:2px}
+.vote-receipt{overflow-wrap:anywhere;font-size:.86rem}
+@media(max-width:600px){.sister-patch-heading{gap:1rem}.sister-patch-heading h1{font-size:clamp(1.8rem,7vw,3rem)}}
+</style>
+<script>
+(()=>{
+ const chooser=document.getElementById('pick-window'),button=document.getElementById('open-pick-window'),close=document.getElementById('close-pick-window'),content=document.getElementById('eligible-choices'),roster=document.getElementById('pick');
+ const review=document.createElement('section');review.className='sister-vote-review';review.hidden=true;review.setAttribute('aria-live','polite');content.after(review);
+ let selected=null,saving=false;
+ function text(tag,value,className){const el=document.createElement(tag);el.textContent=value;if(className)el.className=className;return el;}
+ function savedView(ballot){
+  selected=null;review.hidden=false;review.dataset.saved='true';review.replaceChildren(text('h3','Your vote is recorded'),text('p',ballot.nomineeName,'vote-person-name'),text('p','Your Sister Patch vote has been saved. One vote per member is allowed for this review year.'),text('p','Confirmation: '+ballot.receipt,'vote-receipt'));
+  const done=document.createElement('button');done.type='button';done.disabled=true;done.dataset.state='verified';done.textContent='Vote submitted';review.append(done);
+  content.querySelectorAll('.sister-select').forEach(el=>{el.disabled=true;el.textContent='Voting complete';});
+ }
+ function choose(person,card){
+  if(saving||window.sisterSavedBallot?.saved)return;
+  selected=person;content.querySelectorAll('.comparison-card').forEach(el=>el.removeAttribute('data-selected'));card.dataset.selected='true';
+  review.hidden=false;review.dataset.saved='false';
+  const submit=document.createElement('button');submit.type='button';submit.textContent='Submit vote';
+  const change=document.createElement('button');change.type='button';change.className='secondary';change.textContent='Change selection';
+  const message=text('p','');message.setAttribute('role','status');
+  review.replaceChildren(text('h3','Confirm your vote'),text('p',person.name,'vote-person-name'),text('p','Review your choice, then submit. Each member may submit one final vote for this review year.'));
+  const actions=document.createElement('div');actions.className='actions';actions.append(submit,change);review.append(actions,message);
+  change.onclick=()=>{if(saving)return;selected=null;review.hidden=true;card.removeAttribute('data-selected');};
+  submit.onclick=async()=>{
+   if(!selected||saving||window.sisterSavedBallot?.saved)return;
+   saving=true;submit.disabled=true;change.disabled=true;submit.dataset.state='pending';submit.textContent='Saving vote…';submit.setAttribute('aria-busy','true');message.textContent='';
+   content.querySelectorAll('.sister-select').forEach(el=>el.disabled=true);
+   try{
+    const ballot=await window.BSSCSisterVoting.cast(selected.id);
+    if(!ballot.saved||!ballot.receipt)throw Error('The save was not confirmed. Please try again.');
+    window.sisterSavedBallot=ballot;savedView(ballot);
+   }catch(error){
+    message.textContent=error.name==='TimeoutError'?'The response took too long. Click Submit vote again to check or save your vote; it will not be counted twice.':error.message;
+    submit.disabled=false;change.disabled=false;submit.dataset.state='';submit.textContent='Submit vote';submit.removeAttribute('aria-busy');content.querySelectorAll('.sister-select').forEach(el=>el.disabled=false);
+   }finally{saving=false;}
+  };
+ }
+ function render(){
+  content.replaceChildren();review.hidden=true;
+  const profiles=[...(window.sisterProfiles||[])].sort((a,b)=>a.name.localeCompare(b.name));
+  for(const person of profiles){
+   const card=document.createElement('article');card.className='comparison-card';
+   const title=document.createElement('h3'),nameParts=person.name.match(/^(.*?)\s*(\(“.*”\))$/);
+   if(nameParts){title.append(text('span',nameParts[1]),text('span',nameParts[2],'road-name'));}else title.textContent=person.name;
+   const table=document.createElement('table');
+   for(const [caption,value] of [
+    ['Overall attendance',person.attendancePercent===null?'Unrecorded':person.attendancePercent+'%'],
+    ['Activities attended',person.total+' / '+person.tracked],
+    ['General meetings',person.meetings+' / '+person.meetingTracked],
+    ['Club rides & events',person.rides+' / '+person.rideTracked],
+    ['Bike nights',person.bikeNights+' / 10']
+   ]){const tr=document.createElement('tr');tr.append(text('td',caption),text('td',value));table.append(tr);}
+   card.append(title,text('p',person.year+' recorded service'),table);
+   const details=document.createElement('details');details.append(text('summary','Attendance record'));
+   const items=document.createElement('ul');for(const item of person.attended||[])items.append(text('li',item.date+' · '+item.name));details.append(items);card.append(details);
+   const select=document.createElement('button');select.type='button';select.className='sister-select';select.textContent='Select '+person.name.split(' ')[0];select.setAttribute('aria-label','Select '+person.name);select.disabled=!person.id;
+   select.onclick=()=>choose(person,card);card.append(select);content.append(card);
+  }
+  if(!profiles.length)content.append(text('p','No eligible profiles are available.'));
+  if(window.sisterSavedBallot?.saved)savedView(window.sisterSavedBallot);
+ }
+ button.addEventListener('click',()=>{render();roster.hidden=true;chooser.setAttribute('open','');});
+ close.addEventListener('click',()=>{if(saving)return;chooser.removeAttribute('open');roster.hidden=false;});
+ let lastHeight=0,minimumHeight=0,scheduled=false;
+ function resize(){
+  scheduled=false;
+  const frame=window.frameElement;if(!frame)return;
+  minimumHeight=Math.max(minimumHeight,Math.ceil(document.body.getBoundingClientRect().height));document.body.style.minHeight=minimumHeight+'px';const height=minimumHeight+4;
+  if(height!==lastHeight){lastHeight=height;frame.style.height=height+'px';}
+ }
+ new ResizeObserver(()=>{if(!scheduled){scheduled=true;requestAnimationFrame(resize);}}).observe(document.body);
+ resize();
+})();
+</script>       
