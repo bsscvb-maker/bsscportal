@@ -9,3 +9,5 @@ The original server-backed course logic and private deployment have not been sub
 Rebuild maintained source in setup/foundations-training with Node 22.13 or newer: npm install, then npm run build. Copy dist/index.html and dist/assets into training/. Keep training/media and training/posters. Site-relative paths support the existing bsscportal GitHub Pages deployment.
 
 Videos use the existing Arlo audio; sections 3, 4, and 7 use a smaller AAC audio stream to fit GitHub's upload transport limit. Video frames and slide timings are unchanged.
+
+The player now displays exact video lengths, overall course completion, and 100% section completion separately from quiz scores. A branded certificate preview is available from the sidebar and at ?certificate=preview. After passing all seven quizzes and submitting the attestation, the completion screen opens a named printable certificate. Printing uses a landscape Letter layout with a practice-only notice; preview certificates never award training credit or modify progress. The existing practice storage key is unchanged.
