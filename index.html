@@ -3876,6 +3876,19 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       URL.revokeObjectURL(url);
     }
 
+    function roadNameColumn(headers) {
+      return headers.findIndex(header => ['roadname','road'].includes(String(header ?? '').toLowerCase().replace(/[^a-z]/g, '')));
+    }
+
+    function uppercaseRosterRoadNames(rows) {
+      const column = roadNameColumn(rows[0] || []);
+      if (column < 0) return rows;
+      return rows.map((row, index) => {
+        if (!index || typeof row[column] !== 'string') return row;
+        return Object.assign([...row], { [column]: row[column].toUpperCase(), renewalSubmittedAt: row.renewalSubmittedAt });
+      });
+    }
+
     function renderDataTable(targetId, statusId, rows, headerRowIndex = 0, maxColumns = 16, editOptions = null) {
       const target = document.getElementById(targetId);
       const status = document.getElementById(statusId);
@@ -3904,6 +3917,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const isYearCount = targetId === 'membershipContent' && currentMembershipSheet === 'Year Count';
       const isHonorary = targetId === 'membershipContent' && currentMembershipSheet === 'Honorary';
       const isLifer = targetId === 'membershipContent' && currentMembershipSheet === 'Lifer';
+      const roadColumn = targetId === 'membershipContent' ? roadNameColumn(rows[headerRowIndex]) : -1;
       const isNumberedRoster = targetId === 'membershipContent' && ['2026','2027'].includes(currentMembershipSheet);
       if (targetId === 'membershipContent' && currentMembershipSheet === '2027') maxColumns=rows[headerRowIndex].length;
       const headers = rows[headerRowIndex].slice(0, maxColumns);
@@ -3992,6 +4006,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           const formulaValue = editOptions && editOptions.formulaRows && editOptions.formulaRows[item.sourceIndex] ? String(editOptions.formulaRows[item.sourceIndex][sourceColumnIndex] || '') : '';
           const editable = editMode && !isTransaction2026 && !isBftTracking && !isHonorary && (isRoster2027 || !formulaValue.startsWith('='));
           let shownValue = item.row[sourceColumnIndex] ?? '';
+          if (sourceColumnIndex === roadColumn) shownValue = String(shownValue).toUpperCase();
           if (isTicketLedger && columnIndex === ticketGroupStart + 2) {
             const quantity = Number(String(item.row[ticketGroupStart + 1] || '').replace(/[$,]/g, ''));
             if (Number.isFinite(quantity) && quantity > 0) shownValue = money(quantity * ticketPrice);
@@ -4165,7 +4180,8 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         searchCount.textContent = pipelineStage ? `${visible} ${pipelineLabel} order${visible === 1 ? '' : 's'} shown` : (query ? `${visible} matching row${visible === 1 ? '' : 's'} shown` : '');
       });
       target.querySelectorAll('[data-edit-cell="true"]').forEach(cell => cell.addEventListener('input', () => {
-        const value = cell.textContent.trim();
+        const text = cell.textContent.trim();
+        const value = Number(cell.dataset.column) === roadColumn ? text.toUpperCase() : text;
         const key = `${cell.dataset.row}:${cell.dataset.column}`;
         if (!tablePendingEdits[targetId]) tablePendingEdits[targetId] = new Map();
         if (value === cell.dataset.value) {
@@ -7831,7 +7847,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         if (!dialog.isConnected) return;
         const members = yearCountNewMemberNames(rows, year);
         list.innerHTML = members.length
-          ? '<p><strong>' + members.length + ' new member' + (members.length === 1 ? '' : 's') + '</strong></p><ol>' + members.map(member => '<li><small class="year-count-member-date" aria-label="Start date">' + esc(member.startDate || '—') + '</small><div>' + esc([member.first,member.last].filter(Boolean).join(' ') || 'Name unavailable') + (member.road ? ' <span>“' + esc(member.road) + '”</span>' : '') + '</div></li>').join('') + '</ol>'
+          ? '<p><strong>' + members.length + ' new member' + (members.length === 1 ? '' : 's') + '</strong></p><ol>' + members.map(member => '<li><small class="year-count-member-date" aria-label="Start date">' + esc(member.startDate || '—') + '</small><div>' + esc([member.first,member.last].filter(Boolean).join(' ') || 'Name unavailable') + (member.road ? ' <span>“' + esc(member.road.toUpperCase()) + '”</span>' : '') + '</div></li>').join('') + '</ol>'
           : '<p>No active new members recorded for this year.</p>';
       } catch (error) {
         if (dialog.isConnected) list.textContent = 'Names could not be loaded. Close this window and try again.';
@@ -7857,7 +7873,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         if(kind==='active')return status==='active';
         if(kind==='lifer')return status==='active' && /^(lifer|life member)$/i.test(value(row,'membership type')) || status==='active' && /^(lifer|life member)$/i.test(value(row,'member classification'));
         return !/inactive|deceased|removed/i.test(status) && !!value(row,'first name');
-      }).map(row=>({name:[value(row,'first name'),value(row,'last name')].filter(Boolean).join(' '),last:value(row,'last name'),first:value(row,'first name'),road:value(row,'road name')})).filter(member=>member.name).sort((a,b)=>a.last.localeCompare(b.last,'en',{sensitivity:'base'})||a.first.localeCompare(b.first,'en',{sensitivity:'base'}));
+      }).map(row=>({name:[value(row,'first name'),value(row,'last name')].filter(Boolean).join(' '),last:value(row,'last name'),first:value(row,'first name'),road:value(row,'road name').toUpperCase()})).filter(member=>member.name).sort((a,b)=>a.last.localeCompare(b.last,'en',{sensitivity:'base'})||a.first.localeCompare(b.first,'en',{sensitivity:'base'}));
     }
 
     async function showDashboardMemberList(kind,year,rosterRows) {
@@ -8595,6 +8611,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           const [previousRows,renewalRows] = await Promise.all([getSheetValues("'2026'!A1:AK900",MEMBERSHIP_SPREADSHEET_ID),getSheetValues("'Vetting_Raw_2027'!A1:BD1000",MEMBERSHIP_SPREADSHEET_ID)]);
           rows = buildCurrentRenewalRoster(rows,previousRows,renewalRows,new Date(),formulasOrRoster);
         }
+        if (/^\d{4}$/.test(sheetName)) rows = uppercaseRosterRoadNames(rows);
         if (config.dashboard) renderMembershipDashboard(rows,sheetName.replace('Dashboard ',''),formulasOrRoster,officerRows);
         else if (config.attendanceSummary) renderMembershipAttendanceSummary(rows);
         else if (config.attendanceDashboard) await renderMembershipAttendanceDashboard(rows,sheetName.startsWith('2027') ? '2027' : '2026');
