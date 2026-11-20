@@ -3957,16 +3957,17 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         const last=headers.findIndex(h=>nameHeader(h)==='lastname'), first=headers.findIndex(h=>nameHeader(h)==='firstname');
         if(last>=0) indexedData.sort((a,b)=>String(a.row[last]||'').trim().localeCompare(String(b.row[last]||'').trim(),'en',{sensitivity:'base'}) || String(a.row[first]||'').trim().localeCompare(String(b.row[first]||'').trim(),'en',{sensitivity:'base'}) || a.sourceIndex-b.sourceIndex);
       }
+      const editMode = Boolean(editOptions && tableEditModes[targetId]);
+      if (isRoster2027 && editMode) target.classList.remove('mobile-roster-active');
       // Keep original sheet indexes so hiding display columns cannot shift edits.
       const rosterHeader = index => String(headers[index] || '').toLowerCase().replace(/[^a-z0-9]/g,'');
       const displayColumns = isBftTracking ? [8,0,1,2,...Array.from({length:width},(_,i)=>i).filter(i=>![8,0,1,2].includes(i))] : Array.from({length:width},(_,i)=>i).filter(index => {
         if (!isRoster2027) return true;
         const label = rosterHeader(index);
-        if (/^(?:codeofconduct|coc)(?:ref|reference)/.test(label)) return false;
+        if (!editMode && /^(?:codeofconduct|coc)(?:ref|reference)/.test(label)) return false;
         return label !== '' || indexedData.some(item => String(item.row[index] ?? '').trim());
       });
       const finalHeaders = displayColumns.map(i => headers[i] || '');
-      const editMode = Boolean(editOptions && tableEditModes[targetId]);
       const editButton = editOptions ? `<button class="dashboard-edit-btn ${editMode ? 'active' : ''}" data-toggle-edit="${targetId}" aria-pressed="${editMode}">${editMode ? (isTransaction2026 || isBftTracking || isHonorary ? 'Close Editor' : 'Done Editing') : 'Edit Data'}</button>` : '';
       const exportButton = `<button class="export-data-btn" type="button" data-export-table="${targetId}">Export Data</button>`;
       const namesOnlyButton = targetId === 'membershipContent' && currentMembershipSheet === '2026 - Non Renewal' ? '<button class="export-data-btn" type="button" data-download-non-renewal-names>Download Names Only</button>' : '';
@@ -4016,8 +4017,8 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         return `<tr class="${rowClasses}" ${isRoster2027 ? `data-roster-source-row="${sourceRowNumber}" ${newRenewal ? `data-renewal-expires="${renewalTime + 86400000}"` : ''}` : ''} ${isTransaction2026 || isBftTracking || isHonorary ? `data-transaction-row="${sourceRowNumber}" data-source-index="${item.sourceIndex}"` : ''} ${isOrder ? `data-market-stages="${orderStages}" data-market-order-id="${esc(orderId)}"` : ''}>${isHonorary && editMode ? `<td class="transaction-pick-cell"><input type="checkbox" data-pick-honorary aria-label="Edit honorary member row ${sourceRowNumber}"></td>` : ''}${isTransaction2026 && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-transaction aria-label="Edit row ${sourceRowNumber}: ${esc(String(item.row[headers.findIndex(header => /^description$/i.test(String(header || '').trim()))] || 'Transaction'))}"></td>` : ''}${isBftTracking && editMode ? `<td class="transaction-pick-cell" data-label="Edit"><input type="checkbox" data-pick-bft-row aria-label="Edit ${esc(String(item.row[0] || `row ${sourceRowNumber}`))}: ${esc(String(item.row[1] || 'Donation'))}"></td>` : ''}${isTransaction2026 ? `<td class="transaction-row-number" data-label="Row">${sourceRowNumber}</td>` : ''}${isLifer ? `<td class="lifer-row-number" data-label="Row">${sourceRowNumber}</td>` : ''}${isNumberedRoster ? `<td class="lifer-row-number" data-label="#">${rosterIndex + 1}${newRenewal ? '<span class="new-renewal-badge" title="Submitted within the last 24 hours">New renewal</span>' : ''}</td>` : ''}${finalHeaders.map((_, columnIndex) => {
           const sourceColumnIndex = displayColumns[columnIndex];
           const formulaValue = editOptions && editOptions.formulaRows && editOptions.formulaRows[item.sourceIndex] ? String(editOptions.formulaRows[item.sourceIndex][sourceColumnIndex] || '') : '';
-          const editable = editMode && !isTransaction2026 && !isBftTracking && !isHonorary && !formulaValue.startsWith('=') && !(isRoster2027 && ['renewedon','renewal'].includes(rosterHeader(sourceColumnIndex)));
-          let shownValue = item.row[sourceColumnIndex] || '';
+          const editable = editMode && !isTransaction2026 && !isBftTracking && !isHonorary && (isRoster2027 || !formulaValue.startsWith('='));
+          let shownValue = item.row[sourceColumnIndex] ?? '';
           if (isTicketLedger && columnIndex === ticketGroupStart + 2) {
             const quantity = Number(String(item.row[ticketGroupStart + 1] || '').replace(/[$,]/g, ''));
             if (Number.isFinite(quantity) && quantity > 0) shownValue = money(quantity * ticketPrice);
@@ -5029,10 +5030,15 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         return;
       }
       const edits = [...(tablePendingEdits[targetId] || new Map()).values()];
+      const is2027Roster = targetId === 'membershipContent' && tableRenderCache[targetId].editOptions?.sheetName === '2027';
+      const cells = is2027Roster ? document.getElementById(targetId).querySelectorAll('[data-edit-cell]') : [];
+      cells.forEach(cell => { cell.contentEditable = 'false'; });
       button.disabled = true;
       button.textContent = edits.length ? 'Saving…' : 'Closing…';
       try {
-        for (const edit of edits) await updateSheetCell(edit.spreadsheetId || BFT_SPREADSHEET_ID, edit.sheet, edit.row, edit.column, edit.value);
+        if (is2027Roster) {
+          await save2027RosterEdits(edits, tableRenderCache[targetId].editOptions.formulaRows);
+        } else for (const edit of edits) await updateSheetCell(edit.spreadsheetId || BFT_SPREADSHEET_ID, edit.sheet, edit.row, edit.column, edit.value);
         tableEditModes[targetId] = false;
         tablePendingEdits[targetId] = new Map();
         if (targetId === 'membershipContent') await loadMembershipSheet(currentMembershipSheet, true);
@@ -5043,7 +5049,10 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       } catch (error) {
         button.disabled = false;
         button.textContent = 'Done Editing';
-        alert('One or more changes could not be saved. Your unsaved cells remain highlighted so you can try again.');
+        cells.forEach(cell => { cell.contentEditable = 'true'; });
+        alert(error.message?.startsWith('A roster row changed') || error.message?.startsWith('The renewal edit columns')
+          ? error.message
+          : 'One or more changes could not be saved. Your unsaved cells remain highlighted so you can try again.');
       }
     }
 
@@ -8425,10 +8434,64 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       });
     }, 30000);
 
-    function buildCurrentRenewalRoster(rows, previousRows, renewalRows, today = new Date()) {
+    const roster2027SheetColumns = 37;
+    const roster2027RenewalHeaders = ['Renewed On', 'Renewal #'];
+    const roster2027Range = "'2027'!1:856";
+    const roster2027ManualFormula = /^=IF\(TRUE,[\s\S]*,"BSSC roster manual override"\)$/i;
+
+    async function save2027RosterEdits(edits, originalRows) {
+      if (!edits.length) return;
+      const current = await getSheetValues(roster2027Range, MEMBERSHIP_SPREADSHEET_ID, 'FORMULA');
+      const editedRows = new Set(edits.map(edit => edit.row));
+      for (const row of editedRows) {
+        if (JSON.stringify(current[row - 1]) !== JSON.stringify(originalRows[row - 1])) {
+          throw new Error('A roster row changed in Google Sheets. Reopen the roster before saving that row.');
+        }
+      }
+      const renewalColumns = [...new Set(edits.filter(edit => edit.column >= roster2027SheetColumns).map(edit => edit.column))];
+      const updates = renewalColumns.map(column => {
+        const label = roster2027RenewalHeaders[column - roster2027SheetColumns];
+        if (current[0]?.[column] !== label && current.some(row => String(row[column] ?? '').trim())) {
+          throw new Error('The renewal edit columns are already in use in Google Sheets.');
+        }
+        return {range:"'2027'!" + columnNumberToLetters(column + 1) + '1', value:label};
+      });
+      if (renewalColumns.length) {
+        const base = 'https://sheets.googleapis.com/v4/spreadsheets/' + MEMBERSHIP_SPREADSHEET_ID;
+        const response = await fetch(base + '?fields=sheets.properties', {headers:{Authorization:'Bearer ' + accessToken}, signal:AbortSignal.timeout(15000)});
+        if (!response.ok) throw new Error('Could not check the roster columns.');
+        const {sheets} = await response.json();
+        const roster = sheets.find(sheet => sheet.properties.title === '2027').properties;
+        const missing = Math.max(...renewalColumns) + 1 - roster.gridProperties.columnCount;
+        if (missing > 0) {
+          await writePortalSheetRequest(base + ':batchUpdate', {
+            method:'POST', headers:{Authorization:'Bearer ' + accessToken, 'Content-Type':'application/json'},
+            body:JSON.stringify({requests:[{appendDimension:{sheetId:roster.sheetId, dimension:'COLUMNS', length:missing}}]})
+          }, 'Added roster renewal columns', '2027', missing);
+        }
+      }
+      for (const {row, column, value} of edits) {
+        const label = current[0]?.[column];
+        const needsOverride = column >= roster2027SheetColumns || roster2027EnrichedKeys.has(roster2027HeaderKey(label));
+        const savedValue = needsOverride
+          ? '=IF(TRUE,"' + value.replace(/"/g, '""') + '","BSSC roster manual override")'
+          : value;
+        updates.push({range:"'2027'!" + columnNumberToLetters(column + 1) + row, value:savedValue});
+      }
+      await updateSheetRanges(MEMBERSHIP_SPREADSHEET_ID, updates);
+    }
+
+    // These columns can be filled or recalculated when a renewal is displayed.
+    const roster2027HistoricalFields = ['Road Name','Sex','Sponsor','Start Year','Start Date','Lifer Clock Start Year','Director Position','Sister Patch','Membership Type','Address','City','State','Zip','Phone','Email','Date of Birth','Member Classification'];
+    const roster2027SubmissionFields = {'Road Name':'roadName','Sex':'sex','Address':'address','City':'city','State':'state','Zip':'zip','Phone':'phone','Email':'email','Military Service':'militaryService','Military Branch':'militaryBranch','Years Served':'militaryYears'};
+    const roster2027EnrichedFields = new Set([...roster2027HistoricalFields, ...Object.keys(roster2027SubmissionFields), 'Year Count', 'Tenure']);
+    const roster2027HeaderKey = value => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g,'');
+    const roster2027EnrichedKeys = new Set([...roster2027EnrichedFields].map(roster2027HeaderKey));
+
+    function buildCurrentRenewalRoster(rows, previousRows, renewalRows, today = new Date(), formulaRows = []) {
       if (!rows.length) return rows;
-      const norm = value => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g,'');
-      const headers = rows[0], oldHeaders = previousRows[0] || [], rawHeaders = renewalRows[0] || [];
+      const norm = roster2027HeaderKey;
+      const headers = Array.from({length:roster2027SheetColumns}, (_, i) => rows[0][i] ?? ''), oldHeaders = previousRows[0] || [], rawHeaders = renewalRows[0] || [];
       const col = label => headers.findIndex(h => norm(h) === norm(label));
       const key = (row, hs) => ['Last Name','First Name'].map(label => norm(row[hs.findIndex(h => norm(h) === norm(label))])).join('|');
       const old = new Map();
@@ -8446,32 +8509,32 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       });
       const renewalOrder=new Map([...firstRenewals.entries()].sort((a,b)=>a[1].time-b[1].time || a[1].index-b[1].index).map(([k,v],i)=>[k,{...v,number:i+1}]));
       const renewalDateFormat=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
-      // Annual payment/signature fields must never be carried over from 2026.
-      const historical = ['Road Name','Sex','Sponsor','Start Year','Start Date','Lifer Clock Start Year','Director Position','Sister Patch','Membership Type','Address','City','State','Zip','Phone','Email','Date of Birth','Member Classification'];
-      const fields = {'Road Name':'roadName','Sex':'sex','Address':'address','City':'city','State':'state','Zip':'zip','Phone':'phone','Email':'email','Military Service':'militaryService','Military Branch':'militaryBranch','Years Served':'militaryYears'};
       return rows.map((original,index) => {
-        if(!index) return [...original,'Renewed On','Renewal #'];
-        const row=[...original], k=key(row,headers), prior=old.get(k), submission=latest.get(k)?.p;
+        if(!index) return [...headers,...roster2027RenewalHeaders];
+        const row = original.slice(0, roster2027SheetColumns);
+        const k=key(row,headers), prior=old.get(k), submission=latest.get(k)?.p;
+        const isManual = i => roster2027ManualFormula.test(String(formulaRows[index]?.[i] ?? ''));
+        const canFill = i => i >= 0 && !isManual(i);
         const blank = value => String(value ?? '').trim()==='' || /^#(NUM!|VALUE!|N\/A|REF!|ERROR!)/.test(String(value));
-        if(prior) historical.forEach(label => {
+        if(prior) roster2027HistoricalFields.forEach(label => {
           const i=col(label), j=oldHeaders.findIndex(h=>norm(h)===norm(label));
-          if(i>=0 && j>=0 && blank(row[i]) && !blank(prior[j])) row[i]=prior[j];
+          if(canFill(i) && j>=0 && blank(row[i]) && !blank(prior[j])) row[i]=prior[j];
         });
         if(submission) {
-          Object.entries(fields).forEach(([label,field]) => { const i=col(label); if(i>=0 && !blank(submission[field])) row[i]=submission[field]; });
+          Object.entries(roster2027SubmissionFields).forEach(([label,field]) => { const i=col(label); if(canFill(i) && !blank(submission[field])) row[i]=submission[field]; });
           const i=col('Date of Birth'), match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(submission.dob || '');
-          if(i>=0 && match) row[i]=Number(match[2])+'/'+Number(match[3])+'/'+match[1];
+          if(canFill(i) && match) row[i]=Number(match[2])+'/'+Number(match[3])+'/'+match[1];
         }
         const start=col('Start Date'), year=col('Start Year'), clock=col('Lifer Clock Start Year'), count=col('Year Count'), tenure=col('Tenure');
         const dateText=String(row[start] || '').trim(), match=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(dateText);
         const date=match ? new Date(Number(match[3]),Number(match[1])-1,Number(match[2])) : null;
         const validDate=date && date.getFullYear()>=1900 && date<=today && date.getMonth()===Number(match[1])-1 && date.getDate()===Number(match[2]);
-        if(year>=0 && blank(row[year]) && validDate) row[year]=String(date.getFullYear());
+        if(canFill(year) && blank(row[year]) && validDate) row[year]=String(date.getFullYear());
         const startYear=Number(row[year]), validYear=Number.isInteger(startYear) && startYear>=1900 && startYear<=today.getFullYear();
-        if(clock>=0 && blank(row[clock]) && validYear) row[clock]=String(startYear);
+        if(canFill(clock) && blank(row[clock]) && validYear) row[clock]=String(startYear);
         const clockYear=Number(row[clock]);
-        if(count>=0 && blank(row[count]) && clockYear>=1900 && clockYear<=today.getFullYear()) row[count]=String(today.getFullYear()-clockYear);
-        if(tenure>=0 && (blank(row[tenure]) || /^12[0-9] years/.test(String(row[tenure])))) {
+        if(canFill(count) && blank(row[count]) && clockYear>=1900 && clockYear<=today.getFullYear()) row[count]=String(today.getFullYear()-clockYear);
+        if(canFill(tenure) && (blank(row[tenure]) || /^12[0-9] years/.test(String(row[tenure])))) {
           if(validDate) {
             let years=today.getFullYear()-date.getFullYear(), months=today.getMonth()-date.getMonth(), days=today.getDate()-date.getDate();
             if(days<0) { months--; days+=new Date(today.getFullYear(),today.getMonth(),0).getDate(); }
@@ -8479,11 +8542,15 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
             row[tenure]=years+' years, '+months+' months, '+days+' days';
           } else if(validYear) row[tenure]='Approximately '+(today.getFullYear()-startYear)+' years (start year only)';
         }
-        if(start>=0 && blank(row[start]) && validYear) row[start]=String(startYear)+' (exact date not recorded)';
+        if(canFill(start) && blank(row[start]) && validYear) row[start]=String(startYear)+' (exact date not recorded)';
         while(row.length<headers.length) row.push('');
         const first=renewalOrder.get(k);
         row.renewalSubmittedAt = first ? first.time : null;
-        row.push(first ? renewalDateFormat.format(new Date(first.time)) : '', first ? first.number : '');
+        const automatic = [first ? renewalDateFormat.format(new Date(first.time)) : '', first ? first.number : ''];
+        row.push(...automatic.map((value, i) => {
+          const column = roster2027SheetColumns + i;
+          return isManual(column) ? original[column] ?? '' : value;
+        }));
         return row;
       });
     }
@@ -8545,14 +8612,15 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       status.textContent = `Loading ${sheetName} from Google Sheets…`;
       target.innerHTML = '<div class="empty-state">Loading membership records…</div>';
       try {
-        const reads = [getSheetValues(config.range,MEMBERSHIP_SPREADSHEET_ID)];
-        if (config.editable) reads.push(getSheetValues(config.range,MEMBERSHIP_SPREADSHEET_ID,'FORMULA'));
+        const range = sheetName === '2027' ? roster2027Range : config.range;
+        const reads = [getSheetValues(range,MEMBERSHIP_SPREADSHEET_ID)];
+        if (config.editable) reads.push(getSheetValues(range,MEMBERSHIP_SPREADSHEET_ID,'FORMULA'));
         if (config.dashboard) reads.push(getSheetValues(`'${sheetName.replace('Dashboard ','')}'!A1:${sheetName.includes('2026') ? 'AH' : 'AK'}900`,MEMBERSHIP_SPREADSHEET_ID));
         if (config.dashboard) reads.push(getSheetValues("'Officer List'!A1:D17",MEMBERSHIP_SPREADSHEET_ID));
         let [rows,formulasOrRoster = [],officerRows = []] = await Promise.all(reads);
         if (sheetName === '2027') {
           const [previousRows,renewalRows] = await Promise.all([getSheetValues("'2026'!A1:AK900",MEMBERSHIP_SPREADSHEET_ID),getSheetValues("'Vetting_Raw_2027'!A1:BD1000",MEMBERSHIP_SPREADSHEET_ID)]);
-          rows = buildCurrentRenewalRoster(rows,previousRows,renewalRows);
+          rows = buildCurrentRenewalRoster(rows,previousRows,renewalRows,new Date(),formulasOrRoster);
         }
         if (config.dashboard) renderMembershipDashboard(rows,sheetName.replace('Dashboard ',''),formulasOrRoster,officerRows);
         else if (config.attendanceSummary) renderMembershipAttendanceSummary(rows);
@@ -8564,7 +8632,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         }
         else {
           const editOptions = config.editable ? {sheetName,spreadsheetId:MEMBERSHIP_SPREADSHEET_ID,formulaRows:formulasOrRoster} : null;
-          renderDataTable('membershipContent','membershipStatus',sheetName === '2026-Attendance' ? rows.slice(0,65) : rows,0,sheetName === 'Lifer' ? 8 : config.columns,editOptions);
+          renderDataTable('membershipContent','membershipStatus',sheetName === '2026-Attendance' ? rows.slice(0,65) : rows,0,sheetName === 'Lifer' ? 8 : sheetName === '2027' ? roster2027SheetColumns + roster2027RenewalHeaders.length : config.columns,editOptions);
           if (sheetName === '2026-Attendance') addAttendanceEntryLauncher(rows);
           if (sheetName === '2027') {
             await setup2027DuesReview(rows);
@@ -8614,6 +8682,14 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const view=document.createElement('section');
       view.className='mobile-roster-view';
       view.innerHTML='<div class="mobile-roster-summary"><div><strong data-mobile-roster-count>'+data.length+'</strong><span>'+esc(year)+' roster members shown</span></div><span>Tap a member for details</span></div><label class="mobile-roster-search"><span class="sr-only">Search '+esc(year)+' roster</span><input type="search" placeholder="Search members…" autocomplete="off" data-mobile-roster-search></label><div class="mobile-roster-list">'+cards+'</div><div class="mobile-roster-empty" data-mobile-roster-empty hidden>No matching members.</div>';
+      if (year === '2027') {
+        const edit = document.createElement('button');
+        edit.type = 'button';
+        edit.className = 'dashboard-edit-btn';
+        edit.textContent = 'Edit Data';
+        edit.addEventListener('click', () => target.querySelector('[data-toggle-edit]')?.click());
+        view.querySelector('.mobile-roster-summary').append(edit);
+      }
       target.prepend(view);
       target.classList.add('mobile-roster-active');
       const input=view.querySelector('[data-mobile-roster-search]');
