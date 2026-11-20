@@ -1,0 +1,51 @@
+[
+ [
+  {"q":"Where and when did BoneShakers Social Club begin?","options":["At the original BoneShakers Saloon in 2005","At Elevation 27 in 2025","As a chapter of another club in 2010"],"answer":0},
+  {"q":"What does a complete Bikes for Tykes set include?","options":["A bicycle and a club shirt","A bicycle, a helmet and a lock","A helmet and a gift card"],"answer":1},
+  {"q":"What must happen before someone commits club funds?","options":["A member announces the expense in GroupMe","Someone checks the bank balance alone","The Treasurer provides the financial information and the proper approval is obtained"],"answer":2},
+  {"q":"Who was the founding President, and what inspired Big Lick?","options":["Big John Wilkerson; a tattoo he already had","Godfather Gordon; an event poster","A local business owner; a motorcycle brand"],"answer":0},
+  {"q":"How can a member who does not ride a motorcycle contribute?","options":["Only by paying dues","Through friendships, volunteering and community service","Only by buying a motorcycle"],"answer":1}
+ ],
+ [
+  {"q":"What should you do before adding or moving a club-related patch?","options":["Ask any friend to approve it","Add it if you bought it yourself","Ask club leadership about approval and placement"],"answer":2},
+  {"q":"Another organization asks you to promise that BSSC will cohost an event. What is the right response?","options":["Refer the request to leadership before making any commitment","Agree if enough friends want to attend","Post the event as official and ask for approval later"],"answer":0},
+  {"q":"Someone asks for private fundraising arrangements and club business contacts. What should you do?","options":["Share screenshots to explain the arrangement","Celebrate the success and refer private business questions to the President","Give them every contact because it is for charity"],"answer":1},
+  {"q":"Who owns club-issued membership patches?","options":["The person who wears the vest","The sponsor who presents them","BSSC; they must be returned when the governing documents require it"],"answer":2},
+  {"q":"How should you introduce the organization?","options":["BoneShakers Social Club","BoneShakers Motorcycle Club","An unofficial chapter of another club"],"answer":0}
+ ],
+ [
+  {"q":"How are directors and core officers selected?","options":["The President appoints everyone without an election","Eligible members elect directors, and the directors choose core officers through the officer-election process","The longest-serving member automatically takes each role"],"answer":1},
+  {"q":"Which pairing correctly describes the Secretary and Treasurer?","options":["Secretary: ride routes; Treasurer: conduct decisions alone","Secretary: social invitations; Treasurer: event artwork","Secretary: minutes and records; Treasurer: club funds and financial information"],"answer":2},
+  {"q":"A routine concern remains unresolved. What should happen next?","options":["Use the established review process so the Board can consider facts and an appropriate outcome","Turn it into a public argument","Assume that an individual member can issue a final Board decision"],"answer":0},
+  {"q":"Why does BSSC use staggered two-year director terms?","options":["To eliminate future elections","To retain experience and continuity while welcoming new directors","To give some directors extra votes"],"answer":1},
+  {"q":"What is the appropriate role of the Sergeant-at-Arms in conduct matters?","options":["Ignore safety issues until the next election","Make every disciplinary decision without review","Help maintain order and safety while formal discipline follows the club's review process"],"answer":2}
+ ],
+ [
+  {"q":"Someone says that an interaction is unwanted and asks you to stop. What should you do?","options":["Stop immediately and respect the boundary","Continue if you meant it as a joke","Wait until someone else agrees with the complaint"],"answer":0},
+  {"q":"How should you report a concern when the President is involved or has a conflict?","options":["Post the allegation to the public immediately","Drop the concern because leadership is involved","Use the Vice President, Board or an unconflicted director through the proper process"],"answer":2},
+  {"q":"What is the appropriate way to handle screenshots or evidence related to a club concern?","options":["Share it widely to gather opinions","Preserve it privately and use appropriate good-faith reporting channels","Delete it before the concern can be reviewed"],"answer":1},
+  {"q":"How should you participate in a club meeting?","options":["Follow the chair's process, wait your turn and stay on the topic","Interrupt whenever you disagree","Hold side conversations while someone else is speaking"],"answer":0},
+  {"q":"You can no longer fulfill an event commitment. What should you do?","options":["Assume someone else will notice","Tell the organizer promptly so coverage can be arranged","Wait until after the event to explain"],"answer":1}
+ ],
+ [
+  {"q":"What should a prospect's sponsor help with?","options":["Guaranteeing a Board position","Bypassing the Foundations class","Introductions, expectations and meaningful participation"],"answer":2},
+  {"q":"Which description of member communication and access is correct?","options":["Prospects use the approved GroupMe access; full-member Facebook and private website access follow the club's approval process","Creating any website account automatically grants all private access","Every prospect receives Board-level access"],"answer":0},
+  {"q":"What should you do about a missing attendance record or a participation hardship?","options":["Wait until the end of the year","Raise record issues promptly and discuss hardship circumstances with the President early","Change your membership status on your own"],"answer":1},
+  {"q":"When must a prospect complete BSSC Foundations training?","options":["Only after serving on the Board","It is optional for prospects","Before patching in as a full member"],"answer":2},
+  {"q":"What is part of taking responsibility for your membership?","options":["Keeping contact information, renewals and dues current as applicable","Assuming someone else will update your information","Ignoring requirements after receiving your cut"],"answer":0}
+ ],
+ [
+  {"q":"How do the Road Captain and Tail Gunner support a group ride?","options":["The Road Captain plans and briefs the ride; the Tail Gunner takes the rear position and helps communicate problems","They replace each rider's responsibility for safe riding","The Tail Gunner chooses a new route without telling the group"],"answer":0},
+  {"q":"A rider becomes separated, or someone is too impaired to ride. What is the safe response?","options":["Race to catch up, or let the person decide to ride anyway","Use the agreed regrouping plan; arrange safe transport and involve appropriate leadership for an impaired person","Ignore both situations so the group stays on schedule"],"answer":1},
+  {"q":"You need to leave an assigned volunteer station. What should you do?","options":["Leave the money and supplies for whoever arrives next","Ask a guest to watch the station without telling anyone","Tell the coordinator, arrange relief and make a clear handoff"],"answer":2},
+  {"q":"What belongs in a pre-ride briefing?","options":["The route, signals, stops, regrouping plan and how to leave safely","Only the final destination","Only the names of people who have ridden before"],"answer":0},
+  {"q":"When should you report for an event assignment?","options":["Whenever the public event starts","At the assigned time, checking in with the coordinator","Only after someone calls to ask where you are"],"answer":1}
+ ],
+ [
+  {"q":"What should an event or fundraising proposal include?","options":["Only a catchy event name","The purpose, beneficiary, timing, location, costs and people doing the work, submitted through the President for review","A public announcement before any review"],"answer":1},
+  {"q":"An event is approved. What else must happen before distributing a club-branded flyer or shirt?","options":["Nothing; every design is automatically approved","The person paying for it can choose any design","The final design and intended use must receive the required approval"],"answer":2},
+  {"q":"How should a request for financial assistance be handled?","options":["Keep circumstances private, bring it through the approved process, and let the Treasurer and Board review resources and approval","Promise the money first and check funds later","Share the person's circumstances with everyone"],"answer":0},
+  {"q":"Who should handle official sponsorship commitments and media questions?","options":["Any member who happens to be present","The President or the person with the appropriate official authority","Only the person who first heard the request"],"answer":1},
+  {"q":"What should you do if borrowed club equipment is damaged or incomplete?","options":["Return it without mentioning the problem","Keep it until somebody asks","Report the problem promptly and coordinate its return or repair"],"answer":2}
+ ]
+]

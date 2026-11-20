@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {initialState,startWatch,recordWatch,gradeQuiz,attest,publicState} from '../src/engine.mjs';
+import {readFileSync} from 'node:fs';
+const bank=JSON.parse(readFileSync(new URL('../src/questions.json',import.meta.url)));
+function watch(s,i=0){startWatch(s,i,0,'test');for(let n=5;n<=20;n+=5)recordWatch(s,i,{session:'test',position:n,playing:true,visible:true,ended:n===20},n*1000,20)}
+test('sections and quiz are locked until prerequisites are met',()=>{const s=initialState();assert.throws(()=>startWatch(s,1,0,'x'));assert.throws(()=>gradeQuiz(s,0,[0,0,0,0,0],bank));assert.throws(()=>attest(s,'Todd',true,0,'id'))});
+test('forward jumps and hidden playback cannot create watch credit',()=>{const s=initialState();startWatch(s,0,0,'x');assert.throws(()=>recordWatch(s,0,{session:'x',position:19,playing:true,visible:true},5000,20));recordWatch(s,0,{session:'x',position:5,playing:true,visible:false},5000,20);assert.equal(s.sections[0].watched,0);recordWatch(s,0,{session:'x',position:5,playing:false,visible:true},10000,20);assert.equal(s.sections[0].watched,0);assert.equal(publicState(s).sections[0].session,undefined)});
+test('80 percent unlocks next section and passing record cannot be overwritten',()=>{const s=initialState();watch(s);let a=bank[0].map(q=>q.answer);a[0]=(a[0]+1)%3;const result=gradeQuiz(s,0,a,bank);assert.equal(result.score,4);assert.equal(result.passed,true);startWatch(s,1,25000,'next');assert.throws(()=>gradeQuiz(s,0,a,bank));assert.equal(s.sections[0].lastScore,4)});
+test('failed quiz requires complete rewatch before retry',()=>{const s=initialState();watch(s);const wrong=bank[0].map(q=>(q.answer+1)%3);assert.equal(gradeQuiz(s,0,wrong,bank).rewatchRequired,true);assert.equal(s.sections[0].watched,0);assert.throws(()=>gradeQuiz(s,0,wrong,bank));watch(s);assert.equal(gradeQuiz(s,0,bank[0].map(q=>q.answer),bank).passed,true)});
+test('all seven passes enable durable immutable attestation',()=>{const s=initialState();for(let i=0;i<7;i++){watch(s,i);gradeQuiz(s,i,bank[i].map(q=>q.answer),bank)}assert.throws(()=>attest(s,'Todd',false,0,'id'));attest(s,'Todd',true,0,'id');attest(s,'Other',true,1000,'other');assert.equal(s.completion.name,'Todd');assert.equal(s.completion.id,'id');assert.equal(s.completion.scores.length,7)});
