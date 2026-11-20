@@ -9,7 +9,7 @@ export async function practiceFetch(url:string,options?:any){
  }else{const input=JSON.parse(options.body),i=Number(input.section)-1,now=Date.now();let extra:any={};
  if(input.action==='start'){extra.session=crypto.randomUUID();startWatch(state,i,now,extra.session)}
  else if(input.action==='tick')recordWatch(state,i,input,now,course[i]?.duration||0);
- else if(input.action==='quiz'){const r=gradeQuiz(state,i,input.answers,bank);extra={score:r.score,passed:r.passed,rewatchRequired:r.rewatchRequired}}
+ else if(input.action==='quiz'){const r=gradeQuiz(state,i,input.answers,bank);const feedback=bank[i].map((q,j)=>({question:q.q,chosen:q.options[input.answers[j]],correct:q.options[q.answer],isCorrect:input.answers[j]===q.answer,explanation:q.explanation}));state.sections[i].lastFeedback=feedback;extra={score:r.score,passed:r.passed,rewatchRequired:r.rewatchRequired,feedback}}
  else if(input.action==='attest')attest(state,input.name,input.accepted,now,'PRACTICE-'+crypto.randomUUID().slice(0,8).toUpperCase());
  else throw Error('Unknown action.');localStorage.setItem(key,JSON.stringify(state));body={...extra,progress:publicState(state)};
  }return {ok:true,json:async()=>body};
