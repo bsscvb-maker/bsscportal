@@ -4,14 +4,12 @@ Management lives under Membership → BSSC LMS. Reads and enrollment writes use 
 
 The five LMS tabs hold enrollments, section progress, immutable quiz attempts, completions, and connection settings. All times are stored as ISO strings and displayed in Eastern Time. Quiz attempts capture the actual questions, options, chosen answers, correct answers, explanations, score, submission time, course version, and attempt reference. Earlier failed attempts are retained. Official and Practice enrollments are distinct. Incomplete or duplicate section records are rejected rather than converted into misleading completion totals.
 
-The current public test drive remains browser-local. It does not silently write official records. Until activation, the management view explicitly reports that learner tracking is not connected. No real learners or grades were seeded.
-
-## Prepared Google service
+## Connected Google service
 
 Project: BSSC LMS — Training Records
 Editor: https://script.google.com/u/7/home/projects/1x4bnVBSW2n_XjaH6Th29c7lSQ5N8PObdg8U75oaYft2f9ZuZiyVBRgnK/edit
 
-The saved Code.gs was checked byte-for-byte after normalizing Windows clipboard line endings. Google Sheets API v4 is selected in Add a service; the owner must accept Google's API terms and add it. Then run authorizeLmsService and approve the requested Google access. The authorization check does not create learner or grade records.
+Google Sheets API v4 is enabled and the owner granted the explicit spreadsheets and userinfo.email scopes. authorizeLmsService completed successfully.
 
 Deploy a Web app as bsscvb@boneshakerssocialclub.com, restricted to users within boneshakerssocialclub.com. Do not select anonymous public access. The service rejects an unavailable active-user email and any identity outside the club's Workspace domain. Each enrolled BSSC address can access only its own record; email or enrollment IDs in client input cannot change that identity. Account creation for prospects remains an administrator task; this service does not grant admin or portal access.
 
@@ -27,4 +25,8 @@ Run node --test tests/lms-service.test.cjs for isolated identity, atomic save, g
 
 Approved self-paced wording revisions remain a separate content pass; live instructor phrasing has not been represented as rewritten by this management integration.
 
-Explicit service manifest: service/appsscript.json requests only spreadsheets and userinfo.email. Use it instead of automatically inferred scopes; the advanced Sheets service otherwise inferred an unnecessarily broad Drive scope. The owner successfully added Google Sheets API v4, but the latest live authorization check still reports that spreadsheets permission has not been granted. Automatic learner tracking remains Not connected. The management dashboard and enrollment dialog were verified against the actual empty private record store, and the portal sign-in was restored. Enrollment writes use RAW values across A:S, preserving IDs and ISO dates as text.
+Activation update: Google authorization succeeded on November 20, 2026 at 7:00 PM Eastern. Version 1 was deployed as the club administrator with access restricted to Anyone within BSSC C3. deployment.json retains the verified URL and configuration. A clearly marked Practice enrollment for Todd Humphrey at bsscvb@boneshakerssocialclub.com was created, and actual video playback saved watch progress and server timestamps through the deployed service. No official learner grades or certificates were fabricated. LMS Settings now reports Connected and contains the verified deployment URL.
+
+The website course entry is training/index.html, authored from launch.html. The compiled player from dist/index.html is published as training/preview.html for browser-local review; existing local practice progress is preserved. Apps Script still embeds the compiled player with the official-mode flag and the GitHub-hosted assets. To publish future changes, retain this distinction: launch.html → training/index.html, dist/index.html → training/preview.html, and dist/assets → training/assets. Certificate-preview links on the old root URL redirect to the preview player.
+
+Final browser review of the management Practice view and Classroom draft link remains pending because browser control became blocked by app configuration. The deployed version remains version 1; its tested playback cadence and asset references were retained.
