@@ -537,4 +537,4 @@ function lmsRequest(input){
 }
 /** Run this once in the editor as the club administrator to authorize the record connection. */
 function authorizeLmsService(){if(lmsIdentity_()!==LMS_OWNER)throw Error('Only the BSSC service owner can authorize this setup.');const response=Sheets.Spreadsheets.get(LMS_BOOK,{fields:'spreadsheetId'});if(response.spreadsheetId!==LMS_BOOK)throw Error('The membership workbook connection could not be verified.');console.log('LMS record connection authorized. No learners, grades, or certificates were changed.');}
-function doGet(){lmsIdentity_();return HtmlService.createHtmlOutput(LMS_HTML).setTitle('BSSC Foundations Training').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);}
+function doGet(){lmsIdentity_();return HtmlService.createHtmlOutput(LMS_HTML).addMetaTag('viewport','width=device-width, initial-scale=1').setTitle('BSSC Foundations Training').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);}
