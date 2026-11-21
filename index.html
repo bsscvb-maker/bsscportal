@@ -5026,6 +5026,8 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       button.disabled = true;
       button.textContent = edits.length ? 'Saving…' : 'Closing…';
       try {
+        const membershipRoster=targetId==='membershipContent'&&/^(2026|2027)$/.test(tableRenderCache[targetId].editOptions?.sheetName||'');
+        if(membershipRoster&&edits.length){if(!window.BSSCLms?.validateRosterEdits)throw new Error('Foundations patch-in verification is unavailable. Refresh the portal before saving.');await window.BSSCLms.validateRosterEdits(edits,tableRenderCache[targetId]);}
         if (is2027Roster) {
           await save2027RosterEdits(edits, tableRenderCache[targetId].editOptions.formulaRows);
         } else for (const edit of edits) await updateSheetCell(edit.spreadsheetId || BFT_SPREADSHEET_ID, edit.sheet, edit.row, edit.column, edit.value);
@@ -5040,7 +5042,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         button.disabled = false;
         button.textContent = 'Done Editing';
         cells.forEach(cell => { cell.contentEditable = 'true'; });
-        alert(error.message?.startsWith('A roster row changed') || error.message?.startsWith('The renewal edit columns')
+        alert(error.message?.startsWith('BSSC Foundations') || error.message?.startsWith('Foundations patch-in') || error.message?.startsWith('A roster row changed') || error.message?.startsWith('The renewal edit columns')
           ? error.message
           : 'One or more changes could not be saved. Your unsaved cells remain highlighted so you can try again.');
       }
@@ -10373,7 +10375,7 @@ document.addEventListener('click',function(event){
 
 <script src="website-analytics.js?v=20261119"></script>
 <script src="portal-navigation.js?v=20261107-fixed-sidebar"></script>
-<script src="bssc-lms.js?v=20261121-1"></script>
+<script src="bssc-lms.js?v=20261121-email-1"></script>
 <script src="sister-membership.js?v=20261120-voting1"></script>
 <script src="bod-nominations-results.js?v=20261107-compact-note-icons"></script>
 <script src="bod-election-history-data.js?v=20261027-combined-1"></script>
@@ -10382,4 +10384,5 @@ document.addEventListener('click',function(event){
 <script src="portal-year-selects.js?v=20261027-anchored-1"></script>
 </body>
 </html>
+
 
