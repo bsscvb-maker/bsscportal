@@ -105,3 +105,5 @@
  .bottom{letter-spacing:0;font-size:.56rem}
 }
 
+
+.member-label{display:block;text-align:left;font-size:.84rem;font-weight:bold;color:#424b58;margin:18px 0}.member-label input{display:block;width:100%;min-height:52px;border:1px solid #cbd1db;border-radius:8px;margin-top:7px;padding:12px;font:16px Arial,sans-serif}.member-label input:focus{outline:3px solid #d54a5b;outline-offset:2px}.sign-in-page form>.primary{display:flex;justify-content:center;align-items:center;min-height:52px;width:100%;margin-top:23px}.member-session{display:flex;justify-content:space-between;align-items:center;gap:16px;background:#23252c;color:#e3e6ed;padding:12px 24px;font-size:.78rem}.member-session span{overflow-wrap:anywhere}.member-session button{flex-shrink:0;min-height:44px;padding:10px 16px;background:#3c3e48;color:#fff}.sign-in-page button.sign-in-back{background:none;cursor:pointer;text-decoration:underline}@media screen and (max-width:650px){.member-session{padding:10px 16px;font-size:.7rem}.member-session strong{display:block;margin-top:3px}}@media print{.member-session{display:none}}

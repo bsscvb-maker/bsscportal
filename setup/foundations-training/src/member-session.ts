@@ -1,0 +1,14 @@
+let credentials:any=null;
+const storage='bssc-foundations-email-session';
+const config=()=>((window as any).BSSC_LMS_AUTH_CONFIG||{});
+export const emailLoginMode=()=>Boolean(config().enabled);
+function save(value:any){credentials=value;try{if(value)sessionStorage.setItem(storage,JSON.stringify(value));else sessionStorage.removeItem(storage)}catch{}}
+export function logoutMember(){save(null)}
+async function provider(path:string,payload:any,refresh=false){const key=config().apiKey;if(!key)throw Error('Member email login is not configured.');const r=await window.fetch(refresh?'https://securetoken.googleapis.com/v1/token?key='+encodeURIComponent(key):'https://identitytoolkit.googleapis.com/v1/'+path+'?key='+encodeURIComponent(key),{method:'POST',headers:{'Content-Type':refresh?'application/x-www-form-urlencoded':'application/json'},body:refresh?new URLSearchParams(payload).toString():JSON.stringify(payload)});const d=await r.json();if(!r.ok)throw Error('Unable to sign in. Check your email and password, or use Forgot password.');return d;}
+function remember(d:any){save({idToken:d.idToken||d.id_token,refreshToken:d.refreshToken||d.refresh_token,expiresAt:Date.now()+Number(d.expiresIn||d.expires_in||3600)*1000});}
+export async function memberToken(){if(!credentials){try{credentials=JSON.parse(sessionStorage.getItem(storage)||'null')}catch{}}if(!credentials)throw Error('Sign in to your training account.');if(credentials.expiresAt<Date.now()+60000){try{remember(await provider('',{grant_type:'refresh_token',refresh_token:credentials.refreshToken},true))}catch(e){logoutMember();throw e}}return credentials.idToken;}
+export async function memberRpc(method:string,input:any={}){const idToken=await memberToken();const d:any=await new Promise((resolve,reject)=>{const runner=(window as any).google?.script?.run;if(!runner){reject(Error('Open the recorded member course to sign in.'));return}runner.withSuccessHandler(resolve).withFailureHandler(reject)[method]({...input,idToken})});if(d.error)throw Error(d.error);return d;}
+export async function signInMember(email:string,password:string){remember(await provider('accounts:signInWithPassword',{email:email.trim(),password,returnSecureToken:true}));try{return await memberRpc('memberSession')}catch(e){logoutMember();throw e}}
+export async function restoreMember(){return memberRpc('memberSession')}
+export async function changeMemberPassword(password:string){const d=await memberRpc('memberChangePassword',{newPassword:password});remember(d);return memberRpc('memberSession');}
+export async function resetMemberPassword(email:string){try{await provider('accounts:sendOobCode',{requestType:'PASSWORD_RESET',email:email.trim()})}catch{}return 'If a training account exists for that email, password reset instructions will arrive shortly.';}

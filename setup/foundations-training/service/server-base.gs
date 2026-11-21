@@ -18,9 +18,11 @@ function lmsSave_(book,user,state,index,now,attempt,completion){
  if(completion){const table=lmsTable_(book,'LMS Completions');requests.push(lmsAppend_(table.sheet.getSheetId(),completion));}
  try{Sheets.Spreadsheets.batchUpdate({requests},LMS_BOOK)}catch(error){throw new TrainingError('Your latest progress could not be saved. No partial record was committed. Please try again.',503);}
 }
-function lmsRequest(input){
+function lmsRequest(input){return lmsHandle_(input,null);}
+function lmsHandle_(input,verifiedIdentity){
  let lock,email='';
- try{if(!input||typeof input!=='object'||Array.isArray(input)||JSON.stringify(input).length>8000)throw new TrainingError('Invalid training request.');email=lmsIdentity_();lock=LockService.getScriptLock();if(!lock.tryLock(15000))throw new TrainingError('Training records are busy. Please try again.',503);const book=SpreadsheetApp.openById(LMS_BOOK),user=lmsUser_(book,email),state=user.row[14]?JSON.parse(user.row[14]):initialState(),now=Date.now(),at=new Date(now).toISOString(),index=Number(input.section)-1;
+ try{if(!input||typeof input!=='object'||Array.isArray(input)||JSON.stringify(input).length>8000)throw new TrainingError('Invalid training request.');email=verifiedIdentity?verifiedIdentity.email:lmsIdentity_();lock=LockService.getScriptLock();if(!lock.tryLock(15000))throw new TrainingError('Training records are busy. Please try again.',503);const book=SpreadsheetApp.openById(LMS_BOOK),user=lmsUser_(book,email),state=user.row[14]?JSON.parse(user.row[14]):initialState(),now=Date.now(),at=new Date(now).toISOString(),index=Number(input.section)-1;
+ if(verifiedIdentity&&user.row[0]!==verifiedIdentity.enrollmentId)throw new TrainingError('The account and enrollment do not match.',403);
  if(input.action==='load')return {user:{email,name:user.row[2]},progress:publicState(state),recordType:user.row[6]};
  if(input.action==='getQuiz'){if(!unlocked(state,index)||!state.sections[index].watchComplete)throw new TrainingError('Watch the complete lesson to unlock this quiz.',403);return {questions:LMS_BANK[index].map(q=>({q:q.q,options:q.options}))};}
  let extra={},attempt=null,completion=null;
@@ -44,5 +46,5 @@ function lmsRequest(input){
 }
 /** Run this once in the editor as the club administrator to authorize the record connection. */
 function authorizeLmsService(){if(lmsIdentity_()!==LMS_OWNER)throw Error('Only the BSSC service owner can authorize this setup.');const response=Sheets.Spreadsheets.get(LMS_BOOK,{fields:'spreadsheetId'});if(response.spreadsheetId!==LMS_BOOK)throw Error('The membership workbook connection could not be verified.');console.log('LMS record connection authorized. No learners, grades, or certificates were changed.');}
-function doGet(){lmsIdentity_();return HtmlService.createHtmlOutput(LMS_HTML).addMetaTag('viewport','width=device-width, initial-scale=1').setTitle('BSSC Foundations Training').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);}
+function doGet(){let html=LMS_HTML;const enabled=PropertiesService.getScriptProperties().getProperty('LMS_MEMBER_AUTH_ENABLED')==='true';if(enabled){const c=memberConfig_();html=html.replace('<head>','<head><script>window.BSSC_LMS_AUTH_CONFIG='+JSON.stringify({enabled:true,apiKey:c.apiKey})+';</script>');}else lmsIdentity_();return HtmlService.createHtmlOutput(html).addMetaTag('viewport','width=device-width, initial-scale=1').setTitle('BSSC Foundations Training').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);}
 
