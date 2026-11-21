@@ -1,10 +1,12 @@
 {
   "script_id": "1x4bnVBSW2n_XjaH6Th29c7lSQ5N8PObdg8U75oaYft2f9ZuZiyVBRgnK",
   "url": "https://script.google.com/a/macros/boneshakerssocialclub.com/s/AKfycbykZzNMT8Rj2v1TTfi77R3gp42LxOjXp7IlR6fkXagIj-9_8uPo2DqbAFqqWRcUbYvl/exec",
-  "version": 2,
+  "version": 3,
   "execute_as": "bsscvb@boneshakerssocialclub.com",
   "access": "Anyone within BSSC C3",
   "course_version": "bssc-foundations-2026-11-v1",
   "progress_write_verified": true,
-  "phone_viewport_enabled": true
+  "phone_viewport_enabled": true,
+  "account_selection_enabled": true,
+  "current_account_visible": true
 }
