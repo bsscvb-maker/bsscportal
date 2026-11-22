@@ -56,7 +56,7 @@ function memberResetAccount_(code){
 }
 function memberResetInfo(input){try{const {account}=memberResetAccount_(input?.code);return {email:account.email,setup:Boolean(account.mustSetupPassword||account.mustChangePassword)};}catch(error){return memberError_(error);}}
 function memberConfirmPasswordReset(input){
- let lock;try{if(!input||typeof input.newPassword!=='string'||input.newPassword.length<12||input.newPassword.length>128)throw new TrainingError('Choose a password from 12 to 128 characters.');lock=LockService.getScriptLock();if(!lock.tryLock(15000))throw new TrainingError('Your account is busy. Try again.',503);
+ let lock;try{memberValidatePassword_(input?.newPassword);lock=LockService.getScriptLock();if(!lock.tryLock(15000))throw new TrainingError('Your account is busy. Try again.',503);
   const {account,digest}=memberResetAccount_(input.code);memberFetch_('accounts:resetPassword',{oobCode:input.code,newPassword:input.newPassword},false);
   const at=new Date().toISOString(),p=memberConfig_().p;if(account.mustSetupPassword||account.mustChangePassword)account.passwordSetupAt=at;account.mustSetupPassword=false;account.mustChangePassword=false;account.passwordChangedAt=at;account.passwordResetAt=at;account.minimumAuthTime=Math.floor(Date.now()/1000);
   delete account.initialDigest;delete account.salt;delete account.initialPasswordUpdatedAt;delete account.resetDigest;

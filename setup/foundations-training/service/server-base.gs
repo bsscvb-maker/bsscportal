@@ -25,7 +25,7 @@ function lmsHandle_(input,verifiedIdentity){
  if(verifiedIdentity&&user.row[0]!==verifiedIdentity.enrollmentId)throw new TrainingError('The account and enrollment do not match.',403);
  const attendance=lmsAttendance_(book,user);
  if(attendance&&!['load','attest'].includes(input.action))throw new TrainingError('Your in-person training is recorded. Complete your personal attestation.',403);
- if(input.action==='load')return {training:inPersonPublic_(attendance),user:{email,name:user.row[2]},progress:publicState(state),recordType:user.row[6]};
+ if(input.action==='load')return {training:inPersonPublic_(attendance),user:{email,name:user.row[2]},progress:lmsCertificateState_(state,book),recordType:user.row[6]};
  if(input.action==='getQuiz'){if(!unlocked(state,index)||!state.sections[index].watchComplete)throw new TrainingError('Watch the complete lesson to unlock this quiz.',403);return {questions:LMS_BANK[index].map(q=>({q:q.q,options:q.options}))};}
  let extra={},attempt=null,completion=null,attendanceUpdate=null;
  if(input.action==='start'){extra.session=Utilities.getUuid();startWatch(state,index,now,extra.session);state.startedAt=state.startedAt||at;state.sections[index].startedAt=state.sections[index].startedAt||at;}
@@ -43,7 +43,8 @@ function lmsHandle_(input,verifiedIdentity){
   const wasComplete=Boolean(state.completion);attest(state,String(user.row[2]),input.accepted,now,'BSSC-'+Utilities.getUuid().toUpperCase());state.completion.recordType=user.row[6];state.completion.courseVersion=LMS_VERSION;state.completion.verified=user.row[6]==='Official';
   if(!wasComplete)completion=[state.completion.id,user.row[0],state.completion.name,state.completion.at,LMS_ATTESTATION,LMS_VERSION,JSON.stringify(state.completion.scores),user.row[6],user.row[6]==='Official'?'Verified':'Practice',at];}
  }else throw new TrainingError('Unknown training action.');
- lmsSave_(book,user,state,index,now,attempt,completion,attendanceUpdate);return {...extra,progress:publicState(state)};
+ if(completion)state.completion.president=lmsPresident_(book);
+ lmsSave_(book,user,state,index,now,attempt,completion,attendanceUpdate);return {...extra,progress:lmsCertificateState_(state,book)};
  }catch(error){return {error:error instanceof TrainingError?error.message:'The training service is temporarily unavailable. Please try again.',status:error.status||500,...(email?{signedInEmail:email}:{})}}
  finally{if(lock)lock.releaseLock();}
 }
@@ -51,3 +52,13 @@ function lmsHandle_(input,verifiedIdentity){
 function authorizeLmsService(){if(lmsIdentity_()!==LMS_OWNER)throw Error('Only the BSSC service owner can authorize this setup.');const response=Sheets.Spreadsheets.get(LMS_BOOK,{fields:'spreadsheetId'});if(response.spreadsheetId!==LMS_BOOK)throw Error('The membership workbook connection could not be verified.');console.log('LMS record connection authorized. No learners, grades, or certificates were changed.');}
 function doGet(e){let html=LMS_HTML;const params=e?.parameter||{},context={};if(/^[a-f0-9]{64}$/i.test(params.welcome||''))context.welcome=params.welcome;if(/^[a-zA-Z0-9_-]{20,1024}$/.test(params.reset||''))context.reset=params.reset;if(Object.keys(context).length)html=html.replace('<meta name="referrer" content="same-origin">','').replace('<head>','<head><meta name="referrer" content="no-referrer"><script>window.BSSC_LMS_LINK_CONTEXT='+JSON.stringify(context)+';</script>');const enabled=PropertiesService.getScriptProperties().getProperty('LMS_MEMBER_AUTH_ENABLED')==='true';if(enabled){const c=memberConfig_();html=html.replace('<head>','<head><script>window.BSSC_LMS_AUTH_CONFIG='+JSON.stringify({enabled:true,apiKey:c.apiKey})+';</script>');}else lmsIdentity_();return HtmlService.createHtmlOutput(html).addMetaTag('viewport','width=device-width, initial-scale=1').setTitle('BSSC Foundations Training').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);}
 
+
+function lmsPresident_(book){
+ try{const year=Utilities.formatDate(new Date(),'America/New_York','yyyy'),sheet=book.getSheetByName(year);if(!sheet)return null;
+ const rows=sheet.getDataRange().getValues(),heads=rows[0],col=h=>heads.indexOf(h);if(['Status','First Name','Last Name','Director Position'].some(h=>col(h)<0))return null;
+ const matches=rows.slice(1).filter(r=>String(r[col('Status')]).trim().toLowerCase()==='active'&&String(r[col('Director Position')]).trim().toLowerCase()==='president');if(matches.length!==1)return null;
+ const row=matches[0],name=(String(row[col('First Name')]||'').trim()+' '+String(row[col('Last Name')]||'').trim()).trim();if(!name)return null;
+ return {name,title:'President',club:'BoneShakers Social Club',rosterYear:year,verifiedAt:new Date().toISOString()};
+ }catch(error){return null;}
+}
+function lmsCertificateState_(state,book){const result=publicState(state);if(result.completion&&!result.completion.president)result.completion={...result.completion,president:lmsPresident_(book)};return result;}
