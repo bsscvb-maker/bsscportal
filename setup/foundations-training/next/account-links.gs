@@ -91,4 +91,4 @@ function restartOwnerOnboarding20261122(){
  }catch(error){memberOutboxFinish_(entry,'Needs review','OWNER_RESTART_REQUIRES_REVIEW');throw Error('The restart needs administrator review. Do not repeat it.');}
  }finally{lock.releaseLock();}
 }
-function enableManualAttestationDelivery(){if(lmsIdentity_()!==LMS_OWNER)throw Error('Only the club administrator can configure delivery.');if(PropertiesService.getScriptProperties().getProperty('LMS_INPERSON_ENABLED')!=='true')throw Error('Enable in-person attestations first.');const existing=ScriptApp.getProjectTriggers().filter(t=>t.getHandlerFunction()==='processInPersonInvitations');if(!existing.length)ScriptApp.newTrigger('processInPersonInvitations').timeBased().everyMinutes(5).create();console.log('Manual attestation delivery enabled: checks the requested queue every five minutes. No attendance or signatures were fabricated.');}
+// Manual delivery trigger: processInPersonInvitations, Head, every five minutes; configured in the Apps Script Triggers UI.
