@@ -2118,6 +2118,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 #dashboard .command-goal.goal-met .command-goal-track{border-color:#2e9e5c;background:#163523}
 #dashboard .command-goal.goal-met .command-goal-track>span{background:linear-gradient(180deg,#30c775,#158343);box-shadow:inset 0 2px 3px #a0f8bd50}
 </style><style id="command-profit-stats">#dashboard .operations-fund-breakdown b.command-positive{color:#70e59c}</style><link rel="stylesheet" href="bssc-lms.css?v=20261122-manual-console">
+<link rel="stylesheet" href="membership-navigation.css?v=20261122-shared-membership">
 </head>
 <body>
   <section class="auth-gate" id="authGate">
@@ -4314,6 +4315,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
           popup.document.write(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Receipt ${esc(receiptNumber)}</title><style>body{font:16px/1.55 Arial,sans-serif;max-width:720px;margin:50px auto;color:#171717;padding:0 24px}header{border-bottom:4px solid #c8102e;padding-bottom:14px}h1{font-size:26px;margin:0}h2{font-size:20px;margin:28px 0 12px}dl{display:grid;grid-template-columns:160px 1fr;gap:8px 14px}dt{font-weight:bold}dd{margin:0}.print{margin:25px 0;padding:10px 16px;background:#c8102e;color:#fff;border:0;border-radius:6px;font-weight:bold;cursor:pointer}@media print{.print{display:none}body{margin:20px auto}}</style></head><body><header><h1>BoneShakers Social Club</h1><div>Bikes for Tykes Charity Concert</div></header><h2>Contribution acknowledgment</h2><dl><dt>Receipt number</dt><dd>${esc(receiptNumber)}</dd><dt>Donor</dt><dd>${esc(donor)}</dd><dt>Date received</dt><dd>${esc(date)}</dd><dt>Date prepared</dt><dd>${esc(new Date().toLocaleDateString('en-US'))}</dd></dl><p>${contribution}</p><p>${goodsStatement}</p><p>Thank you for supporting Bikes for Tykes.</p><button class="print" onclick="window.print()">Print or save as PDF</button>
 
 
+<script src="membership-navigation.js?v=20261122-shared-membership"></script>
 </body></html>`);
           popup.document.close();
           panel.querySelector('[name="column13"]').value='Prepared';
@@ -10324,7 +10326,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 <script src="historical-bylaws-reader.js?v=20261019-1"></script>
 <script src="governance-export.js?v=20261019-3"></script>
 <script src="governance-certification.js?v=20261019-1"></script>
-<script src="operations-records.js?v=20261116-add-purchase-evidence"></script>
+<script src="operations-records.js?v=20261122-shared-membership"></script>
 <script src="governance-conduct.js?v=20261024-navigation"></script>
 <script src="funding-dashboard.js?v=20261112-eastern-dates"></script>
 <script src="bank-sync/portal.js?v=20261024-2"></script>
@@ -10373,7 +10375,7 @@ document.addEventListener('click',function(event){
 
 <script src="website-analytics.js?v=20261119"></script>
 <script src="portal-navigation.js?v=20261122-brand-home"></script>
-<script src="bssc-lms.js?v=20261122-manual-console"></script>
+<script src="bssc-lms.js?v=20261122-shared-membership"></script>
 <script src="sister-membership.js?v=20261120-voting1"></script>
 <script src="bod-nominations-results.js?v=20261107-compact-note-icons"></script>
 <script src="bod-election-history-data.js?v=20261027-combined-1"></script>

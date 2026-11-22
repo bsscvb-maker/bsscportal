@@ -4,8 +4,8 @@
   const tabs={accounts:{title:'Accounts & Access',range:"'Accounts & Access'!A1:G2000",gid:1777343977,host:'recordsWorkspace'},restricted:{title:'Restricted Members',range:"'Restricted Members'!A2:G2000",gid:1297188057,host:'recordsWorkspace'},patches:{title:'Patches',range:"'Patches'!A1:N2000",gid:506966162,host:'storageWorkspace'}};
   let version=0;
   const e=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  async function openAccounts(){
-    const host=document.getElementById('recordsWorkspace'),ticket=++version;
+  async function openAccounts(options={}){
+    const host=options.host||document.getElementById('recordsWorkspace'),ticket=++version;
     host.innerHTML=`<style>
       .aa-shell{background:#101010;color:#fff;border:1px solid #393939;border-radius:18px;padding:clamp(16px,3vw,30px)}
       .aa-shell h2,.aa-shell h3{color:#fff;margin:0 0 10px}.aa-shell p{color:#d0d0d0}.aa-top,.aa-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.aa-top h2{flex:1}.aa-shell button,.aa-shell a.aa-button{background:#252525;color:#fff;border:1px solid #777;border-radius:8px;padding:11px 16px;cursor:pointer;text-decoration:none;font:inherit}.aa-shell .aa-primary{background:#b01d26;border-color:#ed6972}.aa-shell button:disabled{opacity:.55;cursor:wait}.aa-shell input,.aa-shell textarea{box-sizing:border-box;width:100%;background:#fff;color:#161616;border:1px solid #aaa;border-radius:8px;padding:12px;font:inherit}.aa-search{display:block;margin:22px 0 12px}.aa-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:16px}.aa-card{min-width:0;background:#1e1e1e;border:1px solid #444;border-top:4px solid #c42330;border-radius:12px;padding:20px;overflow-wrap:anywhere}.aa-card dl{margin:16px 0}.aa-card dt{font-size:.82rem;color:#aaa;margin-top:12px}.aa-card dd{margin:4px 0;white-space:pre-wrap}.aa-shell .aa-remove{color:#ffabb1;border-color:#99555a}.aa-editor{background:#171717;color:#fff;border:1px solid #777;border-radius:14px;width:min(620px,calc(100% - 32px));max-height:85vh;padding:24px;box-sizing:border-box}.aa-editor::backdrop{background:#000b}.aa-editor label{display:block;margin:14px 0}.aa-editor input,.aa-editor textarea{width:100%;box-sizing:border-box;padding:10px;font:inherit}.aa-editor h3{color:#fff}.aa-editor button{padding:10px 15px;margin-right:8px;cursor:pointer}.aa-message{min-height:24px}.aa-card summary{cursor:pointer;color:#fff;padding:6px 0}
@@ -18,8 +18,9 @@
       .aa-password-icon:focus-visible{outline:2px solid #70b8f2;outline-offset:2px}
       .aa-password-note{grid-column:3; font-size:.78rem;color:#bcdcf5;min-height:1em}
     </style><section class="aa-shell"><div class="aa-top"><button data-back>← Club Records</button><h2>Accounts & Access</h2><button data-refresh>Refresh</button><button class="aa-primary" data-add disabled>+ Add account</button></div><p>Find a club account, open its website, or manage its access information.</p><label class="aa-search">Find an account<input type="search" data-search placeholder="Search account, contact, or notes" autocomplete="off"></label><p class="aa-message" role="status" aria-live="polite" data-status>Loading private accounts…</p><div class="aa-grid" data-cards></div><dialog class="aa-editor" data-editor></dialog></section>`;
-    host.querySelector('[data-back]').onclick=()=>{++version;recordsHome();};
-    host.querySelector('[data-refresh]').onclick=openAccounts;
+    host.querySelector('[data-back]').textContent=options.host?'← Access tools':'← Club Records';
+    host.querySelector('[data-back]').onclick=()=>{++version;if(options.onBack)options.onBack();else recordsHome();};
+    host.querySelector('[data-refresh]').onclick=()=>openAccounts(options);
     const status=host.querySelector('[data-status]'),grid=host.querySelector('[data-cards]'),dialog=host.querySelector('[data-editor]');
     let headers=[],records=[],busy=false,selectedWebsite=null;
     const current=()=>ticket===version&&host.contains(grid);
@@ -161,6 +162,7 @@
     try{await load();}catch(error){if(current()){status.textContent='Unable to load accounts. '+error.message;grid.innerHTML='<a class="aa-button" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/'+spreadsheet+'/edit#gid=1777343977">Open source sheet ↗</a>';}}
   }
 
+  window.renderClubAccountRegister=options=>openAccounts(options);
   async function openRestricted(options={}){
     const host=options.host||document.getElementById('recordsWorkspace'),ticket=++version;
     host.innerHTML=`<style>
@@ -323,11 +325,11 @@
   const targets={
     financeWorkspace:[['Fund requests','Fund Requests'],['Donation evidence','Donation Evidence'],['Purchase evidence','Purchase Evidence'],['Financial reports','Financial Reports']],
     sponsorshipsNewWorkspace:[['Sponsorship resources','Sponsorship Resources'],['Corporate documents','Corporate & Tax Documents']],
-    volunteersWorkspace:[['Event documents','Event Documents'],['Ride safety','Ride Safety']],
+    volunteersWorkspace:[['Event documents','Event Documents'],['Ride documents','Ride Safety']],
     bftWorkspace:[['Event documents','Event Documents']],
     storageWorkspace:[['Storage agreement and contracts','Contracts & Agreements']],
     marketplaceWorkspace:[['Artwork and production files','Approved Artwork']],
-    membershipWorkspace:[['Ride safety and blank waiver','Ride Safety']]
+    membershipWorkspace:[]
   };
   const bankStyle=document.createElement('style');
   bankStyle.textContent=`
@@ -696,7 +698,7 @@
   function filterCards(){
     document.querySelectorAll('#recordsWorkspace .records-dashboard-card').forEach(card=>{if(removed.has(card.querySelector('h3')?.textContent.trim()))card.remove();});
     if(removed.has('Patches'))document.querySelectorAll('#storageWorkspace button').forEach(b=>{if(b.textContent==='Patches — View Inventory')b.remove();});
-    const shortcuts={'Fund requests':'Fund Requests','Donation evidence':'Donation Evidence','Purchase evidence':'Purchase Evidence','Financial reports':'Financial Reports','Sponsorship resources':'Sponsorship Resources','Corporate documents':'Corporate & Tax Documents','Event documents':'Event Documents','Ride safety':'Ride Safety','Storage agreement and contracts':'Contracts & Agreements','Artwork and production files':'Approved Artwork','Ride safety and blank waiver':'Ride Safety'};
+    const shortcuts={'Fund requests':'Fund Requests','Donation evidence':'Donation Evidence','Purchase evidence':'Purchase Evidence','Financial reports':'Financial Reports','Sponsorship resources':'Sponsorship Resources','Corporate documents':'Corporate & Tax Documents','Event documents':'Event Documents','Ride documents':'Ride Safety','Storage agreement and contracts':'Contracts & Agreements','Artwork and production files':'Approved Artwork','Ride safety and blank waiver':'Ride Safety'};
     document.querySelectorAll('[data-record-shortcuts] button').forEach(b=>{if(removed.has(shortcuts[b.textContent]))b.remove();});
   }
   async function removeCollection(category,button){
