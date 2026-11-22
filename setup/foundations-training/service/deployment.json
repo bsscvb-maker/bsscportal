@@ -1,7 +1,7 @@
 {
   "script_id": "1x4bnVBSW2n_XjaH6Th29c7lSQ5N8PObdg8U75oaYft2f9ZuZiyVBRgnK",
   "url": "https://script.google.com/a/macros/boneshakerssocialclub.com/s/AKfycbz5mh45avqAvKNf7b-0OFvU46_MllMjwXyfGOJwtW0qUwpAA5rQZyKAImq5NAGDSniu/exec",
-  "version": 8,
+  "version": 10,
   "execute_as": "bsscvb@boneshakerssocialclub.com",
   "access": "Anyone; verified invited Firebase account required for records",
   "course_version": "bssc-foundations-2026-11-v1",
@@ -41,5 +41,17 @@
   "setup_email_canonical_route": "https://script.google.com/a/macros/boneshakerssocialclub.com/s/AKfycbz5mh45avqAvKNf7b-0OFvU46_MllMjwXyfGOJwtW0qUwpAA5rQZyKAImq5NAGDSniu/exec",
   "setup_email_routing_source_commit": "bb487f7b0d7983d8301270c3d2cd860544b8f725",
   "routing_anonymous_http_verified": true,
-  "owner_corrected_route_email_status": "Blocked by automatic approval review; prior approval covered only the first replacement. No corrective email sent."
+  "owner_corrected_route_email_status": "Blocked by automatic approval review; prior approval covered only the first replacement. No corrective email sent.",
+  "password_policy": {
+    "minLength": 10,
+    "maxLength": 128,
+    "uppercase": true,
+    "lowercase": true,
+    "digit": true,
+    "symbol": true,
+    "whitespaceIsSymbol": false
+  },
+  "certificate_president_source": "Current-year membership roster; exact active President in Director Position; capture on completion",
+  "certificate_style": "Embedded cursive recipient name and President typed signature; reference retained below",
+  "source_commit": "c42088087950012dfdcd3389182936733cdad737"
 }
