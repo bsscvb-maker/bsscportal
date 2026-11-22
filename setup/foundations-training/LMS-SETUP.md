@@ -1,49 +1,29 @@
-# BSSC LMS management and learner service
+# BSSC Foundations LMS — current production setup
 
-Management lives under Membership → BSSC LMS. Reads and enrollment writes use the management portal's existing Google sign-in and the private Club Membership Roster workbook. No workbook sharing or management-portal permissions were expanded. Learners do not receive workbook or portal access.
+Updated November 22, 2026. The website entry is https://bsscvb-maker.github.io/bsscportal/training/ . Use Member sign in for recorded enrollment; training/preview.html is a browser-local review only.
 
-The five LMS tabs hold enrollments, section progress, immutable quiz attempts, completions, and connection settings. All times are stored as ISO strings and displayed in Eastern Time. Quiz attempts capture the actual questions, options, chosen answers, correct answers, explanations, score, submission time, course version, and attempt reference. Earlier failed attempts are retained. Official and Practice enrollments are distinct. Incomplete or duplicate section records are rejected rather than converted into misleading completion totals.
+## Course
 
-## Connected Google service
+All 89 slides remain in seven sections. Recorded Arlo narration, on-screen wording, and transcripts now use self-paced language. Video time is 59:04, excluding quizzes and attestation. Forty narration passages and fifteen on-screen slides were revised. Section 1 budgeting and Section 5 circumstances sentences were restored with surgical edits from existing Arlo takes. Independent transcription and all 89 rendered video frames were checked. Source, scripts, hashes, timing, and production evidence are under self-paced/.
 
-Project: BSSC LMS — Training Records
-Editor: https://script.google.com/u/7/home/projects/1x4bnVBSW2n_XjaH6Th29c7lSQ5N8PObdg8U75oaYft2f9ZuZiyVBRgnK/edit
+Each section requires full viewing and five questions with at least four correct. A failed attempt requires rewatching before another quiz. Seven passes plus the final attestation unlock the named printable certificate. Server validation controls watch time, grades, retries and completion; browser flags cannot award a pass. Existing learner records, attempt snapshots and historical media are retained.
 
-Google Sheets API v4 is enabled and the owner granted the explicit spreadsheets and userinfo.email scopes. authorizeLmsService completed successfully.
+## Member login and private records
 
-Deploy a Web app as bsscvb@boneshakerssocialclub.com, restricted to users within boneshakerssocialclub.com. Do not select anonymous public access. The service rejects an unavailable active-user email and any identity outside the club's Workspace domain. Each enrolled BSSC address can access only its own record; email or enrollment IDs in client input cannot change that identity. Account creation for prospects remains an administrator task; this service does not grant admin or portal access.
+The club-owned Apps Script service runs as bsscvb@boneshakerssocialclub.com. The active invited-member deployment is version 5; deployment.json has the exact IDs and URLs. Anyone can open the login form, including people without Google accounts. Independent anonymous HTTP verification returned the member configuration and current player assets without a Google sign-in redirect. The older Workspace-only version 3 deployment remains available separately.
 
-The learner page is served by this club-owned Apps Script service using the GitHub-hosted player assets, with google.script.run for authenticated requests. Record writes use one atomic Sheets batch for learner state, section progress, quiz attempts, and completion. Script locks prevent concurrent updates; quiz request references prevent duplicate retry records. Watch time and grading are checked on the server. No client flag can mark a section passed. Failed answers include explanations and reset the watch requirement. A named certificate is issued only after seven passes and the attestation.
+Invited learners use their roster email and a Firebase-managed password. The welcome supplies a temporary password; a server-controlled gate requires a password change before course APIs are available. Accounts are bound by verified provider UID to a private enrollment; client email/IDs never select another learner. Passwords, tokens and temporary credentials are not stored in the roster, logs, source or exports. Todd's Practice account recorded first login and successful password change on November 21, 2026; its welcome test was sent once and must not be repeated.
 
-After owner authorization, deploy and verify identity, enrollment, and saving with a clearly labeled Practice record before activation. Set LMS Settings → Learner Service URL to the actual verified deployment URL and Connection Status to Connected only after those checks. Do not use the local test drive as evidence that official identity and writing have been validated.
+Membership → BSSC LMS is the management view. The private roster workbook contains enrollments, progress, immutable quiz attempts, completions, settings, accounts and delivery outbox. It records learner identity, missed answers, scores, timestamps, deadlines and delivery history. Learners do not receive workbook or management access. The portal's prospect-to-full save path requires verified official training completion; direct authorized Sheets edits are outside that UI gate.
 
-## Source and tests
+## Roster automation
 
-The maintained player source is in src/. Run npm install, npm run build, then npm run build:service. Copy dist/index.html and assets to training/ in the Pages repository. Code.gs must be updated and redeployed together with video duration or course-version changes. Keep existing course versions and attempt snapshots for historical audit purposes.
+The owner captured 61 existing current/next-year roster identities on November 22 at 12:33 p.m. Eastern, with no historical invitations or reminders. Only new members after that baseline are eligible. See next/ROLLOUT.md and deployment.json for the final installed trigger verification.
 
-Run node --test tests/lms-service.test.cjs for isolated identity, atomic save, gating, rewatch, retry, and certificate checks. Root tests/bssc-lms.test.cjs verifies the management view's progress and completion rules. All test records stay inside in-memory test fixtures.
+New eligible members receive a temporary-password welcome and 60 days from successful invitation. Branded countdowns are due at 45, 30, 15, 10, 5, 3, 2 and 1 days remaining, after 9 a.m. Eastern. Verified completion, inactive status or archiving suppresses further messages. Annual worksheet copies are deduplicated. Missing/shared/conflicting identities, uncertain start dates and unknown delivery outcomes require administrator review instead of a duplicate send. pauseRosterTraining disables new invitations and countdowns; never reset the captured baseline.
 
-Approved self-paced wording revisions remain a separate content pass; live instructor phrasing has not been represented as rewritten by this management integration.
+## Build and deployment
 
-Activation update: Google authorization succeeded on November 20, 2026 at 7:00 PM Eastern. Version 1 was deployed as the club administrator with access restricted to Anyone within BSSC C3. deployment.json retains the verified URL and configuration. A clearly marked Practice enrollment for Todd Humphrey at bsscvb@boneshakerssocialclub.com was created, and actual video playback saved watch progress and server timestamps through the deployed service. No official learner grades or certificates were fabricated. LMS Settings now reports Connected and contains the verified deployment URL.
+Run npm run build, npm run build:service and npm test. Publish launch.html as training/index.html, dist/index.html as training/preview.html, and dist/assets under training/assets. The generated service/Code.gs embeds the matching course metadata and assets; redeploy the existing invited-member deployment when those change. Preserve historical media for older private deployments. Publish through a fresh GitHub main tree and expected-head lease to preserve unrelated portal changes.
 
-The website course entry is training/index.html, authored from launch.html. The compiled player from dist/index.html is published as training/preview.html for browser-local review; existing local practice progress is preserved. Apps Script still embeds the compiled player with the official-mode flag and the GitHub-hosted assets. To publish future changes, retain this distinction: launch.html → training/index.html, dist/index.html → training/preview.html, and dist/assets → training/assets. Certificate-preview links on the old root URL redirect to the preview player.
-
-Management Practice-view and Classroom draft-link reviews remain separate pending checks. The learner service is now deployment version 2, with the existing address, access rules, course version, grades, and playback cadence retained.
-
-## Phone layout — November 20, 2026
-
-Phone-only screen media rules (650 CSS pixels and below) provide compact course progress, horizontally scrollable section cards, an edge-to-edge video, 44–48 px playback targets, a separate full-width seek row, full-width quiz actions, larger radio options, readable transcript spacing, and mobile certificate controls. The welcome page places the Start action before the large lesson artwork on phones. Existing desktop rules and print rules are retained verbatim. iPhone fullscreen uses webkitEnterFullscreen when available on phones; desktop retains its original fullscreen behavior.
-
-Version 2 adds HtmlOutput.addMetaTag for Google's outer phone viewport. Confirmed successful deployment at the existing Workspace-only URL. Browser review confirmed the real enrolled learner resumes Section 1 at 1:36 with 17% watched. Checked the official player at approximately 337 and 449 CSS pixels with no horizontal page overflow; playback buttons measure at least 44×46 CSS pixels. The desktop screenshot retains its original layout. Browser viewport checks use browser zoom, not a physical iPhone. Native Safari fullscreen support still requires a physical-device check. No official quiz grades or completion records were created during this layout review.
-
-The existing deployed CSS/JS asset URLs were retained to support the current Google-served player. Their phone-only styling/function update is also kept in maintained source. New installations may briefly use a cached asset until normal revalidation. Future player builds must keep source, assets, preview, and Apps Script references synchronized.
-
-
-## Explicit Google sign-in — November 21, 2026
-
-The public course entry now opens Google AccountChooser through a visible Sign in with Google button. The official course shows Signed in as and a Switch account link. Failed enrollment loads show only the verified session email, with Choose a Google account, retry, and home actions; client-submitted identity never selects an enrollment. The backend regression test verifies denied requests return no learner data and do not write rows. All 10 learner/service tests pass.
-
-Deployment version 3 was successfully updated on the existing Workspace-only URL at 6:29 AM Eastern. The saved source was checked against maintained Code.gs after clipboard line-ending normalization. Fresh compiled assets, the preview, and Google-served HTML are synchronized. Browser testing confirmed the website opens Google's account chooser and selecting the enrolled Web Administrator account opens the recorded course with saved 17% watch progress. No grade, certificate, or enrollment was changed for this update.
-
-Google can still fail before reaching the app when switching among several existing accounts; an attempted President-account switch returned Google's generic unable-to-open-file page. The welcome page includes a private/incognito-window recovery tip, consistent with Google's documented Apps Script multi-login limitation. Do not represent that second account as a successful live test of the enrollment-error screen; that behavior is covered by the isolated backend regression test.
+The November 22 release passed all 25 tests. GitHub Pages publication succeeded for e3803462622ae7a90d6f7518d55fc92578f24032. Live preview verified updated duration, transcript, section 1 media and locked quiz state. No learner passes, quiz attempts or certificates were fabricated. Phone-specific layout remains in place; a physical iPhone Safari check is still separate from browser viewport testing.

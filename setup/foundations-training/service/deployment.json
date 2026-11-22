@@ -1,7 +1,7 @@
 {
   "script_id": "1x4bnVBSW2n_XjaH6Th29c7lSQ5N8PObdg8U75oaYft2f9ZuZiyVBRgnK",
   "url": "https://script.google.com/a/macros/boneshakerssocialclub.com/s/AKfycbz5mh45avqAvKNf7b-0OFvU46_MllMjwXyfGOJwtW0qUwpAA5rQZyKAImq5NAGDSniu/exec",
-  "version": 4,
+  "version": 5,
   "execute_as": "bsscvb@boneshakerssocialclub.com",
   "access": "Anyone; verified invited Firebase account required for records",
   "course_version": "bssc-foundations-2026-11-v1",
@@ -16,6 +16,16 @@
   "public_url": "https://script.google.com/macros/s/AKfycbz5mh45avqAvKNf7b-0OFvU46_MllMjwXyfGOJwtW0qUwpAA5rQZyKAImq5NAGDSniu/exec",
   "deployment_id": "AKfycbz5mh45avqAvKNf7b-0OFvU46_MllMjwXyfGOJwtW0qUwpAA5rQZyKAImq5NAGDSniu",
   "member_login_form_verified": true,
-  "member_password_flow_verified": false,
-  "roster_automation_active": false
+  "member_password_flow_verified": true,
+  "roster_automation_active": true,
+  "roster_baseline_count": 61,
+  "content_revision": "selfpaced-20261122",
+  "video_seconds": 3543.86,
+  "video_runtime": "59:04",
+  "anonymous_member_login_verified": true,
+  "media_release_commit": "e3803462622ae7a90d6f7518d55fc92578f24032",
+  "roster_schedule": "Hourly native Apps Script time-driven trigger; reminders after 09:00 America/New_York",
+  "roster_clock_run_verified": "2026-11-22T17:39:03Z",
+  "roster_clock_messages_sent": 0,
+  "roster_clock_review_count": 0
 }
