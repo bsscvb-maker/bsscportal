@@ -1,4 +1,4 @@
-/** BSSC LMS: Workspace-only learner service. Deploy as owner; restrict access to the BSSC domain. */
+/** BSSC LMS: invited Firebase learners; separate Workspace administrator identity. */
 const LMS_BOOK='1G1GhywDG-FYEo00fY_FeWheScve333LIdBqZpqLbZZM';
 const LMS_DOMAIN='boneshakerssocialclub.com';
 const LMS_OWNER='bsscvb@boneshakerssocialclub.com';
@@ -10,9 +10,9 @@ function lmsUser_(book,email){const table=lmsTable_(book,'LMS Enrollments'),foun
 function lmsCell_(value){return {userEnteredValue:typeof value==='boolean'?{boolValue:value}:typeof value==='number'?{numberValue:value}:{stringValue:String(value??'')}}}
 function lmsUpdate_(sheetId,row,values){return {updateCells:{range:{sheetId,startRowIndex:row,endRowIndex:row+1,startColumnIndex:0,endColumnIndex:values.length},rows:[{values:values.map(lmsCell_)}],fields:'userEnteredValue'}}}
 function lmsAppend_(sheetId,values){return {appendCells:{sheetId,rows:[{values:values.map(lmsCell_)}],fields:'userEnteredValue'}}}
-function lmsSave_(book,user,state,index,now,attempt,completion){
+function lmsSave_(book,user,state,index,now,attempt,completion,attendanceUpdate){
  const at=new Date(now).toISOString(),row=user.row.slice();row[10]=row[10]||state.startedAt||'';row[11]=at;row[12]=state.completion?.at||'';row[14]=JSON.stringify(state);row[15]=at;row[18]=Number(row[18]||0)+1;
- const requests=[lmsUpdate_(user.table.sheet.getSheetId(),user.index,row)];
+ const requests=[lmsUpdate_(user.table.sheet.getSheetId(),user.index,row)];if(attendanceUpdate)requests.push(attendanceUpdate);
  if(Number.isInteger(index)&&index>=0&&index<7){const table=lmsTable_(book,'LMS Progress'),matches=[];table.rows.slice(1).forEach((r,i)=>{if(r[0]===row[0]&&Number(r[1])===index+1)matches.push(i+1)});if(matches.length>1)throw new TrainingError('Duplicate section progress needs review.',409);const s=state.sections[index],values=[row[0],index+1,LMS_COURSE[index].title,s.watched,LMS_COURSE[index].duration,s.watchComplete,s.passed,s.attempts?s.bestScore:'',s.lastScore??'',s.attempts,Boolean(s.attempts&&!s.passed&&!s.watchComplete),s.startedAt||'',s.passedAt||'',at,LMS_VERSION,s.position];requests.push(matches.length?lmsUpdate_(table.sheet.getSheetId(),matches[0],values):lmsAppend_(table.sheet.getSheetId(),values));}
  if(attempt){const table=lmsTable_(book,'LMS Attempts');requests.push(lmsAppend_(table.sheet.getSheetId(),attempt));}
  if(completion){const table=lmsTable_(book,'LMS Completions');requests.push(lmsAppend_(table.sheet.getSheetId(),completion));}
@@ -23,9 +23,11 @@ function lmsHandle_(input,verifiedIdentity){
  let lock,email='';
  try{if(!input||typeof input!=='object'||Array.isArray(input)||JSON.stringify(input).length>8000)throw new TrainingError('Invalid training request.');email=verifiedIdentity?verifiedIdentity.email:lmsIdentity_();lock=LockService.getScriptLock();if(!lock.tryLock(15000))throw new TrainingError('Training records are busy. Please try again.',503);const book=SpreadsheetApp.openById(LMS_BOOK),user=lmsUser_(book,email),state=user.row[14]?JSON.parse(user.row[14]):initialState(),now=Date.now(),at=new Date(now).toISOString(),index=Number(input.section)-1;
  if(verifiedIdentity&&user.row[0]!==verifiedIdentity.enrollmentId)throw new TrainingError('The account and enrollment do not match.',403);
- if(input.action==='load')return {user:{email,name:user.row[2]},progress:publicState(state),recordType:user.row[6]};
+ const attendance=lmsAttendance_(book,user);
+ if(attendance&&!['load','attest'].includes(input.action))throw new TrainingError('Your in-person training is recorded. Complete your personal attestation.',403);
+ if(input.action==='load')return {training:inPersonPublic_(attendance),user:{email,name:user.row[2]},progress:publicState(state),recordType:user.row[6]};
  if(input.action==='getQuiz'){if(!unlocked(state,index)||!state.sections[index].watchComplete)throw new TrainingError('Watch the complete lesson to unlock this quiz.',403);return {questions:LMS_BANK[index].map(q=>({q:q.q,options:q.options}))};}
- let extra={},attempt=null,completion=null;
+ let extra={},attempt=null,completion=null,attendanceUpdate=null;
  if(input.action==='start'){extra.session=Utilities.getUuid();startWatch(state,index,now,extra.session);state.startedAt=state.startedAt||at;state.sections[index].startedAt=state.sections[index].startedAt||at;}
  else if(input.action==='tick')recordWatch(state,index,input,now,LMS_COURSE[index]?.duration||0);
  else if(input.action==='quiz'){
@@ -37,10 +39,11 @@ function lmsHandle_(input,verifiedIdentity){
   attempt=[Utilities.getUuid(),user.row[0],index+1,s.attempts,graded.score,5,graded.score*20,graded.passed,at,JSON.stringify(input.answers),JSON.stringify(LMS_BANK[index]),LMS_VERSION,JSON.stringify(state),input.requestId,graded.rewatchRequired];
  }else if(input.action==='attest'){
   if(String(input.name||'').trim().toLowerCase()!==String(user.row[2]).trim().toLowerCase())throw new TrainingError('Enter your enrolled full name: '+user.row[2]);
+  if(attendance){const signed=inPersonSign_(user,state,attendance,input,now);completion=signed.completion;attendanceUpdate=signed.update;}else{
   const wasComplete=Boolean(state.completion);attest(state,String(user.row[2]),input.accepted,now,'BSSC-'+Utilities.getUuid().toUpperCase());state.completion.recordType=user.row[6];state.completion.courseVersion=LMS_VERSION;state.completion.verified=user.row[6]==='Official';
-  if(!wasComplete)completion=[state.completion.id,user.row[0],state.completion.name,state.completion.at,LMS_ATTESTATION,LMS_VERSION,JSON.stringify(state.completion.scores),user.row[6],user.row[6]==='Official'?'Verified':'Practice',at];
+  if(!wasComplete)completion=[state.completion.id,user.row[0],state.completion.name,state.completion.at,LMS_ATTESTATION,LMS_VERSION,JSON.stringify(state.completion.scores),user.row[6],user.row[6]==='Official'?'Verified':'Practice',at];}
  }else throw new TrainingError('Unknown training action.');
- lmsSave_(book,user,state,index,now,attempt,completion);return {...extra,progress:publicState(state)};
+ lmsSave_(book,user,state,index,now,attempt,completion,attendanceUpdate);return {...extra,progress:publicState(state)};
  }catch(error){return {error:error instanceof TrainingError?error.message:'The training service is temporarily unavailable. Please try again.',status:error.status||500,...(email?{signedInEmail:email}:{})}}
  finally{if(lock)lock.releaseLock();}
 }

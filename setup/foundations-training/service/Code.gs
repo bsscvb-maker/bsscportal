@@ -72,9 +72,27 @@ const LMS_SCHEMA={
     "Value",
     "Updated At",
     "Updated By"
+  ],
+  "LMS Attendance": [
+    "Attendance ID",
+    "Enrollment ID",
+    "Full Name",
+    "Email",
+    "Training Date",
+    "Instructor",
+    "Recorded By",
+    "Recorded At",
+    "Course Version",
+    "Status",
+    "Invited At",
+    "Attested At",
+    "Certificate ID",
+    "Attestation",
+    "Account UID",
+    "Error Code",
+    "Notes"
   ]
 }
-
 ;
 const LMS_COURSE=[{"id": 1, "title": "Our roots and purpose", "duration": 560.0}, {"id": 2, "title": "Colors, conduct and reputation", "duration": 439.48}, {"id": 3, "title": "Board and leadership", "duration": 620.0}, {"id": 4, "title": "Shared standards and reporting", "duration": 688.68}, {"id": 5, "title": "Membership and participation", "duration": 210.38}, {"id": 6, "title": "Rides and event responsibilities", "duration": 410.32}, {"id": 7, "title": "Fundraising and club resources", "duration": 615.0}];
 const LMS_BANK=[
@@ -443,7 +461,7 @@ const LMS_BANK=[
     }
   ]
 ];
-const LMS_HTML="<!doctype html><html lang=\"en\"><head><script>window.BSSC_LMS_OFFICIAL=true;</script><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"robots\" content=\"noindex,nofollow\"><meta name=\"referrer\" content=\"same-origin\"><title>BSSC Foundations Training \u2014 Prospect Test Drive</title><link rel=\"icon\" href=\"https://bsscvb-maker.github.io/bsscportal/bssc-favicon.png\">  <script type=\"module\" crossorigin src=\"https://bsscvb-maker.github.io/bsscportal/training/assets/index-CjIq5Psu.js\"></script>\n  <link rel=\"stylesheet\" crossorigin href=\"https://bsscvb-maker.github.io/bsscportal/training/assets/index-DdlNaxH4.css\">\n</head><body><div id=\"root\"></div></body></html>\n\n";
+const LMS_HTML="<!doctype html><html lang=\"en\"><head><script>window.BSSC_LMS_OFFICIAL=true;</script><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"robots\" content=\"noindex,nofollow\"><meta name=\"referrer\" content=\"same-origin\"><title>BSSC Foundations Training \u2014 Prospect Test Drive</title><link rel=\"icon\" href=\"https://bsscvb-maker.github.io/bsscportal/bssc-favicon.png\">  <script type=\"module\" crossorigin src=\"https://bsscvb-maker.github.io/bsscportal/training/assets/index-BXmWgO-r.js\"></script>\n  <link rel=\"stylesheet\" crossorigin href=\"https://bsscvb-maker.github.io/bsscportal/training/assets/index-BUHiYy9I.css\">\n</head><body><div id=\"root\"></div></body></html>\n\n";
 class TrainingError extends Error {
   constructor(message, status=400) { super(message); this.status=status; }
 }
@@ -492,7 +510,7 @@ function publicState(state) {
   return {version:state.version,sections:state.sections.map(({session,lastTickAt,...s})=>s),completion:state.completion};
 }
 
-/** BSSC LMS: Workspace-only learner service. Deploy as owner; restrict access to the BSSC domain. */
+/** BSSC LMS: invited Firebase learners; separate Workspace administrator identity. */
 const LMS_BOOK='1G1GhywDG-FYEo00fY_FeWheScve333LIdBqZpqLbZZM';
 const LMS_DOMAIN='boneshakerssocialclub.com';
 const LMS_OWNER='bsscvb@boneshakerssocialclub.com';
@@ -504,9 +522,9 @@ function lmsUser_(book,email){const table=lmsTable_(book,'LMS Enrollments'),foun
 function lmsCell_(value){return {userEnteredValue:typeof value==='boolean'?{boolValue:value}:typeof value==='number'?{numberValue:value}:{stringValue:String(value??'')}}}
 function lmsUpdate_(sheetId,row,values){return {updateCells:{range:{sheetId,startRowIndex:row,endRowIndex:row+1,startColumnIndex:0,endColumnIndex:values.length},rows:[{values:values.map(lmsCell_)}],fields:'userEnteredValue'}}}
 function lmsAppend_(sheetId,values){return {appendCells:{sheetId,rows:[{values:values.map(lmsCell_)}],fields:'userEnteredValue'}}}
-function lmsSave_(book,user,state,index,now,attempt,completion){
+function lmsSave_(book,user,state,index,now,attempt,completion,attendanceUpdate){
  const at=new Date(now).toISOString(),row=user.row.slice();row[10]=row[10]||state.startedAt||'';row[11]=at;row[12]=state.completion?.at||'';row[14]=JSON.stringify(state);row[15]=at;row[18]=Number(row[18]||0)+1;
- const requests=[lmsUpdate_(user.table.sheet.getSheetId(),user.index,row)];
+ const requests=[lmsUpdate_(user.table.sheet.getSheetId(),user.index,row)];if(attendanceUpdate)requests.push(attendanceUpdate);
  if(Number.isInteger(index)&&index>=0&&index<7){const table=lmsTable_(book,'LMS Progress'),matches=[];table.rows.slice(1).forEach((r,i)=>{if(r[0]===row[0]&&Number(r[1])===index+1)matches.push(i+1)});if(matches.length>1)throw new TrainingError('Duplicate section progress needs review.',409);const s=state.sections[index],values=[row[0],index+1,LMS_COURSE[index].title,s.watched,LMS_COURSE[index].duration,s.watchComplete,s.passed,s.attempts?s.bestScore:'',s.lastScore??'',s.attempts,Boolean(s.attempts&&!s.passed&&!s.watchComplete),s.startedAt||'',s.passedAt||'',at,LMS_VERSION,s.position];requests.push(matches.length?lmsUpdate_(table.sheet.getSheetId(),matches[0],values):lmsAppend_(table.sheet.getSheetId(),values));}
  if(attempt){const table=lmsTable_(book,'LMS Attempts');requests.push(lmsAppend_(table.sheet.getSheetId(),attempt));}
  if(completion){const table=lmsTable_(book,'LMS Completions');requests.push(lmsAppend_(table.sheet.getSheetId(),completion));}
@@ -517,9 +535,11 @@ function lmsHandle_(input,verifiedIdentity){
  let lock,email='';
  try{if(!input||typeof input!=='object'||Array.isArray(input)||JSON.stringify(input).length>8000)throw new TrainingError('Invalid training request.');email=verifiedIdentity?verifiedIdentity.email:lmsIdentity_();lock=LockService.getScriptLock();if(!lock.tryLock(15000))throw new TrainingError('Training records are busy. Please try again.',503);const book=SpreadsheetApp.openById(LMS_BOOK),user=lmsUser_(book,email),state=user.row[14]?JSON.parse(user.row[14]):initialState(),now=Date.now(),at=new Date(now).toISOString(),index=Number(input.section)-1;
  if(verifiedIdentity&&user.row[0]!==verifiedIdentity.enrollmentId)throw new TrainingError('The account and enrollment do not match.',403);
- if(input.action==='load')return {user:{email,name:user.row[2]},progress:publicState(state),recordType:user.row[6]};
+ const attendance=lmsAttendance_(book,user);
+ if(attendance&&!['load','attest'].includes(input.action))throw new TrainingError('Your in-person training is recorded. Complete your personal attestation.',403);
+ if(input.action==='load')return {training:inPersonPublic_(attendance),user:{email,name:user.row[2]},progress:publicState(state),recordType:user.row[6]};
  if(input.action==='getQuiz'){if(!unlocked(state,index)||!state.sections[index].watchComplete)throw new TrainingError('Watch the complete lesson to unlock this quiz.',403);return {questions:LMS_BANK[index].map(q=>({q:q.q,options:q.options}))};}
- let extra={},attempt=null,completion=null;
+ let extra={},attempt=null,completion=null,attendanceUpdate=null;
  if(input.action==='start'){extra.session=Utilities.getUuid();startWatch(state,index,now,extra.session);state.startedAt=state.startedAt||at;state.sections[index].startedAt=state.sections[index].startedAt||at;}
  else if(input.action==='tick')recordWatch(state,index,input,now,LMS_COURSE[index]?.duration||0);
  else if(input.action==='quiz'){
@@ -531,10 +551,11 @@ function lmsHandle_(input,verifiedIdentity){
   attempt=[Utilities.getUuid(),user.row[0],index+1,s.attempts,graded.score,5,graded.score*20,graded.passed,at,JSON.stringify(input.answers),JSON.stringify(LMS_BANK[index]),LMS_VERSION,JSON.stringify(state),input.requestId,graded.rewatchRequired];
  }else if(input.action==='attest'){
   if(String(input.name||'').trim().toLowerCase()!==String(user.row[2]).trim().toLowerCase())throw new TrainingError('Enter your enrolled full name: '+user.row[2]);
+  if(attendance){const signed=inPersonSign_(user,state,attendance,input,now);completion=signed.completion;attendanceUpdate=signed.update;}else{
   const wasComplete=Boolean(state.completion);attest(state,String(user.row[2]),input.accepted,now,'BSSC-'+Utilities.getUuid().toUpperCase());state.completion.recordType=user.row[6];state.completion.courseVersion=LMS_VERSION;state.completion.verified=user.row[6]==='Official';
-  if(!wasComplete)completion=[state.completion.id,user.row[0],state.completion.name,state.completion.at,LMS_ATTESTATION,LMS_VERSION,JSON.stringify(state.completion.scores),user.row[6],user.row[6]==='Official'?'Verified':'Practice',at];
+  if(!wasComplete)completion=[state.completion.id,user.row[0],state.completion.name,state.completion.at,LMS_ATTESTATION,LMS_VERSION,JSON.stringify(state.completion.scores),user.row[6],user.row[6]==='Official'?'Verified':'Practice',at];}
  }else throw new TrainingError('Unknown training action.');
- lmsSave_(book,user,state,index,now,attempt,completion);return {...extra,progress:publicState(state)};
+ lmsSave_(book,user,state,index,now,attempt,completion,attendanceUpdate);return {...extra,progress:publicState(state)};
  }catch(error){return {error:error instanceof TrainingError?error.message:'The training service is temporarily unavailable. Please try again.',status:error.status||500,...(email?{signedInEmail:email}:{})}}
  finally{if(lock)lock.releaseLock();}
 }
@@ -623,11 +644,86 @@ function memberOutboxFinish_(entry,status,errorCode){if(!entry)return;entry.valu
 function activateRosterTraining(){if(lmsIdentity_()!==LMS_OWNER)throw Error('Only the BSSC service owner can activate roster enrollment.');memberConfig_();const p=PropertiesService.getScriptProperties();if(p.getProperty('LMS_ROSTER_ACTIVATED_AT'))throw Error('Roster activation already has a baseline. Do not reset existing due dates.');const members=memberRoster_(),now=new Date().toISOString();memberTable_('LMS Outbox',MEMBER_OUTBOX_HEADERS,true);memberTable_('LMS Accounts',MEMBER_ACCOUNT_HEADERS,true);p.setProperties({LMS_ROSTER_BASELINE:JSON.stringify({names:members.map(m=>m.nameKey),emails:members.map(m=>m.emailKey)}),LMS_ROSTER_ACTIVATED_AT:now,LMS_ROSTER_AUTOMATIONS_ENABLED:'true'});console.log('Roster automation baseline captured for '+members.length+' existing people. No historical invitations or reminders sent. Install the hourly lmsRosterClock trigger to start monitoring.');}
 function pauseRosterTraining(){if(lmsIdentity_()!==LMS_OWNER)throw Error('Only the BSSC service owner can pause this workflow.');PropertiesService.getScriptProperties().setProperty('LMS_ROSTER_AUTOMATIONS_ENABLED','false');console.log('New invitations and countdown messages are paused.');}
 function lmsRosterClock(){if(lmsIdentity_()!==LMS_OWNER)throw Error('The roster clock requires the authorized club administrator.');return lmsRosterClock_();}
-function lmsRosterClock_(){const p=PropertiesService.getScriptProperties();if(p.getProperty('LMS_ROSTER_AUTOMATIONS_ENABLED')!=='true')return;memberConfig_();let lock=LockService.getScriptLock();if(!lock.tryLock(20000))return;let sent=0,reviewed=0;try{const activated=p.getProperty('LMS_ROSTER_ACTIVATED_AT'),baseline=JSON.parse(p.getProperty('LMS_ROSTER_BASELINE')||'null');if(!activated||!baseline)throw Error('A verified roster baseline is required.');const members=memberRoster_(),book=SpreadsheetApp.openById(LMS_BOOK),table=lmsTable_(book,'LMS Enrollments'),emails=new Map();for(const m of members)emails.set(m.email,(emails.get(m.email)||0)+1);
+function lmsRosterClock_(){const p=PropertiesService.getScriptProperties();if(p.getProperty('LMS_ROSTER_AUTOMATIONS_ENABLED')!=='true')return;memberConfig_();let lock=LockService.getScriptLock();if(!lock.tryLock(20000))return;let sent=0,reviewed=0;try{const activated=p.getProperty('LMS_ROSTER_ACTIVATED_AT'),baseline=JSON.parse(p.getProperty('LMS_ROSTER_BASELINE')||'null');if(!activated||!baseline)throw Error('A verified roster baseline is required.');const members=memberRoster_(),book=SpreadsheetApp.openById(LMS_BOOK),table=lmsTable_(book,'LMS Enrollments'),emails=new Map();const inPerson=inPersonInvitations_(book);sent+=inPerson.sent;reviewed+=inPerson.reviewed;table.rows=lmsTable_(book,'LMS Enrollments').rows;for(const m of members)emails.set(m.email,(emails.get(m.email)||0)+1);
  for(const m of members){if(baseline.names.includes(m.nameKey)||baseline.emails.includes(m.emailKey))continue;if(!['active','prospect','pending'].includes(m.status.toLowerCase()))continue;const key='roster:'+m.nameKey;if(table.rows.slice(1).some(r=>String(r[3]).toLowerCase()===m.email))continue;const started=m.startDate instanceof Date?localDay(m.startDate):'';const invalid=m.conflict||!m.name||!/^\S+@\S+\.\S+$/.test(m.email)||emails.get(m.email)!==1||!started||started<localDay(activated);if(invalid){const entry=memberOutbox_({key,name:m.name,email:m.email,kind:'Roster review'});memberOutboxFinish_(entry,'Needs review','IDENTITY_OR_START_DATE');if(entry)reviewed++;continue;}if(MailApp.getRemainingDailyQuota()<1)break;const enrollmentId='LMS-'+Utilities.getUuid(),memberKey='MEMBER-'+Utilities.getUuid(),due=dueDay(Date.now()),dueAt=memberDueTimestamp_(due),entry=memberOutbox_({key,enrollmentId,memberKey,name:m.name,email:m.email,kind:'Invitation',daysRemaining:60,dueAt});if(!entry)continue;
   const row=[enrollmentId,memberKey,m.name,m.email,m.status,LMS_VERSION,'Official','','',LMS_OWNER,'','','','','','',`Automatic roster enrollment (${m.sourceYear})`,false,0];table.sheet.appendRow(row);
   try{const provisioned=memberProvision_(enrollmentId),mail=trainingEmail({kind:'invitation',name:m.name,email:m.email,dueDay:due,temporaryPassword:provisioned.temporaryPassword});MailApp.sendEmail({to:m.email,subject:mail.subject,body:mail.text,htmlBody:mail.html,name:'BoneShakers Social Club',replyTo:'president@boneshakerssocialclub.com'});const at=new Date().toISOString(),enrollmentRow=table.sheet.getLastRow();table.sheet.getRange(enrollmentRow,8,1,2).setValues([[at,dueAt]]);memberSaveAccount_({...provisioned.account,name:m.name},m.name);memberOutboxFinish_(entry,'Sent');sent++;baseline.names.push(m.nameKey);baseline.emails.push(m.emailKey);p.setProperty('LMS_ROSTER_BASELINE',JSON.stringify(baseline));}catch(error){memberOutboxFinish_(entry,'Needs review','INVITATION_OUTCOME_REQUIRES_REVIEW');}
  }
- if(Number(Utilities.formatDate(new Date(),TIME_ZONE,'H'))>=9){const enrollments=lmsTable_(book,'LMS Enrollments'),outbox=memberTable_('LMS Outbox',MEMBER_OUTBOX_HEADERS,true),ledger=outbox.rows.slice(1).map(r=>({key:r[0],status:r[9]==='Reserved'?'Sending':r[9]==='Needs review'?'Unknown':r[9]}));for(const row of enrollments.rows.slice(1)){if(!outbox.rows.some(r=>r[1]===row[0]&&r[5]==='Invitation'&&r[9]==='Sent'))continue;if(row[6]!=='Official'||row[17]===true||!row[7]||!row[8])continue;const roster=members.find(m=>m.email===String(row[3]).toLowerCase());if(!roster||!['active','prospect','pending'].includes(roster.status.toLowerCase()))continue;const state=row[14]?JSON.parse(row[14]):initialState(),sections=state.sections.map((s,i)=>({section:i+1,passed:s.passed,bestScore:s.bestScore})),completion=state.completion?{...state.completion,enrollmentId:row[0],courseVersion:state.completion.courseVersion}:null,e={id:row[0],email:row[3],name:row[2],recordType:row[6],courseVersion:row[5],archived:row[17],deliveryStatus:'Sent',invitedAt:row[7],dueDay:localDay(row[8]),sections,completion};const event=nextReminder(e,Date.now(),ledger);if(!event||MailApp.getRemainingDailyQuota()<1)continue;const entry=memberOutbox_({...event,email:e.email,name:e.name,memberKey:row[1],dueAt:row[8]});if(!entry)continue;try{const mail=trainingEmail({kind:'reminder',name:e.name,email:e.email,dueDay:e.dueDay,daysRemaining:event.daysRemaining,passed:sections.filter(s=>s.passed).length});MailApp.sendEmail({to:e.email,subject:mail.subject,body:mail.text,htmlBody:mail.html,name:'BoneShakers Social Club',replyTo:'president@boneshakerssocialclub.com'});memberOutboxFinish_(entry,'Sent');sent++;}catch(error){memberOutboxFinish_(entry,'Needs review','SEND_OUTCOME_REQUIRES_REVIEW');}}}
+ if(Number(Utilities.formatDate(new Date(),TIME_ZONE,'H'))>=9){const enrollments=lmsTable_(book,'LMS Enrollments'),outbox=memberTable_('LMS Outbox',MEMBER_OUTBOX_HEADERS,true),ledger=outbox.rows.slice(1).map(r=>({key:r[0],status:r[9]==='Reserved'?'Sending':r[9]==='Needs review'?'Unknown':r[9]}));for(const row of enrollments.rows.slice(1)){if(!outbox.rows.some(r=>r[1]===row[0]&&r[5]==='Invitation'&&r[9]==='Sent'))continue;if(row[6]!=='Official'||row[17]===true||!row[7]||!row[8])continue;if(lmsAttendance_(book,{row}))continue;const roster=members.find(m=>m.email===String(row[3]).toLowerCase());if(!roster||!['active','prospect','pending'].includes(roster.status.toLowerCase()))continue;const state=row[14]?JSON.parse(row[14]):initialState(),sections=state.sections.map((s,i)=>({section:i+1,passed:s.passed,bestScore:s.bestScore})),completion=state.completion?{...state.completion,enrollmentId:row[0],courseVersion:state.completion.courseVersion}:null,e={id:row[0],email:row[3],name:row[2],recordType:row[6],courseVersion:row[5],archived:row[17],deliveryStatus:'Sent',invitedAt:row[7],dueDay:localDay(row[8]),sections,completion};const event=nextReminder(e,Date.now(),ledger);if(!event||MailApp.getRemainingDailyQuota()<1)continue;const entry=memberOutbox_({...event,email:e.email,name:e.name,memberKey:row[1],dueAt:row[8]});if(!entry)continue;try{const mail=trainingEmail({kind:'reminder',name:e.name,email:e.email,dueDay:e.dueDay,daysRemaining:event.daysRemaining,passed:sections.filter(s=>s.passed).length});MailApp.sendEmail({to:e.email,subject:mail.subject,body:mail.text,htmlBody:mail.html,name:'BoneShakers Social Club',replyTo:'president@boneshakerssocialclub.com'});memberOutboxFinish_(entry,'Sent');sent++;}catch(error){memberOutboxFinish_(entry,'Needs review','SEND_OUTCOME_REQUIRES_REVIEW');}}}
  p.setProperty('LMS_ROSTER_LAST_CHECK',new Date().toISOString());console.log('Roster check completed. Messages sent: '+sent+'. Identities needing review: '+reviewed+'.');
  }finally{lock.releaseLock();}}
+
+/* In-person credit is administrator-recorded; only the authenticated learner can attest. */
+const INPERSON_HEADERS=['Attendance ID','Enrollment ID','Full Name','Email','Training Date','Instructor','Recorded By','Recorded At','Course Version','Status','Invited At','Attested At','Certificate ID','Attestation','Account UID','Error Code','Notes'];
+const INPERSON_ATTESTATION='I confirm that I attended BSSC Foundations training in person, understand the expectations covered, and know to contact club leadership if I need clarification. I acknowledge my responsibility to follow the club’s standards.';
+function enableInPersonAttestations(){
+ if(lmsIdentity_()!==LMS_OWNER)throw Error('Only the BSSC service owner can enable in-person attestations.');
+ memberConfig_();memberTable_('LMS Attendance',INPERSON_HEADERS,true);
+ const book=SpreadsheetApp.openById(LMS_BOOK),settings=lmsTable_(book,'LMS Settings'),at=new Date().toISOString(),row=settings.rows.findIndex(r=>r[0]==='In-person attestation');
+ const values=['In-person attestation','Enabled',at,LMS_OWNER];
+ Sheets.Spreadsheets.batchUpdate({requests:[row>0?lmsUpdate_(settings.sheet.getSheetId(),row,values):lmsAppend_(settings.sheet.getSheetId(),values)]},LMS_BOOK);
+ PropertiesService.getScriptProperties().setProperty('LMS_INPERSON_ENABLED','true');
+ console.log('In-person attendance store enabled. No invitations, signatures or completions created.');
+}
+function lmsAttendance_(book,user){
+ const table=book.getSheetByName('LMS Attendance')?lmsTable_(book,'LMS Attendance'):null;if(!table)return null;
+ const matches=table.rows.map((row,index)=>({row,index,table})).filter(x=>x.index>0&&x.row[1]===user.row[0]&&['Attestation pending','Signed'].includes(x.row[9]));
+ if(matches.length>1)throw new TrainingError('Duplicate in-person attendance records need administrator review.',409);
+ if(!matches.length)return null;const a=matches[0],r=a.row;
+ if(r[8]!==LMS_VERSION||String(r[3]).toLowerCase()!==String(user.row[3]).toLowerCase()||String(r[2]).trim()!==String(user.row[2]).trim()||!r[0]||!r[6]||!r[7]||!r[10]||user.row[6]!=='Official')throw new TrainingError('Your recorded attendance needs administrator review.',409);
+ return a;
+}
+function inPersonPublic_(a){if(!a)return null;const r=a.row;return {method:'In person',attendanceId:r[0],trainingDate:r[4]||null,instructor:r[5]||null,recordedAt:r[7],invitedAt:r[10],status:r[9],attestation:INPERSON_ATTESTATION};}
+function inPersonSign_(user,state,attendance,input,now){
+ const r=attendance.row.slice();
+ if(input.accepted!==true||String(input.name||'').trim().toLowerCase()!==String(user.row[2]).trim().toLowerCase())throw new TrainingError('Enter your enrolled full name and confirm the attestation.');
+ if(state.completion){if(state.completion.method!=='In person'||state.completion.attendanceId!==r[0]||state.completion.id!==r[12]||state.completion.at!==r[11]||r[9]!=='Signed')throw new TrainingError('Your completion record needs administrator review.',409);return {completion:null,update:null};}
+ if(r[9]!=='Attestation pending')throw new TrainingError('Your attestation is not pending.',409);
+ const at=new Date(now).toISOString(),id='BSSC-'+Utilities.getUuid().toUpperCase();
+ state.completion={id,name:user.row[2],at,attestationVersion:'bssc-inperson-v1',attestation:INPERSON_ATTESTATION,scores:[],method:'In person',attendanceId:r[0],trainingDate:r[4]||null,instructor:r[5]||null,enrollmentId:user.row[0],courseVersion:LMS_VERSION,recordType:'Official',verified:true};
+ r[9]='Signed';r[11]=at;r[12]=id;r[13]=INPERSON_ATTESTATION;
+ return {completion:[id,user.row[0],user.row[2],at,INPERSON_ATTESTATION,LMS_VERSION,'[]','Official','Verified',at],update:lmsUpdate_(attendance.table.sheet.getSheetId(),attendance.index,r)};
+}
+function inPersonEmail_({name,email,temporaryPassword,trainingDate,instructor}){
+ const subject=name+', complete your BSSC Foundations attestation',url='https://bsscvb-maker.github.io/bsscportal/training/';
+ const detail=trainingDate?'Training date: '+formatDue(trainingDate):'Training date: not recorded';
+ const credentials=temporaryPassword?'<p><strong>Temporary password</strong><br><span style="font-family:monospace;font-size:18px">'+esc(temporaryPassword)+'</span></p><p>Choose a new password at your first sign-in. This password is for BSSC training only; please do not share it.</p>':'<p>Use your existing BSSC training password. If you have forgotten it, choose Forgot password on the sign-in page.</p>';
+ const html='<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta charset="utf-8"></head><body style="margin:0;background:#edf0f4;font-family:Arial,Helvetica,sans-serif;color:#252a33"><table role="presentation" width="100%"><tr><td align="center" style="padding:28px 12px"><table role="presentation" style="width:100%;max-width:600px;background:#fff;border-radius:14px;overflow:hidden" cellpadding="0" cellspacing="0"><tr><td style="padding:28px;background:#17191d;border-bottom:4px solid #b72c3d"><img src="'+LOGO+'" width="76" height="76" alt="BoneShakers Social Club"><h2 style="color:white;margin-bottom:6px">BoneShakers Social Club</h2><p style="color:#c3c8d1;margin-top:0">We ride together. We serve together. We stand together.</p></td></tr><tr><td style="padding:30px 28px"><p style="font-size:12px;color:#a72c3a;letter-spacing:2px;font-weight:bold">IN-PERSON FOUNDATIONS TRAINING</p><h1 style="font-size:28px">One final acknowledgment.</h1><p>Hi '+esc(name)+',</p><p style="line-height:1.8">Your attendance at BSSC Foundations training in person has been recorded. Please sign your personal attestation to finalize your training record and unlock your printable certificate.</p><p style="padding:16px;background:#f6f1e5;line-height:1.7"><strong>You do not need to repeat the seven videos or online quizzes.</strong><br>'+esc(detail)+'<br>Instructor: '+esc(instructor||'not recorded')+'</p><div style="padding:18px;background:#f4f5f7;border:1px solid #dfe2e8;border-radius:10px;margin:22px 0"><p><strong>Your training username</strong><br>'+esc(email)+'</p>'+credentials+'</div><a href="'+url+'" style="display:block;text-align:center;background:#ad2838;color:white;text-decoration:none;padding:18px;border-radius:9px;font-weight:bold">Complete My Attestation</a><p style="font-size:13px;line-height:1.7;color:#626a75">Sign in, review the acknowledgment and type your full name. Only your own submission signs the attestation. Questions? Reply to the President.</p></td></tr><tr><td style="padding:22px 28px;background:#17191d;color:#c3c8d1;font-size:12px"><strong style="color:white">STRONGER TOGETHER</strong><br>BoneShakers Social Club · Foundations Training</td></tr></table></td></tr></table></body></html>';
+ const text=subject+'\n\nHi '+name+',\n\nYour in-person attendance has been recorded. Complete your personal attestation to finalize your record and unlock your printable certificate. You do not need to repeat the seven videos or online quizzes.\n'+detail+'\nInstructor: '+(instructor||'not recorded')+'\n\nUsername: '+email+'\n'+(temporaryPassword?'Temporary password: '+temporaryPassword+'\nChoose a new password at first sign-in.':'Use your existing training password, or Forgot password.')+'\n\nComplete My Attestation: '+url+'\n\nQuestions: president@boneshakerssocialclub.com\nBoneShakers Social Club — Stronger Together';
+ return {subject,html,text};
+}
+function inPersonInvitations_(book){
+ if(PropertiesService.getScriptProperties().getProperty('LMS_INPERSON_ENABLED')!=='true')return {sent:0,reviewed:0};
+ const attendance=lmsTable_(book,'LMS Attendance'),roster=memberRoster_();let sent=0,reviewed=0;
+ for(let i=1;i<attendance.rows.length;i++){
+  const row=attendance.rows[i].slice();if(row[9]!=='Requested')continue;
+  let entry=null;
+  try{
+   if(MailApp.getRemainingDailyQuota()<1)break;
+   const email=String(row[3]||'').trim().toLowerCase(),members=roster.filter(m=>m.email===email),match=members[0];
+   if(!row[0]||!row[6]||!row[7]||row[8]!==LMS_VERSION||members.length!==1||match.conflict||!['active','prospect','pending'].includes(match.status.toLowerCase())||match.name.toLowerCase()!==String(row[2]).trim().toLowerCase())throw Error('ATTENDANCE_IDENTITY_REVIEW');
+   if(row[4]&&(!/^\d{4}-\d{2}-\d{2}$/.test(row[4])||localDay(row[4]+'T12:00:00Z')!==row[4]||row[4]>localDay(Date.now())))throw Error('ATTENDANCE_DATE_REVIEW');
+   if(attendance.rows.some((r,j)=>j!==i&&j>0&&String(r[3]).toLowerCase()===email&&r[8]===LMS_VERSION&&r[9]!=='Cancelled'))throw Error('DUPLICATE_ATTENDANCE_REVIEW');
+   const enrollments=lmsTable_(book,'LMS Enrollments'),active=enrollments.rows.slice(1).filter(r=>String(r[3]).toLowerCase()===email&&r[17]!==true&&String(r[17]).toLowerCase()!=='true');
+   if(active.length>1||active.some(r=>r[6]!=='Official'||r[5]!==LMS_VERSION||r[12]||r[14]&&JSON.parse(r[14]).completion))throw Error('EXISTING_ENROLLMENT_REVIEW');
+   entry=memberOutbox_({key:'inperson:'+row[0],name:match.name,email,kind:'In-person attestation'});if(!entry)throw Error('INVITATION_ALREADY_RESERVED');
+   row[9]='Inviting';attendance.sheet.getRange(i+1,1,1,row.length).setValues([row]);
+   const at=new Date().toISOString();let enrollment=active[0];
+   if(!enrollment){enrollment=['LMS-'+Utilities.getUuid(),'MEMBER-'+match.nameKey,match.name,email,match.status,LMS_VERSION,'Official',at,'',row[6],'','','','','',at,'In-person training; personal attestation required.',false,0];enrollments.sheet.appendRow(enrollment);}
+   row[1]=enrollment[0];entry.values[1]=enrollment[0];entry.values[2]=enrollment[1];
+   const c=memberConfig_(),uid=c.p.getProperty('LMS_MEMBER_EMAIL_'+memberDigest_(email));let account,temporaryPassword;
+   if(uid){const raw=c.p.getProperty('LMS_MEMBER_'+uid);if(!raw)throw Error('ACCOUNT_REVIEW');account=JSON.parse(raw);if(account.archived||account.email!==email||account.enrollmentId!==enrollment[0])throw Error('ACCOUNT_REVIEW');if(account.mustChangePassword)throw Error('TEMPORARY_ACCOUNT_REVIEW');}
+   else {const created=memberProvision_(enrollment[0]);account=created.account;temporaryPassword=created.temporaryPassword;}
+   row[14]=account.uid;memberSaveAccount_(account,match.name);
+   const mail=inPersonEmail_({name:match.name,email,temporaryPassword,trainingDate:row[4],instructor:row[5]});
+   MailApp.sendEmail({to:email,subject:mail.subject,body:mail.text,htmlBody:mail.html,name:'BoneShakers Social Club',replyTo:'president@boneshakerssocialclub.com'});
+   row[9]='Attestation pending';row[10]=new Date().toISOString();row[15]='';attendance.sheet.getRange(i+1,1,1,row.length).setValues([row]);memberOutboxFinish_(entry,'Sent');sent++;
+  }catch(error){row[9]='Needs review';row[15]=entry?'INVITATION_OUTCOME_REQUIRES_REVIEW':'ATTENDANCE_REQUIRES_REVIEW';attendance.sheet.getRange(i+1,1,1,row.length).setValues([row]);if(entry)memberOutboxFinish_(entry,'Needs review',row[15]);reviewed++;}
+ }
+ return {sent,reviewed};
+}
+function processInPersonInvitations(){
+ if(lmsIdentity_()!==LMS_OWNER)throw Error('Only the BSSC service owner can process invitations.');
+ const lock=LockService.getScriptLock();if(!lock.tryLock(20000))throw Error('Training records are busy.');
+ try{const result=inPersonInvitations_(SpreadsheetApp.openById(LMS_BOOK));console.log('In-person invitations processed. Sent: '+result.sent+'. Needs review: '+result.reviewed+'. No attestations signed.');}finally{lock.releaseLock();}
+}

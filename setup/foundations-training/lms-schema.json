@@ -72,5 +72,24 @@
     "Value",
     "Updated At",
     "Updated By"
+  ],
+  "LMS Attendance": [
+    "Attendance ID",
+    "Enrollment ID",
+    "Full Name",
+    "Email",
+    "Training Date",
+    "Instructor",
+    "Recorded By",
+    "Recorded At",
+    "Course Version",
+    "Status",
+    "Invited At",
+    "Attested At",
+    "Certificate ID",
+    "Attestation",
+    "Account UID",
+    "Error Code",
+    "Notes"
   ]
 }
