@@ -17,8 +17,8 @@
   const forward=document.getElementById('portalForward'),refresh=document.getElementById('portalRefresh');
   const notice=document.createElement('span');notice.className='portal-navigation-status';notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');controls.append(notice);
   const css=document.createElement('style');css.textContent=`
-    .portal-home-link{appearance:none;border:0;background:transparent;padding:0;text-align:left;color:inherit;cursor:pointer;font:inherit}
-    .sidebar>.brand.portal-home-link{width:100%}.portal-home-link:focus-visible{outline:3px solid #bd1838;outline-offset:5px;border-radius:5px}
+    .portal-home-link{appearance:none;border:0;background:transparent;padding:0;text-align:left;color:inherit;cursor:pointer;font-family:inherit}
+    .sidebar>.brand.portal-home-link{width:100%;padding:2px 8px 24px;border-bottom:1px solid rgba(255,255,255,.14)}.portal-home-link:focus-visible{outline:3px solid #bd1838;outline-offset:5px;border-radius:5px}
     .portal-home-link.page-title:hover,.portal-home-link.brand:hover strong{text-decoration:underline;text-underline-offset:4px}
     .portal-browser-controls{display:flex;align-items:center;gap:5px;flex:none;position:relative}
     .portal-browser-controls .portal-browser-button,#back.portal-browser-button{position:static!important;display:inline-flex!important;align-items:center;justify-content:center;width:36px!important;height:36px!important;min-width:36px;padding:7px!important;margin:0!important;border:1px solid #c6cbd1!important;border-radius:8px!important;background:#fff!important;color:#15171b!important;box-shadow:none!important;cursor:pointer;flex:none}
