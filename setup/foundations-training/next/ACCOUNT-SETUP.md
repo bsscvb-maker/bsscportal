@@ -21,3 +21,11 @@ Live browser verification confirmed the deployed member sign-in exposes Set up /
 ## Renewed owner approval and actual send
 
 Todd explicitly approved the replacement setup welcome after the approval-review block. The guarded owner action then completed successfully on November 22, 2026 at 3:15 p.m. Eastern. The private LMS Outbox records the seven-day setup welcome as Sent at 20:15:49.157Z. This replaces the earlier pending-send status; do not run it again. No password or personal attestation was entered or changed. The member completes password setup through their own email.
+
+## Mobile Google routing correction — November 22, 2026
+
+The owner reported Google's Drive unable-to-open error from the generic script link in Gmail on iPhone. New welcome/reset URLs now use the club-specific /a/macros/boneshakerssocialclub.com/s/ deployment route, matching the existing training-home sign-in address. Published source bb487f7b0d7983d8301270c3d2cd860544b8f725 and existing Apps Script deployment version 8; Pages workflow 45065809051 succeeded. All 38 tests passed, with assertions for canonical setup/reset URL generation. Contextual setup/reset pages now remove the old referrer policy before applying no-referrer.
+
+Verified the canonical welcome entry with a deliberately invalid non-secret QA token: the BSSC expired-link/request form appeared instead of Google's Drive error. Independent anonymous HTTP returned 200, member auth configuration and preserved welcome context, with no Google sign-in redirect or Drive error. The canonical root and its setup/reset email form were verified in the live browser. This is not a physical iPhone verification; the owner still needs to try that device.
+
+Automatic approval review blocked Run of sendOwnerRosterWelcomeRoutingCorrection before execution because the first explicitly approved replacement had already been delivered. No second corrective email was sent and no token/password was changed by that blocked action. Do not retry or send indirectly without explicit renewed authorization. The corrected canonical sign-in page is available for the member to request their own secure password email.

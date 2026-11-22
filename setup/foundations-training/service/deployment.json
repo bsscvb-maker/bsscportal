@@ -1,7 +1,7 @@
 {
   "script_id": "1x4bnVBSW2n_XjaH6Th29c7lSQ5N8PObdg8U75oaYft2f9ZuZiyVBRgnK",
   "url": "https://script.google.com/a/macros/boneshakerssocialclub.com/s/AKfycbz5mh45avqAvKNf7b-0OFvU46_MllMjwXyfGOJwtW0qUwpAA5rQZyKAImq5NAGDSniu/exec",
-  "version": 7,
+  "version": 8,
   "execute_as": "bsscvb@boneshakerssocialclub.com",
   "access": "Anyone; verified invited Firebase account required for records",
   "course_version": "bssc-foundations-2026-11-v1",
@@ -37,5 +37,9 @@
   "password_reset_preserves_learning_records": true,
   "account_setup_source_commit": "fee885839a14fd68f9e7054ef924e242c888c949",
   "owner_replacement_welcome_status": "Sent once after explicit renewed approval on November 22, 2026; private LMS Outbox verifies Sent",
-  "owner_replacement_welcome_sent_at": "2026-11-22T20:15:49.157Z"
+  "owner_replacement_welcome_sent_at": "2026-11-22T20:15:49.157Z",
+  "setup_email_canonical_route": "https://script.google.com/a/macros/boneshakerssocialclub.com/s/AKfycbz5mh45avqAvKNf7b-0OFvU46_MllMjwXyfGOJwtW0qUwpAA5rQZyKAImq5NAGDSniu/exec",
+  "setup_email_routing_source_commit": "bb487f7b0d7983d8301270c3d2cd860544b8f725",
+  "routing_anonymous_http_verified": true,
+  "owner_corrected_route_email_status": "Blocked by automatic approval review; prior approval covered only the first replacement. No corrective email sent."
 }
