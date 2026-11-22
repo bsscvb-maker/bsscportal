@@ -10,9 +10,9 @@ Each section requires full viewing and five questions with at least four correct
 
 ## Member login and private records
 
-The club-owned Apps Script service runs as bsscvb@boneshakerssocialclub.com. The active invited-member deployment is version 6; deployment.json has the exact IDs and URLs. Anyone can open the login form, including people without Google accounts. Independent anonymous HTTP verification returned the member configuration and current player assets without a Google sign-in redirect. The older Workspace-only version 3 deployment remains available separately.
+The club-owned Apps Script service runs as bsscvb@boneshakerssocialclub.com. The active invited-member deployment is version 7; deployment.json has the exact IDs and URLs. Anyone can open the login form, including people without Google accounts. Independent anonymous HTTP verification returned the member configuration and current player assets without a Google sign-in redirect. The older Workspace-only version 3 deployment remains available separately.
 
-Invited learners use their roster email and a Firebase-managed password. The welcome supplies a temporary password; a server-controlled gate requires a password change before course APIs are available. Accounts are bound by verified provider UID to a private enrollment; client email/IDs never select another learner. Passwords, tokens and temporary credentials are not stored in the roster, logs, source or exports. Todd's Practice account recorded first login and successful password change on November 21, 2026; its welcome test was sent once and must not be repeated.
+Invited learners use their roster email and a Firebase-managed password. New accounts receive a seven-day welcome entry and request a fresh secure password email when ready. The member chooses a password and signs in again. Legacy temporary-password records remain supported. Accounts are bound by verified provider UID to a private enrollment; client email/IDs never select another learner. Passwords, tokens and temporary credentials are not stored in the roster, logs, source or exports. Todd's Practice account recorded first login and successful password change on November 21, 2026; its welcome test was sent once and must not be repeated.
 
 Membership → BSSC LMS is the management view. The private roster workbook contains enrollments, progress, immutable quiz attempts, completions, settings, accounts and delivery outbox. It records learner identity, missed answers, scores, timestamps, deadlines and delivery history. Learners do not receive workbook or management access. The portal's prospect-to-full save path requires verified official training completion; direct authorized Sheets edits are outside that UI gate.
 
@@ -20,7 +20,7 @@ Membership → BSSC LMS is the management view. The private roster workbook cont
 
 The owner captured 61 existing current/next-year roster identities on November 22 at 12:33 p.m. Eastern, with no historical invitations or reminders. Only new members after that baseline are eligible. See next/ROLLOUT.md and deployment.json for the final installed trigger verification.
 
-New eligible members receive a temporary-password welcome and 60 days from successful invitation. Branded countdowns are due at 45, 30, 15, 10, 5, 3, 2 and 1 days remaining, after 9 a.m. Eastern. Verified completion, inactive status or archiving suppresses further messages. Annual worksheet copies are deduplicated. Missing/shared/conflicting identities, uncertain start dates and unknown delivery outcomes require administrator review instead of a duplicate send. pauseRosterTraining disables new invitations and countdowns; never reset the captured baseline.
+New eligible members receive a seven-day account-setup welcome and 60 days from successful invitation. Branded countdowns are due at 45, 30, 15, 10, 5, 3, 2 and 1 days remaining, after 9 a.m. Eastern. Verified completion, inactive status or archiving suppresses further messages. Annual worksheet copies are deduplicated. Missing/shared/conflicting identities, uncertain start dates and unknown delivery outcomes require administrator review instead of a duplicate send. pauseRosterTraining disables new invitations and countdowns; never reset the captured baseline.
 
 ## Build and deployment
 
@@ -30,6 +30,10 @@ The November 22 release passed all 25 tests. GitHub Pages publication succeeded 
 
 ## In-person training — November 22, 2026
 
-Record in-person training in Membership → BSSC LMS, selecting the exact member and roster email, confirming actual attendance, and entering the training date/instructor when known. Unknown values display Not recorded. The private LMS Attendance queue is processed by the existing hourly owner trigger. New accounts receive a temporary password and must change it before access; existing account passwords are preserved. Failed or ambiguous invitations require review.
+Record in-person training in Membership → BSSC LMS, selecting the exact member and roster email, confirming actual attendance, and entering the training date/instructor when known. Unknown values display Not recorded. The private LMS Attendance queue is processed by the existing hourly owner trigger. New accounts receive a seven-day welcome entry and choose their own password through a fresh secure email link; existing chosen account passwords are preserved. Failed or ambiguous invitations require review.
 
 History now joins attendance events, email delivery, quiz attempts and attestations. The in-person learner is routed directly to their personal acknowledgment. Their own full-name/checkbox submission atomically saves attendance signature, official completion and certificate reference. No online watch credit or quiz scores are awarded. A verified signed in-person record satisfies the Foundations patch-in gate. See next/IN-PERSON.md for operator details. All 32 tests passed for this extension.
+
+## Self-service setup and password resets — November 22, 2026
+
+Version 7 adds Set up / reset password to the public training sign-in page and Reset my password for signed-in members. Both initial setup and resets months later preserve account identity and all training records. Seven-day welcome entries request a fresh one-time password email. Reset codes additionally expire after at most 60 minutes on the server. Successful password saving returns the member to sign in again. No generated password is included in new invitations. See next/ACCOUNT-SETUP.md for rate limits, audit, credential handling and verification limits.

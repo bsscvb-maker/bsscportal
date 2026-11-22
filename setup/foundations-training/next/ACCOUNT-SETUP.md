@@ -9,3 +9,11 @@ The sign-in page offers Set up / reset password without a welcome token. It work
 Existing active account passwords are preserved. Legacy temporary-password records remain supported for historical compatibility; an explicitly authorized pending owner welcome can be migrated once without changing a chosen password. Duplicate owner sends are guarded by a durable outbox key. No other historical members receive a bulk invitation.
 
 Use the existing invited-member Apps Script deployment, matching compiled assets and unchanged approved OAuth scopes. Source tests cover seven-day expiration, non-consuming welcome views, 60-minute expiry, single use, duplicate requests, wrong identity, capacity protection, initial setup gates, stale sessions, and months-later reset without learning-record changes. Actual password entry, confirmation and submission belong to the member; the assistant must not enter credentials or attest for them.
+
+## Publication and verification
+
+Published source fee885839a14fd68f9e7054ef924e242c888c949; GitHub Pages workflow 45064921072 completed successfully. Saved Apps Script source was compared with the previous release before editing and then read back exactly against the prepared new source. Existing invited-member deployment updated successfully to version 7, with the same owner, Anyone entry access, provider/enrollment verification and existing OAuth scopes. All 38 tests passed.
+
+An attempted Run of the guarded sendOwnerRosterWelcomeUpdate function was blocked by automatic approval review before execution. The stated reason was the earlier one-time owner welcome restriction and insufficiently explicit override for a replacement welcome. Do not retry, send indirectly, or claim a replacement was delivered without renewed explicit authorization. No passwords were entered or changed by the assistant. Actual password setup/confirmation and post-reset sign-in remain for the member to perform; future email transport has not been claimed verified by this blocked send.
+
+Live browser verification confirmed the deployed member sign-in exposes Set up / reset password, opens the email-request form, and explains that it works before first use or months later. The form was left blank and no replacement/reset message was submitted after the approval rejection.

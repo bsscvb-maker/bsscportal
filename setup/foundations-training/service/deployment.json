@@ -1,7 +1,7 @@
 {
   "script_id": "1x4bnVBSW2n_XjaH6Th29c7lSQ5N8PObdg8U75oaYft2f9ZuZiyVBRgnK",
   "url": "https://script.google.com/a/macros/boneshakerssocialclub.com/s/AKfycbz5mh45avqAvKNf7b-0OFvU46_MllMjwXyfGOJwtW0qUwpAA5rQZyKAImq5NAGDSniu/exec",
-  "version": 6,
+  "version": 7,
   "execute_as": "bsscvb@boneshakerssocialclub.com",
   "access": "Anyone; verified invited Firebase account required for records",
   "course_version": "bssc-foundations-2026-11-v1",
@@ -29,5 +29,12 @@
   "roster_clock_messages_sent": 0,
   "roster_clock_review_count": 0,
   "in_person_attestations_enabled": true,
-  "in_person_source_commit": "0b47d0f4b9284b4ce45b28abdce4505deee073bc"
+  "in_person_source_commit": "0b47d0f4b9284b4ce45b28abdce4505deee073bc",
+  "account_setup_mode": "Seven-day welcome entry; self-service single-use password email; re-login after password save",
+  "welcome_link_days": 7,
+  "password_link_max_minutes": 60,
+  "self_service_password_reset_enabled": true,
+  "password_reset_preserves_learning_records": true,
+  "account_setup_source_commit": "fee885839a14fd68f9e7054ef924e242c888c949",
+  "owner_replacement_welcome_status": "Blocked by automatic approval review; no message sent; explicit renewed owner-email approval required"
 }
