@@ -5,7 +5,7 @@ function formatDue(day){return new Intl.DateTimeFormat('en-US',{timeZone:'UTC',m
 export function trainingEmail({kind='reminder',name,email,dueDay,daysRemaining=45,passed=0,welcomeUrl,loginUrl=HOME}){
  if(!/^https:\/\/(bsscvb-maker\.github\.io|[a-z0-9-]+\.web\.app|[a-z0-9-]+\.firebaseapp\.com)\//.test(loginUrl))throw Error('Use the approved BSSC training login address.');
  if(!Number.isInteger(passed)||passed<0||passed>7)throw Error('Invalid section progress.');
- if(kind==='invitation'&&(!welcomeUrl||!/^https:\/\/script\.google\.com\/macros\/s\/[a-zA-Z0-9_-]+\/exec\?welcome=[a-f0-9]{64}$/i.test(welcomeUrl)))throw Error('A managed account must provide a seven-day welcome link.');
+ if(kind==='invitation'&&(!welcomeUrl||!/^https:\/\/script\.google\.com\/a\/macros\/boneshakerssocialclub\.com\/s\/[a-zA-Z0-9_-]+\/exec\?welcome=[a-f0-9]{64}$/i.test(welcomeUrl)))throw Error('A managed account must provide a seven-day welcome link.');
  if(kind!=='invitation'&&(!Number.isInteger(daysRemaining)||daysRemaining<1||daysRemaining>45))throw Error('Invalid countdown.');
  const welcome=kind==='invitation',days=welcome?60:daysRemaining,date=formatDue(dueDay),percent=Math.round(passed/7*100),urgent=days<=5;
  const subject=welcome?'Welcome to BSSC Foundations — your 60-day training starts now':`BSSC Foundations: ${days} day${days===1?'':'s'} remaining`;
