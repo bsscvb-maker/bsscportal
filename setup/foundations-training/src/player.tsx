@@ -7,7 +7,7 @@ import {useEffect,useRef,useState} from 'react';
 import {Play,Pause,Lock,Check,RotateCcw,Volume2,VolumeX,Maximize,BookOpen,ClipboardCheck} from 'lucide-react';
 function QuizReview({items}:{items:any[]}){return items?.length?<div className="quiz-review"><h3>Your answer review</h3>{items.map((x,i)=><div key={i} className={'review-question '+(x.isCorrect?'right':'wrong')}><strong>{i+1}. {x.question}</strong><p>Your answer: {x.chosen} · {x.isCorrect?'Correct':'Incorrect'}</p>{!x.isCorrect&&<p>Correct answer: <strong>{x.correct}</strong></p>}<p>{x.explanation}</p></div>)}</div>:null}
 const time=(v:number)=>`${Math.floor(v/60)}:${String(Math.floor(v%60)).padStart(2,'0')}`;
-const duration=(v:number)=>`${Math.floor(v/60)} min ${String(Math.round(v%60)).padStart(2,'0')} sec`;
+const duration=(v:number)=>{const seconds=Math.round(v);return `${Math.floor(seconds/60)} min ${String(seconds%60).padStart(2,'0')} sec`};
 export default function Player(){
  const [accountEmail,setAccountEmail]=useState('');
  const [certificate,setCertificate]=useState<false|'sample'|'earned'>(()=>new URLSearchParams(window.location.search).get('certificate')==='preview'?'sample':false);

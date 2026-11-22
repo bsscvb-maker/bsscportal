@@ -4,6 +4,7 @@ Production inputs: audio/section-1.wav ... section-7.wav, revised deck frames,
 and course-revised.json. This writes a candidate; publication is a separate step.
 """
 import argparse,difflib,hashlib,json,re,subprocess
+import numpy as np
 from pathlib import Path
 from num2words import num2words
 from faster_whisper import WhisperModel
@@ -33,7 +34,9 @@ for sec in course:
     if asr_path.exists() and json.loads(asr_path.read_text()).get('audioSha256')==digest:
         asr=json.loads(asr_path.read_text())['segments']
     else:
-        segments,info=model.transcribe(str(audio),language='en',word_timestamps=True,beam_size=5,vad_filter=True)
+        pcm=subprocess.check_output(['ffmpeg','-v','error','-i',str(audio),'-ar','16000','-ac','1','-f','f32le','-'])
+        samples=np.frombuffer(pcm,dtype=np.float32).copy()
+        segments,info=model.transcribe(samples,language='en',word_timestamps=True,beam_size=5,vad_filter=True)
         asr=[{'start':s.start,'end':s.end,'text':s.text,'words':[{'word':w.word,'start':w.start,'end':w.end} for w in s.words or []]} for s in segments]
         asr_path.write_text(json.dumps({'audioSha256':digest,'segments':asr},indent=2))
     reference=[]

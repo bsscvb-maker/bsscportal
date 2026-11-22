@@ -1,0 +1,79 @@
+[
+  {
+    "section": 1,
+    "audioSha256": "b5a18dc6949f3cfb13e30d7901b58f2af673ff944cd360916d01af483b88eb34",
+    "similarity": 0.978275181040158,
+    "longGaps": [],
+    "duration": 560.0,
+    "slides": 13,
+    "videoBytes": 9818793,
+    "videoSha256": "eea9cc018a35f4c9826b3983bd38f133ac712f0f70bba013e319e1ae44c45f34",
+    "gitBlobSha": "8114e0cf5e02bdc4cee47942c6e992989d23802b"
+  },
+  {
+    "section": 2,
+    "audioSha256": "dc542e77d66ee61e1f8f22c7517067651eeecf7e39a1a2f67514290c87fbdb45",
+    "similarity": 0.9866206301251619,
+    "longGaps": [],
+    "duration": 439.48,
+    "slides": 11,
+    "videoBytes": 7824155,
+    "videoSha256": "dd850fd4285d99634bfafbae895b9ee67e3553835e099cc8d37875df7240f448",
+    "gitBlobSha": "8203db36c27f21291a19884cc2174a53edaaccbb"
+  },
+  {
+    "section": 3,
+    "audioSha256": "b6676c858503b052d84c4afc1dc556ece8fb8edc22a67f4bc698dfe6b8c9f54d",
+    "similarity": 0.9984350547730829,
+    "longGaps": [],
+    "duration": 620.0,
+    "slides": 17,
+    "videoBytes": 10624674,
+    "videoSha256": "780f15e54996c91a52edf16855698b6aed99bc2462d92624f9850b3d735d10ae",
+    "gitBlobSha": "b8c64ee6044a1bf6e762ae932f6f509c46c300e5"
+  },
+  {
+    "section": 4,
+    "audioSha256": "680d024f8c81a04e8d7feeb041b7df135c7c8a39ede7cf7d31b230d07b0eac2d",
+    "similarity": 0.9958896065766295,
+    "longGaps": [],
+    "duration": 688.68,
+    "slides": 13,
+    "videoBytes": 11389134,
+    "videoSha256": "b8bc8d5609d862c92098f3f4c9e00e006397f05034f3a9df4a0ec9380589f0f5",
+    "gitBlobSha": "6bc6b53e109d71ecf9516bcd73c3a26bcc6b3281"
+  },
+  {
+    "section": 5,
+    "audioSha256": "da592cf90d9562edd0cfa1246040ad2e09670828adf218fbfb46d4a761b3d3bb",
+    "similarity": 0.9705603038936372,
+    "longGaps": [],
+    "duration": 210.38,
+    "slides": 7,
+    "videoBytes": 3798538,
+    "videoSha256": "7da89bce237f918a803588aeace1985619eafd228c1d6b61ece751990af29be0",
+    "gitBlobSha": "1528118ac19a23ec47e1b630f99e80908874371a"
+  },
+  {
+    "section": 6,
+    "audioSha256": "ea214abee12afeb90a01aeab639d9030147136ea329911fa5e20c11fcdcfd01e",
+    "similarity": 0.9917883211678832,
+    "longGaps": [],
+    "duration": 410.32,
+    "slides": 12,
+    "videoBytes": 7436870,
+    "videoSha256": "cf8ee0c9598e02c314c6c4c935046390b896abbd5f27477b7f1b67686a67ed4a",
+    "gitBlobSha": "f517320f8b8d0bed62c948e9b31f00ff2dc692b7"
+  },
+  {
+    "section": 7,
+    "audioSha256": "88ff44217aef7302f6e3f440792daafc5e858add3af735de4e39f4f728748517",
+    "similarity": 0.9842271293375394,
+    "longGaps": [],
+    "duration": 615.0,
+    "slides": 16,
+    "videoBytes": 10954256,
+    "videoSha256": "81fb9cfe89cd6bd85238770a2ba6c55fc69d4f0625fb952f30b46aa0b20d7f60",
+    "gitBlobSha": "0c0a8bec811cd14d767b82232b35a37737184c27"
+  }
+]

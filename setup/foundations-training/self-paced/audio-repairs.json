@@ -1,0 +1,38 @@
+[
+  {
+    "section": 1,
+    "new": "Generated Audio November 22, 2026 - 11_44AM.wav",
+    "old": "Generated Audio November 20, 2026 - 4_24PM.wav",
+    "remove": [
+      517.0,
+      521.1
+    ],
+    "take": [
+      507.25,
+      511.55
+    ],
+    "sentence": "The number in the account does not tell you how much we can freely spend.",
+    "originalSha256": "32ded619c7bfe54f7b344e079f7de391cc6e0494e8897138652ab55bd846e7d2",
+    "existingArloSha256": "3c7afd7c8bbc7ffd45125edcfee07ac10ee0d0f9b3287b5e7b601769c2665066",
+    "repairedSha256": "b5a18dc6949f3cfb13e30d7901b58f2af673ff944cd360916d01af483b88eb34",
+    "duration": 560.0
+  },
+  {
+    "section": 5,
+    "new": "Generated Audio November 22, 2026 - 11_55AM.wav",
+    "old": "Generated Audio November 20, 2026 - 4_35PM.wav",
+    "remove": [
+      134.5,
+      134.5
+    ],
+    "take": [
+      136.05,
+      139.75
+    ],
+    "sentence": "Work, health, and family circumstances can affect anyone.",
+    "originalSha256": "1196d4031e94963bf5d9d339f5aa5ec2666fdee53613e355e8afd814901287fe",
+    "existingArloSha256": "2445b5ac9c0e3d597d985515a3cdcf1d3897bda08eca231919bac9421ff96a9c",
+    "repairedSha256": "da592cf90d9562edd0cfa1246040ad2e09670828adf218fbfb46d4a761b3d3bb",
+    "duration": 210.38
+  }
+]

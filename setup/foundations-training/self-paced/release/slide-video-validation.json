@@ -1,0 +1,536 @@
+[
+  {
+    "slide": 1,
+    "section": 1,
+    "sampleTime": 65.085,
+    "psnr": 36.74
+  },
+  {
+    "slide": 2,
+    "section": 1,
+    "sampleTime": 154.22,
+    "psnr": 37.2
+  },
+  {
+    "slide": 3,
+    "section": 1,
+    "sampleTime": 197.515,
+    "psnr": 37.9
+  },
+  {
+    "slide": 4,
+    "section": 1,
+    "sampleTime": 228.71499999999997,
+    "psnr": 34.53
+  },
+  {
+    "slide": 5,
+    "section": 1,
+    "sampleTime": 257.965,
+    "psnr": 39.15
+  },
+  {
+    "slide": 6,
+    "section": 1,
+    "sampleTime": 293.33500000000004,
+    "psnr": 38.89
+  },
+  {
+    "slide": 7,
+    "section": 1,
+    "sampleTime": 328.975,
+    "psnr": 38.62
+  },
+  {
+    "slide": 8,
+    "section": 1,
+    "sampleTime": 365.485,
+    "psnr": 38.68
+  },
+  {
+    "slide": 9,
+    "section": 1,
+    "sampleTime": 403.695,
+    "psnr": 39.1
+  },
+  {
+    "slide": 10,
+    "section": 1,
+    "sampleTime": 442.04999999999995,
+    "psnr": 40.02
+  },
+  {
+    "slide": 11,
+    "section": 1,
+    "sampleTime": 480.54999999999995,
+    "psnr": 37.14
+  },
+  {
+    "slide": 12,
+    "section": 1,
+    "sampleTime": 517.33,
+    "psnr": 39.88
+  },
+  {
+    "slide": 13,
+    "section": 1,
+    "sampleTime": 547.35,
+    "psnr": 36.49
+  },
+  {
+    "slide": 14,
+    "section": 2,
+    "sampleTime": 18.48,
+    "psnr": 38.64
+  },
+  {
+    "slide": 15,
+    "section": 2,
+    "sampleTime": 56.209999999999994,
+    "psnr": 38.21
+  },
+  {
+    "slide": 16,
+    "section": 2,
+    "sampleTime": 93.16499999999999,
+    "psnr": 38.73
+  },
+  {
+    "slide": 17,
+    "section": 2,
+    "sampleTime": 130.515,
+    "psnr": 38.19
+  },
+  {
+    "slide": 18,
+    "section": 2,
+    "sampleTime": 170.75,
+    "psnr": 38.53
+  },
+  {
+    "slide": 19,
+    "section": 2,
+    "sampleTime": 212.925,
+    "psnr": 39.68
+  },
+  {
+    "slide": 20,
+    "section": 2,
+    "sampleTime": 257.31,
+    "psnr": 38.27
+  },
+  {
+    "slide": 21,
+    "section": 2,
+    "sampleTime": 297.90999999999997,
+    "psnr": 38.71
+  },
+  {
+    "slide": 22,
+    "section": 2,
+    "sampleTime": 334.345,
+    "psnr": 39.92
+  },
+  {
+    "slide": 23,
+    "section": 2,
+    "sampleTime": 384.845,
+    "psnr": 38.86
+  },
+  {
+    "slide": 24,
+    "section": 2,
+    "sampleTime": 428.095,
+    "psnr": 39.45
+  },
+  {
+    "slide": 25,
+    "section": 3,
+    "sampleTime": 21.04,
+    "psnr": 38.86
+  },
+  {
+    "slide": 26,
+    "section": 3,
+    "sampleTime": 60.58,
+    "psnr": 38.82
+  },
+  {
+    "slide": 27,
+    "section": 3,
+    "sampleTime": 98.5,
+    "psnr": 39.36
+  },
+  {
+    "slide": 28,
+    "section": 3,
+    "sampleTime": 139.155,
+    "psnr": 40.29
+  },
+  {
+    "slide": 29,
+    "section": 3,
+    "sampleTime": 179.385,
+    "psnr": 38.5
+  },
+  {
+    "slide": 30,
+    "section": 3,
+    "sampleTime": 218.44,
+    "psnr": 38.88
+  },
+  {
+    "slide": 31,
+    "section": 3,
+    "sampleTime": 258.41999999999996,
+    "psnr": 38.39
+  },
+  {
+    "slide": 32,
+    "section": 3,
+    "sampleTime": 296.88,
+    "psnr": 39.62
+  },
+  {
+    "slide": 33,
+    "section": 3,
+    "sampleTime": 335.92,
+    "psnr": 39.3
+  },
+  {
+    "slide": 34,
+    "section": 3,
+    "sampleTime": 375.78,
+    "psnr": 38.78
+  },
+  {
+    "slide": 35,
+    "section": 3,
+    "sampleTime": 415.23,
+    "psnr": 39.25
+  },
+  {
+    "slide": 36,
+    "section": 3,
+    "sampleTime": 453.51,
+    "psnr": 39.67
+  },
+  {
+    "slide": 37,
+    "section": 3,
+    "sampleTime": 491.095,
+    "psnr": 40.26
+  },
+  {
+    "slide": 38,
+    "section": 3,
+    "sampleTime": 527.565,
+    "psnr": 40.75
+  },
+  {
+    "slide": 39,
+    "section": 3,
+    "sampleTime": 564.6700000000001,
+    "psnr": 37.64
+  },
+  {
+    "slide": 40,
+    "section": 3,
+    "sampleTime": 593.635,
+    "psnr": 40.16
+  },
+  {
+    "slide": 41,
+    "section": 3,
+    "sampleTime": 611.2850000000001,
+    "psnr": 36.91
+  },
+  {
+    "slide": 42,
+    "section": 4,
+    "sampleTime": 19.475,
+    "psnr": 38.92
+  },
+  {
+    "slide": 43,
+    "section": 4,
+    "sampleTime": 157.045,
+    "psnr": 39.3
+  },
+  {
+    "slide": 44,
+    "section": 4,
+    "sampleTime": 294.32,
+    "psnr": 39.86
+  },
+  {
+    "slide": 45,
+    "section": 4,
+    "sampleTime": 333.62,
+    "psnr": 40.26
+  },
+  {
+    "slide": 46,
+    "section": 4,
+    "sampleTime": 375.67,
+    "psnr": 39.33
+  },
+  {
+    "slide": 47,
+    "section": 4,
+    "sampleTime": 410.41,
+    "psnr": 40.06
+  },
+  {
+    "slide": 48,
+    "section": 4,
+    "sampleTime": 442.5,
+    "psnr": 39.76
+  },
+  {
+    "slide": 49,
+    "section": 4,
+    "sampleTime": 479.02,
+    "psnr": 39.51
+  },
+  {
+    "slide": 50,
+    "section": 4,
+    "sampleTime": 515.4300000000001,
+    "psnr": 40.6
+  },
+  {
+    "slide": 51,
+    "section": 4,
+    "sampleTime": 553.99,
+    "psnr": 39.5
+  },
+  {
+    "slide": 52,
+    "section": 4,
+    "sampleTime": 593.9449999999999,
+    "psnr": 39.59
+  },
+  {
+    "slide": 53,
+    "section": 4,
+    "sampleTime": 633.44,
+    "psnr": 39.41
+  },
+  {
+    "slide": 54,
+    "section": 4,
+    "sampleTime": 670.525,
+    "psnr": 39.55
+  },
+  {
+    "slide": 55,
+    "section": 5,
+    "sampleTime": 20.44,
+    "psnr": 38.88
+  },
+  {
+    "slide": 56,
+    "section": 5,
+    "sampleTime": 48.8825,
+    "psnr": 35.75
+  },
+  {
+    "slide": 57,
+    "section": 5,
+    "sampleTime": 65.5325,
+    "psnr": 36.0
+  },
+  {
+    "slide": 58,
+    "section": 5,
+    "sampleTime": 94.87,
+    "psnr": 36.53
+  },
+  {
+    "slide": 59,
+    "section": 5,
+    "sampleTime": 134.88,
+    "psnr": 38.41
+  },
+  {
+    "slide": 60,
+    "section": 5,
+    "sampleTime": 172.91,
+    "psnr": 39.32
+  },
+  {
+    "slide": 61,
+    "section": 5,
+    "sampleTime": 201.0,
+    "psnr": 39.29
+  },
+  {
+    "slide": 62,
+    "section": 6,
+    "sampleTime": 19.365,
+    "psnr": 38.59
+  },
+  {
+    "slide": 63,
+    "section": 6,
+    "sampleTime": 56.205,
+    "psnr": 39.87
+  },
+  {
+    "slide": 64,
+    "section": 6,
+    "sampleTime": 109.44,
+    "psnr": 39.53
+  },
+  {
+    "slide": 65,
+    "section": 6,
+    "sampleTime": 161.54,
+    "psnr": 39.34
+  },
+  {
+    "slide": 66,
+    "section": 6,
+    "sampleTime": 187.685,
+    "psnr": 38.45
+  },
+  {
+    "slide": 67,
+    "section": 6,
+    "sampleTime": 203.715,
+    "psnr": 35.1
+  },
+  {
+    "slide": 68,
+    "section": 6,
+    "sampleTime": 229.76,
+    "psnr": 36.88
+  },
+  {
+    "slide": 69,
+    "section": 6,
+    "sampleTime": 268.96,
+    "psnr": 38.9
+  },
+  {
+    "slide": 70,
+    "section": 6,
+    "sampleTime": 308.025,
+    "psnr": 39.44
+  },
+  {
+    "slide": 71,
+    "section": 6,
+    "sampleTime": 343.28999999999996,
+    "psnr": 38.58
+  },
+  {
+    "slide": 72,
+    "section": 6,
+    "sampleTime": 373.865,
+    "psnr": 37.53
+  },
+  {
+    "slide": 73,
+    "section": 6,
+    "sampleTime": 399.59000000000003,
+    "psnr": 39.29
+  },
+  {
+    "slide": 74,
+    "section": 7,
+    "sampleTime": 19.11,
+    "psnr": 39.64
+  },
+  {
+    "slide": 75,
+    "section": 7,
+    "sampleTime": 56.72,
+    "psnr": 38.93
+  },
+  {
+    "slide": 76,
+    "section": 7,
+    "sampleTime": 95.505,
+    "psnr": 38.95
+  },
+  {
+    "slide": 77,
+    "section": 7,
+    "sampleTime": 137.955,
+    "psnr": 38.29
+  },
+  {
+    "slide": 78,
+    "section": 7,
+    "sampleTime": 180.155,
+    "psnr": 39.7
+  },
+  {
+    "slide": 79,
+    "section": 7,
+    "sampleTime": 210.32,
+    "psnr": 39.47
+  },
+  {
+    "slide": 80,
+    "section": 7,
+    "sampleTime": 245.215,
+    "psnr": 39.07
+  },
+  {
+    "slide": 81,
+    "section": 7,
+    "sampleTime": 292.525,
+    "psnr": 38.66
+  },
+  {
+    "slide": 82,
+    "section": 7,
+    "sampleTime": 334.365,
+    "psnr": 39.1
+  },
+  {
+    "slide": 83,
+    "section": 7,
+    "sampleTime": 375.15,
+    "psnr": 39.92
+  },
+  {
+    "slide": 84,
+    "section": 7,
+    "sampleTime": 417.53,
+    "psnr": 38.32
+  },
+  {
+    "slide": 85,
+    "section": 7,
+    "sampleTime": 448.42,
+    "psnr": 38.4
+  },
+  {
+    "slide": 86,
+    "section": 7,
+    "sampleTime": 480.405,
+    "psnr": 38.98
+  },
+  {
+    "slide": 87,
+    "section": 7,
+    "sampleTime": 522.325,
+    "psnr": 39.72
+  },
+  {
+    "slide": 88,
+    "section": 7,
+    "sampleTime": 562.435,
+    "psnr": 39.0
+  },
+  {
+    "slide": 89,
+    "section": 7,
+    "sampleTime": 598.8050000000001,
+    "psnr": 38.8
+  }
+]
