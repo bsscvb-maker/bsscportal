@@ -1,0 +1,65 @@
+[
+  {
+    "section": 1,
+    "title": "Our roots and purpose",
+    "voice": "Arlo",
+    "model": "gemini-3.8-flash-tts",
+    "scriptSha256": "014eaa80dea7e05a39b171083d85e357f10af61d563db75477038805fc9067ed",
+    "displayedDuration": "9:19",
+    "state": "Download clicked in browser; local WAV transfer pending"
+  },
+  {
+    "section": 2,
+    "title": "Colors, conduct and reputation",
+    "voice": "Arlo",
+    "model": "gemini-3.8-flash-tts",
+    "scriptSha256": "59f1fcc646e0cf9a76e652d55a1558ddeeae9cd07df2d137c2b5dba61660ac2e",
+    "displayedDuration": "7:19",
+    "state": "Download clicked in browser; local WAV transfer pending"
+  },
+  {
+    "section": 3,
+    "title": "Board and leadership",
+    "voice": "Arlo",
+    "model": "gemini-3.8-flash-tts",
+    "scriptSha256": "e9c8782081fb5a5e58178f9ca1b1617b259d01a5d3623896a09b06e624b3c379",
+    "displayedDuration": "10:20",
+    "state": "Download clicked in browser; local WAV transfer pending"
+  },
+  {
+    "section": 4,
+    "title": "Shared standards and reporting",
+    "voice": "Arlo",
+    "model": "gemini-3.8-flash-tts",
+    "scriptSha256": "e671fb4533f806b5faebacb61fa17b4bf9d1a2d1c8c6332fb0d5f7911f873935",
+    "displayedDuration": "11:28",
+    "state": "Download clicked in browser; local WAV transfer pending"
+  },
+  {
+    "section": 5,
+    "title": "Membership and participation",
+    "voice": "Arlo",
+    "model": "gemini-3.8-flash-tts",
+    "scriptSha256": "37918d25c50e209fdcf432a2f13784178e08454b292fe7be4fa0a48c20096615",
+    "displayedDuration": "3:26",
+    "state": "Download clicked in browser; local WAV transfer pending"
+  },
+  {
+    "section": 6,
+    "title": "Rides and event responsibilities",
+    "voice": "Arlo",
+    "model": "gemini-3.8-flash-tts",
+    "scriptSha256": "48075e974b0b498a08fcbb57a5142cb491fb909e7267505300c91b472694e54e",
+    "displayedDuration": "6:50",
+    "state": "Download clicked in browser; local WAV transfer pending"
+  },
+  {
+    "section": 7,
+    "title": "Fundraising and club resources",
+    "voice": "Arlo",
+    "model": "gemini-3.8-flash-tts",
+    "scriptSha256": "befa20c744f38ee111bd675f9dba2512bda6e86567f2fd56154553cdf91157e3",
+    "displayedDuration": "10:15",
+    "state": "Download clicked in browser; local WAV transfer pending"
+  }
+]

@@ -87,6 +87,9 @@ set_text(89,"""You have reached the end of the recorded lessons. Complete the fi
 
 Completing Foundations is required before a prospect can be fully patched; other membership requirements still apply. Keep any remaining questions for the appropriate club leader. Thank you for taking the time to strengthen BoneShakers together.""")
 
+for n in [41,67]:slides[n]['title']='AT YOUR OWN PACE'
+for n in [54,86]:slides[n]['title']='THINK IT THROUGH'
+
 # Text-only revisions preserve subject matter, assessments, and course credit rules.
 changed=[s['number'] for a,b in zip(original,course) for old,s in zip(a['slides'],b['slides']) if old['text']!=s['text']]
 (root/'self-paced/course-revised.json').write_text(json.dumps(course,ensure_ascii=False,indent=2)+'\n')

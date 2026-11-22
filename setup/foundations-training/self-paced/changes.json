@@ -44,5 +44,13 @@
   "slideCount": 89,
   "sections": 7,
   "voice": "Arlo",
-  "status": "prepared; media publication pending"
+  "status": "prepared; media publication pending",
+  "sourcePowerPointUpdated": true,
+  "nativeMasterUrl": "https://docs.google.com/presentation/d/1O3suyMD3Q19whyp-8ivk7VVbomSE4ldSg0OpwIoVgLA/edit",
+  "nativeSlideCountVerified": 89,
+  "nativeNotesVerified": 89,
+  "visualReviewSlides": 89,
+  "outputIssues": 0,
+  "liveVideosUpdated": false,
+  "audioTransferRequired": true
 }
