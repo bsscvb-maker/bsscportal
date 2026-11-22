@@ -17,3 +17,7 @@ Published source fee885839a14fd68f9e7054ef924e242c888c949; GitHub Pages workflow
 An attempted Run of the guarded sendOwnerRosterWelcomeUpdate function was blocked by automatic approval review before execution. The stated reason was the earlier one-time owner welcome restriction and insufficiently explicit override for a replacement welcome. Do not retry, send indirectly, or claim a replacement was delivered without renewed explicit authorization. No passwords were entered or changed by the assistant. Actual password setup/confirmation and post-reset sign-in remain for the member to perform; future email transport has not been claimed verified by this blocked send.
 
 Live browser verification confirmed the deployed member sign-in exposes Set up / reset password, opens the email-request form, and explains that it works before first use or months later. The form was left blank and no replacement/reset message was submitted after the approval rejection.
+
+## Renewed owner approval and actual send
+
+Todd explicitly approved the replacement setup welcome after the approval-review block. The guarded owner action then completed successfully on November 22, 2026 at 3:15 p.m. Eastern. The private LMS Outbox records the seven-day setup welcome as Sent at 20:15:49.157Z. This replaces the earlier pending-send status; do not run it again. No password or personal attestation was entered or changed. The member completes password setup through their own email.

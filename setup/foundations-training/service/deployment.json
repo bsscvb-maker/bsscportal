@@ -36,5 +36,6 @@
   "self_service_password_reset_enabled": true,
   "password_reset_preserves_learning_records": true,
   "account_setup_source_commit": "fee885839a14fd68f9e7054ef924e242c888c949",
-  "owner_replacement_welcome_status": "Blocked by automatic approval review; no message sent; explicit renewed owner-email approval required"
+  "owner_replacement_welcome_status": "Sent once after explicit renewed approval on November 22, 2026; private LMS Outbox verifies Sent",
+  "owner_replacement_welcome_sent_at": "2026-11-22T20:15:49.157Z"
 }
