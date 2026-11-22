@@ -10,13 +10,16 @@
   back.className='portal-browser-button';back.innerHTML=icon('<path d="m14 6-6 6 6 6M8 12h12"/>');
   back.setAttribute('aria-label','Back one page');back.title='Back one page';
   controls.append(back);
-  for(const [id,label,path] of [['portalForward','Forward one page','<path d="m10 6 6 6-6 6M16 12H4"/>'],['portalRefresh','Refresh this page','<path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 18 17"/>'],['portalHome','Portal Home','<path d="m3 11 9-8 9 8M5 10v11h5v-7h4v7h5V10"/>']]){
+  for(const [id,label,path] of [['portalForward','Forward one page','<path d="m10 6 6 6-6 6M16 12H4"/>'],['portalRefresh','Refresh this page','<path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 18 17"/>']]){
     const b=document.createElement('button');b.type='button';b.id=id;b.className='portal-browser-button';b.title=label;b.setAttribute('aria-label',label);b.innerHTML=icon(path);controls.append(b);
   }
   header.insertBefore(controls,header.querySelector('.portal-search')||header.querySelector('.user'));
   const forward=document.getElementById('portalForward'),refresh=document.getElementById('portalRefresh');
   const notice=document.createElement('span');notice.className='portal-navigation-status';notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');controls.append(notice);
   const css=document.createElement('style');css.textContent=`
+    .portal-home-link{appearance:none;border:0;background:transparent;padding:0;text-align:left;color:inherit;cursor:pointer;font:inherit}
+    .sidebar>.brand.portal-home-link{width:100%}.portal-home-link:focus-visible{outline:3px solid #bd1838;outline-offset:5px;border-radius:5px}
+    .portal-home-link.page-title:hover,.portal-home-link.brand:hover strong{text-decoration:underline;text-underline-offset:4px}
     .portal-browser-controls{display:flex;align-items:center;gap:5px;flex:none;position:relative}
     .portal-browser-controls .portal-browser-button,#back.portal-browser-button{position:static!important;display:inline-flex!important;align-items:center;justify-content:center;width:36px!important;height:36px!important;min-width:36px;padding:7px!important;margin:0!important;border:1px solid #c6cbd1!important;border-radius:8px!important;background:#fff!important;color:#15171b!important;box-shadow:none!important;cursor:pointer;flex:none}
     .topbar .page-title{white-space:nowrap}.topbar .signout-btn{white-space:nowrap}.topbar .user{flex:none}
@@ -141,7 +144,7 @@
     return [...control.attributes].some(a=>/^data-(?:.*-)?back$/.test(a.name))||/^(?:←\s*(?:back|club|all|dashboard|governance|member|finance|storage|vendors|events|meeting|return|records)|‹\s*back|back\b|go back\b)/i.test((control.textContent||'').trim());
   }
   document.addEventListener('click',event=>{
-    const button=event.target.closest('#back,#portalForward,#portalRefresh,#portalHome,#mobilePageRefresh');
+    const button=event.target.closest('#back,#portalForward,#portalRefresh,[data-portal-home],#mobilePageRefresh');
     if(button){event.preventDefault();event.stopImmediatePropagation();if(button.id==='back')move(-1);else if(button.id==='portalForward')move(1);else if(button.id==='portalRefresh'||button.id==='mobilePageRefresh')refreshCurrent();else{beforeNavigation();showModule('home');commit();pending=null;}return;}
     if(restoring||!authenticated())return;
     const control=event.target.closest('button,a,summary,[role=button],[data-open],[data-module]');
