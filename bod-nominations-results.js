@@ -680,7 +680,7 @@
       finally{if(objectUrl)URL.revokeObjectURL(objectUrl);}
     });
     async function openSignedVoterReport(button){
-      if(context.actor!=='president@boneshakerssocialclub.com'||!accessToken)return;
+      if(context.actor!=='bsscvb@boneshakerssocialclub.com'||!accessToken)return;
       const candidate=button.dataset.bodVoterReport;
       const dialog=document.createElement('dialog');
       dialog.className='bod-evidence-dialog';
@@ -745,7 +745,7 @@
       if(error||!results){responseColumns.textContent=error||'Loading nominee responses…';return;}
       const nominees=rehearsal?[...new Map([...model.nominees,...results].map(person=>[normalize(person.name),person])).values()]:model.nominees;
       responseColumns.innerHTML=electionResponseColumns({nominees},results,rehearsal,withdrawals,counts,
-        !rehearsal&&Number(context.year)===2027&&context.actor==='president@boneshakerssocialclub.com');
+        !rehearsal&&Number(context.year)===2027&&context.actor==='bsscvb@boneshakerssocialclub.com');
     }
     function updateElectionResponseMode(){
       const showTestResponses=responseMode.value==='rehearsal';
