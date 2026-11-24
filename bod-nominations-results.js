@@ -256,7 +256,7 @@
     if (document.getElementById('bod-results-style')) return;
     const style = document.createElement('style'); style.id='bod-results-style';
     style.textContent=`
-.bod-evidence-name{display:flex;align-items:center;gap:6px}
+.bod-evidence-name{display:flex;align-items:center;gap:6px}.bod-official-vote-count{margin-inline-start:auto;color:#dfebdf;font-weight:700;white-space:nowrap}
 .bod-election-column button.bod-evidence-bubble[data-bod-view-response-evidence]{display:inline-grid!important;place-items:center;flex:none;width:24px!important;height:24px!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:4px;background:transparent!important;box-shadow:none!important;color:#ff5266!important;cursor:pointer}
 .bod-evidence-bubble svg{display:block;width:18px;height:18px}
 .bod-evidence-bubble:focus-visible{outline:2px solid #ff5266;outline-offset:2px}
@@ -415,7 +415,25 @@
     const nominees=model.nominees.length?'<table class="bod-response-table"><thead><tr><th>Nominee</th><th>Response</th><th>Received</th></tr></thead><tbody>'+[...model.nominees].sort((a,b)=>a.name.localeCompare(b.name)).map(person=>{const record=byName.get(normalize(person.name)),state=record?.status||'Not sent';return '<tr><td>'+html(person.name)+'</td><td><span class="bod-response-badge '+(state==='Accepted'?'accepted':state==='Declined'?'declined':'waiting')+'">'+html(state)+'</span></td><td>'+html(record?.responded_at?formatHistoryTime(record.responded_at):'—')+'</td></tr>';}).join('')+'</tbody></table>':'<p class="bod-panel-intro">Nominated members and their decisions will appear here.</p>';
     return nominees;
   }
-  function electionResponseColumns(model,records,rehearsal=false,withdrawals=[]){
+  function tallyOfficialVotes(rows,candidates,slate){
+    const slateNames=new Set(slate.map(normalize));
+    const namesById=new Map(candidates.filter(candidate=>slateNames.has(normalize(candidate.name)))
+      .map(candidate=>[candidate.id,normalize(candidate.name)]));
+    if(!slateNames.size||namesById.size!==slateNames.size)return null;
+    const totals=new Map([...slateNames].map(name=>[name,0]));
+    for(const row of rows){
+      let choices;
+      try{choices=JSON.parse(row[0]);}catch{return null;}
+      if(!Array.isArray(choices)||choices.length<1||choices.length>2||
+         new Set(choices).size!==choices.length||choices.some(id=>!namesById.has(id)))return null;
+      for(const id of choices){
+        const name=namesById.get(id);
+        totals.set(name,totals.get(name)+1);
+      }
+    }
+    return totals;
+  }
+  function electionResponseColumns(model,records,rehearsal=false,withdrawals=[],voteCounts=null){
     const withdrawnByName=new Map(withdrawals.map(entry=>[normalize(entry.name),entry]));
     const byName=new Map(records.map(record=>[normalize(record.name),record]));
     const groups=[
@@ -437,7 +455,7 @@
       group.people.push({name:person.name,note:rehearsal?'':record?.evidenceNote,hasEvidence,detail:responseTime&&group.key!=='waiting'?formatHistoryTime(responseTime):group.key==='waiting'?(record?'Awaiting reply':rehearsal?'Test invitation not sent':'Invitation not sent'):''});
     }
     return '<div class="bod-election-columns">'+groups.map(({key,label,people})=>
-      `<section class="bod-election-column ${key}"><h5>${label} <span>${people.length}</span></h5>${people.length?'<ul>'+people.map(({name,detail,note,hasEvidence})=>`<li><div class="bod-evidence-name"><strong>${html(name)}</strong>${note?`<button type="button" class="bod-evidence-bubble" data-bod-view-response-evidence="${html(note)}" data-bod-evidence-image="${Boolean(hasEvidence)}" aria-label="View evidence for ${html(name)}" title="View evidence" aria-haspopup="dialog"><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M3 4h18v13h-9l-5 4v-4H3z"/><path fill="none" stroke="#1b1f24" stroke-width="1.6" stroke-linecap="round" d="M7 9h10m-10 4h7"/></svg></button>`:''}</div>${detail?'<small>'+html(detail)+'</small>':''}</li>`).join('')+'</ul>':'<p>None yet</p>'}</section>`
+      `<section class="bod-election-column ${key}"><h5>${label} <span>${people.length}</span></h5>${people.length?'<ul>'+people.map(({name,detail,note,hasEvidence})=>`<li><div class="bod-evidence-name"><strong>${html(name)}</strong>${note?`<button type="button" class="bod-evidence-bubble" data-bod-view-response-evidence="${html(note)}" data-bod-evidence-image="${Boolean(hasEvidence)}" aria-label="View evidence for ${html(name)}" title="View evidence" aria-haspopup="dialog"><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M3 4h18v13h-9l-5 4v-4H3z"/><path fill="none" stroke="#1b1f24" stroke-width="1.6" stroke-linecap="round" d="M7 9h10m-10 4h7"/></svg></button>`:''}${key==='accepted'&&voteCounts?.has(normalize(name))?`<span class="bod-official-vote-count">${voteCounts.get(normalize(name))} ${voteCounts.get(normalize(name))===1?'vote':'votes'}</span>`:''}</div>${detail?'<small>'+html(detail)+'</small>':''}</li>`).join('')+'</ul>':'<p>None yet</p>'}</section>`
     ).join('')+'</div>';
   }
   async function adminBatch(requests,signal=AbortSignal.timeout(30000)) {
@@ -554,7 +572,7 @@
 
   function bindNextStep(target,model,context,membershipStatus,summary,initialView) {
     const panel=target.querySelector('#bod-invitations'),list=panel.querySelector('[data-bod-response-list]');
-    let refreshing=false,testResponses=[],withdrawals=[];
+    let refreshing=false,testResponses=[],withdrawals=[],certifiedSlate=[];
     const certification=panel.querySelector('[data-bod-certification]');
     if (certification) candidateActivityPanel(certification);
     async function refreshCertification(){
@@ -563,6 +581,7 @@
       try{
         const state=await responseApi('election-certification',context.year);
         const approved=state.certified;
+        certifiedSlate=approved?.slate||[];
         light.textContent=approved?'Certified':'Not certified';
         light.classList.toggle('certified',Boolean(approved));
         button.disabled=!state.closed||Boolean(approved);
@@ -663,7 +682,7 @@
     turnout.setAttribute('role','status');
     turnout.hidden=true;
     panel.querySelector('[data-bod-response-note]').after(turnout);
-    let turnoutCheckedAt=0;
+    let turnoutCheckedAt=0,officialBallotRows=null;
     async function refreshOfficialTurnout(){
       if(election.hidden||responseMode.value!=='official'||Number(context.year)!==2027||
          Date.now()-turnoutCheckedAt<15000)return;
@@ -671,22 +690,29 @@
       try{
         const rows=await getSheetValues("'Election 2027 Ballots'!A:A",MEMBERSHIP_SPREADSHEET_ID,'FORMATTED_VALUE',false);
         if(rows[0]?.[0]!=='Candidate IDs')throw Error('Unrecognized ballot sheet');
-        const count=rows.slice(1).filter(row=>row[0]).length;
-        turnout.textContent='Official ballots cast: '+count;
+        officialBallotRows=rows.slice(1).filter(row=>row[0]);
+        turnout.textContent='Official ballots cast: '+officialBallotRows.length;
       }catch{
+        officialBallotRows=null;
         turnout.textContent='Official ballot count is unavailable.';
       }
+      renderElectionResponses();
     }
     function renderElectionResponses(){
       const rehearsal=responseMode.value==='rehearsal';
       turnout.hidden=rehearsal||Number(context.year)!==2027;
       panel.querySelector('[data-bod-response-heading]').textContent=rehearsal?'Test nomination responses':'Official nominee responses';
-      panel.querySelector('[data-bod-response-note]').textContent=rehearsal?'Test nominee responses and ballot totals.':'Accepted nominees are pending qualification review.';
       const results=rehearsal?rehearsalResults:officialResults;
       const error=rehearsal?rehearsalError:officialError;
+      const counts=!rehearsal&&officialBallotRows
+        ?tallyOfficialVotes(officialBallotRows,context.candidates,certifiedSlate):null;
+      const note=panel.querySelector('[data-bod-response-note]');
+      if(rehearsal)note.textContent='Test nominee responses and ballot totals.';
+      else if(officialBallotRows&&!counts)note.textContent='Candidate totals are unavailable until ballot IDs can be matched to the certified slate.';
+      else note.textContent=certifiedSlate.length?'Candidate slate certified.':'Accepted nominees are pending qualification review.';
       if(error||!results){responseColumns.textContent=error||'Loading nominee responses…';return;}
       const nominees=rehearsal?[...new Map([...model.nominees,...results].map(person=>[normalize(person.name),person])).values()]:model.nominees;
-      responseColumns.innerHTML=electionResponseColumns({nominees},results,rehearsal,withdrawals);
+      responseColumns.innerHTML=electionResponseColumns({nominees},results,rehearsal,withdrawals,counts);
     }
     function updateElectionResponseMode(){
       const showTestResponses=responseMode.value==='rehearsal';
