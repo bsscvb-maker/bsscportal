@@ -25,6 +25,14 @@
     {name:'Club Communications',eyebrow:'ANNOUNCEMENTS & PUBLIC DISCUSSIONS',description:'Official club messages, policy explanations, and public discussions retained for context. These are separate from individual member cases.'},
     {name:'Board Decisions & Governance',eyebrow:'DECISIONS, PROCESS & CONTINUITY',description:'Records explaining Board decisions, governance concerns, and nomination planning.'}
   ];
+  const unique=files=>{
+    const directory=new Map();
+    for(const file of files){
+      const key=file.person||file.id;
+      if(!directory.has(key)||file.title===file.person)directory.set(key,file);
+    }
+    return [...directory.values()];
+  };
   function group(rows){
     const map=new Map();
     for(const r of rows){if(r[1]==='Restricted Members')continue;const id=r[8]||r[2]||r[0];if(!map.has(id))map.set(id,{id,title:r[9]||r[2]||r[3],summary:r[10]||'Related documents and supporting records.',category:r[1],person:r[1]==='Member Cases'?r[2]:'',art:r[11]||'review',date:r[13]||r[4]||'',outcome:r[15]||'',context:r[16]||'',rows:[],image:''});const e=map.get(id);e.rows.push(r);e.image=e.image||picture(r[14]);}
@@ -60,10 +68,10 @@
       let snapshot=raw.map(normalize),rows=[],events=[],activeFile=null,busy=false;
       const rebuild=()=>{rows=snapshot.slice(1).map((r,i)=>Object.assign([...r],{sheetRow:i+2})).filter(r=>r[0]);events=group(rows);};rebuild();
       references=rows.filter(r=>r[1]==='Restricted Members'&&href(r[6])).map(r=>({title:docTitle(r[3]),url:href(r[6])}));
-      host.querySelector('[data-gc-people]').textContent=events.filter(e=>e.category==='Member Cases').length;
+      host.querySelector('[data-gc-people]').textContent=unique(events.filter(e=>e.category==='Member Cases')).length;
       host.querySelector('[data-gc-incidents]').textContent=events.filter(e=>e.category==='Club Incidents').length;
       host.querySelector('[data-gc-documents]').textContent=rows.length;
-      sections.forEach((s,i)=>{host.querySelector('[data-gc-tab-count="'+i+'"]').textContent=events.filter(e=>e.category===s.name).length;});
+      sections.forEach((s,i)=>{host.querySelector('[data-gc-tab-count="'+i+'"]').textContent=unique(events.filter(e=>e.category===s.name)).length;});
 
       window.portalViewAdapters=window.portalViewAdapters||{};
       window.portalViewAdapters.governance={capture:()=>({selected,activeFile}),restore:s=>{selected=s.selected;activeFile=s.activeFile;}};
@@ -73,10 +81,10 @@
       const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
       function alive(){return !!accessToken&&host.contains(grid);}
       function updateCounts(){
-        host.querySelector('[data-gc-people]').textContent=events.filter(e=>e.category==='Member Cases').length;
+        host.querySelector('[data-gc-people]').textContent=unique(events.filter(e=>e.category==='Member Cases')).length;
         host.querySelector('[data-gc-incidents]').textContent=events.filter(e=>e.category==='Club Incidents').length;
         host.querySelector('[data-gc-documents]').textContent=rows.length;
-        sections.forEach((s,i)=>host.querySelector('[data-gc-tab-count="'+i+'"]').textContent=events.filter(e=>e.category===s.name).length);
+        sections.forEach((s,i)=>host.querySelector('[data-gc-tab-count="'+i+'"]').textContent=unique(events.filter(e=>e.category===s.name)).length);
       }
       // Re-read before each write so another Board member's changes are never silently overwritten.
       async function persist(changes,action){
@@ -189,7 +197,6 @@
       const paint=()=>{
         updateSection();
         const q=host.querySelector('[data-gc-search]').value.trim().toLowerCase(),all=events.filter(e=>e.category===selected),matches=all.filter(e=>[e.person,e.title,e.summary,e.context,e.outcome,e.date,...e.rows.flatMap(r=>[r[3],r[7]])].join(' ').toLowerCase().includes(q));
-        const unique=files=>[...new Map([...files].reverse().map(file=>[file.person||file.id,file])).values()].reverse();
         const list=unique(matches);
         count.textContent=list.length+' of '+unique(all).length+' '+(selected==='Member Cases'?'person files':'records')+' · newest first';
         grid.innerHTML=list.map(e=>{
@@ -210,4 +217,66 @@
       if(initialFile)openFile(initialFile);
     }catch(error){if(host.contains(grid)){count.textContent='Unable to load records. '+error.message;grid.innerHTML='<p class="gc-empty">Select Refresh records to retry. Restricted Members opens independently using the button above.</p>';}}
   };
+})();
+
+/* President check-ins use Eastern calendar dates and a per-browser daily snooze. */
+(() => {
+  const president = 'president@boneshakerssocialclub.com';
+  const milestones = [
+    ['2027-05-23', 'Six-month check-in'],
+    ['2027-08-23', 'Three months remaining'],
+    ['2027-09-23', 'Two months remaining'],
+    ['2027-10-23', 'One month remaining']
+  ];
+  const eastern = new Intl.DateTimeFormat('en-CA', {timeZone:'America/New_York', year:'numeric', month:'2-digit', day:'2-digit'});
+  const dayNumber = date => Date.parse(date + 'T00:00:00Z') / 86400000;
+  let dialog, dialogDay, snoozedKey, checking = false;
+
+  async function showCheckIn() {
+    const parts = Object.fromEntries(eastern.formatToParts(new Date()).map(({type,value}) => [type,value]));
+    const today = parts.year + '-' + parts.month + '-' + parts.day;
+    const milestone = milestones.find(([date]) => {
+      const elapsed = dayNumber(today) - dayNumber(date);
+      return elapsed >= 0 && elapsed < 5;
+    });
+    if (dialog?.open && dialogDay !== today) dialog.close();
+    if (!accessToken || !milestone) {
+      dialog?.close();
+      return;
+    }
+    if (checking || dialog?.open || document.hidden) return;
+
+    const key = 'bssc-president-review:' + milestone[0] + ':' + today;
+    if (snoozedKey === key || localStorage.getItem(key)) return;
+    checking = true;
+    const token = accessToken;
+    try {
+      if ((await getPortalAuditActor()).toLowerCase() !== president || accessToken !== token) return;
+      dialog = document.createElement('dialog');
+      dialogDay = today;
+      dialog.setAttribute('aria-labelledby','president-check-in-title');
+      dialog.style.cssText = 'width:min(460px,calc(100% - 36px));padding:24px;border:1px solid #ccd3dc;border-radius:14px;color:#253041';
+      dialog.innerHTML = '<h2 id="president-check-in-title">President follow-up</h2><p><strong></strong></p><p>Review the suspension record in Club Records → Governance &amp; Conduct.</p><button type="button">Snooze until tomorrow</button>';
+      dialog.querySelector('strong').textContent = milestone[1];
+      const snooze = () => {
+        snoozedKey = key;
+        localStorage.setItem(key, '1');
+        dialog.close();
+      };
+      dialog.querySelector('button').onclick = snooze;
+      dialog.addEventListener('cancel', event => { event.preventDefault(); snooze(); });
+      const currentDialog = dialog;
+      dialog.addEventListener('close', () => currentDialog.remove(), {once:true});
+      document.body.append(dialog);
+      dialog.showModal();
+    } finally {
+      checking = false;
+    }
+  }
+
+  window.addEventListener('focus', showCheckIn);
+  document.addEventListener('visibilitychange', showCheckIn);
+  new MutationObserver(showCheckIn).observe(document.body,{attributes:true,attributeFilter:['class']});
+  setInterval(showCheckIn, 60000);
+  showCheckIn();
 })();

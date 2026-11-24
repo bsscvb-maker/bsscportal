@@ -75,3 +75,52 @@
     }catch(error){body.textContent='Chase activity could not load. Try refreshing the portal.';}
   });
 })();
+
+/* Show incoming Bikes for Tykes gifts from the Finance ledger. */
+(() => {
+  const render = renderFinanceBft;
+  renderFinanceBft = function(budget, formulas, control, transactions) {
+    render(budget, formulas, control, transactions);
+    const donations = transactions.slice(1).filter(row =>
+      !financeIsVoided(row) && /^bikes for tykes$/i.test(String(row[6]).trim()) &&
+      /^donations$/i.test(String(row[4]).trim()) && /^income$/i.test(String(row[12]).trim())
+    ).sort((a,b) => (Date.parse(b[0]) || 0) - (Date.parse(a[0]) || 0));
+
+    const section = document.createElement('section');
+    section.className = 'bft-finance-section';
+    section.innerHTML = '<h3>Donations Received</h3><div class="data-status" id="financeBftDonationsStatus"></div><div id="financeBftDonationsTable"></div>';
+    const target = document.getElementById('financeBftTable');
+    target.querySelector('#financeBftTransactionsTable').closest('section').before(section);
+    const table = document.createElement('table');
+    table.className = 'data-table';
+    const header = table.createTHead().insertRow();
+    for (const label of ['Date','Donor','Description','Amount','Bank status','Supporting document']) {
+      const cell = document.createElement('th');
+      cell.scope = 'col';
+      cell.textContent = label;
+      header.append(cell);
+    }
+    const body = table.createTBody();
+    for (const donation of donations) {
+      const row = body.insertRow();
+      const status = {yes:'Cleared','pending at chase':'Pending at Chase'}[String(donation[14]).trim().toLowerCase()] || 'Not cleared';
+      for (const value of [donation[0],donation[8],donation[3],donation[9],status]) row.insertCell().textContent = value || '—';
+      const evidence = row.insertCell();
+      const link = String(donation[16] || '').match(/https:\/\/drive\.google\.com\/file\/d\/[\w-]+\/view\b/);
+      if (link) {
+        const anchor = document.createElement('a');
+        anchor.href = link[0];
+        anchor.target = '_blank';
+        anchor.rel = 'noopener';
+        anchor.textContent = 'View document';
+        evidence.append(anchor);
+      } else {
+        evidence.textContent = '—';
+      }
+    }
+    const container = section.querySelector('#financeBftDonationsTable');
+    container.style.overflowX = 'auto';
+    container.append(table);
+    if (!donations.length) section.querySelector('#financeBftDonationsStatus').textContent = 'No donations recorded.';
+  };
+})();
