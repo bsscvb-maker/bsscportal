@@ -77,3 +77,10 @@ body:has(#recordsWorkspace.active .gc-shell) #detailDescription{display:none}
 .gc-doc-card .gc-preview{height:400px;cursor:zoom-in}
 .gc-doc-card .gc-preview:hover{box-shadow:inset 0 0 0 3px #bc1739}
 .gc-doc-grid{margin-top:20px}
+
+.gc-doc-card .gc-preview{cursor:auto}
+.gc-doc-card .gc-preview iframe{pointer-events:auto}
+.gc-doc-actions{flex-wrap:wrap;align-items:center}
+.gc-original{color:#9d1430;font-size:12px;font-weight:750}
+.gc-member-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.gc-member-tabs button[aria-pressed=true]{background:#9d1430;border-color:#9d1430;color:white}

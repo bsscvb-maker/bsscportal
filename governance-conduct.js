@@ -27,7 +27,7 @@
   ];
   function group(rows){
     const map=new Map();
-    for(const r of rows){if(r[1]==='Restricted Members')continue;const id=r[8]||r[2]||r[0];if(!map.has(id))map.set(id,{id,title:r[9]||r[2]||r[3],summary:r[10]||'Related documents and supporting records.',category:r[1],art:r[11]||'review',date:r[13]||r[4]||'',outcome:r[15]||'',context:r[16]||'',rows:[],image:''});const e=map.get(id);e.rows.push(r);e.image=e.image||picture(r[14]);}
+    for(const r of rows){if(r[1]==='Restricted Members')continue;const id=r[8]||r[2]||r[0];if(!map.has(id))map.set(id,{id,title:r[9]||r[2]||r[3],summary:r[10]||'Related documents and supporting records.',category:r[1],person:r[1]==='Member Cases'?r[2]:'',art:r[11]||'review',date:r[13]||r[4]||'',outcome:r[15]||'',context:r[16]||'',rows:[],image:''});const e=map.get(id);e.rows.push(r);e.image=e.image||picture(r[14]);}
     return [...map.values()].sort((a,b)=>String(b.date).localeCompare(String(a.date))||a.title.localeCompare(b.title));
   }
   window.openGovernanceConduct=async function(initialSection='Member Cases',initialFile=null){
@@ -35,7 +35,7 @@
     let selected=sections.some(s=>s.name===initialSection)?initialSection:'Member Cases',references=[];
     let css=document.getElementById('gcStyles');
     if(!css){css=document.createElement('link');css.id='gcStyles';css.rel='stylesheet';document.head.append(css);}
-    css.href='governance-conduct.css?v=20261024-clean-previews';
+    css.href='governance-conduct.css?v=20261124-scrollable-preview';
     host.innerHTML=`<section class="gc-shell gc-sectioned"><header class="gc-hero"><div class="gc-hero-top"><button class="gc-quiet" data-gc-back>← Club Records</button><span class="gc-private"><span></span> CONFIDENTIAL · LEADERSHIP</span><button class="gc-quiet" data-gc-refresh>Refresh records ↻</button></div><div class="gc-hero-main"><div><div class="gc-eyebrow">BONESHAKERS SOCIAL CLUB / BOARD CONTINUITY RECORDS</div><h2>Governance <span>&amp; Conduct.</span></h2><p>Member files, club incidents, communications, and Board records.</p></div><img class="gc-crest" src="assets/club-skull.webp" alt="BoneShakers Social Club"></div><div class="gc-hero-bottom"><div class="gc-stats"><div><strong data-gc-people>—</strong><span>PERSON FILES</span></div><div><strong data-gc-incidents>—</strong><span>CLUB INCIDENTS</span></div><div><strong data-gc-documents>—</strong><span>DOCUMENTS</span></div></div><button class="gc-register-button" data-gc-register>Restricted Members <span aria-hidden="true">→</span></button></div></header><nav class="gc-section-tabs" role="tablist" aria-label="Governance record sections">${sections.map((s,i)=>'<button type="button" role="tab" id="gcTab'+i+'" data-gc-section="'+safe(s.name)+'" aria-controls="gcSectionPanel" aria-selected="'+(s.name===selected)+'" tabindex="'+(s.name===selected?'0':'-1')+'">'+safe(s.name)+'<span data-gc-tab-count="'+i+'">—</span></button>').join('')}</nav><div class="gc-columns"><section class="gc-events" id="gcSectionPanel" role="tabpanel"><div data-gc-list><div class="gc-section-heading"><div class="gc-eyebrow" data-gc-section-eyebrow></div><h3 data-gc-section-title></h3><p data-gc-section-description></p></div><div class="gc-controls"><label class="gc-search"><span>Search this section</span><input type="search" data-gc-search placeholder="Person, document, or year…"></label></div><p class="gc-result-count" data-gc-count role="status">Loading private records…</p><div class="gc-event-grid" data-gc-grid></div></div><div data-gc-file hidden></div></section></div><footer class="gc-footer">CONFIDENTIAL CLUB RECORDS <span>Original documents retain their titles. Unrecorded outcomes are identified explicitly.</span></footer></section>`;
     const updateSection=()=>{
       const meta=sections.find(s=>s.name===selected),index=sections.indexOf(meta);
@@ -96,14 +96,22 @@
       }
       function documentCard(r){
         const link=href(r[6]),preview=previewURL(r[6]),image=picture(r[14]);
-        return '<article class="gc-doc-card"><div class="gc-doc-toolbar"><div class="gc-doc-title"><h4>'+safe(docTitle(r[3]))+'</h4><time>'+safe(date(r[4]))+'</time></div><div class="gc-doc-actions"><button type="button" data-gc-doc-edit="'+safe(r[0])+'" aria-label="Edit '+safe(docTitle(r[3]))+'">Edit</button><button type="button" data-gc-doc-delete="'+safe(r[0])+'" aria-label="Delete '+safe(docTitle(r[3]))+'">Delete</button></div></div>'+(link?'<a class="gc-preview" href="'+safe(link)+'" target="_blank" rel="noopener" aria-label="Open '+safe(docTitle(r[3]))+'">'+(image?'<img src="'+image+'" alt="Document preview" loading="lazy">':preview?'<iframe title="Preview of '+safe(docTitle(r[3]))+'" src="'+safe(preview)+'" loading="lazy" tabindex="-1" referrerpolicy="strict-origin-when-cross-origin"></iframe>':'<span>Preview unavailable. Select to open the original.</span>')+'</a>':'<div class="gc-preview gc-preview-missing">Add a document link using Edit.</div>')+'</article>';
+        const content=preview&&(!image||type(r[3])==='PDF')
+          ? '<div class="gc-preview"><iframe title="Preview of '+safe(docTitle(r[3]))+'" src="'+safe(preview)+'" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>'
+          : image?'<div class="gc-preview"><img src="'+image+'" alt="Document preview" loading="lazy"></div>'
+          : '<div class="gc-preview gc-preview-missing">'+(link?'Preview unavailable.':'Add a document link using Edit.')+'</div>';
+        const open=link?'<a class="gc-original" href="'+safe(link)+'" target="_blank" rel="noopener" aria-label="Open original '+safe(docTitle(r[3]))+'">Open original ↗</a>':'';
+        return '<article class="gc-doc-card"><div class="gc-doc-toolbar"><div class="gc-doc-title"><h4>'+safe(docTitle(r[3]))+'</h4><time>'+safe(date(r[4]))+'</time></div><div class="gc-doc-actions">'+open+'<button type="button" data-gc-doc-edit="'+safe(r[0])+'" aria-label="Edit '+safe(docTitle(r[3]))+'">Edit</button><button type="button" data-gc-doc-delete="'+safe(r[0])+'" aria-label="Delete '+safe(docTitle(r[3]))+'">Delete</button></div></div>'+content+'</article>';
       }
       function openFile(id){
         const e=events.find(e=>e.id===id);if(!e){closeFile();return;}
         activeFile=id;selected=e.category;updateSection();
         host.querySelector('[data-gc-list]').hidden=true;
         const detail=host.querySelector('[data-gc-file]');detail.hidden=false;detail.dataset.fileId=id;
-        detail.innerHTML='<div class="gc-file-top"><button type="button" class="gc-action" data-gc-file-back>← '+safe(e.category)+'</button><div><button type="button" class="gc-action" data-gc-file-edit>Edit file</button><button type="button" class="gc-action gc-danger" data-gc-file-delete>Delete file</button></div></div><div class="gc-file-intro" tabindex="-1"><div class="gc-eyebrow">'+safe(e.category)+' · '+safe(date(e.date))+'</div><h3>'+safe(e.title)+'</h3>'+(e.context?'<p class="gc-context">'+safe(e.context)+'</p>':'')+'<p>'+safe(e.summary)+'</p></div><div class="gc-outcome"><strong>Recorded outcome</strong><p>'+safe(e.outcome||'No outcome recorded.')+'</p></div><div class="gc-doc-heading"><div><h3>Documents</h3><p>Click a preview to open the full document.</p></div><button type="button" class="gc-action" data-gc-doc-add>+ Add document</button></div><div class="gc-doc-grid">'+e.rows.map(documentCard).join('')+'</div>';
+        const files=e.person?events.filter(file=>file.person===e.person):[];
+        const memberTabs=files.length>1?'<nav class="gc-member-tabs" aria-label="'+safe(e.person)+' file sections">'+files.map(file=>'<button type="button" class="gc-action" data-gc-member-file="'+safe(file.id)+'" aria-pressed="'+(file.id===id)+'">'+safe(file.title===file.person?'Case History':file.title)+'</button>').join('')+'</nav>':'';
+        detail.innerHTML='<div class="gc-file-top"><button type="button" class="gc-action" data-gc-file-back>← '+safe(e.category)+'</button><div><button type="button" class="gc-action" data-gc-file-edit>Edit file</button><button type="button" class="gc-action gc-danger" data-gc-file-delete>Delete file</button></div></div><div class="gc-file-intro" tabindex="-1"><div class="gc-eyebrow">'+safe(e.category)+' · '+safe(date(e.date))+'</div><h3>'+safe(e.person||e.title)+'</h3>'+memberTabs+(e.context?'<p class="gc-context">'+safe(e.context)+'</p>':'')+'<p>'+safe(e.summary)+'</p></div><div class="gc-outcome"><strong>Recorded outcome</strong><p>'+safe(e.outcome||'No outcome recorded.')+'</p></div><div class="gc-doc-heading"><div><h3>Documents</h3><p>Scroll through the preview or open the original in a new tab.</p></div><button type="button" class="gc-action" data-gc-doc-add>+ Add document</button></div><div class="gc-doc-grid">'+e.rows.map(documentCard).join('')+'</div>';
+        detail.querySelectorAll('[data-gc-member-file]').forEach(button=>button.onclick=()=>openFile(button.dataset.gcMemberFile));
         detail.querySelector('[data-gc-file-back]').onclick=closeFile;
         detail.querySelector('[data-gc-file-edit]').onclick=()=>editFile(e);
         detail.querySelector('[data-gc-file-delete]').onclick=()=>deleteFile(e);
@@ -144,7 +152,7 @@
         if(!e)return;
         editor('Edit '+e.title,field('Name / file title','title',e.title)+'<fieldset><legend>Section</legend>'+sections.map(s=>'<label class="gc-radio"><input type="radio" name="section" value="'+safe(s.name)+'" '+(s.name===e.category?'checked':'')+'> '+safe(s.name)+'</label>').join('')+'</fieldset>'+field('Summary','summary',e.summary,true)+field('People / context','context',e.context,true)+field('Recorded outcome','outcome',e.outcome,true)+field('File date (YYYY-MM-DD or year)','date',e.date), 'Save changes',async f=>{
           const title=val(f,'title'),category=val(f,'section');if(!title||!sections.some(s=>s.name===category))throw new Error('Enter a name and choose a section.');
-          const changes=e.rows.map(r=>{const values=[...r];values[1]=category;values[2]=title;values[9]=title;values[10]=val(f,'summary');values[13]=val(f,'date');values[15]=val(f,'outcome');values[16]=val(f,'context');return {row:r.sheetRow,values};});
+          const changes=e.rows.map(r=>{const values=[...r];values[1]=category;values[2]=e.person&&e.title!==e.person?e.person:title;values[9]=title;values[10]=val(f,'summary');values[13]=val(f,'date');values[15]=val(f,'outcome');values[16]=val(f,'context');return {row:r.sheetRow,values};});
           await persist(changes,'Edited governance file');selected=category;
         });
       }
@@ -180,13 +188,16 @@
       }
       const paint=()=>{
         updateSection();
-        const q=host.querySelector('[data-gc-search]').value.trim().toLowerCase(),all=events.filter(e=>e.category===selected),list=all.filter(e=>[e.title,e.summary,e.context,e.outcome,e.date,...e.rows.flatMap(r=>[r[3],r[7]])].join(' ').toLowerCase().includes(q));
-        count.textContent=list.length+' of '+all.length+' '+(selected==='Member Cases'?'person files':'records')+' · newest first';
+        const q=host.querySelector('[data-gc-search]').value.trim().toLowerCase(),all=events.filter(e=>e.category===selected),matches=all.filter(e=>[e.person,e.title,e.summary,e.context,e.outcome,e.date,...e.rows.flatMap(r=>[r[3],r[7]])].join(' ').toLowerCase().includes(q));
+        const unique=files=>[...new Map([...files].reverse().map(file=>[file.person||file.id,file])).values()].reverse();
+        const list=unique(matches);
+        count.textContent=list.length+' of '+unique(all).length+' '+(selected==='Member Cases'?'person files':'records')+' · newest first';
         grid.innerHTML=list.map(e=>{
           const member=e.category==='Member Cases';
-          const initials=e.title.trim().split(/\s+/).filter(Boolean).map(w=>w[0]).filter((_,i,a)=>i===0||i===a.length-1).join('').toUpperCase();
+          const label=e.person||e.title;
+          const initials=label.trim().split(/\s+/).filter(Boolean).map(w=>w[0]).filter((_,i,a)=>i===0||i===a.length-1).join('').toUpperCase();
           const covers={'Member Cases':'assets/portal-membership.webp','Club Incidents':'assets/portal-bikenights.webp','Club Communications':'assets/club-records/committee-roundtable-v1.webp','Board Decisions & Governance':'assets/club-records/conduct-official-v1.webp'};
-          return '<article class="gc-event-card gc-directory-card"><div class="gc-event-cover"><img class="gc-directory-photo" src="'+covers[e.category]+'" alt="" loading="lazy"><div class="gc-cover-top"><span>'+safe(e.category)+'</span><button type="button" class="gc-corner" data-gc-edit="'+safe(e.id)+'" aria-label="Edit '+safe(e.title)+'">Edit</button></div><div class="gc-directory-insignia" aria-hidden="true"><img src="assets/club-skull.webp" alt=""><span>BONESHAKERS<br>SOCIAL CLUB</span></div>'+(member?'<span class="gc-directory-initials" aria-hidden="true">'+safe(initials)+'</span>':'')+'<div class="gc-cover-label"><h4><span class="gc-name">'+safe(e.title)+'</span></h4></div><button type="button" class="gc-card-open" data-gc-open="'+safe(e.id)+'" aria-label="'+safe(e.title)+'"></button></div></article>';
+          return '<article class="gc-event-card gc-directory-card"><div class="gc-event-cover"><img class="gc-directory-photo" src="'+covers[e.category]+'" alt="" loading="lazy"><div class="gc-cover-top"><span>'+safe(e.category)+'</span><button type="button" class="gc-corner" data-gc-edit="'+safe(e.id)+'" aria-label="Edit '+safe(e.title)+'">Edit</button></div><div class="gc-directory-insignia" aria-hidden="true"><img src="assets/club-skull.webp" alt=""><span>BONESHAKERS<br>SOCIAL CLUB</span></div>'+(member?'<span class="gc-directory-initials" aria-hidden="true">'+safe(initials)+'</span>':'')+'<div class="gc-cover-label"><h4><span class="gc-name">'+safe(label)+'</span></h4></div><button type="button" class="gc-card-open" data-gc-open="'+safe(e.id)+'" aria-label="'+safe(label)+'"></button></div></article>';
         }).join('')||'<div class="gc-empty"><h4>No matching records</h4><p>Try a person’s name, a year, or a shorter search.</p></div>';
         grid.querySelectorAll('[data-gc-open]').forEach(b=>b.onclick=()=>openFile(b.dataset.gcOpen));
         grid.querySelectorAll('[data-gc-edit]').forEach(b=>b.onclick=()=>editFile(events.find(e=>e.id===b.dataset.gcEdit)));
