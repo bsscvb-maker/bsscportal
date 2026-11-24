@@ -415,7 +415,8 @@
     const nominees=model.nominees.length?'<table class="bod-response-table"><thead><tr><th>Nominee</th><th>Response</th><th>Received</th></tr></thead><tbody>'+[...model.nominees].sort((a,b)=>a.name.localeCompare(b.name)).map(person=>{const record=byName.get(normalize(person.name)),state=record?.status||'Not sent';return '<tr><td>'+html(person.name)+'</td><td><span class="bod-response-badge '+(state==='Accepted'?'accepted':state==='Declined'?'declined':'waiting')+'">'+html(state)+'</span></td><td>'+html(record?.responded_at?formatHistoryTime(record.responded_at):'—')+'</td></tr>';}).join('')+'</tbody></table>':'<p class="bod-panel-intro">Nominated members and their decisions will appear here.</p>';
     return nominees;
   }
-  function electionResponseColumns(model,records,rehearsal=false){
+  function electionResponseColumns(model,records,rehearsal=false,withdrawals=[]){
+    const withdrawnByName=new Map(withdrawals.map(entry=>[normalize(entry.name),entry]));
     const byName=new Map(records.map(record=>[normalize(record.name),record]));
     const groups=[
       {key:'accepted',label:'Accepted',people:[]},
@@ -423,7 +424,13 @@
       {key:'waiting',label:'Yet to Reply',people:[]}
     ];
     for(const person of [...model.nominees].sort((a,b)=>a.name.localeCompare(b.name))){
-      const record=byName.get(normalize(person.name));
+      const nameKey=normalize(person.name);
+      const record=byName.get(nameKey);
+      const withdrawal=rehearsal?null:withdrawnByName.get(nameKey);
+      if(withdrawal){
+        groups[1].people.push({name:person.name,note:withdrawal.note,hasEvidence:false,detail:'Withdrawn after accepting'});
+        continue;
+      }
       const group=record?.status==='Accepted'?groups[0]:record?.status==='Declined'?groups[1]:groups[2];
       const hasEvidence=!rehearsal&&record?.hasEvidence;
       const responseTime=hasEvidence&&normalize(person.name)==='gene lindsey'?'2026-11-07T01:55:00Z':record?.responded_at;
@@ -547,7 +554,7 @@
 
   function bindNextStep(target,model,context,membershipStatus,summary,initialView) {
     const panel=target.querySelector('#bod-invitations'),list=panel.querySelector('[data-bod-response-list]');
-    let refreshing=false,testResponses=[];
+    let refreshing=false,testResponses=[],withdrawals=[];
     const certification=panel.querySelector('[data-bod-certification]');
     if (certification) candidateActivityPanel(certification);
     async function refreshCertification(){
@@ -564,7 +571,8 @@
         if(approved){
           const details=certification.querySelector('[data-bod-cert-details]');
           const isOpen=details.querySelector('details')?.open;
-          const withdrawals=approved.withdrawals||[];
+          withdrawals=approved.withdrawals||[];
+          renderElectionResponses();
           details.innerHTML='<details '+(isOpen?'open':'')+'><summary>View certified slate and voter list</summary><h5>Active candidate slate</h5><ul>'+
             approved.slate.map(name=>'<li>'+html(name)+'</li>').join('')+'</ul>'+
             (state.withdrawalsOpen&&approved.slate.length?'<details><summary>Record a candidate withdrawal</summary><form><p><label>Candidate <select name="name" required><option value="">Choose a candidate</option>'+
@@ -651,15 +659,34 @@
       finally{if(objectUrl)URL.revokeObjectURL(objectUrl);}
     });
     let officialResults=null,rehearsalResults=null,officialError='',rehearsalError='';
+    const turnout=document.createElement('p');
+    turnout.setAttribute('role','status');
+    turnout.hidden=true;
+    panel.querySelector('[data-bod-response-note]').after(turnout);
+    let turnoutCheckedAt=0;
+    async function refreshOfficialTurnout(){
+      if(election.hidden||responseMode.value!=='official'||Number(context.year)!==2027||
+         Date.now()-turnoutCheckedAt<15000)return;
+      turnoutCheckedAt=Date.now();
+      try{
+        const rows=await getSheetValues("'Election 2027 Ballots'!A:A",MEMBERSHIP_SPREADSHEET_ID,'FORMATTED_VALUE',false);
+        if(rows[0]?.[0]!=='Candidate IDs')throw Error('Unrecognized ballot sheet');
+        const count=rows.slice(1).filter(row=>row[0]).length;
+        turnout.textContent='Official ballots cast: '+count;
+      }catch{
+        turnout.textContent='Official ballot count is unavailable.';
+      }
+    }
     function renderElectionResponses(){
       const rehearsal=responseMode.value==='rehearsal';
+      turnout.hidden=rehearsal||Number(context.year)!==2027;
       panel.querySelector('[data-bod-response-heading]').textContent=rehearsal?'Test nomination responses':'Official nominee responses';
       panel.querySelector('[data-bod-response-note]').textContent=rehearsal?'Test nominee responses and ballot totals.':'Accepted nominees are pending qualification review.';
       const results=rehearsal?rehearsalResults:officialResults;
       const error=rehearsal?rehearsalError:officialError;
       if(error||!results){responseColumns.textContent=error||'Loading nominee responses…';return;}
       const nominees=rehearsal?[...new Map([...model.nominees,...results].map(person=>[normalize(person.name),person])).values()]:model.nominees;
-      responseColumns.innerHTML=electionResponseColumns({nominees},results,rehearsal);
+      responseColumns.innerHTML=electionResponseColumns({nominees},results,rehearsal,withdrawals);
     }
     function updateElectionResponseMode(){
       const showTestResponses=responseMode.value==='rehearsal';
@@ -755,6 +782,7 @@
     async function refreshResponses(){
       updateBallotMail();
       if(refreshing||!panel.isConnected)return;refreshing=true;
+      const turnoutRefresh=refreshOfficialTurnout();
       try{
         const result=await responseApi('responses',context.year);
         if(panel.isConnected){list.innerHTML=responseMarkup(model,result.responses);officialResults=result.responses;officialError='';renderElectionResponses();}
@@ -794,10 +822,10 @@
         else panel.querySelector('[data-bod-reset-test-ballots]').before(testTally);
         try{if(result.ballots)await deliverTestReceipt();}catch(error){receiptStatus.textContent='Test receipt could not be confirmed: '+error.message;}
       }catch(error){rehearsalError=error.message;renderElectionResponses();testTally.textContent=error.message;}
-      finally{refreshing=false;}
+      finally{await turnoutRefresh;refreshing=false;}
     }
     panel.querySelector('[data-bod-response-refresh]').onclick=refreshResponses;
-    panel.querySelector('[data-bod-election-refresh]').onclick=()=>{refreshResponses();refreshCertification();};
+    panel.querySelector('[data-bod-election-refresh]').onclick=()=>{turnoutCheckedAt=0;refreshResponses();refreshCertification();};
     refreshResponses();
     const poll=()=>setTimeout(async()=>{if(!panel.isConnected)return;await refreshResponses();poll();},election.hidden?30000:5000);poll();
     const status=target.querySelector('[data-bod-cleanup-status]');
