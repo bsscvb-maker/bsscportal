@@ -256,7 +256,7 @@
     if (document.getElementById('bod-results-style')) return;
     const style = document.createElement('style'); style.id='bod-results-style';
     style.textContent=`
-.bod-evidence-name{display:flex;align-items:center;gap:6px}.bod-official-vote-count{margin-inline-start:auto;color:#dfebdf;font-weight:700;white-space:nowrap}
+.bod-evidence-name{display:flex;align-items:center;gap:6px}.bod-voter-report-button{border:0;padding:0;background:none;color:inherit;font-weight:700;text-decoration:underline}.bod-official-vote-count{margin-inline-start:auto;color:#dfebdf;font-weight:700;white-space:nowrap}
 .bod-election-column button.bod-evidence-bubble[data-bod-view-response-evidence]{display:inline-grid!important;place-items:center;flex:none;width:24px!important;height:24px!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:4px;background:transparent!important;box-shadow:none!important;color:#ff5266!important;cursor:pointer}
 .bod-evidence-bubble svg{display:block;width:18px;height:18px}
 .bod-evidence-bubble:focus-visible{outline:2px solid #ff5266;outline-offset:2px}
@@ -433,7 +433,7 @@
     }
     return totals;
   }
-  function electionResponseColumns(model,records,rehearsal=false,withdrawals=[],voteCounts=null){
+  function electionResponseColumns(model,records,rehearsal=false,withdrawals=[],voteCounts=null,showSignedReport=false){
     const withdrawnByName=new Map(withdrawals.map(entry=>[normalize(entry.name),entry]));
     const byName=new Map(records.map(record=>[normalize(record.name),record]));
     const groups=[
@@ -455,7 +455,7 @@
       group.people.push({name:person.name,note:rehearsal?'':record?.evidenceNote,hasEvidence,detail:responseTime&&group.key!=='waiting'?formatHistoryTime(responseTime):group.key==='waiting'?(record?'Awaiting reply':rehearsal?'Test invitation not sent':'Invitation not sent'):''});
     }
     return '<div class="bod-election-columns">'+groups.map(({key,label,people})=>
-      `<section class="bod-election-column ${key}"><h5>${label} <span>${people.length}</span></h5>${people.length?'<ul>'+people.map(({name,detail,note,hasEvidence})=>`<li><div class="bod-evidence-name"><strong>${html(name)}</strong>${note?`<button type="button" class="bod-evidence-bubble" data-bod-view-response-evidence="${html(note)}" data-bod-evidence-image="${Boolean(hasEvidence)}" aria-label="View evidence for ${html(name)}" title="View evidence" aria-haspopup="dialog"><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M3 4h18v13h-9l-5 4v-4H3z"/><path fill="none" stroke="#1b1f24" stroke-width="1.6" stroke-linecap="round" d="M7 9h10m-10 4h7"/></svg></button>`:''}${key==='accepted'&&voteCounts?.has(normalize(name))?`<span class="bod-official-vote-count">${voteCounts.get(normalize(name))} ${voteCounts.get(normalize(name))===1?'vote':'votes'}</span>`:''}</div>${detail?'<small>'+html(detail)+'</small>':''}</li>`).join('')+'</ul>':'<p>None yet</p>'}</section>`
+      `<section class="bod-election-column ${key}"><h5>${label} <span>${people.length}</span></h5>${people.length?'<ul>'+people.map(({name,detail,note,hasEvidence})=>`<li><div class="bod-evidence-name">${showSignedReport&&key==='accepted'?`<button type="button" class="bod-voter-report-button" data-bod-voter-report="${html(name)}">${html(name)}</button>`:`<strong>${html(name)}</strong>`}${note?`<button type="button" class="bod-evidence-bubble" data-bod-view-response-evidence="${html(note)}" data-bod-evidence-image="${Boolean(hasEvidence)}" aria-label="View evidence for ${html(name)}" title="View evidence" aria-haspopup="dialog"><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M3 4h18v13h-9l-5 4v-4H3z"/><path fill="none" stroke="#1b1f24" stroke-width="1.6" stroke-linecap="round" d="M7 9h10m-10 4h7"/></svg></button>`:''}${key==='accepted'&&voteCounts?.has(normalize(name))?`<span class="bod-official-vote-count">${voteCounts.get(normalize(name))} ${voteCounts.get(normalize(name))===1?'vote':'votes'}</span>`:''}</div>${detail?'<small>'+html(detail)+'</small>':''}</li>`).join('')+'</ul>':'<p>None yet</p>'}</section>`
     ).join('')+'</div>';
   }
   async function adminBatch(requests,signal=AbortSignal.timeout(30000)) {
@@ -649,6 +649,8 @@
     const responseColumns=panel.querySelector('[data-bod-real-slate]');
     const responseMode=panel.querySelector('[data-bod-response-mode]');
     responseColumns.addEventListener('click',async event=>{
+      const reportButton=event.target.closest('[data-bod-voter-report]');
+      if(reportButton){await openSignedVoterReport(reportButton);return;}
       const button=event.target.closest('[data-bod-view-response-evidence]');
       if(!button)return;
       const dialog=document.createElement('dialog');
@@ -677,6 +679,36 @@
       }catch(error){if(!request.signal.aborted)result.textContent=error.message;}
       finally{if(objectUrl)URL.revokeObjectURL(objectUrl);}
     });
+    async function openSignedVoterReport(button){
+      if(context.actor!=='president@boneshakerssocialclub.com'||!accessToken)return;
+      const candidate=button.dataset.bodVoterReport;
+      const dialog=document.createElement('dialog');
+      dialog.className='bod-evidence-dialog';
+      dialog.innerHTML='<header><h2></h2><form method="dialog"><button type="submit">Close</button></form></header><p role="status">Loading signed ballots…</p><ul></ul>';
+      dialog.querySelector('h2').textContent='Signed ballots for '+candidate;
+      const status=dialog.querySelector('[role=status]');
+      const controller=new AbortController();
+      dialog.addEventListener('close',()=>{controller.abort();dialog.remove();button.focus();},{once:true});
+      document.body.append(dialog);
+      dialog.showModal();
+      try{
+        const response=await fetch('https://script.google.com/macros/s/AKfycbxJ9maST99ECrcV01L9jO3jPb0qlCDj17TGud09lgYN1a5zrkHQYc4RiuH42yLJlQ10/exec',{
+          method:'POST',body:new URLSearchParams({action:'electionPresidentReport',accessToken}),
+          signal:AbortSignal.any([controller.signal,AbortSignal.timeout(15000)])
+        });
+        const result=await response.json();
+        const names=result.byCandidate?.[candidate];
+        if(!response.ok||!result.ok||!Array.isArray(names))throw Error('Signed voter report is unavailable.');
+        status.textContent=names.length?names.length+' signed ballot'+(names.length===1?'':'s'):'No signed ballots for this candidate.';
+        for(const name of names){
+          const row=document.createElement('li');
+          row.textContent=name;
+          dialog.querySelector('ul').append(row);
+        }
+      }catch(error){
+        if(!controller.signal.aborted)status.textContent=error.message;
+      }
+    }
     let officialResults=null,rehearsalResults=null,officialError='',rehearsalError='';
     const turnout=document.createElement('p');
     turnout.setAttribute('role','status');
@@ -712,7 +744,8 @@
       else note.textContent=certifiedSlate.length?'Candidate slate certified.':'Accepted nominees are pending qualification review.';
       if(error||!results){responseColumns.textContent=error||'Loading nominee responses…';return;}
       const nominees=rehearsal?[...new Map([...model.nominees,...results].map(person=>[normalize(person.name),person])).values()]:model.nominees;
-      responseColumns.innerHTML=electionResponseColumns({nominees},results,rehearsal,withdrawals,counts);
+      responseColumns.innerHTML=electionResponseColumns({nominees},results,rehearsal,withdrawals,counts,
+        !rehearsal&&Number(context.year)===2027&&context.actor==='president@boneshakerssocialclub.com');
     }
     function updateElectionResponseMode(){
       const showTestResponses=responseMode.value==='rehearsal';
@@ -1116,7 +1149,7 @@
           const candidateSheet=(metadata.sheets||[]).find(entry=>entry.properties?.title===names.candidates),auditSheet=(metadata.sheets||[]).find(entry=>entry.properties?.title===names.audit);
           if(!candidateSheet||!auditSheet)throw Error('Nomination admin setup is not complete.');
           const [candidateRows,auditRows]=await Promise.all([getSheetValues("'"+names.candidates+"'!A:D",MEMBERSHIP_SPREADSHEET_ID),getSheetValues("'"+names.audit+"'!A:I",MEMBERSHIP_SPREADSHEET_ID)]);
-          if(!auditRows.length)throw Error('The nomination change-history header is missing.');history=parseHistory(auditRows);context={history,year,nominationSheet:names.nominations,auditSheet:names.audit,candidates:parseCandidates(candidateRows),nominationSheetId:sheet.properties.sheetId,auditSheetId:auditSheet.properties.sheetId};admin=true;
+          if(!auditRows.length)throw Error('The nomination change-history header is missing.');history=parseHistory(auditRows);context={history,year,actor,nominationSheet:names.nominations,auditSheet:names.audit,candidates:parseCandidates(candidateRows),nominationSheetId:sheet.properties.sheetId,auditSheetId:auditSheet.properties.sheetId};admin=true;
         } catch(error){adminError=error.message;}
       }
       if (!active()) return;
