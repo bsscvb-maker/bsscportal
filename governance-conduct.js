@@ -222,7 +222,7 @@
 
 /* President check-ins use Eastern calendar dates and a per-browser daily snooze. */
 (() => {
-  const president = 'president@boneshakerssocialclub.com';
+  const presidentAccounts = new Set(['president@boneshakerssocialclub.com', 'bsscvb@boneshakerssocialclub.com']);
   const milestones = [
     ['2026-11-24', 'Test pop-up', 1],
     ['2027-05-23', 'Six-month check-in'],
@@ -253,7 +253,7 @@
     checking = true;
     const token = accessToken;
     try {
-      if ((await getPortalAuditActor()).toLowerCase() !== president || accessToken !== token) return;
+      if (!presidentAccounts.has((await getPortalAuditActor()).toLowerCase()) || accessToken !== token) return;
       dialog = document.createElement('dialog');
       dialogDay = today;
       dialog.setAttribute('aria-labelledby','president-check-in-title');
