@@ -29,7 +29,7 @@
     const directory=new Map();
     for(const file of files){
       const key=file.person||file.id;
-      if(!directory.has(key)||file.title===file.person)directory.set(key,file);
+      if(!directory.has(key))directory.set(key,file);
     }
     return [...directory.values()];
   };
@@ -118,7 +118,7 @@
         const detail=host.querySelector('[data-gc-file]');detail.hidden=false;detail.dataset.fileId=id;
         const files=e.person?events.filter(file=>file.person===e.person):[];
         const memberTabs=files.length>1?'<nav class="gc-member-tabs" aria-label="'+safe(e.person)+' file sections">'+files.map(file=>'<button type="button" class="gc-action" data-gc-member-file="'+safe(file.id)+'" aria-pressed="'+(file.id===id)+'">'+safe(file.title===file.person?'Case History':file.title)+'</button>').join('')+'</nav>':'';
-        detail.innerHTML='<div class="gc-file-top"><button type="button" class="gc-action" data-gc-file-back>← '+safe(e.category)+'</button><div><button type="button" class="gc-action" data-gc-file-edit>Edit file</button><button type="button" class="gc-action gc-danger" data-gc-file-delete>Delete file</button></div></div><div class="gc-file-intro" tabindex="-1"><div class="gc-eyebrow">'+safe(e.category)+' · '+safe(date(e.date))+'</div><h3>'+safe(e.person||e.title)+'</h3>'+memberTabs+(e.context?'<p class="gc-context">'+safe(e.context)+'</p>':'')+'<p>'+safe(e.summary)+'</p></div><div class="gc-outcome"><strong>Recorded outcome</strong><p>'+safe(e.outcome||'No outcome recorded.')+'</p></div><div class="gc-doc-heading"><div><h3>Documents</h3><p>Scroll through the preview or open the original in a new tab.</p></div><button type="button" class="gc-action" data-gc-doc-add>+ Add document</button></div><div class="gc-doc-grid">'+e.rows.map(documentCard).join('')+'</div>';
+        detail.innerHTML='<div class="gc-file-top"><button type="button" class="gc-action" data-gc-file-back>← '+safe(e.category)+'</button><div><button type="button" class="gc-action" data-gc-file-edit>Edit file</button><button type="button" class="gc-action gc-danger" data-gc-file-delete>Delete file</button></div></div><div class="gc-file-intro" tabindex="-1"><div class="gc-eyebrow">'+safe(e.category)+' · '+safe(date(e.date))+'</div><h3>'+safe(e.person||e.title)+'</h3>'+memberTabs+(e.context?'<p class="gc-context">'+safe(e.context)+'</p>':'')+'<p>'+safe(e.summary)+'</p></div><div class="gc-outcome"><strong>Recorded outcome</strong><p>'+safe(e.outcome||'No outcome recorded.')+'</p></div><div class="gc-doc-heading"><div><h3>'+safe(files.length>1&&e.title!==e.person?e.title+' documents':'Documents')+'</h3><p>Scroll through the preview or open the original in a new tab.</p></div><button type="button" class="gc-action" data-gc-doc-add>+ Add document</button></div><div class="gc-doc-grid">'+e.rows.map(documentCard).join('')+'</div>';
         detail.querySelectorAll('[data-gc-member-file]').forEach(button=>button.onclick=()=>openFile(button.dataset.gcMemberFile));
         detail.querySelector('[data-gc-file-back]').onclick=closeFile;
         detail.querySelector('[data-gc-file-edit]').onclick=()=>editFile(e);
@@ -198,7 +198,8 @@
         updateSection();
         const q=host.querySelector('[data-gc-search]').value.trim().toLowerCase(),all=events.filter(e=>e.category===selected),matches=all.filter(e=>[e.person,e.title,e.summary,e.context,e.outcome,e.date,...e.rows.flatMap(r=>[r[3],r[7]])].join(' ').toLowerCase().includes(q));
         const list=unique(matches);
-        count.textContent=list.length+' of '+unique(all).length+' '+(selected==='Member Cases'?'person files':'records')+' · newest first';
+        if(selected==='Member Cases')list.sort((a,b)=>(a.person||a.title).localeCompare(b.person||b.title));
+        count.textContent=list.length+' of '+unique(all).length+' '+(selected==='Member Cases'?'person files · alphabetical':'records · newest first');
         grid.innerHTML=list.map(e=>{
           const member=e.category==='Member Cases';
           const label=e.person||e.title;
@@ -223,6 +224,7 @@
 (() => {
   const president = 'president@boneshakerssocialclub.com';
   const milestones = [
+    ['2026-11-24', 'Test pop-up', 1],
     ['2027-05-23', 'Six-month check-in'],
     ['2027-08-23', 'Three months remaining'],
     ['2027-09-23', 'Two months remaining'],
@@ -235,9 +237,9 @@
   async function showCheckIn() {
     const parts = Object.fromEntries(eastern.formatToParts(new Date()).map(({type,value}) => [type,value]));
     const today = parts.year + '-' + parts.month + '-' + parts.day;
-    const milestone = milestones.find(([date]) => {
+    const milestone = milestones.find(([date, , days = 5]) => {
       const elapsed = dayNumber(today) - dayNumber(date);
-      return elapsed >= 0 && elapsed < 5;
+      return elapsed >= 0 && elapsed < days;
     });
     if (dialog?.open && dialogDay !== today) dialog.close();
     if (!accessToken || !milestone) {
