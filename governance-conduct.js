@@ -117,15 +117,22 @@
         host.querySelector('[data-gc-list]').hidden=true;
         const detail=host.querySelector('[data-gc-file]');detail.hidden=false;detail.dataset.fileId=id;
         const files=e.person?events.filter(file=>file.person===e.person):[];
-        const memberTabs=files.length>1?'<nav class="gc-member-tabs" aria-label="'+safe(e.person)+' file sections">'+files.map(file=>'<button type="button" class="gc-action" data-gc-member-file="'+safe(file.id)+'" aria-pressed="'+(file.id===id)+'">'+safe(file.title===file.person?'Case History':file.title)+'</button>').join('')+'</nav>':'';
-        detail.innerHTML='<div class="gc-file-top"><button type="button" class="gc-action" data-gc-file-back>← '+safe(e.category)+'</button><div><button type="button" class="gc-action" data-gc-file-edit>Edit file</button><button type="button" class="gc-action gc-danger" data-gc-file-delete>Delete file</button></div></div><div class="gc-file-intro" tabindex="-1"><div class="gc-eyebrow">'+safe(e.category)+' · '+safe(date(e.date))+'</div><h3>'+safe(e.person||e.title)+'</h3>'+memberTabs+(e.context?'<p class="gc-context">'+safe(e.context)+'</p>':'')+'<p>'+safe(e.summary)+'</p></div><div class="gc-outcome"><strong>Recorded outcome</strong><p>'+safe(e.outcome||'No outcome recorded.')+'</p></div><div class="gc-doc-heading"><div><h3>'+safe(files.length>1&&e.title!==e.person?e.title+' documents':'Documents')+'</h3><p>Scroll through the preview or open the original in a new tab.</p></div><button type="button" class="gc-action" data-gc-doc-add>+ Add document</button></div><div class="gc-doc-grid">'+e.rows.map(documentCard).join('')+'</div>';
-        detail.querySelectorAll('[data-gc-member-file]').forEach(button=>button.onclick=()=>openFile(button.dataset.gcMemberFile));
+        const sections=files.length>1?[e,...files.filter(file=>file!==e)]:[e];
+        const docs=new Map(sections.flatMap(file=>file.rows.map(doc=>[doc[0],{file,doc}])));
+        const label=file=>file.title===file.person?'Case History':file.title;
+        const documentList=sections.length>1?'<ul aria-label="Documents in this member case">'+[...docs.values()].map(({doc})=>'<li><a href="#gc-document-'+safe(doc[0])+'">'+safe(docTitle(doc[3]))+'</a></li>').join('')+'</ul>':'';
+        const documentSections=sections.map(file=>'<section'+(sections.length>1?' aria-label="'+safe(label(file))+'"':'')+'>'+(sections.length>1?'<h4>'+safe(label(file))+'</h4>':'')+'<div class="gc-doc-grid">'+file.rows.map(doc=>'<div id="gc-document-'+safe(doc[0])+'" style="scroll-margin-top:150px">'+documentCard(doc)+'</div>').join('')+'</div></section>').join('');
+        detail.innerHTML='<div class="gc-file-top"><button type="button" class="gc-action" data-gc-file-back>← '+safe(e.category)+'</button><div><button type="button" class="gc-action" data-gc-file-edit>Edit file</button><button type="button" class="gc-action gc-danger" data-gc-file-delete>Delete file</button></div></div><div class="gc-file-intro" tabindex="-1"><div class="gc-eyebrow">'+safe(e.category)+' · '+safe(date(e.date))+'</div><h3>'+safe(e.person||e.title)+'</h3>'+documentList+(e.context?'<p class="gc-context">'+safe(e.context)+'</p>':'')+'<p>'+safe(e.summary)+'</p></div><div class="gc-outcome"><strong>Recorded outcome</strong><p>'+safe(e.outcome||'No outcome recorded.')+'</p></div><div class="gc-doc-heading"><div><h3>'+safe('Documents')+'</h3><p>Scroll through the preview or open the original in a new tab.</p></div><button type="button" class="gc-action" data-gc-doc-add>+ Add document</button></div><div>'+documentSections+'</div>';
+        detail.querySelectorAll('a[href^="#gc-document-"]').forEach(link=>link.onclick=event=>{
+          event.preventDefault();
+          document.getElementById(link.hash.slice(1))?.scrollIntoView({block:'start'});
+        });
         detail.querySelector('[data-gc-file-back]').onclick=closeFile;
         detail.querySelector('[data-gc-file-edit]').onclick=()=>editFile(e);
         detail.querySelector('[data-gc-file-delete]').onclick=()=>deleteFile(e);
         detail.querySelector('[data-gc-doc-add]').onclick=()=>editDocument(e,null);
-        detail.querySelectorAll('[data-gc-doc-edit]').forEach(b=>b.onclick=()=>editDocument(e,e.rows.find(r=>r[0]===b.dataset.gcDocEdit)));
-        detail.querySelectorAll('[data-gc-doc-delete]').forEach(b=>b.onclick=()=>deleteDocument(e,e.rows.find(r=>r[0]===b.dataset.gcDocDelete)));
+        detail.querySelectorAll('[data-gc-doc-edit]').forEach(b=>b.onclick=()=>{const {file,doc}=docs.get(b.dataset.gcDocEdit);editDocument(file,doc);});
+        detail.querySelectorAll('[data-gc-doc-delete]').forEach(b=>b.onclick=()=>{const {file,doc}=docs.get(b.dataset.gcDocDelete);deleteDocument(file,doc);});
         host.querySelector('[data-gc-refresh]').onclick=()=>openGovernanceConduct(selected,activeFile);
         detail.querySelector('.gc-file-intro').focus({preventScroll:true});
         detail.scrollIntoView({block:'start',behavior:'instant'});
