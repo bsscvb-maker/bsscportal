@@ -38,3 +38,14 @@
  .sidebar{overflow-y:auto;max-height:100dvh;z-index:100}
  .detail-body,.content,.main{min-width:0}
 }
+
+@media(max-width:1100px) and (pointer:coarse){
+ .bssc-lms .lms-summary-list{position:static;max-height:40dvh;margin:10px 0 0;box-shadow:none}
+ .bssc-lms .lms-summary .lms-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .bssc-lms .lms-summary-names,.bssc-lms [data-lms-open]{min-height:44px;min-width:44px;touch-action:manipulation}
+ .bssc-lms .lms-console-fields{grid-template-columns:1fr}
+ .bssc-lms .lms-view-tabs{overflow-x:auto;max-width:100%;flex-wrap:wrap}
+ .bssc-lms .lms-table-wrap{max-width:100%;overflow:auto}
+ .bssc-lms .lms-table-wrap td:first-child{min-width:150px}
+ .bssc-lms .lms-metadata{overflow-wrap:anywhere}
+}
