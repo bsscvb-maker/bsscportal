@@ -100,7 +100,7 @@
       return;
     }
     const heading = make('div', '', 'work-column-head');
-    for (const label of ['Task', 'Category', 'Owner', 'Where to go', 'Due date', 'Priority', 'Status', '']) {
+    for (const label of ['Task description', 'Category', 'Owner', 'Where to go', 'Due date', 'Priority', 'Status', '']) {
       heading.append(make('span', label));
     }
     results.append(heading);
