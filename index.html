@@ -9133,7 +9133,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 
     async function readTaskIntake() {
       if (!accessToken) throw new Error('Sign in to the portal to view automatic intake.');
-      return (await getSheetValues("'BSSC Task Intake'!A2:I", taskIntakeBook)).slice();
+      return (await getSheetValues("'BSSC Task Intake'!A2:K", taskIntakeBook)).slice();
     }
 
     window.taskIntake = {

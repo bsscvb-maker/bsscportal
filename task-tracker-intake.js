@@ -256,6 +256,41 @@
     return row;
   }
 
+  const reviewedSuggestions = new Set();
+
+  function offerCompletion() {
+    if (document.hidden || document.querySelector('dialog[open]')) return;
+    const proposal = intake.find(item => inScope(item, 'active') && item.evidence && !reviewedSuggestions.has(item.id));
+    if (!proposal) return;
+    reviewedSuggestions.add(proposal.id);
+    const dialog = get('workDetails');
+    get('workDetailTitle').textContent = 'Confirm task completion';
+    const body = get('workDetailBody');
+    body.replaceChildren(make('strong', proposal.title), make('p', proposal.evidence));
+    if (/^https:\/\//i.test(proposal.evidenceLink)) {
+      const link = make('a', 'Open matching record');
+      link.href = proposal.evidenceLink;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      body.append(link);
+    }
+    const later = make('button', 'Keep open');
+    later.onclick = () => dialog.close();
+    const complete = make('button', 'Confirm complete');
+    const feedback = make('p', '');
+    feedback.setAttribute('role', 'status');
+    complete.onclick = async () => {
+      complete.disabled = true;
+      if (await saveIntake(proposal, 'Done')) dialog.close();
+      else {
+        feedback.textContent = get('workFeedback').textContent;
+        complete.disabled = false;
+      }
+    };
+    body.append(complete, later, feedback);
+    dialog.showModal();
+  }
+
   async function refreshIntake() {
     const api = service();
     if (!api || intakeLoading) return;
@@ -264,9 +299,9 @@
     try {
       const rows = await api.read();
       const unique = new Map();
-      for (const [id, source, title, owner, due, link, status, , priority] of rows) {
+      for (const [id, source, title, owner, due, link, status, , priority, evidence, evidenceLink] of rows) {
         if (!id || !title || unique.has(id)) continue;
-        unique.set(id, { id, source, title, owner, due, link, status, priority: intakePriorities[priority], review: status === 'Needs review', complete: status === 'Done' });
+        unique.set(id, { id, source, title, owner, due, link, status, evidence, evidenceLink, priority: intakePriorities[priority], review: status === 'Needs review', complete: status === 'Done' });
       }
       intake = [...unique.values()];
       intakeError = '';
@@ -275,6 +310,7 @@
     } finally {
       intakeLoading = false;
       statusChanged();
+      offerCompletion();
     }
   }
 
@@ -299,4 +335,9 @@
   }
   renderWork();
   refreshIntake();
+  if (service()) {
+    window.setInterval(() => { if (!document.hidden) refreshIntake(); }, 60000);
+    window.addEventListener('focus', refreshIntake);
+    get('workDetails').addEventListener('close', offerCompletion);
+  }
 }
