@@ -47,24 +47,28 @@
     const hasSelections = count => row => voted(row) && Number(row[2]) === count;
     const eligibleCount = Number(totals[0] ?? members.length);
     const votedCount = Number(totals[1] ?? members.filter(voted).length);
-    const turnout = eligibleCount > 0 ? (100 * votedCount / eligibleCount).toFixed(1) + '%' : '—';
+    const turnoutRate = eligibleCount > 0 ? votedCount / eligibleCount : null;
+    const turnout = turnoutRate === null ? '—' : (100 * turnoutRate).toFixed(1) + '%';
+    const turnoutColor = turnoutRate === null ? 'blue' : turnoutRate >= 1 ? 'forest'
+     : turnoutRate >= 0.85 ? 'green' : turnoutRate >= 0.65 ? 'gold'
+     : turnoutRate >= 0.35 ? 'yellow' : 'red';
     const summaries = [
-     ['Eligible members', totals[0], () => true],
-     ['Voted', totals[1], voted],
-     ['Not voted', totals[2], row => row[1] === 'Not voted'],
-     ['One selection', totals[3], hasSelections(1)],
-     ['Two selections', totals[4], hasSelections(2)],
-     ['Needs review', totals[5], row => voted(row) && !hasSelections(1)(row) && !hasSelections(2)(row)],
-     ['Turnout', turnout, voted, votedCount + ' of ' + eligibleCount + ' eligible members voted']
+     ['Eligible members', totals[0], 'blue', () => true],
+     ['Voted', totals[1], 'green', voted],
+     ['Not voted', totals[2], 'red', row => row[1] === 'Not voted'],
+     ['One selection', totals[3], 'purple', hasSelections(1)],
+     ['Two selections', totals[4], 'teal', hasSelections(2)],
+     ['Needs review', totals[5], 'red', row => voted(row) && !hasSelections(1)(row) && !hasSelections(2)(row)],
+     ['Turnout', turnout, turnoutColor, voted, votedCount + ' of ' + eligibleCount + ' eligible members voted']
     ];
-    const summaryStyles = '<style>.election-summary-card{position:relative;flex:1;min-width:125px}.election-summary-card button{width:100%;height:100%;padding:16px;border:1px solid #b8bec6;border-radius:12px;background:transparent;color:inherit;text-align:left;cursor:pointer}.election-summary-card strong{display:block;font-size:2rem}.election-summary-card .election-summary-list{display:none;position:absolute;z-index:5;top:100%;left:0;width:min(310px,75vw);max-height:280px;overflow:auto;padding:12px;background:#fff;color:#17171b;border:1px solid #b8bec6;border-radius:8px;box-shadow:0 6px 20px #0002}.election-summary-card:nth-last-child(-n+2) .election-summary-list{left:auto;right:0}.election-summary-card:hover .election-summary-list,.election-summary-card:focus-within .election-summary-list{display:block}.election-summary-list ul{list-style:none;margin:8px 0 0;padding:0}.election-summary-list li{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px solid #eee}.election-summary-list small{text-align:right}</style>';
-    const summaryCards = summaries.map(([label,value,includes,caption],i)=>{
+    const summaryStyles = '<style>.election-summary-card{position:relative;flex:1;min-width:125px}.election-summary-card button{width:100%;height:100%;padding:16px;border:1px solid var(--summary-border);border-radius:12px;background:var(--summary-bg);color:var(--summary-text);text-align:left;cursor:pointer}.election-summary-blue{--summary-bg:#dbeafe;--summary-border:#93b9eb;--summary-text:#153a70}.election-summary-green{--summary-bg:#d8f3df;--summary-border:#8bc79a;--summary-text:#154e27}.election-summary-red{--summary-bg:#f7cccc;--summary-border:#dc8f8f;--summary-text:#6f1919}.election-summary-purple{--summary-bg:#eadcf8;--summary-border:#bd9bdf;--summary-text:#4d2770}.election-summary-teal{--summary-bg:#d2efed;--summary-border:#88c5c1;--summary-text:#164d4b}.election-summary-yellow{--summary-bg:#fff5cc;--summary-border:#ddc680;--summary-text:#604600}.election-summary-gold{--summary-bg:#f2cf5b;--summary-border:#b98c14;--summary-text:#453300}.election-summary-forest{--summary-bg:#17613a;--summary-border:#104529;--summary-text:#fff}.election-summary-card strong{display:block;font-size:2rem}.election-summary-card .election-summary-list{display:none;position:absolute;z-index:5;top:100%;left:0;width:min(310px,75vw);max-height:280px;overflow:auto;padding:12px;background:#fff;color:#17171b;border:1px solid #b8bec6;border-radius:8px;box-shadow:0 6px 20px #0002}.election-summary-card:nth-last-child(-n+2) .election-summary-list{left:auto;right:0}.election-summary-card:hover .election-summary-list,.election-summary-card:focus-within .election-summary-list{display:block}.election-summary-list ul{list-style:none;margin:8px 0 0;padding:0}.election-summary-list li{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px solid #eee}.election-summary-list small{text-align:right}</style>';
+    const summaryCards = summaries.map(([label,value,color,includes,caption],i)=>{
      const entries = members.filter(includes).map(row=>{
       const time = voted(row) ? row[submittedAtColumn] || 'Time unavailable' : '';
       return '<li><span>'+esc(row[0])+'</span><small>'+esc(time)+'</small></li>';
      }).join('');
      const id = 'election-summary-' + i;
-     return '<div class="election-summary-card"><button type="button" aria-describedby="'+id+'">'+esc(label)+'<strong>'+esc(value??'—')+'</strong></button><div class="election-summary-list" id="'+id+'" tabindex="0">'+esc(caption||label)+(entries?'<ul>'+entries+'</ul>':'<p>No matching members</p>')+'</div></div>';
+     return '<div class="election-summary-card election-summary-'+color+'"><button type="button" aria-describedby="'+id+'">'+esc(label)+'<strong>'+esc(value??'—')+'</strong></button><div class="election-summary-list" id="'+id+'" tabindex="0">'+esc(caption||label)+(entries?'<ul>'+entries+'</ul>':'<p>No matching members</p>')+'</div></div>';
     }).join('');
     target.innerHTML='<section class="workspace-card"><h2>2027 Election report</h2><p>'+esc(rows[1]?.[0]||'')+'</p><div style="display:flex;flex-wrap:wrap;gap:16px;margin:20px 0">'+summaryStyles+summaryCards+'</div><div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px"><label>Show <select data-election-report-filter><option value="all">All eligible members</option><option value="voted">Voted</option><option value="not-voted">Not voted</option><option value="one">One selection</option><option value="two">Two selections</option></select></label><button type="button" class="membership-subtab" data-membership-sub="Election report">Refresh report</button><input type="search" data-election-report-search aria-label="Search member name" placeholder="Search member name" style="width:180px;max-width:100%;padding:7px 9px;border:1px solid #aaa;border-radius:5px"></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Date &amp; Time</th><th>Member</th><th>Voting status</th><th>Selections</th><th>Candidate Choice 1</th><th>Candidate Choice 2</th></tr></thead><tbody>'+members.map(row=>'<tr data-election-report-row data-voted="'+(row[1]==='Voted')+'" data-count="'+esc(row[2])+'">'+'<td>'+esc(row[1]==='Voted'&&submittedAtColumn>=0?(row[submittedAtColumn]||'—'):'—')+'</td>'+Array.from({length:5},(_,i)=>'<td>'+esc(row[i]||(i===2?'0':'—'))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div></section>';
     status.textContent='2027 · '+members.length+' certified eligible voters';
