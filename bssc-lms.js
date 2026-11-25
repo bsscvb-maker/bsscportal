@@ -150,7 +150,15 @@ window.BSSCLms=(()=>{
     const actor=await getPortalAuditActor(),now=new Date().toISOString(),id=matches[0]?.['Enrollment ID']||'LMS-'+crypto.randomUUID();
     const append=(sheetId,values)=>({appendCells:{sheetId,rows:[{values:values.map(value=>({userEnteredValue:typeof value==='boolean'?{boolValue:value}:typeof value==='number'?{numberValue:value}:{stringValue:value}}))}],fields:'userEnteredValue'}});
     const requests=[append(392594894,['ATT-'+crypto.randomUUID(),id,member.name,member.email,day,'',actor,now,version,'Leadership verified','','','','','','','In-person attendance verified by club leadership.'])];
-    if(!matches.length)requests.unshift(append(124888460,[id,'MEMBER-'+crypto.randomUUID(),member.name,member.email,'Member',version,'Official',now,'',actor,'','','','', '',now,'',false,0]));
+    if(!matches.length){
+     requests.unshift(append(124888460,[id,'MEMBER-'+crypto.randomUUID(),member.name,member.email,'Member',version,'Official',now,'',actor,'','','','', '',now,'',false,0]));
+    }else{
+     const [enrollments,attendance]=await getSheetRanges(["'LMS Enrollments'!A1:S2000","'LMS Attendance'!A1:Q2000"],MEMBERSHIP_SPREADSHEET_ID);
+     if(attendance.some(row=>row[1]===id&&['Leadership verified','Signed'].includes(row[9])))throw Error('This member already has a verified completion.');
+     const rowIndex=enrollments.findIndex(row=>row[0]===id&&row[5]===version&&!truth(row[17]));
+     if(rowIndex<1)throw Error('The enrollment changed. Refresh the training page and try again.');
+     requests.push({updateCells:{start:{sheetId:124888460,rowIndex,columnIndex:8},rows:[{values:[{}]}],fields:'userEnteredValue'}});
+    }
     const url='https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+':batchUpdate';
     await writePortalSheetRequest(url,{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({requests})},'Recorded leadership-verified training completion','LMS Attendance');
     modal.close();
