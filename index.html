@@ -2205,7 +2205,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 
         <section class="detail-view" id="detail">
           <button class="back" id="back" type="button"><span class="back-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></span><span>Portal Home</span></button>
-          <div class="detail-shell"><div class="detail-head"><div><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><div id="moduleLoading" class="module-loading" role="status" aria-live="polite" hidden><span class="module-loading-orb" aria-hidden="true"></span><div><strong>Ready to load</strong><small>Google Sheets</small></div></div><button class="finance-admin-header" id="membershipAdminToggle" type="button">Admin</button><button class="finance-admin-header" id="financeAdminToggle" type="button">Admin</button><div class="portal-health checking" id="portalHealth" data-portal-health="true" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong data-portal-health-status="true">Checking</strong><small data-portal-health-detail="true">Verifying connected systems…</small></div></div></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div><div class="membership-workspace" id="membershipWorkspace">
+          <div class="detail-shell"><div class="detail-head"><div><h1 id="detailTitle"></h1><p id="detailDescription"></p></div><button class="sponsor-tab" id="addPortalFollowUp" type="button" hidden>Add follow-up</button><div id="moduleLoading" class="module-loading" role="status" aria-live="polite" hidden><span class="module-loading-orb" aria-hidden="true"></span><div><strong>Ready to load</strong><small>Google Sheets</small></div></div><button class="finance-admin-header" id="membershipAdminToggle" type="button">Admin</button><button class="finance-admin-header" id="financeAdminToggle" type="button">Admin</button><div class="portal-health checking" id="portalHealth" data-portal-health="true" role="status" aria-live="polite"><span class="portal-health-dot" aria-hidden="true"></span><div class="portal-health-copy"><span class="portal-health-label">Overall Portal Health</span><strong data-portal-health-status="true">Checking</strong><small data-portal-health-detail="true">Verifying connected systems…</small></div></div></div><div class="detail-body"><div class="task-grid" id="detailTasks"></div><div class="membership-workspace" id="membershipWorkspace">
             <div class="membership-tabs" aria-label="Membership sections">
               <button class="membership-tab" data-membership-sheet="Dashboard 2027">Dashboard 2027</button>
               <button class="membership-tab" data-membership-sheet="2027">2027 Roster</button>
@@ -10031,6 +10031,11 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       try { sessionStorage.setItem(PORTAL_VIEW_KEY,JSON.stringify(view)); } catch (error) {}
     }
     function restorePortalView() {
+      const requestedModule = new URLSearchParams(location.search).get('portalModule');
+      if (requestedModule && Object.hasOwn(modules, requestedModule)) {
+        showModule(requestedModule);
+        return;
+      }
       let view;
       try { view = JSON.parse(sessionStorage.getItem(PORTAL_VIEW_KEY) || 'null'); } catch (error) { return; }
       if (!view || !modules[view.module]) return;
@@ -10051,7 +10056,28 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       }
       showModule(view.module);
     }
+    const followUpButton = document.getElementById('addPortalFollowUp');
+    const trackerFrame = document.getElementById('taskTrackerFrame');
+    let portalFollowUpDraft = null;
+
+    window.takePortalFollowUp = requester => {
+      if (requester !== trackerFrame.contentWindow || moduleLoadingKey !== 'tracker') return null;
+      const draft = portalFollowUpDraft;
+      portalFollowUpDraft = null;
+      return draft;
+    };
+
+    followUpButton.addEventListener('click', () => {
+      const key = moduleLoadingKey;
+      const url = new URL(location.pathname, location.origin);
+      url.searchParams.set('portalModule', key);
+      portalFollowUpDraft = { section: modules[key].title, url: url.href };
+      showModule('tracker');
+      trackerFrame.contentWindow.postMessage('bssc:portal-follow-up', location.origin);
+    });
+
     function showModule(key) {
+      followUpButton.hidden = !Object.hasOwn(modules, key) || key === 'home' || key === 'tracker';
       moduleLoadingKey=key;renderModuleLoading();
       const healthPanel = document.getElementById('portalHealth');
       if (healthPanel) healthPanel.classList.toggle('visible', key === 'admin');
