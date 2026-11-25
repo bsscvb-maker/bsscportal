@@ -15,3 +15,31 @@
 .intake-source{background:#edf2f7;border-radius:5px;padding:3px 7px;color:#263e58;font-weight:700}
 .intake-item a{color:#234e7d}
 @media(max-width:560px){#intakePanel{padding:14px}.intake-item{grid-template-columns:1fr}}
+
+.tracker-embedded{--bg:#f5f6f8;--line:#dce1e9;--muted:#48566a}
+.tracker-embedded main{padding:0 20px 20px}
+.tracker-embedded .hero{padding:10px 0;margin:0;background:transparent;border:0;border-radius:0;gap:12px;display:flex;flex-wrap:wrap}
+.tracker-embedded .hero img,.tracker-embedded .hero h1,.tracker-embedded .hero .eyebrow{display:none}
+.tracker-embedded .hero p{margin:0;color:#48566a;font-size:13px}
+.tracker-embedded .hero-actions{margin:0;gap:8px}
+.tracker-embedded .tracker-tabs{margin:0 0 12px;gap:18px}
+.tracker-embedded .tracker-tabs button{font-size:14px}
+.tracker-embedded .metrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 10px}
+.tracker-embedded .metric{min-height:0;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-radius:8px}
+.tracker-embedded .metric small,.tracker-embedded .metric strong{margin:0}
+.tracker-embedded .metric strong{font-variant-numeric:tabular-nums;font-size:22px}
+.tracker-embedded .metric span{display:none}
+.tracker-embedded .toolbar{margin:0;padding:8px;gap:8px;box-shadow:none}
+.tracker-embedded .scopebar{margin:8px 0;gap:6px}
+.tracker-embedded .scopebar button{min-height:33px;padding:4px 10px;font-size:12px}
+.tracker-embedded .results-heading{margin:8px 0}
+.tracker-embedded .task-row{padding:12px;border-radius:8px}
+.tracker-embedded .task-list{gap:7px}
+.tracker-embedded #intakePanel{padding:16px}
+.intake-count{display:inline-grid;place-items:center;margin-left:6px;min-width:20px;height:20px;padding:0 5px;border-radius:12px;background:#fae8ed;color:#941732;font-size:12px;font-weight:800}
+@media(max-width:650px){
+  .tracker-embedded main{padding:0 10px 12px}
+  .tracker-embedded .metrics .metric:last-child{grid-column:auto}
+  .tracker-embedded .metric{padding:7px}
+  .tracker-embedded .metric strong{font-size:17px}
+}

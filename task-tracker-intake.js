@@ -6,6 +6,20 @@
   let items = [];
   let loading = false;
 
+  if (window.parent !== window) document.documentElement.classList.add('tracker-embedded');
+
+  function updateIntakeCount() {
+    const count = items.filter(item => item.status === 'Needs review').length;
+    const tab = el('intakeTab');
+    tab.textContent = 'Automatic intake';
+    if (count) {
+      tab.append(make('span', String(count), 'intake-count'));
+      tab.setAttribute('aria-label', 'Automatic intake, ' + count + ' need review');
+    } else {
+      tab.removeAttribute('aria-label');
+    }
+  }
+
   function make(tag, text, className) {
     const node = document.createElement(tag);
     node.textContent = text;
@@ -21,6 +35,7 @@
   }
 
   function render() {
+    updateIntakeCount();
     const results = el('intakeResults');
     results.replaceChildren();
     const source = el('intakeSource').value;
@@ -90,6 +105,7 @@
       render();
     } catch (error) {
       items = [];
+      updateIntakeCount();
       el('intakeResults').replaceChildren();
       el('intakeMessage').textContent = error.message;
     } finally {
@@ -112,4 +128,5 @@
   el('intakeSource').onchange = render;
   el('intakeStatus').onchange = render;
   el('intakeSearch').oninput = render;
+  if (window.parent !== window) refresh();
 }
