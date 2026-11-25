@@ -181,7 +181,7 @@ window.BSSCLms=(()=>{
    <label>Due date, optional<input name="due" type="date"></label>
    <label>Notes, optional<textarea name="notes" maxlength="1000"></textarea></label>
    <p data-lms-enroll-error role="alert"></p>
-   <div class="lms-actions"><button type="button" data-lms-cancel>Cancel</button><button type="submit" ${members.length?'':'disabled'}>Save enrollment</button></div></form>`;
+   <div class="lms-actions"><button type="button" data-lms-cancel>Cancel</button><button type="submit" ${members.length?'':'disabled'}>Enroll and queue invitation</button></div></form>`;
   document.body.append(modal);
   modal.addEventListener('close',()=>modal.remove());
   modal.querySelector('[data-lms-cancel]').onclick=()=>modal.close();
@@ -201,11 +201,12 @@ window.BSSCLms=(()=>{
     if(!course)throw Error('The active course version is missing.');
     const at=new Date().toISOString(),actor=await getPortalAuditActor();
     const status={active:'Active',prospect:'Prospect',pending:'Pending'}[matches[0].status];
-    const row=['LMS-'+crypto.randomUUID(),'MEMBER-'+crypto.randomUUID(),member.name,member.email,status,course,'Official',at,easternDue(String(form.get('due')||'')),actor,'','','','','',at,String(form.get('notes')).trim(),false,0];
+    const row=['LMS-'+crypto.randomUUID(),'MEMBER-'+crypto.randomUUID(),member.name,member.email,status,course,'Official',at,easternDue(String(form.get('due')||'')),actor,'','','','','',at,['[Video invitation requested]',String(form.get('notes')).trim()].filter(Boolean).join(' '),false,0];
     const range="'LMS Enrollments'!A:S",url='https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+'/values/'+encodeURIComponent(range)+':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS';
     await writePortalSheetRequest(url,{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({range,majorDimension:'ROWS',values:[row]})},'Enrolled training learner','LMS Enrollments');
     modal.close();
     await load();
+    document.getElementById('membershipStatus').textContent='Invitation queued for '+member.name+'. Check History for delivery.';
    }catch(error){modal.querySelector('[data-lms-enroll-error]').textContent=error.message;button.disabled=false;}
   };
  }

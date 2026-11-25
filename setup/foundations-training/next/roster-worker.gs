@@ -25,6 +25,40 @@ function lmsRosterClock_(){const p=PropertiesService.getScriptProperties();if(p.
   const row=[enrollmentId,memberKey,m.name,m.email,m.status,LMS_VERSION,'Official','','',LMS_OWNER,'','','','','','',`Automatic roster enrollment (${m.sourceYear})`,false,0];table.sheet.appendRow(row);
   try{const provisioned=memberProvision_(enrollmentId),mail=trainingEmail({kind:'invitation',name:m.name,email:m.email,dueDay:due,welcomeUrl:provisioned.welcomeUrl});MailApp.sendEmail({to:m.email,subject:mail.subject,body:mail.text,htmlBody:mail.html,name:'BoneShakers Social Club',replyTo:'president@boneshakerssocialclub.com'});const at=new Date().toISOString(),enrollmentRow=table.sheet.getLastRow();table.sheet.getRange(enrollmentRow,8,1,2).setValues([[at,dueAt]]);memberSaveAccount_({...provisioned.account,name:m.name},m.name);memberOutboxFinish_(entry,'Sent');sent++;baseline.names.push(m.nameKey);baseline.emails.push(m.emailKey);p.setProperty('LMS_ROSTER_BASELINE',JSON.stringify(baseline));}catch(error){memberOutboxFinish_(entry,'Needs review','INVITATION_OUTCOME_REQUIRES_REVIEW');}
  }
+ sent+=sendManualTrainingInvitations_(book,members);
  if(Number(Utilities.formatDate(new Date(),TIME_ZONE,'H'))>=9){const enrollments=lmsTable_(book,'LMS Enrollments'),outbox=memberTable_('LMS Outbox',MEMBER_OUTBOX_HEADERS,true),ledger=outbox.rows.slice(1).map(r=>({key:r[0],status:r[9]==='Reserved'?'Sending':r[9]==='Needs review'?'Unknown':r[9]}));for(const row of enrollments.rows.slice(1)){if(!outbox.rows.some(r=>r[1]===row[0]&&r[5]==='Invitation'&&r[9]==='Sent'))continue;if(row[6]!=='Official'||row[17]===true||!row[7]||!row[8])continue;if(lmsAttendance_(book,{row}))continue;const roster=members.find(m=>m.email===String(row[3]).toLowerCase());if(!roster||memberTrainingExempt_(roster)||!['active','prospect','pending'].includes(roster.status.toLowerCase()))continue;const state=row[14]?JSON.parse(row[14]):initialState(),sections=state.sections.map((s,i)=>({section:i+1,passed:s.passed,bestScore:s.bestScore})),completion=state.completion?{...state.completion,enrollmentId:row[0],courseVersion:state.completion.courseVersion}:null,e={id:row[0],email:row[3],name:row[2],recordType:row[6],courseVersion:row[5],archived:row[17],deliveryStatus:'Sent',invitedAt:row[7],dueDay:localDay(row[8]),sections,completion};const event=nextReminder(e,Date.now(),ledger);if(!event||MailApp.getRemainingDailyQuota()<1)continue;const entry=memberOutbox_({...event,email:e.email,name:e.name,memberKey:row[1],dueAt:row[8]});if(!entry)continue;try{const mail=trainingEmail({kind:'reminder',name:e.name,email:e.email,dueDay:e.dueDay,daysRemaining:event.daysRemaining,passed:sections.filter(s=>s.passed).length});MailApp.sendEmail({to:e.email,subject:mail.subject,body:mail.text,htmlBody:mail.html,name:'BoneShakers Social Club',replyTo:'president@boneshakerssocialclub.com'});memberOutboxFinish_(entry,'Sent');sent++;}catch(error){memberOutboxFinish_(entry,'Needs review','SEND_OUTCOME_REQUIRES_REVIEW');}}}
  p.setProperty('LMS_ROSTER_LAST_CHECK',new Date().toISOString());console.log('Roster check completed. Messages sent: '+sent+'. Identities needing review: '+reviewed+'.');
  }finally{lock.releaseLock();}}
+
+function sendManualTrainingInvitations_(book,members){
+ const table=lmsTable_(book,'LMS Enrollments');
+ let sent=0;
+ for(const row of table.rows.slice(1)){
+  if(row[6]!=='Official'||row[5]!==LMS_VERSION||String(row[17]).toLowerCase()==='true'||row[12]||!String(row[16]).startsWith('[Video invitation requested]'))continue;
+  if(MailApp.getRemainingDailyQuota()<2)break;
+  const email=String(row[3]).trim().toLowerCase();
+  const matches=members.filter(member=>member.email===email);
+  const member=matches[0];
+  if(matches.length!==1||member.conflict||memberTrainingExempt_(member)||member.name.toLowerCase()!==String(row[2]).trim().toLowerCase()||!['active','prospect','pending'].includes(member.status.toLowerCase()))continue;
+  const due=row[8]?localDay(row[8]):dueDay(Date.now());
+  const entry=memberOutbox_({key:'manual-video:'+row[0],enrollmentId:row[0],memberKey:row[1],name:row[2],email,kind:'Invitation',dueAt:row[8]||memberDueTimestamp_(due)});
+  if(!entry)continue;
+  try{
+   const provisioned=memberProvision_(row[0]);
+   memberSaveAccount_({...provisioned.account,name:row[2]},row[2]);
+   const body=[
+    'Hi '+row[2].split(' ')[0]+',',
+    'You have been assigned BSSC Foundations training. Open your personal setup link, request a password setup email, and choose your password.',
+    provisioned.welcomeUrl,
+    'Then sign in, watch the seven training sections, take the quizzes, and sign the final acknowledgment.',
+    'Complete the training by '+formatDue(due)+' at 11:59 p.m. Eastern. Your setup link is valid for seven days.',
+    'BSSC Training'
+   ].join('\n\n');
+   if(!row[8])table.sheet.getRange(table.rows.indexOf(row)+1,9).setValue(memberDueTimestamp_(due));
+   MailApp.sendEmail({to:email,bcc:LMS_OWNER,subject:'BSSC Foundations Training — set up your account',body,name:'BSSC Training',replyTo:'president@boneshakerssocialclub.com'});
+   memberOutboxFinish_(entry,'Sent');
+   sent++;
+  }catch(error){memberOutboxFinish_(entry,'Needs review','INVITATION_OUTCOME_REQUIRES_REVIEW');}
+ }
+ return sent;
+}
