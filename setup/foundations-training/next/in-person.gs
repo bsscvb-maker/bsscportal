@@ -48,6 +48,7 @@ function inPersonInvitations_(book){
    if(MailApp.getRemainingDailyQuota()<1)break;
    const email=String(row[3]||'').trim().toLowerCase(),members=roster.filter(m=>m.email===email),match=members[0];
    if(!row[0]||!row[6]||!row[7]||row[8]!==LMS_VERSION||members.length!==1||match.conflict||!['active','prospect','pending'].includes(match.status.toLowerCase())||match.name.toLowerCase()!==String(row[2]).trim().toLowerCase())throw Error('ATTENDANCE_IDENTITY_REVIEW');
+   if(memberTrainingExempt_(match)){attendance.sheet.getRange(i+1,10).setValue('Cancelled');continue;}
    if(row[4]&&(!/^\d{4}-\d{2}-\d{2}$/.test(row[4])||localDay(row[4]+'T12:00:00Z')!==row[4]||row[4]>localDay(Date.now())))throw Error('ATTENDANCE_DATE_REVIEW');
    if(attendance.rows.some((r,j)=>j!==i&&j>0&&String(r[3]).toLowerCase()===email&&r[8]===LMS_VERSION&&r[9]!=='Cancelled'))throw Error('DUPLICATE_ATTENDANCE_REVIEW');
    const enrollments=lmsTable_(book,'LMS Enrollments'),active=enrollments.rows.slice(1).filter(r=>String(r[3]).toLowerCase()===email&&r[17]!==true&&String(r[17]).toLowerCase()!=='true');
