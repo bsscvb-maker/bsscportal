@@ -1,6 +1,5 @@
 /* Shared Membership navigation. Sources, permissions and record-writing workflows are retained. */
 (function(){
- const membershipTabAccents=["#3978c4","#27857c","#b47b22","#368254","#ed9bac","#7958a7"];
  const areas=['Overview','Members','Renewals & dues','Attendance','Training','Leadership'];
  const recognition={Lifer:'Lifers',Charter:'Charter members',Veterans:'Veterans',Honorary:'Honorary members','Sister Patches':'Sister Patches','Membership Anniversaries':'Service anniversaries'};
  const raw=['Vetting_Raw','Vetting_Raw_2027','Waiver Audit','Waiver_Phone_Keys_2026','Waiver_Phone_Keys_2027','Anniversaries_2026','Anniversaries_2027'];
@@ -15,7 +14,7 @@
  function render(){const workspace=document.getElementById('membershipWorkspace'),bar=workspace?.querySelector('.membership-tabs');if(!bar)return;const name=currentMembershipSheet,area=classify(name),sub=subFor(name);
   let quick=workspace.querySelector('.membership-quick-actions');if(!quick){quick=document.createElement('div');quick.className='membership-quick-actions';quick.style.cssText='display:flex;justify-content:flex-end;margin:0 0 14px';quick.innerHTML='<button type="button" class="attendance-entry-open" data-membership-take-attendance>Take attendance</button>';bar.before(quick);}
   const key=area+'|'+sub+'|'+name+'|'+membershipYear;if(bar.dataset.sharedLayout===key&&workspace.querySelector('.membership-subnav'))return;
-  bar.dataset.sharedLayout=key;bar.setAttribute('aria-label','Membership work areas');bar.innerHTML=areas.map((a,i)=>'<button type="button" class="membership-tab '+(a===area?'active':'')+'" style="box-shadow:inset 0 3px 0 '+membershipTabAccents[i]+'" data-membership-area="'+esc(a)+'">'+esc(a)+'</button>').join('');
+  bar.dataset.sharedLayout=key;bar.setAttribute('aria-label','Membership work areas');bar.innerHTML=areas.map(a=>'<button type="button" class="membership-tab '+(a===area?'active':'')+'" data-membership-area="'+esc(a)+'">'+esc(a)+'</button>').join('');
   workspace.querySelector('.finance-tab-manager')?.remove();let local=workspace.querySelector('.membership-subnav');if(!local){local=document.createElement('div');local.className='membership-subnav';bar.after(local);}
   const choices=area==='Overview'?['Summary','Reports']:area==='Members'?['Directory','Onboarding & waivers','Recognition','Future Shakers']:area==='Renewals & dues'?['Renewals','Payments']:area==='Attendance'?['Records','Summary','Dashboard','Legacy 2025']:area==='Leadership'?['Elections','Election report','Officer history','Past Presidents']:[];
   local.innerHTML=choices.map(s=>'<button type="button" class="membership-subtab '+(s===sub?'active':'')+'" data-membership-sub="'+esc(s)+'">'+esc(s)+'</button>').join('');local.hidden=!choices.length;
