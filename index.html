@@ -8650,7 +8650,12 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         else if (config.attendanceDashboard) await renderMembershipAttendanceDashboard(rows,sheetName.startsWith('2027') ? '2027' : '2026');
         else if (sheetName === 'Officer List') {
           let officerUpdates=[];
-          try { officerUpdates=await getSheetValues("'Officer Updates'!A1:E1000",MEMBERSHIP_SPREADSHEET_ID); } catch(error) { /* The updates sheet is created on the first save. */ }
+          try {
+            const metadata=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+'?fields=sheets.properties.title',{headers:{Authorization:'Bearer '+accessToken}});
+            if(metadata.ok&&(await metadata.json()).sheets.some(sheet=>sheet.properties.title==='Officer Updates')){
+              officerUpdates=await getSheetValues("'Officer Updates'!A1:E1000",MEMBERSHIP_SPREADSHEET_ID);
+            }
+          } catch(error) { /* Officer update history is optional until the first saved update. */ }
           renderMembershipOfficerHistory(rows,formulasOrRoster,officerUpdates);
         }
         else {
