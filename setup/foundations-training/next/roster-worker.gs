@@ -30,11 +30,11 @@ function lmsRosterClock_(){const p=PropertiesService.getScriptProperties();if(p.
  p.setProperty('LMS_ROSTER_LAST_CHECK',new Date().toISOString());console.log('Roster check completed. Messages sent: '+sent+'. Identities needing review: '+reviewed+'.');
  }finally{lock.releaseLock();}}
 
-function sendManualTrainingInvitations_(book,members){
+function sendManualTrainingInvitations_(book,members,requestedId){
  const table=lmsTable_(book,'LMS Enrollments');
  let sent=0;
  for(const row of table.rows.slice(1)){
-  if(row[6]!=='Official'||row[5]!==LMS_VERSION||String(row[17]).toLowerCase()==='true'||row[12]||!String(row[16]).startsWith('[Video invitation requested]'))continue;
+  if(row[6]!=='Official'||row[5]!==LMS_VERSION||String(row[17]).toLowerCase()==='true'||row[12]||(requestedId ? row[0]!==requestedId||!String(row[16]).startsWith('[Send video invitation now]') : !String(row[16]).startsWith('[Video invitation requested]')))continue;
   if(MailApp.getRemainingDailyQuota()<2)break;
   const email=String(row[3]).trim().toLowerCase();
   const matches=members.filter(member=>member.email===email);
@@ -44,7 +44,7 @@ function sendManualTrainingInvitations_(book,members){
   const entry=memberOutbox_({key:'manual-video:'+row[0],enrollmentId:row[0],memberKey:row[1],name:row[2],email,kind:'Invitation',dueAt:row[8]||memberDueTimestamp_(due)});
   if(!entry)continue;
   try{
-   const provisioned=memberProvision_(row[0]);
+   const provisioned=requestedId?memberProvisionAuthorized_(row[0]):memberProvision_(row[0]);
    memberSaveAccount_({...provisioned.account,name:row[2]},row[2]);
    const body=[
     'Hi '+row[2].split(' ')[0]+',',

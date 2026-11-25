@@ -62,3 +62,31 @@ function lmsPresident_(book){
  }catch(error){return null;}
 }
 function lmsCertificateState_(state,book){const result=publicState(state);if(result.completion&&!result.completion.president)result.completion={...result.completion,president:lmsPresident_(book)};return result;}
+
+function doPost(e){
+ function reply(value){return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON);}
+ let lock;
+ try{
+  const input=JSON.parse(e.postData.contents);
+  if(input.action!=='sendManualTrainingInvitation')throw Error('Unknown training action.');
+  const token=input.token;
+  if(typeof token!=='string'||token.length<20||token.length>6000)throw Error('Sign in to the portal again.');
+  const check=UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?access_token='+encodeURIComponent(token),{muteHttpExceptions:true});
+  const info=JSON.parse(check.getContentText());
+  if(check.getResponseCode()!==200||(info.issued_to||info.azp||info.aud||info.audience)!=='881518334290-kimg628u5oriddlrqoq6vb619m8gn13s.apps.googleusercontent.com'||Number(info.expires_in)<=0)throw Error('Your portal sign-in has expired.');
+  const profile=UrlFetchApp.fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+token},muteHttpExceptions:true});
+  const user=JSON.parse(profile.getContentText()),actor=String(user.email||'').toLowerCase();
+  if(profile.getResponseCode()!==200||user.verified_email!==true||![LMS_OWNER,'president@boneshakerssocialclub.com'].includes(actor))throw Error('Only BSSC training administrators can send invitations.');
+  if(!/^LMS-[a-f0-9-]{36}$/i.test(input.id||''))throw Error('Invalid enrollment reference.');
+  lock=LockService.getScriptLock();
+  if(!lock.tryLock(10000))throw Error('Training is busy. Try again.');
+  const book=SpreadsheetApp.openById(LMS_BOOK);
+  const enrollment=lmsTable_(book,'LMS Enrollments').rows.find(row=>row[0]===input.id);
+  if(!enrollment||String(enrollment[9]).trim().toLowerCase()!==actor||!String(enrollment[16]).startsWith('[Send video invitation now]'))throw Error('This invitation request could not be verified.');
+  const delivery=()=>memberTable_('LMS Outbox',MEMBER_OUTBOX_HEADERS,true).rows.find(row=>row[0]==='manual-video:'+input.id)?.[9];
+  if(!delivery())sendManualTrainingInvitations_(book,memberRoster_(),input.id);
+  if(delivery()!=='Sent')throw Error('Invitation delivery could not be confirmed. Review Training History before retrying.');
+  return reply({ok:true});
+ }catch(error){return reply({ok:false,error:String(error.message||'Could not send training invitation.')});}
+ finally{if(lock&&lock.hasLock())lock.releaseLock();}
+}
