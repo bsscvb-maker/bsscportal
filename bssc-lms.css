@@ -49,3 +49,40 @@
  .bssc-lms .lms-table-wrap td:first-child{min-width:150px}
  .bssc-lms .lms-metadata{overflow-wrap:anywhere}
 }
+
+#membershipStatus:empty { display:none; }
+.bssc-lms .lms-header { margin:16px 0 0; }
+.bssc-lms .lms-header h2 { margin:0 0 12px; font-size:22px; }
+.bssc-lms .lms-toolbar {
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+  gap:10px 16px; padding:8px; background:#f5f6f7;
+  border:1px solid #c5cbd1; border-radius:10px;
+}
+.bssc-lms .lms-toolbar .lms-view-tabs,
+.bssc-lms .lms-toolbar-actions { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:0; overflow:visible; }
+.bssc-lms .lms-toolbar [data-lms-view],
+.bssc-lms .lms-tool {
+  display:inline-flex; align-items:center; justify-content:center; min-height:40px;
+  padding:8px 12px; border:1px solid transparent; border-radius:6px;
+  background:transparent; box-shadow:none; color:#262c33;
+  font:inherit; font-size:14px; font-weight:700; text-decoration:none; cursor:pointer;
+}
+.bssc-lms .lms-toolbar [data-lms-view]:hover,
+.bssc-lms .lms-tool:hover { background:#e5e8eb; }
+.bssc-lms .lms-toolbar [data-lms-view].active { color:#8f152b; background:#f5dfe4; border-color:#dfacb7; }
+.bssc-lms .lms-tool-primary { background:#a92537; color:white; }
+.bssc-lms .lms-tool-primary:hover { background:#891a2c; }
+.bssc-lms .lms-tools-menu { position:relative; margin:0; }
+.bssc-lms .lms-tools-menu summary { list-style:none; }
+.bssc-lms .lms-tools-menu summary::-webkit-details-marker { display:none; }
+.bssc-lms .lms-tools-menu summary::after { content:"▾"; margin-left:6px; }
+.bssc-lms .lms-tools-panel {
+  position:absolute; z-index:10; right:0; top:calc(100% + 6px); min-width:220px;
+  padding:5px; background:white; border:1px solid #c5cbd1; border-radius:8px;
+  box-shadow:0 6px 18px #0002;
+}
+.bssc-lms .lms-tools-panel button {
+  display:block; width:100%; text-align:left; padding:10px; color:#262c33;
+  background:white; border:0; border-radius:5px; font:inherit; cursor:pointer;
+}
+.bssc-lms .lms-tools-panel button:hover { background:#e5e8eb; }
