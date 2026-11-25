@@ -3,3 +3,14 @@
 .lms-view-tabs{display:flex;gap:8px;margin:18px 0}.lms-view-tabs .active{background:#a92a3a;color:white}.bssc-lms [hidden]{display:none!important}.lms-attendance-confirm{display:flex!important;align-items:flex-start;gap:10px;line-height:1.6}.lms-attendance-confirm input{width:20px;min-width:20px;min-height:20px;margin-top:4px}.lms-enroll-dialog select{width:100%;min-height:44px}.lms-enroll-dialog{max-height:90vh;overflow:auto}.bssc-lms [data-lms-history] td:last-child{max-width:420px;overflow-wrap:anywhere}
 
 .lms-console-fields{display:grid;grid-template-columns:1fr 1fr;gap:18px}.lms-attestation-console>label,.lms-console-fields label{display:grid;gap:7px;margin:16px 0}.lms-attestation-console input:not([type=checkbox]),.lms-attestation-console textarea{width:100%;padding:12px;border:1px solid #cbd0d8;border-radius:7px}.lms-member-picker{max-height:380px;overflow:auto;border:1px solid #dfe2e8;border-radius:10px}.lms-roster-choice{display:flex;gap:13px;align-items:center;padding:13px 16px;border-bottom:1px solid #e4e6ec;cursor:pointer}.lms-roster-choice[hidden]{display:none}.lms-roster-choice input{width:20px;height:20px;accent-color:#a72c3a}.lms-roster-choice small{display:block;color:#666;margin-top:4px}.lms-roster-choice:has(input:disabled){opacity:.65;cursor:default}.lms-attestation-console .lms-attendance-confirm{display:flex;align-items:flex-start;gap:10px}.lms-attestation-console button[type=submit]{background:#a72c3a;color:white;border:0;border-radius:7px;padding:13px 20px;font-weight:bold}@media(max-width:650px){.lms-console-fields{grid-template-columns:1fr}}
+
+.lms-summary .lms-metrics{grid-template-columns:repeat(auto-fit,minmax(min(100%,178px),1fr));gap:12px}
+.lms-summary .lms-summary-card{position:relative;padding:15px;border-top:3px solid #77818f}
+.lms-summary .lms-summary-complete{border-top-color:#36704b}
+.lms-summary .lms-summary-attention{border-top-color:#a36c22}
+.lms-summary-card>span{display:block}
+.lms-summary-card>span:first-child{font-weight:700;color:#252a33}
+.lms-summary-card .lms-summary-names{margin-top:8px;font-size:13px}
+.lms-summary-list{display:none;position:absolute;z-index:5;top:calc(100% - 12px);left:8px;right:8px;max-height:240px;overflow:auto;list-style:none;margin:0;padding:8px 12px;background:#fff;color:#252a33;border:1px solid #b5bdc9;border-radius:6px;box-shadow:0 6px 16px #0003;font-size:13px}
+.lms-summary-names[aria-expanded="true"]+.lms-summary-list{display:block}
+@media(hover:hover){.lms-summary-card:hover .lms-summary-list{display:block}}
