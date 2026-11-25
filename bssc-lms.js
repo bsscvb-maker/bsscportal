@@ -106,7 +106,7 @@ window.BSSCLms=(()=>{
  }
  function render(){if(!model)return;const target=document.getElementById('membershipContent');const settings=Object.fromEntries(model.settings.map(x=>[x.Setting,x.Value]));const connected=settings['Connection Status']==='Connected'&&/^https:\/\//.test(settings['Learner Service URL']||'');
  const all=model.learners.filter(e=>!truth(e.Archived)&&String(e['Record Type']||'Official')===mode&&(mode!=='Official'||!model.roster?.some(m=>m.exempt&&!m.conflict&&rosterMatch(m,e['Full Name'],e.Email)))),visible=all.filter(e=>(!query||(e['Full Name']+' '+e.Email+' '+e['Member Key']).toLowerCase().includes(query.toLowerCase()))&&(filter==='all'||filter==='overdue'?filter==='all'||e.overdue:e.status===filter));
- target.innerHTML=`<div class="bssc-lms"><section class="workspace-card lms-heading"><div><h2>Foundations training</h2><p>Member progress, attestation invitations, and completion history.</p></div><div class="lms-actions"><details class="lms-advanced"><summary>Advanced options</summary><button class="membership-tab" data-lms-verified>Record verified completion</button><button class="membership-tab" data-lms-enroll>Manual enrollment</button><button class="membership-tab" data-lms-export>Export visible records</button></details><a class="open-btn" href="training/preview.html" target="_blank" rel="noopener">Preview training</a></div></section>${!connected?'<div class="lms-connection" role="status"><strong>Record storage is ready. Automatic learner tracking is not connected yet.</strong><span>The current test drive saves progress in the learner’s browser. It does not populate official records here. Enrollment records can be prepared now.</span></div>':''}<nav class="lms-view-tabs" aria-label="LMS views"><button data-lms-view="learners" class="membership-tab ${view==='learners'?'active':''}">Member progress</button><button data-lms-view="attestations" class="membership-tab ${view==='attestations'?'active':''}">Send attestations</button><button data-lms-view="history" class="membership-tab ${view==='history'?'active':''}">History</button></nav>${view==='learners'?trainingSummary(all.filter(e=>!settings['Course Version']||e['Course Version']===settings['Course Version'])):''}<section class="workspace-card"><div class="lms-filters" ${view==='attestations'?'hidden':''}><label>Find member<input data-lms-search value="${esc(query)}" placeholder="Name, email, or member ID"></label><label ${view==='history'?'hidden':''}>Status<select data-lms-status>${['all','Not started','In progress','Rewatch required','Attestation pending','Complete','overdue'].map(v=>'<option value="'+v+'"'+(filter===v?' selected':'')+'>'+({all:'All statuses',overdue:'Overdue'}[v]||v)+'</option>').join('')}</select></label><label>Records<select data-lms-mode><option${mode==='Official'?' selected':''}>Official</option><option${mode==='Practice'?' selected':''}>Practice</option></select></label></div><p class="lms-small" ${view==='attestations'?'hidden':''}>Times shown in Eastern Time. Progress means section quizzes passed; video watch progress is shown inside each learner record.</p><div data-lms-console></div><div data-lms-history></div><div class="lms-table-wrap" data-lms-list><table class="data-table"><thead><tr><th>Member</th><th>Status</th><th>Course progress</th><th>Next step</th><th>Last activity</th><th>Due</th></tr></thead><tbody>${visible.map(e=>`<tr><td><button class="lms-name" data-lms-open="${esc(e['Enrollment ID'])}">${esc(e['Full Name'])}</button><small>${esc(e.Email)}</small><small>${esc(e['Membership Status'])}</small></td><td><span class="lms-tag ${e.status==='Complete'?'complete':e.status==='Rewatch required'?'rewatch':''}">${esc(e.status)}</span>${e.overdue?'<small class="lms-overdue">Overdue</small>':''}</td><td><strong>${e.inPerson?(e.status==='Complete'?'100':'Attendance recorded'):Math.round(e.passed/7*100)}${e.inPerson&&e.status!=='Complete'?'':'%'}</strong><progress max="7" value="${e.inPerson?(e.status==='Complete'?7:0):e.passed}"></progress><small>${e.inPerson?'In person · '+(e.verified?'verified by club leadership':e.status==='Complete'?'attestation signed':'attestation pending'):e.passed+' of 7 sections passed'}</small></td><td>${esc(e.action)}</td><td>${date(e['Last Active At'])}</td><td>${date(e['Due At'])}</td></tr>`).join('')||'<tr><td colspan="6">'+(all.length?'No members match these filters.':'No '+esc(mode.toLowerCase())+' enrollments yet. Normal enrollment starts from the member roster.')+'</td></tr>'}</tbody></table></div></section><div data-lms-detail></div></div>`;
+ target.innerHTML=`<div class="bssc-lms"><section class="workspace-card lms-heading"><div><h2>Foundations training</h2><p>Member progress, attestation invitations, and completion history.</p></div><div class="lms-actions"><button class="membership-tab" data-lms-enroll>Enrollment</button><details class="lms-advanced"><summary>Advanced options</summary><button class="membership-tab" data-lms-verified>Record verified completion</button><button class="membership-tab" data-lms-export>Export visible records</button></details><a class="open-btn" href="training/preview.html" target="_blank" rel="noopener">Preview training</a></div></section>${!connected?'<div class="lms-connection" role="status"><strong>Record storage is ready. Automatic learner tracking is not connected yet.</strong><span>The current test drive saves progress in the learner’s browser. It does not populate official records here. Enrollment records can be prepared now.</span></div>':''}<nav class="lms-view-tabs" aria-label="LMS views"><button data-lms-view="learners" class="membership-tab ${view==='learners'?'active':''}">Member progress</button><button data-lms-view="attestations" class="membership-tab ${view==='attestations'?'active':''}">Send attestations</button><button data-lms-view="history" class="membership-tab ${view==='history'?'active':''}">History</button></nav>${view==='learners'?trainingSummary(all.filter(e=>!settings['Course Version']||e['Course Version']===settings['Course Version'])):''}<section class="workspace-card"><div class="lms-filters" ${view==='attestations'?'hidden':''}><label>Find member<input data-lms-search value="${esc(query)}" placeholder="Name, email, or member ID"></label><label ${view==='history'?'hidden':''}>Status<select data-lms-status>${['all','Not started','In progress','Rewatch required','Attestation pending','Complete','overdue'].map(v=>'<option value="'+v+'"'+(filter===v?' selected':'')+'>'+({all:'All statuses',overdue:'Overdue'}[v]||v)+'</option>').join('')}</select></label><label>Records<select data-lms-mode><option${mode==='Official'?' selected':''}>Official</option><option${mode==='Practice'?' selected':''}>Practice</option></select></label></div><p class="lms-small" ${view==='attestations'?'hidden':''}>Times shown in Eastern Time. Progress means section quizzes passed; video watch progress is shown inside each learner record.</p><div data-lms-console></div><div data-lms-history></div><div class="lms-table-wrap" data-lms-list><table class="data-table"><thead><tr><th>Member</th><th>Status</th><th>Course progress</th><th>Next step</th><th>Last activity</th><th>Due</th></tr></thead><tbody>${visible.map(e=>`<tr><td><button class="lms-name" data-lms-open="${esc(e['Enrollment ID'])}">${esc(e['Full Name'])}</button><small>${esc(e.Email)}</small><small>${esc(e['Membership Status'])}</small></td><td><span class="lms-tag ${e.status==='Complete'?'complete':e.status==='Rewatch required'?'rewatch':''}">${esc(e.status)}</span>${e.overdue?'<small class="lms-overdue">Overdue</small>':''}</td><td><strong>${e.inPerson?(e.status==='Complete'?'100':'Attendance recorded'):Math.round(e.passed/7*100)}${e.inPerson&&e.status!=='Complete'?'':'%'}</strong><progress max="7" value="${e.inPerson?(e.status==='Complete'?7:0):e.passed}"></progress><small>${e.inPerson?'In person · '+(e.verified?'verified by club leadership':e.status==='Complete'?'attestation signed':'attestation pending'):e.passed+' of 7 sections passed'}</small></td><td>${esc(e.action)}</td><td>${date(e['Last Active At'])}</td><td>${date(e['Due At'])}</td></tr>`).join('')||'<tr><td colspan="6">'+(all.length?'No members match these filters.':'No '+esc(mode.toLowerCase())+' enrollments yet. Normal enrollment starts from the member roster.')+'</td></tr>'}</tbody></table></div></section><div data-lms-detail></div></div>`;
  target.querySelectorAll('.lms-summary-names').forEach(button=>{
   button.onclick=()=>button.setAttribute('aria-expanded',String(button.getAttribute('aria-expanded')!=='true'));
   button.onkeydown=event=>{if(event.key==='Escape')button.setAttribute('aria-expanded','false')};
@@ -175,24 +175,39 @@ window.BSSCLms=(()=>{
   for(const member of roster)emailCounts.set(member.email,(emailCounts.get(member.email)||0)+1);
   const enrolled=new Set(model.learners.filter(e=>!truth(e.Archived)&&e['Record Type']==='Official').map(e=>String(e.Email).trim().toLowerCase()));
   const members=roster.filter(m=>!m.exempt&&!m.conflict&&m.email&&emailCounts.get(m.email)===1&&!enrolled.has(m.email));
-  modal.innerHTML=`<form><h3>Manual training enrollment</h3>
+  modal.innerHTML=`<form><h3>Training enrollment</h3>
+   <label>Find a member<input type="search" data-enroll-search placeholder="Type a name"></label>
    <label>Member<select name="member" required><option value="">Select a roster member</option>${members.map((m,i)=>'<option value="'+i+'">'+esc(m.name)+'</option>').join('')}</select></label>
    ${members.length?'':'<p>No unassigned members with a unique roster email are available.</p>'}
    <label>Due date, optional<input name="due" type="date"></label>
    <label>Notes, optional<textarea name="notes" maxlength="1000"></textarea></label>
    <p data-lms-enroll-error role="alert"></p>
-   <div class="lms-actions"><button type="button" data-lms-cancel>Cancel</button><button type="submit" ${members.length?'':'disabled'}>Enroll and queue invitation</button></div></form>`;
+   <div class="lms-actions"><button type="button" data-lms-cancel>Cancel</button><button type="submit" ${members.length?'':'disabled'} style="background:#a92537;color:#fff">Enroll and send invitation</button></div></form>`;
   document.body.append(modal);
   modal.addEventListener('close',()=>modal.remove());
   modal.querySelector('[data-lms-cancel]').onclick=()=>modal.close();
   modal.showModal();
+  const picker=modal.querySelector('[name=member]');
+  const search=modal.querySelector('[data-enroll-search]');
+  search.oninput=()=>{
+   const term=search.value.trim().toLowerCase();
+   for(const option of picker.options)option.hidden=!!option.value&&!option.textContent.toLowerCase().includes(term);
+   if(picker.selectedOptions[0]?.hidden)picker.value='';
+   const visible=Array.from(picker.options).filter(option=>option.value&&!option.hidden);
+   if(term&&visible.length===1)picker.value=visible[0].value;
+  };
+  let pendingId='';
   modal.querySelector('form').onsubmit=async event=>{
    event.preventDefault();
    const button=modal.querySelector('[type=submit]');
    button.disabled=true;
+   button.textContent='Sending invitation…';
+   button.style.background='#f2c94c';
+   button.style.color='#242424';
    try{
     const form=new FormData(event.target),choice=form.get('member'),member=members[Number(choice)];
-    if(choice===''||!member)throw Error('Select a roster member.');
+    if(!pendingId&&(choice===''||!member))throw Error('Select a roster member.');
+    if(!pendingId){
     const [currentRoster,raw]=await Promise.all([readTrainingRoster(),getSheetRanges(["'LMS Enrollments'!A1:S2000"],MEMBERSHIP_SPREADSHEET_ID)]);
     const matches=currentRoster.filter(m=>m.email===member.email);
     if(matches.length!==1||matches[0].name!==member.name||matches[0].exempt||matches[0].conflict)throw Error('The roster record changed. Reopen Manual enrollment and try again.');
@@ -201,13 +216,34 @@ window.BSSCLms=(()=>{
     if(!course)throw Error('The active course version is missing.');
     const at=new Date().toISOString(),actor=await getPortalAuditActor();
     const status={active:'Active',prospect:'Prospect',pending:'Pending'}[matches[0].status];
-    const row=['LMS-'+crypto.randomUUID(),'MEMBER-'+crypto.randomUUID(),member.name,member.email,status,course,'Official',at,easternDue(String(form.get('due')||'')),actor,'','','','','',at,['[Video invitation requested]',String(form.get('notes')).trim()].filter(Boolean).join(' '),false,0];
+    if(!['bsscvb@boneshakerssocialclub.com','president@boneshakerssocialclub.com'].includes(actor.toLowerCase()))throw Error('Sign in as the club president or BSSC training administrator to send invitations.');
+    const row=['LMS-'+crypto.randomUUID(),'MEMBER-'+crypto.randomUUID(),member.name,member.email,status,course,'Official',at,easternDue(String(form.get('due')||'')),actor,'','','','','',at,['[Send video invitation now]',String(form.get('notes')).trim()].filter(Boolean).join(' '),false,0];
     const range="'LMS Enrollments'!A:S",url='https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+'/values/'+encodeURIComponent(range)+':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS';
     await writePortalSheetRequest(url,{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({range,majorDimension:'ROWS',values:[row]})},'Enrolled training learner','LMS Enrollments');
-    modal.close();
+    pendingId=row[0];
+    picker.disabled=true;
+    search.disabled=true;
+    }
+    const response=await fetch('https://script.google.com/macros/s/AKfycbz5mh45avqAvKNf7b-0OFvU46_MllMjwXyfGOJwtW0qUwpAA5rQZyKAImq5NAGDSniu/exec',{
+     method:'POST',credentials:'omit',headers:{'Content-Type':'text/plain;charset=UTF-8'},
+     body:JSON.stringify({action:'sendManualTrainingInvitation',id:pendingId,token:accessToken}),
+     signal:AbortSignal.timeout(35000)
+    });
+    const delivery=await response.json();
+    if(!response.ok||!delivery.ok)throw Error(delivery.error||'Invitation delivery could not be confirmed.');
+    button.textContent='Done — invitation sent';
+    button.style.background='#247345';
+    button.style.color='#fff';
+    modal.querySelector('[data-lms-enroll-error]').textContent='';
+    modal.querySelector('[data-lms-cancel]').textContent='Close';
     await load();
-    document.getElementById('membershipStatus').textContent='Invitation queued for '+member.name+'. Check History for delivery.';
-   }catch(error){modal.querySelector('[data-lms-enroll-error]').textContent=error.message;button.disabled=false;}
+   }catch(error){
+    modal.querySelector('[data-lms-enroll-error]').textContent=error.message;
+    button.textContent=pendingId?'Check or retry send':'Enroll and send invitation';
+    button.style.background='#a92537';
+    button.style.color='#fff';
+    button.disabled=false;
+   }
   };
  }
  async function load(){const seq=++request,target=document.getElementById('membershipContent'),status=document.getElementById('membershipStatus');if(!accessToken)return;status.classList.remove('lifer-summary');status.textContent='Loading private LMS records…';target.innerHTML='<section class="workspace-card"><h2>BSSC LMS</h2><p role="status">Loading learner records…</p></section>';try{const [raw,roster]=await Promise.all([getSheetRanges(["'LMS Enrollments'!A1:S2000","'LMS Progress'!A1:P14000","'LMS Attempts'!A1:O20000","'LMS Completions'!A1:J2000","'LMS Settings'!A1:D100","'LMS Accounts'!A1:I2000","'LMS Outbox'!A1:N10000","'LMS Attendance'!A1:Q2000"],MEMBERSHIP_SPREADSHEET_ID),readTrainingRoster().catch(()=>null)]);if(seq!==request||currentMembershipSheet!=='BSSC LMS')return;const [enrollments,progress,attempts,completions,settings,accounts,outbox,attendance]=raw.map((rows,i)=>objects(rows,tables[i]));if(enrollments.length>=1999||progress.length>=13999||attempts.length>=19999||completions.length>=1999||attendance.length>=1999)throw Error('The LMS record limit needs expansion before complete results can be shown.');model={learners:enrollments.map(e=>learner(e,progress,attempts,completions,attendance)),settings,accounts,outbox,attendance,roster};render();status.textContent='BSSC LMS · Records refreshed '+new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York'})+' ET'}catch(error){if(seq!==request)return;status.textContent='LMS records could not be loaded.';target.innerHTML='<section class="workspace-card"><h2>BSSC LMS</h2><p role="alert">'+esc(error.message)+'</p><button class="membership-tab" data-lms-refresh>Try again</button></section>';target.querySelector('[data-lms-refresh]').onclick=load}}
