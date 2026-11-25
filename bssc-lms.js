@@ -57,13 +57,14 @@ window.BSSCLms=(()=>{
    if(names[0]?.slice(0,3).join('|')!=='Status|Last Name|First Name'||names[0]?.[8]!=='Start Date'||emails[0]?.[0]!=='Email')throw Error('Roster headings need review.');
    if(names.length>=2000)throw Error('The training roster range needs expansion.');
    names.slice(1).forEach((row,i)=>{
-    if(!['active','prospect','pending'].includes(String(row[0]).trim().toLowerCase()))return;
+    const status=String(row[0]).trim().toLowerCase();
+    if(!['active','prospect','pending'].includes(status))return;
     const name=[row[2],row[1]].filter(Boolean).join(' ').trim();
     if(!name)return;
     const address=String(emails[i+1]?.[0]||'').trim().toLowerCase();
     const email=/^\S+@\S+\.\S+$/.test(address)?address:'';
     const key=name.toLowerCase(),old=byName.get(key);
-    if(!old)byName.set(key,{name,email,exempt:manual.has(key)||pastFiveYears(row[8])});
+    if(!old)byName.set(key,{name,email,status,exempt:manual.has(key)||pastFiveYears(row[8])});
     else if(email&&old.email&&email!==old.email)old.conflict=true;
     else if(email&&!old.email)old.email=email;
    });
@@ -166,7 +167,47 @@ window.BSSCLms=(()=>{
    }catch(error){modal.querySelector('[role=alert]').textContent=error.message;button.disabled=false;}
   };
  }
- function enroll(){const modal=document.createElement('dialog');modal.className='lms-enroll-dialog';modal.innerHTML='<form><h3>Manual training enrollment</h3><p>Use the email address on the member roster. This creates a private training record; account invitations and 60-day deadlines are handled by the roster workflow. It does not grant portal access.</p><label>Full name<input name="name" required maxlength="120" autocomplete="name"></label><label>Email<input name="email" type="email" required maxlength="254" autocomplete="email"></label><label>Member ID, if known<input name="member" maxlength="100"></label><label>Membership status<select name="status"><option>Prospect</option><option>Member</option></select></label><label>Due date, optional<input name="due" type="date"></label><label>Notes, optional<textarea name="notes" maxlength="1000"></textarea></label><p data-lms-enroll-error role="alert"></p><div class="lms-actions"><button type="button" data-lms-cancel>Cancel</button><button type="submit">Save enrollment</button></div></form>';document.body.append(modal);modal.showModal();modal.querySelector('[data-lms-cancel]').onclick=()=>{modal.close();modal.remove()};modal.addEventListener('close',()=>modal.remove());modal.querySelector('form').onsubmit=async event=>{event.preventDefault();const button=modal.querySelector('[type=submit]');button.disabled=true;const form=new FormData(event.target),email=String(form.get('email')).trim().toLowerCase();try{const roster=await readTrainingRoster();if(roster.some(m=>m.exempt&&!m.conflict&&rosterMatch(m,form.get('name'),email)))throw Error('This member is exempt from Foundations training.');if(!/^\S+@\S+\.\S+$/.test(email))throw Error('Use the learner’s roster email address.');if(model.learners.some(e=>!truth(e.Archived)&&String(e.Email).toLowerCase()===email&&e['Record Type']==='Official'))throw Error('This email already has an active official enrollment.');const at=new Date().toISOString(),actor=await getPortalAuditActor(),course=Object.fromEntries(model.settings.map(x=>[x.Setting,x.Value]))['Course Version'];if(!course)throw Error('The active course version is missing.');const row=['LMS-'+crypto.randomUUID(),String(form.get('member')).trim(),String(form.get('name')).trim(),email,String(form.get('status')),course,'Official',at,easternDue(String(form.get('due')||'')),actor,'','','','','',at,String(form.get('notes')).trim(),false,0];const range="'LMS Enrollments'!A:S",url='https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+'/values/'+encodeURIComponent(range)+':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS';await writePortalSheetRequest(url,{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({range,majorDimension:'ROWS',values:[row]})},'Enrolled training learner','LMS Enrollments',1);modal.close();await load()}catch(error){modal.querySelector('[data-lms-enroll-error]').textContent=error.message;button.disabled=false}};
+ function enroll(){
+  const modal=document.createElement('dialog');
+  modal.className='lms-enroll-dialog';
+  const roster=model.roster||[];
+  const emailCounts=new Map();
+  for(const member of roster)emailCounts.set(member.email,(emailCounts.get(member.email)||0)+1);
+  const enrolled=new Set(model.learners.filter(e=>!truth(e.Archived)&&e['Record Type']==='Official').map(e=>String(e.Email).trim().toLowerCase()));
+  const members=roster.filter(m=>!m.exempt&&!m.conflict&&m.email&&emailCounts.get(m.email)===1&&!enrolled.has(m.email));
+  modal.innerHTML=`<form><h3>Manual training enrollment</h3>
+   <label>Member<select name="member" required><option value="">Select a roster member</option>${members.map((m,i)=>'<option value="'+i+'">'+esc(m.name)+'</option>').join('')}</select></label>
+   ${members.length?'':'<p>No unassigned members with a unique roster email are available.</p>'}
+   <label>Due date, optional<input name="due" type="date"></label>
+   <label>Notes, optional<textarea name="notes" maxlength="1000"></textarea></label>
+   <p data-lms-enroll-error role="alert"></p>
+   <div class="lms-actions"><button type="button" data-lms-cancel>Cancel</button><button type="submit" ${members.length?'':'disabled'}>Save enrollment</button></div></form>`;
+  document.body.append(modal);
+  modal.addEventListener('close',()=>modal.remove());
+  modal.querySelector('[data-lms-cancel]').onclick=()=>modal.close();
+  modal.showModal();
+  modal.querySelector('form').onsubmit=async event=>{
+   event.preventDefault();
+   const button=modal.querySelector('[type=submit]');
+   button.disabled=true;
+   try{
+    const form=new FormData(event.target),choice=form.get('member'),member=members[Number(choice)];
+    if(choice===''||!member)throw Error('Select a roster member.');
+    const [currentRoster,raw]=await Promise.all([readTrainingRoster(),getSheetRanges(["'LMS Enrollments'!A1:S2000"],MEMBERSHIP_SPREADSHEET_ID)]);
+    const matches=currentRoster.filter(m=>m.email===member.email);
+    if(matches.length!==1||matches[0].name!==member.name||matches[0].exempt||matches[0].conflict)throw Error('The roster record changed. Reopen Manual enrollment and try again.');
+    if(objects(raw[0],'LMS Enrollments').some(e=>!truth(e.Archived)&&e['Record Type']==='Official'&&String(e.Email).trim().toLowerCase()===member.email))throw Error('This member already has an active official enrollment.');
+    const course=model.settings.find(row=>row.Setting==='Course Version')?.Value;
+    if(!course)throw Error('The active course version is missing.');
+    const at=new Date().toISOString(),actor=await getPortalAuditActor();
+    const status={active:'Active',prospect:'Prospect',pending:'Pending'}[matches[0].status];
+    const row=['LMS-'+crypto.randomUUID(),'MEMBER-'+crypto.randomUUID(),member.name,member.email,status,course,'Official',at,easternDue(String(form.get('due')||'')),actor,'','','','','',at,String(form.get('notes')).trim(),false,0];
+    const range="'LMS Enrollments'!A:S",url='https://sheets.googleapis.com/v4/spreadsheets/'+MEMBERSHIP_SPREADSHEET_ID+'/values/'+encodeURIComponent(range)+':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS';
+    await writePortalSheetRequest(url,{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({range,majorDimension:'ROWS',values:[row]})},'Enrolled training learner','LMS Enrollments');
+    modal.close();
+    await load();
+   }catch(error){modal.querySelector('[data-lms-enroll-error]').textContent=error.message;button.disabled=false;}
+  };
  }
  async function load(){const seq=++request,target=document.getElementById('membershipContent'),status=document.getElementById('membershipStatus');if(!accessToken)return;status.classList.remove('lifer-summary');status.textContent='Loading private LMS records…';target.innerHTML='<section class="workspace-card"><h2>BSSC LMS</h2><p role="status">Loading learner records…</p></section>';try{const [raw,roster]=await Promise.all([getSheetRanges(["'LMS Enrollments'!A1:S2000","'LMS Progress'!A1:P14000","'LMS Attempts'!A1:O20000","'LMS Completions'!A1:J2000","'LMS Settings'!A1:D100","'LMS Accounts'!A1:I2000","'LMS Outbox'!A1:N10000","'LMS Attendance'!A1:Q2000"],MEMBERSHIP_SPREADSHEET_ID),readTrainingRoster().catch(()=>null)]);if(seq!==request||currentMembershipSheet!=='BSSC LMS')return;const [enrollments,progress,attempts,completions,settings,accounts,outbox,attendance]=raw.map((rows,i)=>objects(rows,tables[i]));if(enrollments.length>=1999||progress.length>=13999||attempts.length>=19999||completions.length>=1999||attendance.length>=1999)throw Error('The LMS record limit needs expansion before complete results can be shown.');model={learners:enrollments.map(e=>learner(e,progress,attempts,completions,attendance)),settings,accounts,outbox,attendance,roster};render();status.textContent='BSSC LMS · Records refreshed '+new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York'})+' ET'}catch(error){if(seq!==request)return;status.textContent='LMS records could not be loaded.';target.innerHTML='<section class="workspace-card"><h2>BSSC LMS</h2><p role="alert">'+esc(error.message)+'</p><button class="membership-tab" data-lms-refresh>Try again</button></section>';target.querySelector('[data-lms-refresh]').onclick=load}}
 
