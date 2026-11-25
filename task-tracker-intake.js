@@ -11,6 +11,7 @@
   let intake = [];
   let intakeError = '';
   let intakeLoading = false;
+  let scanRunning = false;
   const savingTasks = new Set();
 
   function make(tag, text, className) {
@@ -83,7 +84,8 @@
     get('workSummary').textContent = busy && !ready ? 'Loading tasks…'
       : counts.active + ' active · ' + counts.review + ' need review';
     get('workNew').disabled = busy || !ready;
-    get('workRefresh').disabled = busy || intakeLoading;
+    get('workRefresh').disabled = busy || intakeLoading || scanRunning;
+    get('workRefresh').textContent = scanRunning ? 'Checking email…' : 'Refresh';
     for (const button of scopes) {
       const filter = button.dataset.workScope;
       button.setAttribute('aria-pressed', String(filter === scope));
@@ -359,7 +361,30 @@
     }
   }
 
-  const refreshWork = () => Promise.all([load(), refreshIntake()]);
+  async function refreshWork() {
+    if (scanRunning) return;
+    scanRunning = true;
+    renderWork();
+    try {
+      await Promise.all([load(), refreshIntake()]);
+      if (!window.requestTaskEmailCheck) throw Error('Email checking is unavailable. Reload the portal and try again.');
+      const report = message => {
+        const feedback = get('workFeedback');
+        feedback.dataset.tone = 'info';
+        feedback.textContent = message;
+        feedback.hidden = false;
+      };
+      report('Requesting an email check…');
+      const result = await window.requestTaskEmailCheck(report);
+      await refreshIntake();
+      report(result.message);
+    } catch (error) {
+      showError(error.message);
+    } finally {
+      scanRunning = false;
+      renderWork();
+    }
+  }
   get('workRefresh').onclick = refreshWork;
   get('workNew').onclick = () => open();
   get('workClose').onclick = () => get('workDetails').close();
