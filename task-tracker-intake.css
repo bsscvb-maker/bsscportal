@@ -40,14 +40,6 @@
 .work-source{border-top:1px solid var(--border);padding-top:7px}
 .work-source summary{cursor:pointer;font-weight:650}
 @media(min-width:791px){
-  .work-column-head > :is(:nth-child(2),:nth-child(3)),
-  .work-row > :is(.work-category,.work-owner){
-    border-left:1px solid var(--border);
-    padding-left:12px;
-    align-self:stretch;
-    display:flex;
-    align-items:center;
-  }
   .work-row > .work-title{justify-self:start}
   .work-due{white-space:nowrap}
 }
