@@ -4,6 +4,7 @@
   const get = id => document.getElementById(id);
   const scopes = [...document.querySelectorAll('[data-work-scope]')];
   const priorityLabels = { tier1: 'High', tier2: 'Medium', tier3: 'Low' };
+  const intakePriorities = { High: 'tier1', Medium: 'tier2', Low: 'tier3' };
   const sharedStates = { ready: 'Not started', working: 'In progress', waiting: 'Waiting', done: 'Completed' };
   const intakeStates = ['Needs review', 'Open', 'Done', 'Dismissed'];
   let scope = 'active';
@@ -115,9 +116,11 @@
     return details;
   }
 
-  async function saveIntake(item, status) {
+  async function saveIntake(item, status, adjustments = {}) {
     try {
-      await service().setStatus(item.id, status);
+      await service().update(item.id, { status, ...adjustments });
+      if (adjustments.due !== undefined) item.due = adjustments.due;
+      if (adjustments.priority) item.priority = intakePriorities[adjustments.priority];
       item.status = status;
       item.complete = status === 'Done';
       item.review = status === 'Needs review';
@@ -153,13 +156,30 @@
       const select = document.createElement('select');
       intakeStates.forEach(state => select.add(new Option(state)));
       select.value = item.status;
-      select.onchange = async () => {
-        select.disabled = true;
-        if (await saveIntake(item, select.value)) get('workDetails').close();
-        else { select.value = item.status; select.disabled = false; }
-      };
       label.append(select);
-      body.append(label);
+      const dueLabel = make('label', 'Due date ');
+      const due = document.createElement('input');
+      due.type = 'date';
+      due.value = item.due || '';
+      dueLabel.append(due);
+      const priorityLabel = make('label', 'Priority ');
+      const priority = document.createElement('select');
+      Object.keys(intakePriorities).forEach(value => priority.add(new Option(value)));
+      priority.value = priorityLabels[item.priority] || 'Medium';
+      priorityLabel.append(priority);
+      const save = make('button', 'Save changes');
+      const feedback = make('p', '', 'work-edit-feedback');
+      feedback.setAttribute('role', 'status');
+      save.onclick = async () => {
+        save.disabled = true;
+        if (await saveIntake(item, select.value, { due: due.value, priority: priority.value })) {
+          get('workDetails').close();
+        } else {
+          feedback.textContent = get('workFeedback').textContent;
+          save.disabled = false;
+        }
+      };
+      body.append(label, dueLabel, priorityLabel, save, feedback);
     }
     if (item.task) {
       const links = meta(item.task).links;
@@ -213,9 +233,9 @@
     try {
       const rows = await api.read();
       const unique = new Map();
-      for (const [id, source, title, owner, due, link, status] of rows) {
+      for (const [id, source, title, owner, due, link, status, , priority] of rows) {
         if (!id || !title || unique.has(id)) continue;
-        unique.set(id, { id, source, title, owner, due, link, status, review: status === 'Needs review', complete: status === 'Done' });
+        unique.set(id, { id, source, title, owner, due, link, status, priority: intakePriorities[priority], review: status === 'Needs review', complete: status === 'Done' });
       }
       intake = [...unique.values()];
       intakeError = '';
