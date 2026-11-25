@@ -8502,7 +8502,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
     }
 
     // These columns can be filled or recalculated when a renewal is displayed.
-    const roster2027HistoricalFields = ['Road Name','Sex','Sponsor','Start Year','Start Date','Lifer Clock Start Year','Director Position','Sister Patch','Membership Type','Address','City','State','Zip','Phone','Email','Date of Birth','Member Classification'];
+    const roster2027HistoricalFields = ['Road Name','Sex','Sponsor','Start Year','Start Date','Lifer Clock Start Year','Sister Patch','Membership Type','Address','City','State','Zip','Phone','Email','Date of Birth','Member Classification'];
     const roster2027SubmissionFields = {'Road Name':'roadName','Sex':'sex','Address':'address','City':'city','State':'state','Zip':'zip','Phone':'phone','Email':'email','Military Service':'militaryService','Military Branch':'militaryBranch','Years Served':'militaryYears'};
     const roster2027EnrichedFields = new Set([...roster2027HistoricalFields, ...Object.keys(roster2027SubmissionFields), 'Year Count', 'Tenure']);
     const roster2027HeaderKey = value => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g,'');
