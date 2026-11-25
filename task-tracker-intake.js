@@ -100,7 +100,7 @@
       return;
     }
     const heading = make('div', '', 'work-column-head');
-    for (const label of ['Task', 'Category', 'Owner', 'Due date', 'Priority', 'Status', '']) {
+    for (const label of ['Task', 'Category', 'Owner', 'Where to go', 'Due date', 'Priority', 'Status', '']) {
       heading.append(make('span', label));
     }
     results.append(heading);
@@ -117,6 +117,15 @@
     const message = get('message');
     showError([message.classList.contains('error') ? message.textContent : '', intakeError].filter(Boolean).join(' '));
     renderWork();
+  }
+
+  function destination(item) {
+    const labels = { 'President email': 'President inbox', 'Club email': 'BSSC inbox', 'Portal check': 'Administration' };
+    if (item.task) {
+      const link = meta(item.task).links?.find(value => /^https:\/\//i.test(value));
+      return { label: link ? 'Task attachment' : 'Task Tracker', link };
+    }
+    return { label: labels[item.source] || item.source || 'Task Tracker', link: item.link };
   }
 
   function sourceDetails(item) {
@@ -234,7 +243,16 @@
     const more = make('button', 'Details', 'work-more');
     more.onclick = () => openDetails(item);
 
-    row.append(title, group, owner, due, priority, status, more);
+    const { label, link } = destination(item);
+    const linked = /^https:\/\//i.test(link);
+    const where = make(linked ? 'a' : 'span', label, 'work-destination');
+    if (linked) {
+      where.href = link;
+      where.target = '_blank';
+      where.rel = 'noopener noreferrer';
+      where.setAttribute('aria-label', label + ' for ' + item.title);
+    }
+    row.append(title, group, owner, where, due, priority, status, more);
     return row;
   }
 

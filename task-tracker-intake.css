@@ -16,9 +16,9 @@
 .work-toolbar input{flex:1;min-width:140px}
 .work-toolbar label{display:flex;align-items:center;gap:6px;font-size:13px;margin:0}
 #workResults{margin-top:10px;background:#edf0f2;border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.work-row,.work-column-head{display:grid;grid-template-columns:minmax(0,1fr) clamp(106px,13%,174px) clamp(86px,10%,126px) 114px 73px 106px 60px;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.work-row,.work-column-head{display:grid;grid-template-columns:minmax(0,1fr) clamp(106px,13%,174px) clamp(86px,9%,120px) minmax(105px,10%) 114px 73px 106px 60px;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
 .work-column-head{background:#dce1e5;color:#3c4a5b;font-size:12px;font-weight:750}
-.work-category,.work-owner{color:var(--soft);font-size:13px;overflow-wrap:anywhere}
+.work-category,.work-owner,.work-destination{color:var(--soft);font-size:13px;overflow-wrap:anywhere}
 .work-row:last-child{border-bottom:0}
 .work-title{padding:0;background:transparent;border:0;color:var(--ink);font-weight:750;text-align:left;overflow-wrap:anywhere;min-height:0}
 .work-title:hover{text-decoration:underline}
@@ -39,16 +39,19 @@
 #workDetailBody p{margin:0;white-space:pre-wrap}
 .work-source{border-top:1px solid var(--border);padding-top:7px}
 .work-source summary{cursor:pointer;font-weight:650}
-@media(min-width:791px){
+a.work-destination{color:#244f76;text-underline-offset:2px}
+@media(min-width:901px){
   .work-row > .work-title{justify-self:start}
   .work-due{white-space:nowrap}
 }
-@media(max-width:790px){
+@media(max-width:900px){
   .tracker-embedded main{padding:8px}
   .work-column-head{display:none}
   .work-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:6px 8px}
   .work-title{grid-column:1 / 3;grid-row:1}.work-more{grid-column:3;grid-row:1}
   .work-category{grid-column:1;grid-row:2}.work-owner{grid-column:2;grid-row:2}
   .work-category::before{content:"Category: "}.work-owner::before{content:"Owner: "}
+  .work-destination{grid-column:1 / 4;grid-row:4}
+  .work-destination::before{content:"Where to go: "}
   .work-due{grid-column:1;grid-row:3}.work-priority{grid-column:2;grid-row:3}.work-state{grid-column:3;grid-row:3}
 }
