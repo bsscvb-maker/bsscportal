@@ -9127,6 +9127,49 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       });
     }
 
+    const taskIntakeBook = '1EC41NDOWTFs9kKSqtL0MrPAz4Pj8ldRcQUijmyrxHNk';
+    const taskIntakeTab = 'BSSC Task Intake';
+    const healthFailureCounts = new Map();
+
+    async function readTaskIntake() {
+      if (!accessToken) throw new Error('Sign in to the portal to view automatic intake.');
+      return (await getSheetValues("'BSSC Task Intake'!A2:H", taskIntakeBook)).slice();
+    }
+
+    window.taskIntake = {
+      read: readTaskIntake,
+      async setStatus(id, status) {
+        if (!['Needs review', 'Open', 'Done', 'Dismissed'].includes(status)) throw new Error('Invalid intake status.');
+        const rows = await readTaskIntake();
+        const index = rows.findIndex(row => row[0] === id);
+        if (index < 0) throw new Error('This intake item is no longer available.');
+        await updateSheetCell(taskIntakeBook, taskIntakeTab, index + 2, 6, status);
+      }
+    };
+
+    async function capturePortalHealthTask(index, label, failed) {
+      const count = failed ? (healthFailureCounts.get(index) || 0) + 1 : 0;
+      healthFailureCounts.set(index, count);
+      if (count < 2 || count > 3) return;
+      try {
+        const write = async () => {
+          const key = 'portal-health:' + index;
+          const rows = await readTaskIntake();
+          if (rows.some(row => row[0] === key)) return;
+          const source = new URL(location.pathname, location.origin);
+          source.searchParams.set('portalModule', 'admin');
+          await appendSheetRow(taskIntakeBook, taskIntakeTab, [
+            key, 'Portal check', 'Review the ' + label + ' connection', '', '',
+            source.href, 'Needs review', new Date().toISOString()
+          ]);
+        };
+        if (navigator.locks) await navigator.locks.request('bssc-portal-health-intake', write);
+        else await write();
+      } catch (error) {
+        console.warn('Portal health intake could not save:', error.message);
+      }
+    }
+
     async function loadAdminSystemStatus() {
       const target = document.getElementById('adminSystemStatus');
       if (!target || portalHealthCheckRunning || document.hidden) return;
@@ -9197,6 +9240,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
             portalConnectionErrors[index] = error.message || 'Connection unavailable';
           }
           renderProgress();
+          await capturePortalHealthTask(index, connections[index][0], portalConnectionStates[index] === 'error');
         }));
         if (initialCheck) portalHealthInitialCheckComplete = true;
       } finally {
