@@ -46,8 +46,20 @@
     return true;
   }
 
+  function category(item) {
+    if (item.project) return item.project;
+    if (!item.task) {
+      if (/funding|utility|shutoff|financial assistance/i.test(item.title)) return 'Community support';
+      if (/wreaths|volunteer|event/i.test(item.title)) return 'Events';
+      if (item.source === 'Board minutes') return 'Board business';
+      if (item.source === 'Portal check') return 'Portal maintenance';
+    }
+    return 'Uncategorized';
+  }
+
   function compare(a, b) {
     const sort = get('workSort').value;
+    if (sort === 'category') return category(a).localeCompare(category(b)) || a.title.localeCompare(b.title);
     if (sort === 'title') return a.title.localeCompare(b.title);
     const byDue = (a.due || '9999').localeCompare(b.due || '9999');
     if (sort === 'due') return byDue || a.title.localeCompare(b.title);
@@ -77,7 +89,7 @@
     const priority = get('workPriority').value;
     const visible = items.filter(item => inScope(item)
       && (!priority || item.priority === priority)
-      && [item.title, item.notes, item.owner, item.project].filter(Boolean).join(' ').toLowerCase().includes(query)
+      && [item.title, item.notes, item.owner, category(item)].filter(Boolean).join(' ').toLowerCase().includes(query)
     ).sort(compare);
 
     const results = get('workResults');
@@ -87,6 +99,11 @@
       results.append(make('p', message, 'work-empty'));
       return;
     }
+    const heading = make('div', '', 'work-column-head');
+    for (const label of ['Task', 'Category', 'Owner', 'Due date', 'Priority', 'Status', '']) {
+      heading.append(make('span', label));
+    }
+    results.append(heading);
     for (const item of visible) results.append(taskRow(item));
   }
 
@@ -136,6 +153,7 @@
     get('workDetailTitle').textContent = item.title;
     const body = get('workDetailBody');
     body.replaceChildren(make('p', [item.status, item.owner || 'Unassigned', item.due ? dateLabel(item.due) : 'No due date'].join(' · ')));
+    body.append(make('p', 'Category: ' + category(item)));
     if (item.notes) body.append(make('p', item.notes));
     if (item.updates?.length) {
       const updates = make('details', '', 'work-source');
@@ -150,7 +168,14 @@
       edit.onclick = () => { get('workDetails').close(); open(item.task); };
       const addNote = make('button', 'Add note');
       addNote.onclick = () => { get('workDetails').close(); openNote(item.task); };
-      body.append(edit, addNote);
+      const complete = make('button', item.complete ? 'Reopen task' : 'Mark complete');
+      complete.disabled = busy || !ready;
+      complete.onclick = async () => {
+        complete.disabled = true;
+        await updateStatus(item.task, item.complete ? 'ready' : 'done');
+        get('workDetails').close();
+      };
+      body.append(edit, addNote, complete);
     } else {
       const label = make('label', 'Status ');
       const select = document.createElement('select');
@@ -192,22 +217,10 @@
 
   function taskRow(item) {
     const row = make('article', '', 'work-row');
-    const done = make('button', item.complete ? '✓' : '', 'work-complete');
-    done.type = 'button';
-    done.disabled = item.task ? busy || !ready : false;
-    done.setAttribute('aria-label', (item.complete ? 'Reopen ' : 'Complete ') + item.title);
-    done.onclick = async () => {
-      done.disabled = true;
-      if (item.task) await updateStatus(item.task, item.complete ? 'ready' : 'done');
-      else if (!await saveIntake(item, item.complete ? 'Open' : 'Done')) done.disabled = false;
-    };
-
-    const text = make('div', '', 'work-task-text');
     const title = make('button', item.title, 'work-title');
     title.onclick = () => openDetails(item);
-    text.append(title);
-    const context = [item.project, item.owner].filter(Boolean);
-    if (context.length) text.append(make('span', context.join(' · '), 'work-context'));
+    const group = make('span', category(item), 'work-category');
+    const owner = make('span', item.owner || 'Unassigned', 'work-owner');
 
     const due = make('span', item.due ? dateLabel(item.due) : '—', 'work-due');
     if (inScope(item, 'overdue')) {
@@ -221,7 +234,7 @@
     const more = make('button', 'Details', 'work-more');
     more.onclick = () => openDetails(item);
 
-    row.append(done, text, due, priority, status, more);
+    row.append(title, group, owner, due, priority, status, more);
     return row;
   }
 
