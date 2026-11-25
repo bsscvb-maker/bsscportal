@@ -16,7 +16,7 @@
 .work-toolbar input{flex:1;min-width:140px}
 .work-toolbar label{display:flex;align-items:center;gap:6px;font-size:13px;margin:0}
 #workResults{margin-top:10px;background:#edf0f2;border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.work-row,.work-column-head{display:grid;grid-template-columns:minmax(155px,2fr) minmax(92px,1fr) minmax(80px,.8fr) minmax(82px,auto) 65px 98px 60px;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.work-row,.work-column-head{display:grid;grid-template-columns:minmax(0,1fr) clamp(106px,13%,174px) clamp(86px,10%,126px) 114px 73px 106px 60px;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
 .work-column-head{background:#dce1e5;color:#3c4a5b;font-size:12px;font-weight:750}
 .work-category,.work-owner{color:var(--soft);font-size:13px;overflow-wrap:anywhere}
 .work-row:last-child{border-bottom:0}
@@ -39,6 +39,18 @@
 #workDetailBody p{margin:0;white-space:pre-wrap}
 .work-source{border-top:1px solid var(--border);padding-top:7px}
 .work-source summary{cursor:pointer;font-weight:650}
+@media(min-width:791px){
+  .work-column-head > :is(:nth-child(2),:nth-child(3)),
+  .work-row > :is(.work-category,.work-owner){
+    border-left:1px solid var(--border);
+    padding-left:12px;
+    align-self:stretch;
+    display:flex;
+    align-items:center;
+  }
+  .work-row > .work-title{justify-self:start}
+  .work-due{white-space:nowrap}
+}
 @media(max-width:790px){
   .tracker-embedded main{padding:8px}
   .work-column-head{display:none}
