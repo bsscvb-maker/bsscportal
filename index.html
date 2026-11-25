@@ -9138,6 +9138,13 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 
     window.taskIntake = {
       read: readTaskIntake,
+      async preview(id) {
+        if (!id) return null;
+        const rows = await getSheetValues("'Email Previews'!A2:C1000", taskIntakeBook);
+        const row = rows.find(row => row[0] === id);
+        if (!row?.[1]) return null;
+        try { return JSON.parse(row[1]); } catch { throw Error('This saved email preview could not be read.'); }
+      },
       async update(id, { status, due, priority }) {
         if (!['Needs review', 'Open', 'Done', 'Dismissed'].includes(status)) throw new Error('Invalid intake status.');
         if (due !== undefined && due !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(due)) throw new Error('Choose a valid due date.');
