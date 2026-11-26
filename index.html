@@ -9134,11 +9134,12 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 
     async function readTaskIntake() {
       if (!accessToken) throw new Error('Sign in to the portal to view automatic intake.');
-      return (await getSheetValues("'BSSC Task Intake'!A2:K", taskIntakeBook)).slice();
+      return (await getSheetValues("'BSSC Task Intake'!A2:N", taskIntakeBook)).slice();
     }
 
     window.taskIntake = {
       read: readTaskIntake,
+      ready: () => Boolean(accessToken),
       async preview(id) {
         if (!id) return null;
         const rows = await getSheetValues("'Email Previews'!A2:C1000", taskIntakeBook);
@@ -9146,8 +9147,8 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         if (!row?.[1]) return null;
         try { return JSON.parse(row[1]); } catch { throw Error('This saved email preview could not be read.'); }
       },
-      async update(id, { status, due, priority }) {
-        if (!['Needs review', 'Open', 'Done', 'Dismissed'].includes(status)) throw new Error('Invalid intake status.');
+      async update(id, { status, due, priority, category, reviewChoice, company }) {
+        if (status !== undefined && !['Needs review', 'Open', 'Done', 'Dismissed'].includes(status)) throw new Error('Invalid intake status.');
         if (due !== undefined && due !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(due)) throw new Error('Choose a valid due date.');
         if (priority !== undefined && !['High', 'Medium', 'Low'].includes(priority)) throw new Error('Choose a priority.');
         const rows = await readTaskIntake();
@@ -9155,7 +9156,11 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         if (index < 0) throw new Error('This intake item is no longer available.');
         const range = "'" + taskIntakeTab + "'!";
         const row = index + 2;
-        const updates = [{ range: range + 'G' + row, value: status }];
+        const updates = [];
+        if (status !== undefined) updates.push({ range: range + 'G' + row, value: status });
+        if (category !== undefined) updates.push({ range: range + 'L' + row, value: category ? "'" + category : '' });
+        if (reviewChoice !== undefined) updates.push({ range: range + 'M' + row, value: reviewChoice });
+        if (company !== undefined) updates.push({ range: range + 'N' + row, value: company ? "'" + company : '' });
         if (due !== undefined) updates.push({ range: range + 'E' + row, value: due ? "'" + due : '' });
         if (priority !== undefined) updates.push({ range: range + 'I' + row, value: priority });
         await updateSheetRanges(taskIntakeBook, updates);
@@ -10164,7 +10169,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const taskGrid = document.getElementById('detailTasks');
       [membershipWorkspace,sponsorWorkspace,bftWorkspace,bikeNightsWorkspace,marketplaceWorkspace,financeWorkspace,adminWorkspace,volunteersWorkspace,recordsWorkspace,document.getElementById("storageWorkspace"),document.getElementById("trackerWorkspace")].forEach(workspace => workspace.classList.remove('active'));
       if (key === 'websiteAnalytics') { window.BSSCWebsiteAnalytics.render(taskGrid); }
-      else if (key === 'tracker') { taskGrid.innerHTML='';document.getElementById('trackerWorkspace').classList.add('active');const frame=document.getElementById('taskTrackerFrame');if(!frame.getAttribute('src'))frame.src='task-tracker-command.html?v='+Date.now();
+      else if (key === 'tracker') { taskGrid.innerHTML='';document.getElementById('trackerWorkspace').classList.add('active');const frame=document.getElementById('taskTrackerFrame');if(!frame.getAttribute('src'))frame.src='task-tracker-command.html?v=tracker-parity&load='+Date.now();
       } else if (key === 'storage') { taskGrid.innerHTML='';document.getElementById('storageWorkspace').classList.add('active');loadStorage();
       } else if (key === 'records' || key === 'volunteers') {
         taskGrid.innerHTML='';

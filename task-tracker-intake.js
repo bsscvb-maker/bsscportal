@@ -13,6 +13,9 @@
   let intakeLoading = false;
   let scanRunning = false;
   const savingTasks = new Set();
+  let intakeRevision = 0;
+  let intakeWrites = 0;
+  let renderedRows = '';
 
   function make(tag, text, className) {
     const node = document.createElement(tag);
@@ -26,15 +29,32 @@
     return window.parent.taskIntake;
   }
 
+  function addedLabel(value) {
+    if (!value) return 'Date unavailable';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 'Date unavailable' : noteStamp(date);
+  }
+
+  const addedDate = new Intl.DateTimeFormat('en-US', {timeZone:'America/New_York', month:'short', day:'numeric', year:'numeric'});
+  const addedTime = new Intl.DateTimeFormat('en-US', {timeZone:'America/New_York', hour:'numeric', minute:'2-digit'});
+
+  function addedColumns(value) {
+    const date = new Date(value);
+    if (!value || Number.isNaN(date.getTime())) return ['—', '—'];
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return [addedDate.format(new Date(value + 'T12:00:00Z')), '—'];
+    return [addedDate.format(date), addedTime.format(date)];
+  }
+
   function sharedItems() {
     return tasks.map(task => {
       const details = meta(task);
       const status = statusOf(task);
+      const reviewChoice = details.reviewChoice || (details.needsReview === false ? 'Accepted' : 'Needs review');
       return {
-        title: task.text, notes: details.notes, owner: details.owner, project: details.project,
+        title: task.text, notes: details.notes, added: task.createdAt, project: details.project,
         updates: details.updates || [],
         priority: tierOf(task), due: details.due, status: sharedStates[status],
-        complete: status === 'done', review: details.needsReview === true, task
+        complete: status === 'done', review: reviewChoice === 'Needs review', reviewChoice, company: details.company, task
       };
     });
   }
@@ -49,7 +69,7 @@
   }
 
   function category(item) {
-    if (item.project && !/^uncategorized$/i.test(item.project)) return item.project;
+    if (item.project) return item.project;
     if (/helmet|bike lock|fire truck|bikes for tykes|parade/i.test(item.title)) return 'Bikes for Tykes';
     if (/bylaw|ratification|ratify|board decision|board business/i.test(item.title)) return 'Board business';
     if (/funding|utility|shutoff|financial assistance/i.test(item.title)) return 'Community support';
@@ -69,10 +89,8 @@
     if (sort === 'title') return a.title.localeCompare(b.title);
     const byDue = (a.due || '9999').localeCompare(b.due || '9999');
     if (sort === 'due') return byDue || a.title.localeCompare(b.title);
-    return Number(inScope(b, 'overdue')) - Number(inScope(a, 'overdue'))
-      || Number(b.review) - Number(a.review)
-      || (a.priority || 'tier4').localeCompare(b.priority || 'tier4')
-      || byDue || a.title.localeCompare(b.title);
+    const addedAt = item => new Date(item.added || 0).getTime() || 0;
+    return addedAt(b) - addedAt(a);
   }
 
   function renderWork() {
@@ -96,10 +114,13 @@
     const priority = get('workPriority').value;
     const visible = items.filter(item => inScope(item)
       && (!priority || item.priority === priority)
-      && [item.title, item.notes, item.owner, category(item)].filter(Boolean).join(' ').toLowerCase().includes(query)
+      && [item.title, item.notes, category(item)].filter(Boolean).join(' ').toLowerCase().includes(query)
     ).sort(compare);
 
     const results = get('workResults');
+    const rowsKey = JSON.stringify(visible.length ? [visible, items.map(category)] : [busy || intakeLoading]);
+    if (rowsKey === renderedRows) return;
+    renderedRows = rowsKey;
     results.replaceChildren();
     if (!visible.length) {
       const message = busy || intakeLoading ? 'Loading tasks…' : 'No tasks match this view.';
@@ -107,11 +128,16 @@
       return;
     }
     const heading = make('div', '', 'work-column-head');
-    for (const label of ['Task description', 'Category', 'Owner', 'Where to go', 'Due date', 'Priority', 'Status', '']) {
+    for (const label of ['Date added', 'Time', 'Task description', 'Company', 'Category', 'Due date', 'Priority', 'Review', 'Done']) {
       heading.append(make('span', label));
     }
     results.append(heading);
-    for (const item of visible) results.append(taskRow(item));
+    const availableCategories = [...new Set([
+      'Bikes for Tykes', 'Board business', 'Club operations', 'Community support', 'Events', 'Finance',
+      'Membership', 'Portal maintenance', 'Purchasing', 'Storage', 'Uncategorized',
+      ...items.map(category)
+    ])].sort((a,b) => a.localeCompare(b));
+    for (const item of visible) results.append(taskRow(item, availableCategories));
   }
 
   function showError(message) {
@@ -135,65 +161,51 @@
       const link = meta(item.task).links?.find(value => /^https:\/\//i.test(value));
       return { label: link ? 'Task attachment' : 'Task Tracker', link };
     }
-    return { label: labels[item.source] || item.source || 'Task Tracker', link: item.link };
+    const source = (labels[item.source] || item.source || 'Task Tracker').replace(/@gmail\.com(?:\s+inbox)?$/i, '').replace(/\s+inbox$/i, '');
+    return { label: source, link: item.link };
   }
 
 
-  let emailPreviewSequence = 0;
-  function isEmailSource(item) {
-    return /^https:\/\/mail\.google\.com\//i.test(destination(item).link || '');
-  }
-
-  async function openEmailPreview(item) {
-    const sequence = ++emailPreviewSequence;
-    const dialog = get('workDetails');
-    get('workDetailTitle').textContent = item.title;
-    const body = get('workDetailBody');
-    const mailbox = make('p', destination(item).label, 'work-email-mailbox');
-    const content = make('section', 'Loading email preview…', 'work-email-preview');
+  async function loadEmailPreview(item, content) {
+    content.textContent = 'Loading email preview…';
     content.setAttribute('aria-live', 'polite');
-    const original = make('a', 'Open original in Gmail', 'work-email-original');
-    original.href = destination(item).link;
-    original.target = '_blank';
-    original.rel = 'noopener noreferrer';
-    const controls = make('button', 'Task details');
-    controls.type = 'button';
-    controls.onclick = () => { emailPreviewSequence++; openDetails(item); };
-    body.replaceChildren(mailbox, content, controls, original);
-    if (!dialog.open) dialog.showModal();
     try {
       const api = service();
       if (!api?.preview) throw Error('Reload the portal to connect email previews.');
       const snapshot = await api.preview(item.id);
-      if (sequence !== emailPreviewSequence || !dialog.open) return;
+      if (!content.isConnected) return;
       if (!snapshot?.messages?.length) throw Error('The email snapshot is not ready yet. It will appear after the next preview sync.');
-      mailbox.textContent = snapshot.mailbox || destination(item).label;
-      content.replaceChildren();
-      for (const message of snapshot.messages.slice(0, 5)) {
+      content.replaceChildren(make('p', snapshot.mailbox || destination(item).label, 'work-email-mailbox'));
+      for (const message of snapshot.messages) {
         const card = make('article', '', 'work-email-card');
         card.append(make('h3', message.subject || '(No subject)'));
         card.append(make('p', [message.sender, message.date].filter(Boolean).join(' · '), 'work-email-meta'));
         card.append(make('div', message.text || 'No readable message text.', 'work-email-text'));
         content.append(card);
       }
-      content.append(make('p', 'Saved email snapshot. Links and private identifiers are omitted. Open Gmail for attachments or newer messages.', 'work-email-note'));
+      content.append(make('p', 'Saved copy from the source mailbox. Attachments are available in the original email.', 'work-email-note'));
     } catch (error) {
-      if (sequence === emailPreviewSequence && dialog.open) content.textContent = error.message || 'Could not load this email preview. Try again after refreshing.';
+      if (content.isConnected) content.textContent = error.message || 'Could not load this email preview. Try again after refreshing.';
     }
   }
 
+  function emailSource(item) {
+    return Boolean(item.id && /^https:\/\/mail\.google\.com\//i.test(item.link || ''));
+  }
+
   function sourceDetails(item) {
-    const details = make('details', '', 'work-source');
-    details.append(make('summary', 'Source details'));
-    details.append(make('p', item.source || 'Added in Task Tracker'));
-    if (item.id && isEmailSource(item)) {
-      const preview = make('button', 'View email');
-      preview.type = 'button';
-      preview.onclick = () => openEmailPreview(item);
+    const email = emailSource(item);
+    const details = make('section', '', 'work-source');
+    details.append(make('h3', email ? 'Saved email' : 'Source details'));
+    if (email) {
+      const preview = make('div', 'Loading saved email…', 'work-email-preview');
       details.append(preview);
+      void loadEmailPreview(item, preview);
+    } else {
+      details.append(make('p', item.source || 'Added in Task Tracker'));
     }
-    if (/^https:\/\//i.test(item.link)) {
-      const link = make('a', 'Open original');
+    if (/^https:\/\//i.test(item.link || '')) {
+      const link = make('a', email ? 'Open original in Gmail' : 'Open original', email ? 'work-email-original' : '');
       link.href = item.link;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
@@ -203,31 +215,42 @@
   }
 
   async function saveIntake(item, status, adjustments = {}) {
+    intakeWrites++;
+    intakeRevision++;
     try {
       await service().update(item.id, { status, ...adjustments });
       const saved = (await service().read()).find(row => row[0] === item.id);
-      if (!saved || saved[6] !== status
+      if (!saved || (status !== undefined && saved[6] !== status)
         || (adjustments.due !== undefined && (saved[4] || '') !== adjustments.due)
-        || (adjustments.priority && saved[8] !== adjustments.priority)) {
+        || (adjustments.priority && saved[8] !== adjustments.priority)
+        || (adjustments.category !== undefined && (saved[11] || '') !== adjustments.category)
+        || (adjustments.reviewChoice !== undefined && saved[12] !== adjustments.reviewChoice)
+        || (adjustments.company !== undefined && saved[13] !== adjustments.company)) {
         throw new Error('The change could not be verified. Refresh and try again.');
       }
       if (adjustments.due !== undefined) item.due = adjustments.due;
       if (adjustments.priority) item.priority = intakePriorities[adjustments.priority];
-      item.status = status;
-      item.complete = status === 'Done';
-      item.review = status === 'Needs review';
+      if (adjustments.category !== undefined) item.project = adjustments.category;
+      if (adjustments.company !== undefined) item.company = adjustments.company;
+      if (adjustments.reviewChoice !== undefined) item.reviewChoice = adjustments.reviewChoice;
+      item.status = saved[6];
+      item.complete = saved[6] === 'Done';
+      item.review = item.reviewChoice === 'Needs review';
       renderWork();
       return true;
     } catch (error) {
       showError(error.message);
       return false;
+    } finally {
+      intakeWrites--;
     }
   }
 
   function openDetails(item) {
     get('workDetailTitle').textContent = item.title;
     const body = get('workDetailBody');
-    body.replaceChildren(make('p', [item.status, item.owner || 'Unassigned', item.due ? dateLabel(item.due) : 'No due date'].join(' · ')));
+    body.replaceChildren(make('p', [item.status, addedLabel(item.added), item.due ? dateLabel(item.due) : 'No due date'].join(' · ')));
+    if (emailSource(item)) body.append(sourceDetails(item));
     body.append(make('p', 'Category: ' + category(item)));
     if (item.notes) body.append(make('p', item.notes));
     if (item.updates?.length) {
@@ -243,14 +266,7 @@
       edit.onclick = () => { get('workDetails').close(); open(item.task); };
       const addNote = make('button', 'Add note');
       addNote.onclick = () => { get('workDetails').close(); openNote(item.task); };
-      const complete = make('button', item.complete ? 'Reopen task' : 'Mark complete');
-      complete.disabled = busy || !ready;
-      complete.onclick = async () => {
-        complete.disabled = true;
-        await updateStatus(item.task, item.complete ? 'ready' : 'done');
-        get('workDetails').close();
-      };
-      body.append(edit, addNote, complete);
+      body.append(edit, addNote);
     } else {
       const label = make('label', 'Status ');
       const select = document.createElement('select');
@@ -272,7 +288,7 @@
       feedback.setAttribute('role', 'status');
       save.onclick = async () => {
         save.disabled = true;
-        if (await saveIntake(item, select.value, { due: due.value, priority: priority.value })) {
+        if (await saveIntake(item, select.value, { due: due.value, priority: priority.value, reviewChoice: select.value === item.status ? undefined : select.value === 'Needs review' ? 'Needs review' : select.value === 'Open' ? 'Accepted' : undefined })) {
           get('workDetails').close();
         } else {
           feedback.textContent = get('workFeedback').textContent;
@@ -281,13 +297,30 @@
       };
       body.append(label, dueLabel, priorityLabel, save, feedback);
     }
+    const complete = make('button', item.complete ? 'Reopen task' : 'Mark complete', 'work-complete');
+    complete.type = 'button';
+    complete.disabled = item.task ? busy || !ready : !service() || intakeLoading;
+    const actions = make('div', '', 'work-detail-actions');
+    const completionFeedback = make('p', '');
+    completionFeedback.setAttribute('role', 'status');
+    complete.onclick = async () => {
+      complete.disabled = true;
+      if (await completeItem(item)) get('workDetails').close();
+      else {
+        completionFeedback.textContent = get('workFeedback').textContent;
+        complete.disabled = false;
+      }
+    };
+    actions.append(complete, completionFeedback);
+    body.append(actions);
     if (item.task) {
       const links = meta(item.task).links;
       if (links?.length) body.append(...links.map(link => sourceDetails({ link, source: 'Task attachment' })));
-    } else {
+    } else if (!emailSource(item)) {
       body.append(sourceDetails(item));
     }
-    get('workDetails').showModal();
+    const dialog = get('workDetails');
+    if (!dialog.open) dialog.showModal();
   }
 
   async function completeItem(item) {
@@ -306,6 +339,7 @@
       feedback.dataset.tone = 'success';
       feedback.textContent = wasComplete ? 'Task reopened. Moved to All active.' : 'Task completed. Moved to Completed.';
       feedback.hidden = false;
+      return true;
     } catch (error) {
       showError(error.message);
     } finally {
@@ -314,63 +348,112 @@
     }
   }
 
-  function taskRow(item) {
+  function rowSelect(item, label, value, options) {
+    const select = make('select', '', 'work-row-field work-' + label.toLowerCase());
+    select.setAttribute('aria-label', label + ' for ' + item.title);
+    for (const [key, name] of options) select.add(new Option(name, key));
+    select.value = value;
+    return select;
+  }
+
+  async function saveRowChanges(item, {category:group, due, priority, review, company}) {
+    if (!item.task) {
+      return saveIntake(item, review === undefined ? undefined : review === 'Needs review' ? 'Needs review' : 'Open', {category:group, due, priority:priorityLabels[priority], reviewChoice:review, company});
+    }
+    const task = tasks.find(record => record.id === item.task.id);
+    if (!task) throw Error('This task is no longer available.');
+    const details = meta(task);
+    if (group !== undefined) details.project = group;
+    if (due !== undefined) details.due = due;
+    if (review !== undefined) { details.reviewChoice = review; details.needsReview = review === 'Needs review'; }
+    if (company !== undefined) details.company = company;
+    const tier = priority || tierOf(task);
+    if (priority) details.priority = priority;
+    return persist(tasks.map(record => record === task ? {
+      ...record, notes:pack(details), tier:statusOf(task) === 'done' ? 'parked' : tier,
+      previousTier:tier, updatedAt:new Date().toISOString()
+    } : record));
+  }
+
+  function taskRow(item, availableCategories) {
     const row = make('article', '', 'work-row');
-    const { label, link } = destination(item);
-    const linked = /^https:\/\//i.test(link);
-    const email = isEmailSource(item);
-    const title = make(linked && !email ? 'a' : 'button', item.title, 'work-title');
-    if (email) {
-      title.type = 'button';
-      title.title = 'View email inside Task Tracker';
-      title.setAttribute('aria-label', 'View email: ' + item.title);
-      title.onclick = () => openEmailPreview(item);
-    } else if (linked) {
-      title.href = link;
-      title.target = '_blank';
-      title.rel = 'noopener noreferrer';
-      title.title = 'Open original · ' + label;
-      title.setAttribute('aria-label', item.title + ' — open original in a new tab');
-    } else {
-      title.type = 'button';
-      title.onclick = () => openDetails(item);
+    const task = make('div', '', 'work-task');
+    const title = make('button', item.title, 'work-title');
+    title.type = 'button';
+    title.onclick = () => {
+      try {
+        openDetails(item);
+      } catch (error) {
+        showError('Could not open task details. ' + error.message);
+      }
+    };
+    task.append(title);
+    const [date, time] = addedColumns(item.added);
+    const added = make('span', date, 'work-added');
+    const clock = make('span', time, 'work-time');
+    const group = rowSelect(item, 'Category', category(item), availableCategories.map(name => [name, name]));
+    const due = make('input', '', 'work-row-field work-due');
+    due.type = 'date';
+    due.value = item.due || '';
+    due.setAttribute('aria-label', 'Due date for ' + item.title);
+    due.classList.toggle('work-late', inScope(item, 'overdue'));
+    const priorityOptions = Object.entries(priorityLabels);
+    if (item.task && item.priority && !priorityLabels[item.priority]) priorityOptions.push([item.priority, item.priority]);
+    if (!item.priority) priorityOptions.unshift(['', '—']);
+    const priority = rowSelect(item, 'Priority', item.priority || '', priorityOptions);
+    const review = rowSelect(item, 'Review', item.reviewChoice, [
+      ['Needs review', 'Needs review'], ['Accepted', 'Accepted'], ['Declined', 'Declined']
+    ]);
+    review.dataset.state = item.reviewChoice.toLowerCase().replace('needs ', '');
+    review.disabled = item.complete;
+    const companies = [...new Set(['BoneShakers Social Club', 'Chase', 'CubeSmart', 'Dominion Energy', 'PayPal', 'Not applicable', item.company].filter(Boolean))];
+    const company = rowSelect(item, 'Company', item.company || '', [
+      ['', 'Pick company'], ...companies.map(name => [name, name]), ['__other', 'Other…']
+    ]);
+    company.dataset.unset = String(!item.company);
+    const fields = [group, due, priority, review, company];
+    async function apply(field, previous, changes) {
+      row.setAttribute('aria-busy', 'true');
+      fields.forEach(control => { control.disabled = true; });
+      checkbox.disabled = true;
+      try {
+        if (!await saveRowChanges(item, changes)) field.value = previous;
+      } catch (error) {
+        field.value = previous;
+        showError(error.message);
+      } finally {
+        fields.forEach(control => { control.disabled = control === review && item.complete; });
+        checkbox.disabled = false;
+        row.removeAttribute('aria-busy');
+      }
     }
-    const group = make('span', category(item), 'work-category');
-    const owner = make('span', item.owner || 'Unassigned', 'work-owner');
-
-    const due = make('span', item.due ? dateLabel(item.due) : '—', 'work-due');
-    if (inScope(item, 'overdue')) {
-      due.classList.add('work-late');
-      due.textContent = 'Overdue · ' + due.textContent;
-    }
-    const priority = make('span', priorityLabels[item.priority] || '—', 'work-priority');
-    if (item.priority) priority.dataset.priority = item.priority;
-    const status = make('span', item.review && !item.complete ? 'Needs review' : item.status, 'work-state');
-    status.dataset.state = item.complete ? 'complete' : item.review ? 'review' : 'active';
-    const more = make('button', 'Details', 'work-more');
-    more.onclick = () => openDetails(item);
-
-    const where = make(email ? 'button' : linked ? 'a' : 'span', label, 'work-destination');
-    if (email) {
-      where.type = 'button';
-      where.title = 'View email';
-      where.onclick = () => openEmailPreview(item);
-    } else if (linked) {
-      where.href = link;
-      where.target = '_blank';
-      where.rel = 'noopener noreferrer';
-      where.setAttribute('aria-label', label + ' for ' + item.title);
-    }
-    const statusCell = make('div', '', 'work-status');
-    const complete = make('button', item.complete ? 'Reopen' : 'Mark complete', 'work-complete');
-    complete.type = 'button';
-    complete.setAttribute('aria-label', (item.complete ? 'Reopen ' : 'Mark complete: ') + item.title);
-    const saving = savingTasks.has(item.id || item.task.id);
-    complete.disabled = saving || (item.task ? busy || !ready : !service() || intakeLoading);
-    if (saving) complete.textContent = 'Saving…';
-    complete.onclick = () => completeItem(item);
-    statusCell.append(status, complete);
-    row.append(title, group, owner, where, due, priority, statusCell, more);
+    group.onchange = () => apply(group, category(item), {category:group.value});
+    due.onchange = () => apply(due, item.due || '', {due:due.value});
+    priority.onchange = () => apply(priority, item.priority || '', {priority:priority.value});
+    review.onchange = () => apply(review, item.reviewChoice, {review:review.value});
+    company.onchange = () => {
+      const previous = item.company || '';
+      const value = company.value === '__other' ? window.prompt('Company name')?.trim() : company.value;
+      if (value == null || (company.value === '__other' && !value)) {
+        company.value = previous;
+        return;
+      }
+      return apply(company, previous, {company:value});
+    };
+    const done = make('label', '', 'work-done');
+    const checkbox = make('input', '');
+    checkbox.type = 'checkbox';
+    checkbox.checked = item.complete;
+    checkbox.setAttribute('aria-label', (item.complete ? 'Reopen: ' : 'Mark complete: ') + item.title);
+    checkbox.onchange = async () => {
+      checkbox.disabled = true;
+      if (!await completeItem(item)) {
+        checkbox.checked = item.complete;
+        checkbox.disabled = false;
+      }
+    };
+    done.append(checkbox);
+    row.append(added, clock, task, company, group, due, priority, review, done);
     return row;
   }
 
@@ -411,15 +494,20 @@
 
   async function refreshIntake() {
     const api = service();
-    if (!api || intakeLoading) return;
+    if (!api?.ready() || intakeLoading || intakeWrites) return;
+    const revision = intakeRevision;
     intakeLoading = true;
     renderWork();
     try {
       const rows = await api.read();
+      if (revision !== intakeRevision) return;
       const unique = new Map();
-      for (const [id, source, title, owner, due, link, status, , priority, evidence, evidenceLink] of rows) {
+      for (const [id, source, title, , due, link, status, added, priority, evidence, evidenceLink, project, decision, company] of rows) {
         if (!id || !title || unique.has(id)) continue;
-        unique.set(id, { id, source, title, owner, due, link, status, evidence, evidenceLink, priority: intakePriorities[priority], review: status === 'Needs review', complete: status === 'Done' });
+        const reviewChoice = decision || (status === 'Open' || status === 'Done' ? 'Accepted' : 'Needs review');
+        unique.set(id, {id, source, title, added, due, link, status, project, company, evidence, evidenceLink,
+          priority:intakePriorities[priority] || 'tier3', reviewChoice, review:reviewChoice === 'Needs review', complete:status === 'Done'});
+
       }
       intake = [...unique.values()];
       intakeError = '';
@@ -434,25 +522,31 @@
 
   async function refreshWork() {
     if (scanRunning) return;
+    const mailbox = get('workMailboxCheck');
+    const status = get('workMailboxStatus');
+    const report = (message, progress) => {
+      status.textContent = message;
+      if (progress?.total) mailbox.style.setProperty('--mail-progress', (100 * progress.finished / progress.total) + '%');
+    };
     scanRunning = true;
+    mailbox.hidden = false;
+    mailbox.style.setProperty('--mail-progress', '0%');
+    mailbox.dataset.checking = 'true';
+    report('Checking email…');
     renderWork();
     try {
-      await Promise.all([load(), refreshIntake()]);
+      const savedTasks = Promise.allSettled([load(), refreshIntake()]);
       if (!window.requestTaskEmailCheck) throw Error('Email checking is unavailable. Reload the portal and try again.');
-      const report = message => {
-        const feedback = get('workFeedback');
-        feedback.dataset.tone = 'info';
-        feedback.textContent = message;
-        feedback.hidden = false;
-      };
-      report('Requesting an email check…');
       const result = await window.requestTaskEmailCheck(report);
-      await refreshIntake();
+      if (result.complete) mailbox.style.setProperty('--mail-progress', '100%');
       report(result.message);
+      await savedTasks;
+      await refreshIntake();
     } catch (error) {
-      showError(error.message);
+      report(error.message || 'Could not check email.');
     } finally {
       scanRunning = false;
+      mailbox.dataset.checking = 'false';
       renderWork();
     }
   }
@@ -476,9 +570,12 @@
   }
   renderWork();
   refreshIntake();
-  if (service()) {
+  if (window.parent !== window) {
+    window.parent.addEventListener('bssc-task-intake-ready', refreshIntake);
+    window.addEventListener('pagehide', () => {
+      window.parent.removeEventListener('bssc-task-intake-ready', refreshIntake);
+    });
     window.setInterval(() => { if (!document.hidden) refreshIntake(); }, 60000);
-    window.addEventListener('focus', refreshIntake);
     get('workDetails').addEventListener('close', offerCompletion);
   }
 }
