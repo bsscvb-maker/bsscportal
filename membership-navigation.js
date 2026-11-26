@@ -67,7 +67,7 @@
     const choices=selections.get(row);
     const receiptTime={'George Bruch':'Nov 25, 2026, 8:27 PM ET','Jeff Powell':'Nov 25, 2026, 9:27 PM ET'}[row[0]];
     return choices&&row[1]!=='Voted'?[row[0],'Voted',choices.length,choices[0],choices[1]||'',receiptTime?'Receipt sent':'',receiptTime||'']:row;
-   }),message:'Voter rows reconciled with signed ballots. Election receipt times are labeled where used.'};
+   }),message:'Voter rows reconciled with signed ballots.'};
   }catch{
    return {totals,members:members.map(row=>row[1]==='Not voted'?[row[0],'Unverified',...row.slice(2)]:row),message:'Official totals are current. The named report is behind and signed voter details could not be reconciled for this session.'};
   }
