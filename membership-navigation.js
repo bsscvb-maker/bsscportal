@@ -28,13 +28,57 @@
  async function openArea(area){if(area==='Attendance')membershipAttendanceView='records';await loadMembershipSheet(defaults[area]||area);}
  async function openSub(sub){const area=classify(currentMembershipSheet);let name;if(area==='Overview')name=sub==='Reports'?'Year Count':'Membership Dashboard';else if(area==='Members')name={'Directory':'Membership Roster','Onboarding & waivers':'Membership Onboarding','Recognition':'Lifer','Future Shakers':'Future Shakers'}[sub];else if(area==='Renewals & dues')name=sub==='Payments'?'Dues Payments':'2026 - Non Renewal';else if(area==='Attendance'){if(sub==='Legacy 2025')name='2025-A';else{membershipAttendanceView={Records:'records',Summary:'summary',Dashboard:'dashboard'}[sub];name='Membership Attendance';}}else if(area==='Leadership')name={'Elections':'BOD Nominations 2027','Election report':'Election Participation Report','Officer history':'Officer List','Past Presidents':'Past Presidents'}[sub];if(name)await loadMembershipSheet(name);}
  function yearControls(){return '<label class="membership-category">Membership year<select data-membership-custom-year><option'+(membershipYear==='2026'?' selected':'')+'>2026</option><option'+(membershipYear==='2027'?' selected':'')+'>2027</option></select></label>';}
+ async function reconcileElectionReport(members,ballots){
+  if(ballots[0]?.[0]!=='Candidate IDs')throw Error('Official ballot totals are unavailable.');
+  const sizes=ballots.slice(1).filter(row=>row[0]).map(row=>{
+   try{const ids=JSON.parse(row[0]);return Array.isArray(ids)?ids.length:0;}catch{return 0;}
+  });
+  const one=sizes.filter(n=>n===1).length,two=sizes.filter(n=>n===2).length;
+  const recorded=members.filter(row=>row[1]==='Voted');
+  const totals=[members.length,sizes.length,Math.max(0,members.length-sizes.length),one,two,sizes.length-one-two];
+  if(recorded.length===sizes.length&&recorded.filter(row=>Number(row[2])===1).length===one&&recorded.filter(row=>Number(row[2])===2).length===two)return {members,totals,message:''};
+  try{
+   const response=await fetch('https://script.google.com/macros/s/AKfycbxJ9maST99ECrcV01L9jO3jPb0qlCDj17TGud09lgYN1a5zrkHQYc4RiuH42yLJlQ10/exec',{
+    method:'POST',body:new URLSearchParams({action:'electionPresidentReport',accessToken}),signal:AbortSignal.timeout(15000)
+   });
+   const report=await response.json();
+   if(!response.ok||!report.ok||!report.byCandidate)throw Error('Signed report unavailable.');
+   const key=name=>String(name).trim().toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ');
+   const roster=new Map(members.map(row=>[key(row[0]),row]));
+   if(roster.size!==members.length)throw Error('Ambiguous roster names.');
+   const selections=new Map();
+   for(const [candidate,names] of Object.entries(report.byCandidate)){
+    for(const name of names){
+     const row=roster.get(key(name));
+     if(!row)throw Error('Signed voter is missing from the roster.');
+     const choices=selections.get(row)||[];
+     if(choices.includes(candidate))throw Error('Duplicate signed vote.');
+     choices.push(candidate);
+     selections.set(row,choices);
+    }
+   }
+   const signed=[...selections.values()];
+   if(signed.length!==sizes.length||signed.filter(a=>a.length===1).length!==one||signed.filter(a=>a.length===2).length!==two)throw Error('Signed report differs from ballot totals.');
+   for(const row of recorded){
+    const actual=selections.get(row)||[],prior=row.slice(3,5).filter(Boolean);
+    if(actual.length!==prior.length||prior.some(name=>!actual.includes(name)))throw Error('Existing voter details differ.');
+   }
+   return {totals,members:members.map(row=>{
+    const choices=selections.get(row);
+    return choices&&row[1]!=='Voted'?[row[0],'Voted',choices.length,choices[0],choices[1]||'']:row;
+   }),message:'Voter rows reconciled with signed ballots. Submission times are shown when available.'};
+  }catch{
+   return {totals,members:members.map(row=>row[1]==='Not voted'?[row[0],'Unverified',...row.slice(2)]:row),message:'Official totals are current. The named report is behind and signed voter details could not be reconciled for this session.'};
+  }
+ }
  async function customView(name){const seq=++customSeq,target=document.getElementById('membershipContent'),status=document.getElementById('membershipStatus');document.getElementById('membershipAnnualControls')?.remove();currentMembershipSheet=name;status.textContent='Loading membership records…';target.innerHTML='<p role="status">Loading…</p>';render();
   try{if(!accessToken)throw Error('Sign in with your authorized club Google account.');
    if(name==='Election Participation Report'){
-    const rows=await getSheetValues("'Election 2027 Participation Report'!A1:G1000",MEMBERSHIP_SPREADSHEET_ID);
+    const [rows,ballots]=await Promise.all([getSheetValues("'Election 2027 Participation Report'!A1:G1000",MEMBERSHIP_SPREADSHEET_ID),getSheetValues("'Election 2027 Ballots'!A:A",MEMBERSHIP_SPREADSHEET_ID,'FORMATTED_VALUE',false)]);
     if(seq!==customSeq||currentMembershipSheet!==name)return;
-    const totals=rows[3]||[],members=rows.slice(7).filter(row=>row[0]);
     if(!rows[6]||rows[6][0]!=='Member')throw Error('Election report is unavailable.');
+    const {totals,members,message}=await reconcileElectionReport(rows.slice(7).filter(row=>row[0]),ballots);
+    if(seq!==customSeq||currentMembershipSheet!==name)return;
     const submittedAtColumn=rows[6].findIndex(heading=>/^(date\s*(?:&|and)\s*time|timestamp|submitted at|voted at)$/i.test(String(heading).trim()));
     const timestamp = row => {
      const value = String(row[submittedAtColumn] ?? '').trim();
@@ -70,7 +114,7 @@
      const id = 'election-summary-' + i;
      return '<div class="election-summary-card election-summary-'+color+'"><button type="button" aria-describedby="'+id+'">'+esc(label)+'<strong>'+esc(value??'—')+'</strong></button><div class="election-summary-list" id="'+id+'" tabindex="0">'+esc(caption||label)+(entries?'<ul>'+entries+'</ul>':'<p>No matching members</p>')+'</div></div>';
     }).join('');
-    target.innerHTML='<section class="workspace-card"><h2>2027 Election report</h2><p>'+esc(rows[1]?.[0]||'')+'</p><div style="display:flex;flex-wrap:wrap;gap:16px;margin:20px 0">'+summaryStyles+summaryCards+'</div><div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px"><label>Show <select data-election-report-filter><option value="all">All eligible members</option><option value="voted">Voted</option><option value="not-voted">Not voted</option><option value="one">One selection</option><option value="two">Two selections</option></select></label><button type="button" class="membership-subtab" data-membership-sub="Election report">Refresh report</button><input type="search" data-election-report-search aria-label="Search member name" placeholder="Search member name" style="width:180px;max-width:100%;padding:7px 9px;border:1px solid #aaa;border-radius:5px"></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Date &amp; Time</th><th>Member</th><th>Voting status</th><th>Selections</th><th>Candidate Choice 1</th><th>Candidate Choice 2</th></tr></thead><tbody>'+members.map(row=>'<tr data-election-report-row data-voted="'+(row[1]==='Voted')+'" data-count="'+esc(row[2])+'">'+'<td>'+esc(row[1]==='Voted'&&submittedAtColumn>=0?(row[submittedAtColumn]||'—'):'—')+'</td>'+Array.from({length:5},(_,i)=>'<td>'+esc(row[i]||(i===2?'0':'—'))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div></section>';
+    target.innerHTML='<section class="workspace-card"><h2>2027 Election report</h2><p>'+esc(message||'Totals checked against the official ballot log.')+'</p><div style="display:flex;flex-wrap:wrap;gap:16px;margin:20px 0">'+summaryStyles+summaryCards+'</div><div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px"><label>Show <select data-election-report-filter><option value="all">All eligible members</option><option value="voted">Voted</option><option value="not-voted">Not voted</option><option value="one">One selection</option><option value="two">Two selections</option></select></label><button type="button" class="membership-subtab" data-membership-sub="Election report">Refresh report</button><input type="search" data-election-report-search aria-label="Search member name" placeholder="Search member name" style="width:180px;max-width:100%;padding:7px 9px;border:1px solid #aaa;border-radius:5px"></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Date &amp; Time</th><th>Member</th><th>Voting status</th><th>Selections</th><th>Candidate Choice 1</th><th>Candidate Choice 2</th></tr></thead><tbody>'+members.map(row=>'<tr data-election-report-row data-voted="'+(row[1]==='Voted')+'" data-count="'+esc(row[2])+'">'+'<td>'+esc(row[1]==='Voted'&&submittedAtColumn>=0?(row[submittedAtColumn]||'—'):'—')+'</td>'+Array.from({length:5},(_,i)=>'<td>'+esc(row[i]||(i===2?'0':'—'))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div></section>';
     status.textContent='2027 · '+members.length+' certified eligible voters';
    }else if(name==='Membership Anniversaries'){const rows=await getSheetValues("'Anniversaries_"+membershipYear+"'!A1:N2000",MEMBERSHIP_SPREADSHEET_ID);if(seq!==customSeq||currentMembershipSheet!==name)return;const heads=rows[0]||[],c=h=>heads.indexOf(h);if(['First Name','Last Name','Anniversary Month','Anniversary Day','Years of Service'].some(h=>c(h)<0))throw Error('Anniversary headings need review.');const members=rows.slice(1).filter(r=>String(r[c('Status')]).toLowerCase()==='active');target.innerHTML='<section class="workspace-card"><h2>Service anniversaries</h2>'+yearControls()+'<div class="table-wrap"><table class="data-table"><thead><tr><th>Member</th><th>Start date</th><th>Anniversary</th><th>Years of service</th></tr></thead><tbody>'+members.map(r=>'<tr><td>'+esc(r[c('First Name')]+' '+r[c('Last Name')])+'</td><td>'+esc(r[c('Start Date')])+'</td><td>'+esc(r[c('Anniversary Month')]+'/'+r[c('Anniversary Day')])+'</td><td>'+esc(r[c('Years of Service')])+'</td></tr>').join('')+'</tbody></table></div></section>';status.textContent=membershipYear+' · '+members.length+' active-member anniversaries';
    }else{const rawName=membershipYear==='2027'?'Vetting_Raw_2027':'Vetting_Raw',result=await getSheetRanges(["'"+membershipYear+"'!A1:AK2000","'"+rawName+"'!A1:BD2000"],MEMBERSHIP_SPREADSHEET_ID);if(seq!==customSeq||currentMembershipSheet!==name)return;const roster=result[0],submissions=result[1],h=roster[0]||[],col=n=>h.indexOf(n),vh=submissions[0]||[],ve=vh.findIndex(v=>String(v).trim().toLowerCase()==='email');if(['Status','First Name','Last Name','Email','Waiver'].some(n=>col(n)<0)||ve<0)throw Error('Onboarding source headings need review.');const emails=new Set(submissions.slice(1).map(r=>String(r[ve]||'').trim().toLowerCase())),members=roster.slice(1).filter(r=>['active','prospect','pending'].includes(String(r[col('Status')]).toLowerCase()));target.innerHTML='<section class="workspace-card"><h2>Onboarding & waivers</h2><p>Waiver status comes from the selected roster. A vetting submission is evidence of receipt, not a decision or approval. Matching exceptions remain available in Administration.</p>'+yearControls()+'<label class="membership-category">Find member<input data-membership-onboarding-search type="search" placeholder="Name or email"></label><div class="table-wrap"><table class="data-table"><thead><tr><th>Member</th><th>Membership status</th><th>Roster waiver status</th><th>Vetting submission</th></tr></thead><tbody>'+members.map(r=>{const name=r[col('First Name')]+' '+r[col('Last Name')],email=String(r[col('Email')]||'').trim().toLowerCase();return '<tr data-onboarding-search="'+esc((name+' '+email).toLowerCase())+'"><td>'+esc(name)+'<small>'+esc(email)+'</small></td><td>'+esc(r[col('Status')])+'</td><td>'+esc(r[col('Waiver')]||'Not recorded')+'</td><td>'+(emails.has(email)?'Received':'Not found for this email')+'</td></tr>';}).join('')+'</tbody></table></div><button type="button" class="membership-tab" data-membership-area="Training">View training progress</button></section>';status.textContent=membershipYear+' · '+members.length+' active, prospect and pending members';}
