@@ -175,6 +175,22 @@
   button.type='button';button.className='sponsor-tab';button.dataset.marketTab='vendor-payments';button.textContent='Vendor Payments';
   button.title='View payments already recorded for vendor orders, including the amount, date, and payment status.';
   tabs.append(button);
+  const tabDescriptions = {
+    dashboard: 'See the Marketplace overview, including recent sales and order activity.',
+    fulfillment: 'Track fulfillment progress and see which orders still need action.',
+    manufacturer: 'Review the items and vendor cost before sending the order. See the vendor minimum and how much more is needed.',
+    financials: 'Review the financial details for each order.',
+    orders: 'Look up individual customer orders and the items they purchased.',
+    pricing: 'Review Marketplace prices and fees used in order calculations.',
+    history: 'Look up past Marketplace sales.',
+    reference: 'Look up merchandise prices by item.',
+    'vendor-payments': 'View payments already recorded for vendor orders, including the amount, date, and payment status.'
+  };
+  for (const tab of tabs.querySelectorAll('[data-market-tab]')) {
+    const description = tabDescriptions[tab.dataset.marketTab];
+    if (description) tab.title = description;
+  }
+
   const panel=document.createElement('div');panel.dataset.marketPanel='vendor-payments';panel.className=firstPanel.className.replace(/\bactive\b/g,'').trim();
   panel.innerHTML='<section class="market-action-card"><h3>Vendor Payments</h3><div class="market-action-body"><p>Supplier payment records linked to your vendor order numbers.</p><button type="button" data-refresh-vendor-payments>Refresh payments</button><div data-vendor-payment-records role="status">Open this tab to load payments.</div></div></section>';
   firstPanel.parentElement.append(panel);
