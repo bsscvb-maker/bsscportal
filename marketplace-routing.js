@@ -186,10 +186,48 @@
     reference: 'Look up merchandise prices by item.',
     'vendor-payments': 'View payments already recorded for vendor orders, including the amount, date, and payment status.'
   };
+  const help = document.createElement('div');
+  help.id = 'marketplace-tab-help';
+  help.setAttribute('role', 'tooltip');
+  help.hidden = true;
+  Object.assign(help.style, {
+    position: 'fixed', zIndex: '10000', boxSizing: 'border-box',
+    width: 'min(320px, calc(100vw - 24px))', padding: '14px 16px',
+    border: '1px solid #4b5563', borderRadius: '6px',
+    background: '#111827', color: '#fff', boxShadow: '0 8px 24px #0005',
+    fontSize: '14px', lineHeight: '1.5', pointerEvents: 'none'
+  });
+  const helpTitle = document.createElement('strong');
+  helpTitle.style.display = 'block';
+  helpTitle.style.marginBottom = '4px';
+  const helpText = document.createElement('div');
+  help.append(helpTitle, helpText);
+  document.body.append(help);
+  const hideHelp = () => { help.hidden = true; };
   for (const tab of tabs.querySelectorAll('[data-market-tab]')) {
     const description = tabDescriptions[tab.dataset.marketTab];
-    if (description) tab.title = description;
+    if (!description) continue;
+    tab.removeAttribute('title');
+    tab.setAttribute('aria-description', description);
+    const showHelp = () => {
+      helpTitle.textContent = tab.textContent.trim();
+      helpText.textContent = description;
+      help.hidden = false;
+      const bounds = tab.getBoundingClientRect();
+      help.style.left = Math.max(12, Math.min(bounds.left, document.documentElement.clientWidth - help.offsetWidth - 12)) + 'px';
+      help.style.top = (bounds.bottom + help.offsetHeight + 16 <= window.innerHeight
+        ? bounds.bottom + 8
+        : Math.max(8, bounds.top - help.offsetHeight - 8)) + 'px';
+    };
+    tab.addEventListener('mouseenter', showHelp);
+    tab.addEventListener('mouseleave', hideHelp);
+    tab.addEventListener('focus', showHelp);
+    tab.addEventListener('blur', hideHelp);
+    tab.addEventListener('click', hideHelp);
+    tab.addEventListener('keydown', event => { if (event.key === 'Escape') hideHelp(); });
   }
+  window.addEventListener('scroll', hideHelp, true);
+  window.addEventListener('resize', hideHelp);
 
   const panel=document.createElement('div');panel.dataset.marketPanel='vendor-payments';panel.className=firstPanel.className.replace(/\bactive\b/g,'').trim();
   panel.innerHTML='<section class="market-action-card"><h3>Vendor Payments</h3><div class="market-action-body"><p>Supplier payment records linked to your vendor order numbers.</p><button type="button" data-refresh-vendor-payments>Refresh payments</button><div data-vendor-payment-records role="status">Open this tab to load payments.</div></div></section>';
