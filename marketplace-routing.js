@@ -163,8 +163,17 @@
   const tabs=document.querySelector('[data-market-tab="dashboard"]')?.parentElement;
   const firstPanel=document.querySelector('[data-market-panel="dashboard"]');
   if(!tabs||!firstPanel)return;
+  const previewTab=tabs.querySelector('[data-market-tab="manufacturer"]');
+  const previewHeading=document.querySelector('[data-market-panel="manufacturer"] h2');
+  if(previewTab){
+    previewTab.textContent='Vendor Order Preview';
+    previewTab.title='Review items, vendor cost, and the amount still needed to meet the vendor minimum before sending the order.';
+  }
+  if(previewHeading)previewHeading.textContent='Vendor Order Preview';
+
   const button=document.createElement('button');
   button.type='button';button.className='sponsor-tab';button.dataset.marketTab='vendor-payments';button.textContent='Vendor Payments';
+  button.title='View payments already recorded for vendor orders, including the amount, date, and payment status.';
   tabs.append(button);
   const panel=document.createElement('div');panel.dataset.marketPanel='vendor-payments';panel.className=firstPanel.className.replace(/\bactive\b/g,'').trim();
   panel.innerHTML='<section class="market-action-card"><h3>Vendor Payments</h3><div class="market-action-body"><p>Supplier payment records linked to your vendor order numbers.</p><button type="button" data-refresh-vendor-payments>Refresh payments</button><div data-vendor-payment-records role="status">Open this tab to load payments.</div></div></section>';
