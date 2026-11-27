@@ -401,6 +401,7 @@
     if (item.task && item.priority && !priorityLabels[item.priority]) priorityOptions.push([item.priority, item.priority]);
     if (!item.priority) priorityOptions.unshift(['', '—']);
     const priority = rowSelect(item, 'Priority', item.priority || '', priorityOptions);
+    priority.classList.add('bssc-work-priority');
     const review = rowSelect(item, 'Review', item.reviewChoice, [
       ['Needs review', 'Needs review'], ['Accepted', 'Accepted'], ['Declined', 'Declined']
     ]);
