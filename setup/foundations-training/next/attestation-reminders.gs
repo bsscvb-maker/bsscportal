@@ -56,7 +56,28 @@ function sendAttestationReminders_(book,input) {
    needsReview++;
   }
  }
- return {ok:true,sent,skipped,needsReview};
+ const result={ok:true,sent,skipped,needsReview};
+ if(!test)result.confirmation=sendAttestationBatchConfirmation_(input.requestId,result,president,ledger);
+ return result;
+}
+
+function sendAttestationBatchConfirmation_(requestId,result,president,ledger){
+ const key='attestation-reminder-summary:'+requestId;
+ const previous=ledger.find(row=>row[0]===key);
+ if(previous)return previous[9];
+ const entry=memberOutbox_({key,name:'BSSC President',email:president,kind:'Attestation reminder summary'});
+ if(!entry)return 'Needs review';
+ const time=Utilities.formatDate(new Date(),'America/New_York','MMM d, yyyy, h:mm a')+' Eastern';
+ const {sent,skipped,needsReview}=result;
+ const body=['The BSSC Foundations attestation reminder batch finished on '+time+'.','Sent: '+sent,'Skipped: '+skipped,'Needs review: '+needsReview,'See Membership → Training → History for individual delivery records.'].join('\n\n');
+ try{
+  MailApp.sendEmail({to:president,subject:'BSSC Training | Attestation reminder batch complete',body,name:'BSSC Training'});
+  memberOutboxFinish_(entry,'Sent');
+  return 'Sent';
+ }catch(error){
+  memberOutboxFinish_(entry,'Needs review','SEND_OUTCOME_REQUIRES_REVIEW');
+  return 'Needs review';
+ }
 }
 
 function sendPresidentAttestationReminderTest(){
