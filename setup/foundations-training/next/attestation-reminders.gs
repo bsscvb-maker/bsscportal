@@ -30,46 +30,50 @@ function sendAttestationReminders_(book,input) {
  const roster=test?[]:memberRoster_();
  const ledger=memberTable_('LMS Outbox',MEMBER_OUTBOX_HEADERS,true).rows;
  const recipients=new Set();
- let sent=0, skipped=0, needsReview=0;
+ const names={sent:[],skipped:[],needsReview:[]};
  for(const id of ids){
   const key='attestation-reminder:'+input.requestId+':'+id;
   const existing=ledger.find(row=>row[0]===key);
-  if(existing){if(existing[9]==='Sent')sent++;else needsReview++;continue;}
   const record=attendance.find(row=>row[0]===id);
+  const name=test?'Todd':String(existing?.[3]||record?.[2]||'').trim()||'Unknown member ('+id+')';
+  if(existing){
+   names[existing[9]==='Sent'?'sent':'needsReview'].push(name);
+   if(existing[4])recipients.add(existing[4]);
+   continue;
+  }
   const enrollment=record&&enrollments.find(row=>row[0]===record[1]);
   const email=test?president:String(record?.[3]||'').trim().toLowerCase();
   const members=roster.filter(member=>member.email===email);
   const member=members[0];
-  if(!test&&(!record||record[9]!=='Attestation pending'||!record[10]||record[11]||record[8]!==LMS_VERSION||!enrollment||enrollment[5]!==LMS_VERSION||enrollment[6]!=='Official'||String(enrollment[17]).toLowerCase()==='true'||enrollment[12]||completions.some(row=>row[1]===enrollment[0]&&row[8]==='Verified')||String(enrollment[3]).trim().toLowerCase()!==email||enrollment[2]!==record[2]||members.length!==1||member.conflict||memberTrainingExempt_(member)||!['active','prospect','pending'].includes(member.status.toLowerCase())||member.name.trim().toLowerCase()!==record[2].trim().toLowerCase()||recipients.has(email))){skipped++;continue;}
-  if(MailApp.getRemainingDailyQuota()<1){needsReview++;continue;}
-  const name=test?'Todd':record[2];
+  if(!test&&(!record||record[9]!=='Attestation pending'||!record[10]||record[11]||record[8]!==LMS_VERSION||!enrollment||enrollment[5]!==LMS_VERSION||enrollment[6]!=='Official'||String(enrollment[17]).toLowerCase()==='true'||enrollment[12]||completions.some(row=>row[1]===enrollment[0]&&row[8]==='Verified')||String(enrollment[3]).trim().toLowerCase()!==email||enrollment[2]!==record[2]||members.length!==1||member.conflict||memberTrainingExempt_(member)||!['active','prospect','pending'].includes(member.status.toLowerCase())||member.name.trim().toLowerCase()!==record[2].trim().toLowerCase()||recipients.has(email))){names.skipped.push(name);continue;}
+  if(MailApp.getRemainingDailyQuota()<(test?1:2)){names.needsReview.push(name);continue;}
   const entry=memberOutbox_({key,enrollmentId:enrollment?.[0],memberKey:enrollment?.[1],name,email,kind:test?'Attestation reminder test':'Attestation reminder'});
-  if(!entry){needsReview++;continue;}
+  if(!entry){names.needsReview.push(name);continue;}
   recipients.add(email);
   try{
    const message=attestationReminderEmail_(name,test,test?'2026-11-21':record[4]);
    MailApp.sendEmail({to:email,subject:message.subject,body:message.text,htmlBody:message.html,name:'BSSC Training',replyTo:president});
    memberOutboxFinish_(entry,'Sent');
-   sent++;
+   names.sent.push(name);
   }catch(error){
    memberOutboxFinish_(entry,'Needs review','SEND_OUTCOME_REQUIRES_REVIEW');
-   needsReview++;
+   names.needsReview.push(name);
   }
  }
- const result={ok:true,sent,skipped,needsReview};
- if(!test)result.confirmation=sendAttestationBatchConfirmation_(input.requestId,result,president,ledger);
+ const result={ok:true,sent:names.sent.length,skipped:names.skipped.length,needsReview:names.needsReview.length};
+ if(!test)result.confirmation=sendAttestationBatchConfirmation_(input.requestId,names,president,ledger);
  return result;
 }
 
-function sendAttestationBatchConfirmation_(requestId,result,president,ledger){
+function sendAttestationBatchConfirmation_(requestId,names,president,ledger){
  const key='attestation-reminder-summary:'+requestId;
  const previous=ledger.find(row=>row[0]===key);
  if(previous)return previous[9];
  const entry=memberOutbox_({key,name:'BSSC President',email:president,kind:'Attestation reminder summary'});
  if(!entry)return 'Needs review';
  const time=Utilities.formatDate(new Date(),'America/New_York','MMM d, yyyy, h:mm a')+' Eastern';
- const {sent,skipped,needsReview}=result;
- const body=['The BSSC Foundations attestation reminder batch finished on '+time+'.','Sent: '+sent,'Skipped: '+skipped,'Needs review: '+needsReview,'See Membership → Training → History for individual delivery records.'].join('\n\n');
+ const section=(label,members)=>[label+': '+members.length,...members.map(name=>'• '+name)].join('\n');
+ const body=['The BSSC Foundations attestation reminder batch finished on '+time+'.',section('Sent',names.sent),section('Skipped',names.skipped),section('Needs review',names.needsReview),'See Membership → Training → History for individual delivery records.'].join('\n\n');
  try{
   MailApp.sendEmail({to:president,subject:'BSSC Training | Attestation reminder batch complete',body,name:'BSSC Training'});
   memberOutboxFinish_(entry,'Sent');

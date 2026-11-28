@@ -143,25 +143,30 @@ window.BSSCLms=(()=>{
    </fieldset>
    <p role="status" aria-live="polite"></p>
    <div class="lms-actions"><button type="button" class="lms-tool" data-test>Send test to president</button>
-    <button type="submit" class="lms-tool lms-tool-primary" disabled>Send to selected</button>
+    <button type="submit" class="lms-tool lms-tool-primary" data-send-state="idle" disabled>Send to selected</button>
     <button type="button" class="lms-tool" data-close>Close</button></div></form>`;
   const form=modal.querySelector('form'),status=modal.querySelector('[role="status"]');
   const all=form.querySelector('[data-select-all]'),checks=[...form.querySelectorAll('[name="attendee"]')];
   const send=form.querySelector('[type="submit"]'),test=form.querySelector('[data-test]'),close=form.querySelector('[data-close]');
-  let busy=false,retry=null;
+  let busy=false,sendingMembers=false,batchComplete=false,retry=null;
   const sync=()=>{
    const count=checks.filter(input=>input.checked).length;
    if(all){all.checked=count===checks.length;all.indeterminate=count>0&&count<checks.length;}
    send.disabled=busy||count===0;
+   send.dataset.sendState=sendingMembers?'sending':batchComplete?'complete':count?'ready':'idle';
+   send.textContent=sendingMembers?'Sending…':batchComplete?'Batch complete':'Send to selected';
   };
-  if(all)all.onchange=()=>{checks.forEach(input=>{input.checked=all.checked});sync();};
-  checks.forEach(input=>{input.onchange=sync;});
+  const selectionChanged=()=>{batchComplete=false;sync();};
+  if(all)all.onchange=()=>{checks.forEach(input=>{input.checked=all.checked});selectionChanged();};
+  checks.forEach(input=>{input.onchange=selectionChanged;});
   const deliver=async isTest=>{
    const ids=checks.filter(input=>input.checked).map(input=>input.value);
    if(busy||(!isTest&&!ids.length))return;
    const key=isTest?'test':ids.join(',');
    const requestId=retry?.key===key?retry.requestId:crypto.randomUUID();
    busy=true;
+   sendingMembers=!isTest;
+   if(sendingMembers)batchComplete=false;
    if(all)all.disabled=true;
    checks.forEach(input=>{input.disabled=true;});
    test.disabled=close.disabled=true;
@@ -177,13 +182,15 @@ window.BSSCLms=(()=>{
     if(!response.ok||!result.ok)throw Error(result.error||'Delivery could not be confirmed.');
     retry=null;
     status.textContent=isTest?(result.sent===1?'Test sent to president@boneshakerssocialclub.com.':'Test delivery needs review in LMS History.'):
-     `Sent ${result.sent}. Skipped ${result.skipped}. Needs review ${result.needsReview}.`;
-    if(!isTest)checks.forEach(input=>{input.checked=false;});
+     `Sent ${result.sent}. Skipped ${result.skipped}. Needs review ${result.needsReview}.`+
+      (result.confirmation==='Sent'?' Confirmation emailed to the president.':result.confirmation?' Confirmation email needs review.':'');
+    if(!isTest){batchComplete=true;checks.forEach(input=>{input.checked=false;});}
    }catch(error){
     retry={key,requestId};
     status.textContent=error.message+' Retry here to check the same request.';
    }finally{
     busy=false;
+    sendingMembers=false;
     if(all)all.disabled=false;
     checks.forEach(input=>{input.disabled=false;});
     test.disabled=close.disabled=false;

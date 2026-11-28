@@ -170,3 +170,28 @@
   opacity: .55;
   cursor: default;
 }
+
+.lms-reminder-dialog button[data-send-state] {
+  opacity: 1;
+}
+
+.lms-reminder-dialog button[data-send-state="idle"] {
+  background: #e1e4e8;
+  color: #424b55;
+}
+
+.lms-reminder-dialog button[data-send-state="ready"] {
+  background: #a51e36;
+  color: white;
+}
+
+.lms-reminder-dialog button[data-send-state="sending"] {
+  background: #f4ce55;
+  color: #352800;
+  cursor: progress;
+}
+
+.lms-reminder-dialog button[data-send-state="complete"] {
+  background: #276342;
+  color: white;
+}
