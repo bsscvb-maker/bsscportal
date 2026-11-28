@@ -2679,6 +2679,18 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       p.querySelector('strong').textContent=s.pending?'Loading…':s.error?'Load error':s.loaded?'Ready':'Not synced';
       p.querySelector('small').textContent=(modules[moduleLoadingKey]?.title||'Module')+' · Google Sheets';
     }
+    window.addEventListener('message', event => {
+      const frame = document.getElementById('shipmentsFrame');
+      if (!frame || event.origin !== location.origin || event.source !== frame.contentWindow) return;
+      const {type, status} = event.data || {};
+      if (type !== 'bssc-shipments-workbook' || !['loading','ready','error'].includes(status)) return;
+      moduleLoadingStates.set('shipments', {
+        pending: status === 'loading' ? 1 : 0,
+        loaded: status === 'ready',
+        error: status === 'error'
+      });
+      if (moduleLoadingKey === 'shipments') renderModuleLoading();
+    });
     function moduleRequestOwner(url){
       const u=new URL(String(url),location.href);
       if(u.hostname!=='sheets.googleapis.com'||moduleLoadingKey==='home')return null;
@@ -10186,7 +10198,9 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
               frame.style.height = Math.ceil(content.getBoundingClientRect().height) + 16 + 'px';
             }).observe(content);
           }, {once:true});
-          frame.src = 'shipments.html?embed=1';
+          moduleLoadingStates.set('shipments', {pending:1,loaded:false,error:false});
+          renderModuleLoading();
+          frame.src = 'shipments.html?embed=1&v=workbook-status';
         }
       } else if (key === 'storage') { taskGrid.innerHTML='';document.getElementById('storageWorkspace').classList.add('active');loadStorage();
       } else if (key === 'records' || key === 'volunteers') {
