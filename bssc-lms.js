@@ -99,7 +99,10 @@ window.BSSCLms=(()=>{
    summaryCard('Complete',complete.length,`of ${records.length} assigned · ${records.length?Math.round(100*complete.length/records.length):0}%`,complete,'lms-summary-complete'),
    ...['In progress','Attestation pending','Not started','Rewatch required'].map(status=>{
     const names=byStatus(status);
-    return summaryCard(status,names.length,`of ${records.length} assigned`,names,status==='Attestation pending'?'lms-summary-attention':'');
+    const pending=status==='Attestation pending'&&mode==='Official';
+    const eligible=records.filter(e=>e.status===status&&e.attendance?.Status==='Attestation pending'&&e.inPerson);
+    const reminder=pending?'<button type="button" class="lms-tool" data-lms-reminders="'+esc(eligible.map(e=>e.attendance['Attendance ID']).join(','))+'">Send reminder email</button>':'';
+    return summaryCard(status,names.length,`of ${records.length} assigned`,names,pending?'lms-summary-attention':'',reminder);
    })
   ];
   return `<section class="lms-summary" aria-label="Training summary"><div class="lms-metrics">${cards.join('')}</div></section>`;
@@ -114,6 +117,11 @@ window.BSSCLms=(()=>{
   button.onclick=()=>button.setAttribute('aria-expanded',String(button.getAttribute('aria-expanded')!=='true'));
   button.onkeydown=event=>{if(event.key==='Escape')button.setAttribute('aria-expanded','false')};
  });
+ const reminderButton=target.querySelector('[data-lms-reminders]');
+ if(reminderButton)reminderButton.onclick=()=>{
+  const ids=new Set(reminderButton.dataset.lmsReminders.split(',').filter(Boolean));
+  attestationReminders(all.filter(e=>ids.has(e.attendance?.['Attendance ID'])));
+ };
  target.querySelector('[data-lms-verified]').onclick=recordVerifiedCompletion;target.querySelector('[data-lms-enroll]').onclick=enroll;target.querySelectorAll('[data-lms-view]').forEach(b=>b.onclick=()=>{view=b.dataset.lmsView;selected=null;render()});if(view==='history'){target.querySelector('[data-lms-list]').hidden=true;target.querySelector('[data-lms-history]').innerHTML=historyView();}
  target.querySelector('[data-lms-search]').onchange=e=>{query=e.target.value;render()};target.querySelector('[data-lms-status]').onchange=e=>{filter=e.target.value;render()};target.querySelector('[data-lms-mode]').onchange=e=>{mode=e.target.value;selected=null;render()};
  target.querySelectorAll('[data-lms-open]').forEach(b=>b.onclick=()=>{selected=b.dataset.lmsOpen;detail()});target.querySelector('[data-lms-export]').onclick=()=>exportList(visible);if(selected)detail();if(view==='attestations'){target.querySelector('[data-lms-list]').hidden=true;recordInPerson();}
@@ -123,6 +131,74 @@ window.BSSCLms=(()=>{
  }
  function attemptView(a){let questions=[],answers=[];try{questions=JSON.parse(a['Questions JSON']||'[]');answers=JSON.parse(a['Answers JSON']||'[]')}catch{}return `<details class="lms-attempt"><summary>Section ${Number(a.Section)} · Attempt ${Number(a['Attempt Number'])} · ${Number(a.Score)}/${Number(a['Question Count'])} (${Number(a.Percent)}%) · ${truth(a.Passed)?'Passed':'Failed'} · ${date(a['Submitted At'])}</summary><p class="lms-small">Attempt ${esc(a['Attempt ID'])} · Course ${esc(a['Course Version'])}</p>${questions.length?questions.map((q,i)=>{const picked=answers[i],correct=Number(q.answer),missed=picked!==correct;return '<div class="lms-question '+(missed?'missed':'correct')+'"><strong>'+(i+1)+'. '+esc(q.q)+'</strong><p>Your answer: '+esc(q.options?.[picked]??'No answer recorded')+(missed?' · Incorrect':' · Correct')+'</p>'+(missed?'<p>Correct answer: '+esc(q.options?.[correct]??'Not recorded')+'</p>':'')+(q.explanation?'<p>'+esc(q.explanation)+'</p>':'')+'</div>'}).join(''):'<p>Question-level details were not saved with this attempt.</p>'}</details>`}
  function exportList(rows){const fields=['Full Name','Email','Membership Status','Record Type','Course Version','Status','Sections Passed','Next Step','Assigned At','First Started At','Last Active At','Due At','Completed At','Enrollment ID'];const safe=v=>{let s=String(v??'');if(/^[=+@-]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};const csv=[fields,...rows.map(e=>[e['Full Name'],e.Email,e['Membership Status'],e['Record Type'],e['Course Version'],e.status,e.passed,e.action,e['Assigned At'],e['First Started At'],e['Last Active At'],e['Due At'],e['Completed At'],e['Enrollment ID']])].map(r=>r.map(safe).join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='BSSC-LMS-learners.csv';a.click();URL.revokeObjectURL(url)}
+ function attestationReminders(records){
+  const modal=document.createElement('dialog');
+  modal.className='lms-enroll-dialog';
+  const sorted=[...records].sort((a,b)=>a['Full Name'].localeCompare(b['Full Name']));
+  modal.innerHTML=`<form><h3>Send attestation reminders</h3>
+   <p>Send a test to the president or choose members to remind from BSSC Training.</p>
+   <fieldset><legend>Pending in-person attestations</legend>
+    ${sorted.length?'<label><input type="checkbox" data-select-all> Select all</label>': '<p>No pending attestations.</p>'}
+    ${sorted.map(e=>'<label><input type="checkbox" name="attendee" value="'+esc(e.attendance['Attendance ID'])+'"> '+esc(e['Full Name'])+'</label>').join('')}
+   </fieldset>
+   <p role="status" aria-live="polite"></p>
+   <div class="lms-actions"><button type="button" class="lms-tool" data-test>Send test to president</button>
+    <button type="submit" class="lms-tool lms-tool-primary" disabled>Send to selected</button>
+    <button type="button" class="lms-tool" data-close>Close</button></div></form>`;
+  const form=modal.querySelector('form'),status=modal.querySelector('[role="status"]');
+  const all=form.querySelector('[data-select-all]'),checks=[...form.querySelectorAll('[name="attendee"]')];
+  const send=form.querySelector('[type="submit"]'),test=form.querySelector('[data-test]'),close=form.querySelector('[data-close]');
+  let busy=false,retry=null;
+  const sync=()=>{
+   const count=checks.filter(input=>input.checked).length;
+   if(all){all.checked=count===checks.length;all.indeterminate=count>0&&count<checks.length;}
+   send.disabled=busy||count===0;
+  };
+  if(all)all.onchange=()=>{checks.forEach(input=>{input.checked=all.checked});sync();};
+  checks.forEach(input=>{input.onchange=sync;});
+  const deliver=async isTest=>{
+   const ids=checks.filter(input=>input.checked).map(input=>input.value);
+   if(busy||(!isTest&&!ids.length))return;
+   const key=isTest?'test':ids.join(',');
+   const requestId=retry?.key===key?retry.requestId:crypto.randomUUID();
+   busy=true;
+   if(all)all.disabled=true;
+   checks.forEach(input=>{input.disabled=true;});
+   test.disabled=close.disabled=true;
+   sync();
+   status.textContent=isTest?'Sending the test…':'Sending selected reminders…';
+   try{
+    const response=await fetch('https://script.google.com/macros/s/AKfycbz5mh45avqAvKNf7b-0OFvU46_MllMjwXyfGOJwtW0qUwpAA5rQZyKAImq5NAGDSniu/exec',{
+     method:'POST',credentials:'omit',headers:{'Content-Type':'text/plain;charset=UTF-8'},
+     body:JSON.stringify({action:'sendAttestationReminders',requestId,test:isTest,ids:isTest?[]:ids,token:accessToken}),
+     signal:AbortSignal.timeout(90000)
+    });
+    const result=await response.json();
+    if(!response.ok||!result.ok)throw Error(result.error||'Delivery could not be confirmed.');
+    retry=null;
+    status.textContent=isTest?(result.sent===1?'Test sent to president@boneshakerssocialclub.com.':'Test delivery needs review in LMS History.'):
+     `Sent ${result.sent}. Skipped ${result.skipped}. Needs review ${result.needsReview}.`;
+    if(!isTest)checks.forEach(input=>{input.checked=false;});
+   }catch(error){
+    retry={key,requestId};
+    status.textContent=error.message+' Retry here to check the same request.';
+   }finally{
+    busy=false;
+    if(all)all.disabled=false;
+    checks.forEach(input=>{input.disabled=false;});
+    test.disabled=close.disabled=false;
+    sync();
+   }
+  };
+  form.onsubmit=event=>{event.preventDefault();void deliver(false);};
+  test.onclick=()=>{void deliver(true);};
+  close.onclick=()=>modal.close();
+  modal.oncancel=event=>{if(busy)event.preventDefault();};
+  modal.onclose=()=>modal.remove();
+  document.body.append(modal);
+  modal.showModal();
+ }
+
  function recordVerifiedCompletion(){
   const modal=document.createElement('dialog');
   modal.className='lms-enroll-dialog';
