@@ -2,7 +2,7 @@ const SHIPMENT_WORKBOOKS = [
   '1a6DfwnnNmy0ykQi7S8DKAt1RhauTh7ISwxSXm59b5NU',
   '1uC1tKyX4DnBKXH-4pIz8tm3zAvxdWr6ecrxrwUS9Hts'
 ];
-const SHIP24_COURIERS = {UPS:'ups', FedEx:'fedex', USPS:'usps'};
+const SHIP24_COURIERS = {UPS:'ups', FedEx:'fedex', USPS:'usps', Amazon:'amazon'};
 
 function syncPortalCarrierScans() {
   const lock = LockService.getScriptLock();
