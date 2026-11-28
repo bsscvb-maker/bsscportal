@@ -2151,11 +2151,11 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
         <button data-module="finance"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M7 8a5 5 0 0 1 10 0"/><path d="M6 8h12l3 11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2L6 8Z"/><path d="M12 11v7M14.5 13h-3.75a1.25 1.25 0 0 0 0 2.5h2.5a1.25 1.25 0 0 1 0 2.5H9.5"/></svg></span>Finance</button>
         <button data-module="marketplace"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 9l2-5h14l2 5"/><path d="M5 13v8h14v-8"/><path d="M9 21v-6h6v6"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/></svg></span>Marketplace</button>
         <button data-module="membership"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Membership</button>
+        <button data-module="shipments"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4m-9 4v10"/></svg></span>Shipments</button>
         <button data-module="sponsors"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="m8 12 2.5 2.5a2.12 2.12 0 0 0 3 0L19 9"/><path d="m15 5 4-2 4 4-3 3M9 5 5 3 1 7l4 4"/><path d="m5 10 6.5 6.5a2.12 2.12 0 0 0 3 0l5.5-6.5"/></svg></span>Sponsorships</button>
         <button data-module="storage"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="m3 7 9-4 9 4v14H3Z M3 7l9 4 9-4 M12 11v10"/></svg></span>Storage Inventory</button>
-        <button data-module="websiteAnalytics"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 4v16h16M8 16v-4m5 4V8m5 8V5"/></svg></span>Website Analytics</button>
         <button data-module="tracker"><span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m7 9 2 2 4-4M7 16h10M14 9h3"/></svg></span>Task Tracker</button>
-        <button type="button" onclick="location.href='shipments.html'"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4m-9 4v10"/></svg></span>Shipments</button>
+        <button data-module="websiteAnalytics"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 4v16h16M8 16v-4m5 4V8m5 8V5"/></svg></span>Website Analytics</button>
       </nav>
       <div class="nav-label">System</div>
       <nav class="nav"><button data-module="admin"><span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6l-.04.08V22h-4v-1.92A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1l-.08-.04H2v-4h1.92A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6l.04-.08V2h4v1.92A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.12.38.34.72.6 1l.08.04H22v4h-1.92A1.7 1.7 0 0 0 19.4 15Z"/></svg></span>Administration</button></nav>
@@ -2336,7 +2336,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
             <section class="sponsor-panel" data-finance-panel="events"><div class="coming-soon"><h2>Events &amp; Fundraising</h2><div class="data-status" id="financeEventsStatus">Open this tab to load events and fundraising.</div><div id="financeEventsTable"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="charities"><div class="coming-soon"><h2>Charities</h2><div class="data-status" id="financeCharitiesStatus">Open this tab to load charity reporting.</div><div id="financeCharitiesTable"></div></div></section>
             <section class="sponsor-panel" data-finance-panel="eventbudgets"><div class="coming-soon"><h2>Event Budgets</h2><div class="data-status" id="financeEventBudgetsStatus">Open this tab to load event budgets.</div><div id="financeEventBudgetsTable"></div></div></section>
-          </div><div class="club-workspace" id="volunteersWorkspace"></div><div class="club-workspace" id="recordsWorkspace"></div><div class="club-workspace" id="trackerWorkspace"><iframe id="taskTrackerFrame" title="BSSC Task Tracker" style="width:100%;height:calc(100vh - 210px);min-height:650px;border:0;border-radius:14px;background:#000"></iframe></div><div class="club-workspace" id="storageWorkspace"></div><div class="admin-workspace" id="adminWorkspace">
+          </div><div class="club-workspace" id="volunteersWorkspace"></div><div class="club-workspace" id="recordsWorkspace"></div><div class="club-workspace" id="shipmentsWorkspace"><iframe id="shipmentsFrame" title="BSSC Shipments" style="display:block;width:100%;min-height:480px;border:0"></iframe></div><div class="club-workspace" id="trackerWorkspace"><iframe id="taskTrackerFrame" title="BSSC Task Tracker" style="width:100%;height:calc(100vh - 210px);min-height:650px;border:0;border-radius:14px;background:#000"></iframe></div><div class="club-workspace" id="storageWorkspace"></div><div class="admin-workspace" id="adminWorkspace">
             <div class="admin-overview">
               <div class="admin-stat good"><span>Live Modules</span><strong>8</strong></div>
               <div class="admin-stat"><span>Modules in Build</span><strong>0</strong></div>
@@ -10074,6 +10074,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
 
     const modules = {
       websiteAnalytics:{title:"Website Analytics",description:"See how people find and use the public BoneShakers website.",tasks:[]},
+      shipments:{title:"Shipments",description:"Track club packages and see their latest delivery updates.",tasks:[]},
       tracker:{title:"Task Tracker",description:"Manage club priorities and progress.",tasks:[]},
       storage:{title:"Storage Inventory",description:"Find supplies and check quantities, colors, and locations.",tasks:[]},
       volunteers:{title:'Events & Volunteers',description:'Plan events, assign shifts, and track volunteer participation and event tasks.',tasks:[]},
@@ -10146,7 +10147,7 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
     });
 
     function showModule(key) {
-      followUpButton.hidden = !Object.hasOwn(modules, key) || key === 'home' || key === 'tracker';
+      followUpButton.hidden = !Object.hasOwn(modules, key) || key === 'home' || key === 'tracker' || key === 'shipments';
       moduleLoadingKey=key;renderModuleLoading();
       const healthPanel = document.getElementById('portalHealth');
       if (healthPanel) healthPanel.classList.toggle('visible', key === 'admin');
@@ -10168,9 +10169,22 @@ document.addEventListener('DOMContentLoaded',syncPortalYearCards);
       const volunteersWorkspace=document.getElementById('volunteersWorkspace');
       const recordsWorkspace=document.getElementById('recordsWorkspace');
       const taskGrid = document.getElementById('detailTasks');
-      [membershipWorkspace,sponsorWorkspace,bftWorkspace,bikeNightsWorkspace,marketplaceWorkspace,financeWorkspace,adminWorkspace,volunteersWorkspace,recordsWorkspace,document.getElementById("storageWorkspace"),document.getElementById("trackerWorkspace")].forEach(workspace => workspace.classList.remove('active'));
+      [membershipWorkspace,sponsorWorkspace,bftWorkspace,bikeNightsWorkspace,marketplaceWorkspace,financeWorkspace,adminWorkspace,volunteersWorkspace,recordsWorkspace,document.getElementById("storageWorkspace"),document.getElementById("trackerWorkspace"),document.getElementById("shipmentsWorkspace")].forEach(workspace => workspace.classList.remove('active'));
       if (key === 'websiteAnalytics') { window.BSSCWebsiteAnalytics.render(taskGrid); }
       else if (key === 'tracker') { taskGrid.innerHTML='';document.getElementById('trackerWorkspace').classList.add('active');const frame=document.getElementById('taskTrackerFrame');if(!frame.getAttribute('src'))frame.src='task-tracker-command.html?v=tracker-parity&load='+Date.now();
+      } else if (key === 'shipments') {
+        taskGrid.replaceChildren();
+        document.getElementById('shipmentsWorkspace').classList.add('active');
+        const frame = document.getElementById('shipmentsFrame');
+        if (!frame.getAttribute('src')) {
+          frame.addEventListener('load', () => {
+            const content = frame.contentDocument?.querySelector('main');
+            if (content) new ResizeObserver(() => {
+              frame.style.height = Math.ceil(content.getBoundingClientRect().height) + 16 + 'px';
+            }).observe(content);
+          }, {once:true});
+          frame.src = 'shipments.html?embed=1';
+        }
       } else if (key === 'storage') { taskGrid.innerHTML='';document.getElementById('storageWorkspace').classList.add('active');loadStorage();
       } else if (key === 'records' || key === 'volunteers') {
         taskGrid.innerHTML='';
