@@ -86,3 +86,87 @@
   background:white; border:0; border-radius:5px; font:inherit; cursor:pointer;
 }
 .bssc-lms .lms-tools-panel button:hover { background:#e5e8eb; }
+
+.bssc-lms .lms-summary-card [data-lms-reminders] {
+  align-self: start;
+  width: fit-content;
+  margin-top: 6px;
+  min-height: 34px;
+  padding: 5px 8px;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.lms-enroll-dialog.lms-reminder-dialog {
+  box-sizing: border-box;
+  width: min(380px, calc(100vw - 24px));
+  padding: 16px;
+}
+
+.lms-reminder-dialog h3 {
+  margin: 0 0 12px;
+}
+
+.lms-reminder-dialog fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid #cbd0d8;
+  border-radius: 6px;
+}
+
+.lms-reminder-dialog legend {
+  padding: 0 4px;
+  font-size: 13px;
+}
+
+.lms-reminder-dialog fieldset label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 25px;
+  margin: 0;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+.lms-reminder-dialog input[type="checkbox"] {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: #a92537;
+}
+
+.lms-reminder-dialog label:has([data-select-all]) {
+  margin-bottom: 3px;
+  border-bottom: 1px solid #e2e5e9;
+  font-weight: 700;
+}
+
+.lms-reminder-dialog [role="status"] {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+.lms-reminder-dialog [role="status"]:empty {
+  margin: 0;
+}
+
+.lms-reminder-dialog .lms-actions {
+  justify-content: flex-start;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.lms-reminder-dialog button {
+  padding: 7px 8px;
+  font-size: 13px;
+}
+
+.lms-reminder-dialog button:disabled {
+  opacity: .55;
+  cursor: default;
+}

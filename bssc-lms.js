@@ -101,7 +101,7 @@ window.BSSCLms=(()=>{
     const names=byStatus(status);
     const pending=status==='Attestation pending'&&mode==='Official';
     const eligible=records.filter(e=>e.status===status&&e.attendance?.Status==='Attestation pending'&&e.inPerson);
-    const reminder=pending?'<button type="button" class="lms-tool" data-lms-reminders="'+esc(eligible.map(e=>e.attendance['Attendance ID']).join(','))+'">Send reminder email</button>':'';
+    const reminder=pending?'<button type="button" class="lms-tool lms-tool-primary" data-lms-reminders="'+esc(eligible.map(e=>e.attendance['Attendance ID']).join(','))+'">Send reminder email</button>':'';
     return summaryCard(status,names.length,`of ${records.length} assigned`,names,pending?'lms-summary-attention':'',reminder);
    })
   ];
@@ -133,13 +133,13 @@ window.BSSCLms=(()=>{
  function exportList(rows){const fields=['Full Name','Email','Membership Status','Record Type','Course Version','Status','Sections Passed','Next Step','Assigned At','First Started At','Last Active At','Due At','Completed At','Enrollment ID'];const safe=v=>{let s=String(v??'');if(/^[=+@-]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};const csv=[fields,...rows.map(e=>[e['Full Name'],e.Email,e['Membership Status'],e['Record Type'],e['Course Version'],e.status,e.passed,e.action,e['Assigned At'],e['First Started At'],e['Last Active At'],e['Due At'],e['Completed At'],e['Enrollment ID']])].map(r=>r.map(safe).join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='BSSC-LMS-learners.csv';a.click();URL.revokeObjectURL(url)}
  function attestationReminders(records){
   const modal=document.createElement('dialog');
-  modal.className='lms-enroll-dialog';
+  modal.className='lms-enroll-dialog lms-reminder-dialog';
+  modal.setAttribute('aria-labelledby','lms-reminder-title');
   const sorted=[...records].sort((a,b)=>a['Full Name'].localeCompare(b['Full Name']));
-  modal.innerHTML=`<form><h3>Send attestation reminders</h3>
-   <p>Send a test to the president or choose members to remind from BSSC Training.</p>
+  modal.innerHTML=`<form><h3 id="lms-reminder-title">Send attestation reminders</h3>
    <fieldset><legend>Pending in-person attestations</legend>
-    ${sorted.length?'<label><input type="checkbox" data-select-all> Select all</label>': '<p>No pending attestations.</p>'}
-    ${sorted.map(e=>'<label><input type="checkbox" name="attendee" value="'+esc(e.attendance['Attendance ID'])+'"> '+esc(e['Full Name'])+'</label>').join('')}
+    ${sorted.length?'<label><input type="checkbox" data-select-all><span>Select all</span></label>': '<p>No pending attestations.</p>'}
+    ${sorted.map(e=>'<label><input type="checkbox" name="attendee" value="'+esc(e.attendance['Attendance ID'])+'"><span>'+esc(e['Full Name'])+'</span></label>').join('')}
    </fieldset>
    <p role="status" aria-live="polite"></p>
    <div class="lms-actions"><button type="button" class="lms-tool" data-test>Send test to president</button>
