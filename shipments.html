@@ -70,7 +70,13 @@ async function sheetRequest(path, body) {
   if (!response.ok) throw Error('The club workbook could not be reached. Try Refresh.');
   return response.json();
 }
+function reportWorkbookStatus(status) {
+  if (window.parent !== window) {
+    window.parent.postMessage({type:'bssc-shipments-workbook',status},location.origin);
+  }
+}
 async function loadPackages() {
+  reportWorkbookStatus('loading');
   const result = await sheetRequest(encodeURIComponent('Shipments!A2:J'));
   const byNumber = new Map();
   for (const [number, carrier, name, action, , status, location, eta, scanTime, scanDetail] of result.values || []) {
@@ -89,6 +95,7 @@ async function loadPackages() {
   }
   packages = [...byNumber.values()].reverse();
   ready = true;
+  reportWorkbookStatus('ready');
   lastChecked.textContent = 'Last checked '+new Intl.DateTimeFormat('en-US',{dateStyle:'medium',timeStyle:'short',timeZone:'America/New_York'}).format(new Date())+' ET';
   lastChecked.hidden = false;
 }
@@ -109,6 +116,8 @@ async function run(work, feedback) {
   } catch (error) {
     if (error instanceof DuplicatePackageError) return false;
     ready = false;
+    reportWorkbookStatus('error');
+    lastChecked.hidden = true;
     packages = [];
     message.textContent = error.message;
     return false;
