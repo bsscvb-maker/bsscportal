@@ -1,11 +1,19 @@
-function attestationReminderEmail_(name, test) {
+function attestationReminderEmail_(name, test, trainingDate) {
+ const day=trainingDate instanceof Date?localDay(trainingDate):String(trainingDate||'').trim();
+ const dayMs=/^\d{4}-\d{2}-\d{2}$/.test(day)?Date.parse(day+'T00:00:00Z'):NaN;
+ const todayMs=Date.parse(localDay(Date.now())+'T00:00:00Z');
+ const days=(todayMs-dayMs)/86400000;
+ const validDate=Number.isFinite(days)&&days>=0&&new Date(dayMs).toISOString().slice(0,10)===day;
+ const classDate=validDate?new Intl.DateTimeFormat('en-US',{dateStyle:'long',timeZone:'UTC'}).format(new Date(dayMs)):'';
+ const pending=validDate?(days===0?'Pending since class today':days+' '+(days===1?'day':'days')+' pending'):'';
+ const attendance=validDate?'You attended in-person Foundations Training on '+classDate+'.':'Your attendance at in-person Foundations Training is on file.';
  const subject=(test?'[TEST] ':'')+'Action required today: Sign your BSSC training attestation';
  const url='https://bsscvb-maker.github.io/bsscportal/training/';
- const message='We recorded your attendance at in-person Foundations Training. Your required attestation is still unsigned, so your training record remains incomplete and your certificate is unavailable. Please sign it today.';
+ const message='Your required attestation is still unsigned. Your training record remains incomplete, and your certificate will be available once you sign.';
  const steps='Sign in with your roster email, review the acknowledgment, and type your full name. If you need help signing in, choose Set up / reset password.';
- const testNote=test?'Test preview for the club president. No member received this copy.':'';
- const html='<div style="background:#edf0f4;padding:24px 12px;font-family:Arial,sans-serif;color:#252a33"><table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;max-width:600px;margin:auto;background:#fff"><tr><td style="background:#17191d;border-bottom:4px solid #b72c3d;padding:24px;color:#fff"><img src="'+esc(LOGO)+'" width="76" alt="BoneShakers Social Club"><h2>BoneShakers Social Club</h2><p>Foundations Training</p></td></tr><tr><td style="padding:28px;line-height:1.65">'+(test?'<p style="color:#a72c3a;font-weight:bold">'+testNote+'</p>':'')+'<p style="margin:0 0 6px;color:#a72c3a;font-size:13px;font-weight:bold;letter-spacing:1px">ACTION REQUIRED TODAY</p><h1 style="line-height:1.2;font-size:27px">Your training is still incomplete</h1><p>Hi '+esc(name)+',</p><p>'+message+'</p><p>'+steps+'</p><p><a href="'+url+'" style="display:block;background:#ad2838;color:#fff;padding:14px;text-align:center;text-decoration:none;border-radius:8px;font-weight:bold">Sign My Attestation Now</a></p><p>Please take care of this today.<br>BSSC Training</p></td></tr><tr><td style="background:#17191d;color:#fff;padding:20px"><strong>STRONGER TOGETHER</strong><br>BoneShakers Social Club</td></tr></table></div>';
- return {subject,html,text:[testNote,'ACTION REQUIRED TODAY','Hi '+name+',',message,steps,'Sign My Attestation Now: '+url,'Please take care of this today.\nBSSC Training'].filter(Boolean).join('\n\n')};
+ const testNote=test?'Test preview for the club president using a sample class date.':'';
+ const html='<div style="background:#edf0f4;padding:24px 12px;font-family:Arial,sans-serif;color:#252a33"><table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;max-width:600px;margin:auto;background:#fff"><tr><td style="background:#17191d;border-bottom:4px solid #b72c3d;padding:24px;color:#fff"><img src="'+esc(LOGO)+'" width="76" alt="BoneShakers Social Club"><h2>BoneShakers Social Club</h2><p>Foundations Training</p></td></tr><tr><td style="padding:28px;line-height:1.65">'+(test?'<p style="color:#a72c3a;font-weight:bold">'+testNote+'</p>':'')+'<p style="margin:0 0 6px;color:#a72c3a;font-size:13px;font-weight:bold;letter-spacing:1px">ACTION REQUIRED TODAY</p><h1 style="line-height:1.2;font-size:27px">Your training is still incomplete</h1><p>Hi '+esc(name)+',</p><p>'+attendance+'</p>'+(pending?'<p style="padding:12px 16px;background:#f9eef0;border-left:4px solid #ad2838;color:#842237;font-weight:bold">'+pending+'</p>':'')+'<p>'+message+'</p><p><strong>Please make this a priority and sign your attestation today.</strong></p><p>'+steps+'</p><p><a href="'+url+'" style="display:block;background:#ad2838;color:#fff;padding:14px;text-align:center;text-decoration:none;border-radius:8px;font-weight:bold">Sign My Attestation Now</a></p><p>Thank you for completing this requirement.<br>BSSC Training</p></td></tr><tr><td style="background:#17191d;color:#fff;padding:20px"><strong>STRONGER TOGETHER</strong><br>BoneShakers Social Club</td></tr></table></div>';
+ return {subject,html,text:[testNote,'ACTION REQUIRED TODAY','Hi '+name+',',attendance,pending,message,'Please make this a priority and sign your attestation today.',steps,'Sign My Attestation Now: '+url,'Thank you for completing this requirement.\nBSSC Training'].filter(Boolean).join('\n\n')};
 }
 
 function sendAttestationReminders_(book,input) {
@@ -39,7 +47,7 @@ function sendAttestationReminders_(book,input) {
   if(!entry){needsReview++;continue;}
   recipients.add(email);
   try{
-   const message=attestationReminderEmail_(name,test);
+   const message=attestationReminderEmail_(name,test,test?'2026-11-21':record[4]);
    MailApp.sendEmail({to:email,subject:message.subject,body:message.text,htmlBody:message.html,name:'BSSC Training',replyTo:president});
    memberOutboxFinish_(entry,'Sent');
    sent++;
